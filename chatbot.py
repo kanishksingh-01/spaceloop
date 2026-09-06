@@ -150,6 +150,28 @@ def _build_context(phase_info: dict | None) -> str:
     )
 
 
+_PARTNER_MOOD_TIPS = {
+    "sad": "She might be feeling low right now. A small kind gesture or just being present could help.",
+    "anxious": "She's feeling a bit anxious. Try not to add pressure right now — a calm, reassuring presence helps most.",
+    "irritable": "She might be more irritable than usual today — a little extra patience goes a long way.",
+    "tired": "She's low on energy today. Taking a bit off her plate, if you can, would mean a lot.",
+}
+
+_PARTNER_DISTRESS_TIP = (
+    "She reached out feeling overwhelmed today. A gentle, non-judgmental check-in "
+    "could mean a lot right now — no need to ask what was said, just that you're there."
+)
+
+
+def get_partner_tip(user_text: str, mode: str) -> str | None:
+    """Derive a caring, actionable tip for the partner from her chat — never the
+    raw message itself. Returns None if nothing notable to share."""
+    if mode == "calm":
+        return _PARTNER_DISTRESS_TIP
+    mood_result = analyze_mood(user_text)
+    return _PARTNER_MOOD_TIPS.get(mood_result["mood_label"])
+
+
 def chat_reply(user_text: str, phase_info: dict = None, api_key: str = "") -> dict:
     if is_distress(user_text):
         mode = "calm"
