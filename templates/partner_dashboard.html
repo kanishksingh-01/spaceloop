@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Partner Space</title>
+<link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+<div class="app-shell">
+  {% include "_partner_nav.html" %}
+  <div class="app-body">
+    <h1 id="greeting">Hi</h1>
+    <p style="opacity:0.7; margin-top:2px;">Here's how you can support them today.</p>
+
+    <div class="section" id="linkSection">
+      <h2>Connect</h2>
+      <label>Enter the code they shared with you</label>
+      <input type="text" id="connectCode" placeholder="e.g. 279511DB">
+      <button onclick="linkPartner()">Connect</button>
+      <div class="error" id="linkErr"></div>
+    </div>
+
+    <div class="section">
+      <h2>Updates</h2>
+      <div id="notifList"><p style="font-size:13px; opacity:0.6;">No updates yet.</p></div>
+      <button class="secondary" onclick="loadNotifications()">Refresh</button>
+    </div>
+  </div>
+</div>
+
+<script src="/static/app.js"></script>
+<script>
+const user = requireUser("partner");
+if (user) {
+  document.getElementById("greeting").innerText = "Hi, " + user.name;
+  loadNotifications();
+}
+
+async function linkPartner() {
+  const code = document.getElementById("connectCode").value.trim();
+  if (!code) return;
+  try {
+    const result = await apiPost("/api/partner/link", { partner_user_id: user.id, connect_code: code });
+    document.getElementById("linkSection").innerHTML = `<h2>Connected with ${result.linked_with}</h2>`;
+    loadNotifications();
+  } catch (e) {
+    document.getElementById("linkErr").innerText = e.message;
+  }
+}
+
+async function loadNotifications() {
+  const notes = await apiGet(`/api/notifications/${user.id}`);
+  const list = document.getElementById("notifList");
+  if (!notes.length) {
+    list.innerHTML = `<p style="font-size:13px; opacity:0.6;">No updates yet.</p>`;
+    return;
+  }
+  list.innerHTML = notes.map(n =>
+    `<div class="notif">${n.message}<br><span style="font-size:11px; opacity:0.55;">${new Date(n.created_at).toLocaleString()}</span></div>`
+  ).join("");
+}
+</script>
+</body>
+</html>

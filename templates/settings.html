@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Settings</title>
+<link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+<div class="app-shell">
+  {% include "_nav.html" %}
+  <div class="app-body">
+    <h1>Settings</h1>
+    <div class="section">
+      <h2>Profile</h2>
+      <div class="card">
+        <p><b id="pName"></b></p>
+        <p style="opacity:0.7; font-size:13.5px;" id="pEmail"></p>
+      </div>
+    </div>
+    <div class="section" id="codeSection">
+      <h2>Connect code</h2>
+      <p style="font-size:13px; opacity:0.7;">Share this with your partner so they can follow your cycle.</p>
+      <div class="code-box" id="connectCode">----</div>
+      <button class="secondary" onclick="regenerateCode()">Generate a new code</button>
+    </div>
+    <div class="section">
+      <button class="secondary" onclick="logout()">Log out</button>
+    </div>
+  </div>
+</div>
+
+<script src="/static/app.js"></script>
+<script>
+const user = requireUser();
+if (user) {
+  document.getElementById("pName").innerText = user.name;
+  document.getElementById("pEmail").innerText = user.email;
+  if (user.role === "self") {
+    document.getElementById("connectCode").innerText = user.connect_code || "----";
+  } else {
+    document.getElementById("codeSection").style.display = "none";
+  }
+}
+
+async function regenerateCode() {
+  const result = await apiPost("/api/user/regenerate_code", { user_id: user.id });
+  document.getElementById("connectCode").innerText = result.connect_code;
+  user.connect_code = result.connect_code;
+  setUser(user);
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Your Space</title>
+<link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+<div class="app-shell">
+  {% include "_nav.html" %}
+  <div class="app-body">
+    <h1 id="greeting">Hi</h1>
+    <p style="opacity:0.7; margin-top:2px;">Here's your space for today.</p>
+
+    <div class="tabbar">
+      <button class="active" data-tab="cycle" onclick="showTab('cycle')">Cycle</button>
+      <button data-tab="symptom" onclick="showTab('symptom')">Is this normal?</button>
+      <button data-tab="pcod" onclick="showTab('pcod')">PCOD check</button>
+      <button data-tab="journal" onclick="showTab('journal')">Journal</button>
+    </div>
+
+    <div class="tab-panel active" id="tab-cycle">
+      <div class="card">
+        <p style="font-size:13px; opacity:0.7; margin-bottom:2px;">Your connect code — share with your partner</p>
+        <div class="code-box" id="connectCode">----</div>
+      </div>
+      <label>Period start date</label>
+      <input type="date" id="periodStart">
+      <label>Average cycle length (days)</label>
+      <input type="number" id="cycleLength" value="28">
+      <button onclick="logCycle()">Log &amp; calculate phase</button>
+      <div id="phaseTrack" class="phase-track" style="display:none;">
+        <div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div>
+      </div>
+      <div class="result-box" id="phaseResult" style="display:none;"></div>
+    </div>
+
+    <div class="tab-panel" id="tab-symptom">
+      <label>Describe what you're experiencing</label>
+      <textarea id="symptomText" placeholder="e.g. mild cramps and bloating"></textarea>
+      <button onclick="checkSymptom()">Check</button>
+      <div class="result-box" id="symptomResult" style="display:none;"></div>
+    </div>
+
+    <div class="tab-panel" id="tab-pcod">
+      <div id="pcodQuestions"></div>
+      <button onclick="submitPcod()">Get my risk indicator</button>
+      <div class="result-box" id="pcodResult" style="display:none;"></div>
+    </div>
+
+    <div class="tab-panel" id="tab-journal">
+      <label>Write freely — this stays private</label>
+      <textarea id="journalText" placeholder="Today I felt..."></textarea>
+      <button onclick="submitJournal()">Save entry</button>
+      <div class="result-box" id="journalResult" style="display:none;"></div>
+    </div>
+
+    <div class="section">
+      <a class="btn" style="display:inline-block; text-decoration:none;" href="/chat">Talk to your companion</a>
+    </div>
+  </div>
+</div>
+
+<script src="/static/app.js"></script>
+<script>
+const user = requireUser("self");
+if (user) {
+  document.getElementById("greeting").innerText = "Hi, " + user.name;
+  document.getElementById("connectCode").innerText = user.connect_code || "----";
+}
+
+function showTab(name) {
+  document.querySelectorAll(".tab-panel").forEach(p => p.classList.remove("active"));
+  document.querySelectorAll(".tabbar button").forEach(b => b.classList.remove("active"));
+  document.getElementById("tab-" + name).classList.add("active");
+  document.querySelector(`.tabbar button[data-tab="${name}"]`).classList.add("active");
+}
+
+const pcodQs = [
+  ["irregular_periods", "My periods are irregular (cycles longer than 35 days, or fewer than 8 a year)"],
+  ["excess_hair_growth", "I have noticeable excess hair growth on face/chin/chest"],
+  ["acne_or_oily_skin", "I have persistent acne or oily skin"],
+  ["weight_gain_unexplained", "I've had unexplained weight gain"],
+  ["hair_thinning", "I've noticed hair thinning on my scalp"],
+  ["difficulty_conceiving", "I've had difficulty conceiving (if applicable)"],
+];
+const pcodDiv = document.getElementById("pcodQuestions");
+pcodQs.forEach(([key, label]) => {
+  const row = document.createElement("div");
+  row.className = "checkbox-row";
+  row.innerHTML = `<input type="checkbox" id="${key}"><label for="${key}">${label}</label>`;
+  pcodDiv.appendChild(row);
+});
+
+const phaseOrder = ["Menstrual", "Follicular", "Ovulation", "Luteal"];
+
+async function logCycle() {
+  const periodStart = document.getElementById("periodStart").value;
+  const cycleLength = parseInt(document.getElementById("cycleLength").value || "28");
+  if (!periodStart) { alert("Pick a date first"); return; }
+  await apiPost("/api/cycle/log", { user_id: user.id, period_start: periodStart, cycle_length: cycleLength });
+  const phase = await apiGet(`/api/cycle/phase/${user.id}`);
+  const box = document.getElementById("phaseResult");
+  box.style.display = "block";
+  box.className = "result-box";
+  box.innerHTML = `<b>${phase.phase}</b> — day ${phase.day_in_cycle} of your cycle.<br>
+    Next period estimate: ${phase.next_period_estimate}<br>
+    <span style="opacity:0.75;">Partner tip: ${phase.partner_tip}</span>`;
+
+  const track = document.getElementById("phaseTrack");
+  track.style.display = "flex";
+  const idx = phaseOrder.indexOf(phase.phase);
+  track.querySelectorAll(".dot").forEach((d, i) => d.classList.toggle("filled", i <= idx));
+}
+
+async function checkSymptom() {
+  const text = document.getElementById("symptomText").value;
+  if (!text.trim()) return;
+  const result = await apiPost("/api/symptom/check", { user_id: user.id, symptom_text: text });
+  const box = document.getElementById("symptomResult");
+  box.style.display = "block";
+  box.className = "result-box " + (result.flagged_normal ? "ok" : "flag");
+  box.innerText = result.note;
+}
+
+async function submitPcod() {
+  const answers = {};
+  pcodQs.forEach(([key]) => { answers[key] = document.getElementById(key).checked; });
+  const result = await apiPost("/api/pcod/assess", { user_id: user.id, answers });
+  const box = document.getElementById("pcodResult");
+  box.style.display = "block";
+  box.className = "result-box";
+  box.innerHTML = `Risk level: <span class="pill ${result.risk_level}">${result.risk_level.toUpperCase()}</span>
+    (score ${result.risk_score}/6)<br><br><span style="opacity:0.75;">${result.disclaimer}</span>`;
+}
+
+async function submitJournal() {
+  const text = document.getElementById("journalText").value;
+  if (!text.trim()) return;
+  const result = await apiPost("/api/journal/add", { user_id: user.id, text });
+  const box = document.getElementById("journalResult");
+  box.style.display = "block";
+  box.className = "result-box";
+  if (result.mood_label) {
+    box.innerHTML = `Detected mood: <b>${result.mood_label}</b><br><span style="opacity:0.75;">${result.reason_note || ""}</span>`;
+  } else {
+    box.innerText = "Saved.";
+  }
+  document.getElementById("journalText").value = "";
+}
+</script>
+</body>
+</html>

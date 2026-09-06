@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Register</title>
+<link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+<div class="container">
+  <h1>Create your account</h1>
+  <label>Name</label>
+  <input type="text" id="name">
+  <label>Email</label>
+  <input type="email" id="email">
+  <label>Password</label>
+  <input type="password" id="password">
+  <label>I am registering as</label>
+  <select id="role">
+    <option value="self">Myself (tracking my cycle)</option>
+    <option value="partner">A partner (supporting someone)</option>
+  </select>
+  <button onclick="doRegister()">Create account</button>
+  <div class="error" id="err"></div>
+  <p style="margin-top:16px; font-size:13px;">
+    Already have an account? <a class="top-link" href="/login">Log in</a>
+  </p>
+</div>
+<script src="/static/app.js"></script>
+<script>
+async function doRegister() {
+  const body = {
+    name: document.getElementById("name").value,
+    email: document.getElementById("email").value,
+    password: document.getElementById("password").value,
+    role: document.getElementById("role").value,
+  };
+  try {
+    const user = await apiPost("/api/register", body);
+    setUser(user);
+    window.location.href = user.role === "self" ? "/dashboard" : "/partner";
+  } catch (e) {
+    document.getElementById("err").innerText = e.message;
+  }
+}
+</script>
+</body>
+</html>
