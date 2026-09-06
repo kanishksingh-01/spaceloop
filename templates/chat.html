@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Your Companion</title>
+<link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+<div class="app-shell">
+  {% include "_nav.html" %}
+  <div class="app-body">
+    <h1>Your companion</h1>
+    <p style="opacity:0.7; margin-top:2px; margin-bottom:16px;">Comforting chat, or ask me to draft a message for you.</p>
+
+    <div class="chat-window" id="chatWindow"></div>
+    <div class="quick-actions">
+      <button onclick="quickSend('I feel really crampy and tired today')">I feel crampy</button>
+      <button onclick="quickSend('I am feeling really overwhelmed and anxious right now')">Help me calm down</button>
+      <button onclick="quickSend('Draft a message to my boss saying I need to work from home today')">Draft a message</button>
+      <button onclick="quickSend('Is it normal to feel this moody right now?')">Is this normal?</button>
+    </div>
+    <div class="chat-input-row">
+      <input type="text" id="msgInput" placeholder="Type how you're feeling...">
+      <button onclick="send()">Send</button>
+    </div>
+  </div>
+</div>
+
+<script src="/static/app.js"></script>
+<script>
+const user = requireUser("self");
+const chatWindow = document.getElementById("chatWindow");
+
+function addBubble(text, sender) {
+  const div = document.createElement("div");
+  div.className = "bubble " + sender;
+  div.innerText = text;
+  chatWindow.appendChild(div);
+  chatWindow.scrollTop = chatWindow.scrollHeight;
+}
+
+async function loadHistory() {
+  const history = await apiGet(`/api/chat/history/${user.id}`);
+  if (!history.length) {
+    addBubble("Hi, I'm here whenever you want to talk — about how you're feeling, or if you need help wording something for someone else.", "bot");
+    return;
+  }
+  history.forEach(m => addBubble(m.text, m.sender));
+}
+
+async function send() {
+  const input = document.getElementById("msgInput");
+  const text = input.value.trim();
+  if (!text) return;
+  addBubble(text, "user");
+  input.value = "";
+  try {
+    const result = await apiPost("/api/chat", { user_id: user.id, message: text });
+    addBubble(result.reply, "bot");
+  } catch (e) {
+    addBubble("Sorry, something went wrong — try again in a moment.", "bot");
+  }
+}
+
+function quickSend(text) {
+  document.getElementById("msgInput").value = text;
+  send();
+}
+
+document.getElementById("msgInput").addEventListener("keydown", (e) => {
+  if (e.key === "Enter") send();
+});
+
+if (user) loadHistory();
+</script>
+</body>
+</html>

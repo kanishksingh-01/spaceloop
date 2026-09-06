@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Log in</title>
+<link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+<div class="container">
+  <h1>Welcome back</h1>
+  <label>Email</label>
+  <input type="email" id="email">
+  <label>Password</label>
+  <input type="password" id="password">
+  <button onclick="doLogin()">Log in</button>
+  <div class="error" id="err"></div>
+  <p style="margin-top:16px; font-size:13px;">
+    New here? <a class="top-link" href="/register">Create an account</a>
+  </p>
+</div>
+<script src="/static/app.js"></script>
+<script>
+async function doLogin() {
+  const body = {
+    email: document.getElementById("email").value,
+    password: document.getElementById("password").value,
+  };
+  try {
+    const user = await apiPost("/api/login", body);
+    setUser(user);
+    window.location.href = user.role === "self" ? "/dashboard" : "/partner";
+  } catch (e) {
+    document.getElementById("err").innerText = e.message;
+  }
+}
+</script>
+</body>
+</html>

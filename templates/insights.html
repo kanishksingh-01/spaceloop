@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Insights</title>
+<link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+<div class="app-shell">
+  {% include "_nav.html" %}
+  <div class="app-body">
+    <h1>Insights</h1>
+    <p style="opacity:0.7; margin-top:2px;">A look back at your recent patterns.</p>
+
+    <div class="section">
+      <h2>Cycle history</h2>
+      <div id="cycleStats" class="card">
+        <div class="stat-row"><span class="stat-num" id="avgLength">--</span><span class="stat-label">avg cycle length (days)</span></div>
+        <div class="stat-row"><span class="stat-num" id="totalLogged">--</span><span class="stat-label">cycles logged</span></div>
+      </div>
+      <div id="cycleList"></div>
+    </div>
+
+    <div class="section">
+      <h2>Mood trend (last 10 entries)</h2>
+      <div id="moodChart" class="card"></div>
+    </div>
+  </div>
+</div>
+
+<script src="/static/app.js"></script>
+<script>
+const user = requireUser("self");
+
+const moodColor = {
+  sad: "#8F9BC7", anxious: "#C99A3D", irritable: "#B14D68",
+  tired: "#8A8A8A", happy: "#6F8F76", neutral: "#D9C6CC",
+};
+
+async function loadInsights() {
+  const cycles = await apiGet(`/api/cycle/history/${user.id}`);
+  const cycleListDiv = document.getElementById("cycleList");
+  if (!cycles.length) {
+    cycleListDiv.innerHTML = `<p style="opacity:0.6; font-size:13.5px;">No cycles logged yet — log one from the Home tab.</p>`;
+  } else {
+    const avg = Math.round(cycles.reduce((s, c) => s + c.cycle_length, 0) / cycles.length);
+    document.getElementById("avgLength").innerText = avg;
+    document.getElementById("totalLogged").innerText = cycles.length;
+    cycleListDiv.innerHTML = cycles.map(c =>
+      `<div class="notif">Started <b>${c.period_start}</b> — ${c.cycle_length} day cycle</div>`
+    ).join("");
+  }
+
+  const journal = await apiGet(`/api/journal/history/${user.id}`);
+  const chartDiv = document.getElementById("moodChart");
+  if (!journal.length) {
+    chartDiv.innerHTML = `<p style="opacity:0.6; font-size:13.5px;">No journal entries yet — add one from the Home tab.</p>`;
+    return;
+  }
+  const bars = journal.map(j => {
+    const color = moodColor[j.mood_label] || "#D9C6CC";
+    return `<div style="display:flex; align-items:center; gap:10px; margin-bottom:8px;">
+      <div style="width:70px; font-size:11.5px; opacity:0.6;">${j.created_at.slice(5,10)}</div>
+      <div style="flex:1; background:${color}; height:16px; border-radius:8px;"></div>
+      <div style="width:70px; font-size:12px; text-transform:capitalize;">${j.mood_label || "neutral"}</div>
+    </div>`;
+  }).join("");
+  chartDiv.innerHTML = bars;
+}
+
+if (user) loadInsights();
+</script>
+</body>
+</html>
