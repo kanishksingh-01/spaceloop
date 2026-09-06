@@ -14,8 +14,9 @@ AI companion chatbot: three blended modes in one conversation.
 Falls back to rule-based canned responses if no GROQ_API_KEY is set, so the
 demo never breaks even without an API key configured.
 """
+import random
 import requests
-from cycle_logic import check_symptom
+from cycle_logic import check_symptom, analyze_mood
 
 GROQ_API_URL = "https://api.groq.com/openai/v1/chat/completions"
 GROQ_MODEL = "llama-3.1-8b-instant"
@@ -99,6 +100,19 @@ _CALMING_EXERCISE = (
 )
 
 
+_SYMPTOM_HINT_WORDS = [
+    "pain", "cramp", "bleed", "ache", "nausea", "dizzy", "spotting", "clot",
+    "headache", "bloat", "sore", "hurts", "hurting",
+]
+
+_GENERIC_FOLLOWUPS = [
+    "I'm listening — want to tell me a bit more about what's going on?",
+    "I hear you. What's been on your mind today?",
+    "Thanks for sharing that with me. How are you holding up otherwise?",
+    "I'm here for this conversation, whatever you need to talk through.",
+]
+
+
 def _fallback_reply(user_text: str, mode: str) -> str:
     if mode == "calm":
         return _CALMING_EXERCISE
@@ -108,13 +122,23 @@ def _fallback_reply(user_text: str, mode: str) -> str:
             "a bit of flexibility — I'll make sure everything is caught up. Thanks for "
             "understanding.\u201d 🌸"
         )
+
     lower = user_text.lower()
+
     for question, answer in _FAQ_KEYWORDS.items():
         if question in lower:
             return answer
-    result = check_symptom(user_text)
-    prefix = "That sounds tough. " if not result["flagged_normal"] else "Totally hear you. "
-    return prefix + result["note"] + " 💛"
+
+    if any(w in lower for w in _SYMPTOM_HINT_WORDS):
+        result = check_symptom(user_text)
+        prefix = "That sounds tough. " if not result["flagged_normal"] else "Totally hear you. "
+        return prefix + result["note"] + " 💛"
+
+    mood_result = analyze_mood(user_text)
+    if mood_result["mood_label"] != "neutral":
+        return mood_result["reason_note"] + " I'm here with you — tell me more if you'd like."
+
+    return random.choice(_GENERIC_FOLLOWUPS)
 
 
 def _build_context(phase_info: dict | None) -> str:

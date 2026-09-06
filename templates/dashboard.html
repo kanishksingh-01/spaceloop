@@ -105,8 +105,7 @@ async function logCycle() {
   box.style.display = "block";
   box.className = "result-box";
   box.innerHTML = `<b>${phase.phase}</b> — day ${phase.day_in_cycle} of your cycle.<br>
-    Next period estimate: ${phase.next_period_estimate}<br>
-    <span style="opacity:0.75;">Partner tip: ${phase.partner_tip}</span>`;
+    Next period estimate: ${phase.next_period_estimate}`;
 
   const track = document.getElementById("phaseTrack");
   track.style.display = "flex";
