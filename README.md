@@ -1,60 +1,113 @@
-# Cycle Care & Partner Connect
+# SpaceLoop 🌀
 
-A cycle-tracking app with a built-in partner-connect feature — so the people
-who care about you can stay gently informed without you having to explain
-everything every time.
+> **AI-powered platform that converts unused property spaces into useful, affordable temporary spaces by intelligently matching owners with people who need them.**
 
-## Features (MVP)
+Built for **Hack2Ignite 2026**.
 
-- Cycle tracking with phase calculation (Menstrual / Follicular / Ovulation / Luteal)
-- "Is this normal?" symptom checker with red-flag detection
-- PCOD/PCOS self-assessment (risk indicator, not a diagnosis)
-- Partner connect via a unique mutual code
-- Partner dashboard + phase-change notifications
-- Comforting onboarding screen
+---
 
-## Tech stack
+## 💡 The Problem
 
-- Backend: Flask + Flask-SQLAlchemy
-- Database: SQLite (swap `SQLALCHEMY_DATABASE_URI` in `config.py` for Postgres later)
-- Frontend: server-rendered templates for now; can be swapped for React
+In every city, hundreds of millions of square feet sit vacant or severely underutilized:
+- **Empty Garages & Basements:** Sitting vacant during the day while owners pay property taxes.
+- **Driveways & Curbs:** Empty while commuters and EV drivers circle the block searching for parking.
+- **Off-Peak Cafés & Retail:** Closed after 4 PM with zero revenue generation.
+- **Vacant Storefronts:** Trapped in multi-year lease limbo.
 
-## Setup
+Meanwhile, **creators, students, remote workers, and micro-entrepreneurs** are priced out of exorbitant commercial leases ($400+/day photo studios, rigid storage facilities, and expensive coworking spaces).
+
+---
+
+## 🚀 The SpaceLoop Solution
+
+SpaceLoop unlocks urban "dead space" as flexible, liquid temporary rentals (by the hour or day) powered by 4 key AI capabilities:
+
+```mermaid
+flowchart LR
+    A[Host Snaps Photo / Enters Notes] --> B[AI Visual Space Inspector]
+    B --> C[Auto-Generated Dimensions, Amenities & Dynamic Price]
+    C --> D[Active Marketplace Listing]
+    E[Renter Natural Language Query] --> F[AI Matchmaking & Compatibility Score]
+    D --> F
+    F --> G[1-Click Booking + Automated AI Micro-Lease]
+```
+
+### 1. 🤖 Multimodal AI Space Inspector
+Hosts don't fill tedious forms. Upload a photo and describe rough notes:
+- Vision & LLM models estimate **usable square footage**, **ambient natural lighting quality**, and **acoustic background noise profile (<36 dB)**.
+- Detects electrical outlets (e.g. *Dedicated 20A grounded circuits*), access points, and safety flags.
+- Auto-generates a high-converting listing title, amenities checklist, and marketing copy.
+
+### 2. 🎯 Natural Language Intent Matchmaker
+Renters search in conversational plain English:
+> *"Looking for a quiet, sunlit space for a 3-person podcast recording on Saturday afternoon with power outlets under $40/hr"*
+- The matching engine parses acoustic needs, capacity, lighting, and implied budgets.
+- Ranks candidate spaces with a **0–100% Compatibility Score** and breaks down exact pros/cons.
+
+### 3. 🛡️ Automated AI Micro-Lease Agreements
+Property owners hesitate to rent because of tenancy laws and property liability.
+- SpaceLoop synthesizes an enforceable, plain-English **Temporary Space Use License Agreement** on every booking.
+- Contains revocable license terms (no tenancy created), activity-tailored house rules, noise curfews, mutual indemnification, and check-out clean-up checklists.
+
+### 4. 📈 Dynamic Micro-Pricing & Revenue Calculator
+- Real-time calculator estimating hourly and daily rates based on local density and square footage.
+- Visualizes projected monthly/annual passive income (average hosts earn **$1,200/mo**).
+
+### 5. 💬 LoopBot AI Concierge
+- Embedded floating AI assistant that assists renters with space suitability and advises hosts on staging and pricing.
+
+---
+
+## 🛠️ Tech Stack
+
+- **Backend:** Python 3, Flask 3.0, Flask-SQLAlchemy, SQLite
+- **AI Engine:** Dual-provider architecture supporting **Groq** (`llama-3.3-70b-versatile`, `llama-3.1-8b-instant`) and **Google Gemini** (`gemini-1.5-flash`), backed by a reliable rule-based heuristic fallback engine for offline or rate-limited environments.
+- **Frontend:** Tailwind CSS, JetBrains Mono, FontAwesome 6, Vanilla JS.
+
+---
+
+## ⚡ Quick Start
 
 ```bash
-python -m venv venv
+# 1. Clone repository
+git clone https://github.com/kanishksingh-01/hack2ignite-practice.git
+cd hack2ignite
+
+# 2. Activate virtual environment
 source venv/bin/activate   # Windows: venv\Scripts\activate
+
+# 3. Install dependencies
 pip install -r requirements.txt
+
+# 4. (Optional) Set AI Keys for live cloud LLM inference
+export GROQ_API_KEY="your-groq-key"
+export GEMINI_API_KEY="your-gemini-key"
+
+# 5. Run the application
 python app.py
 ```
 
-App runs at `http://localhost:5000`.
+The application will start at `http://localhost:5000` with pre-seeded demo spaces and personas!
 
-## API quick reference
+---
 
-| Endpoint | Method | Purpose |
+## 📡 API Reference
+
+| Method | Endpoint | Description |
 |---|---|---|
-| `/api/register` | POST | Create a user (`role`: `self` or `partner`) |
-| `/api/login` | POST | Login |
-| `/api/partner/link` | POST | Redeem a connect code to link accounts |
-| `/api/cycle/log` | POST | Log a period start date |
-| `/api/cycle/phase/<user_id>` | GET | Get current phase |
-| `/api/symptom/check` | POST | "Is this normal?" check |
-| `/api/pcod/assess` | POST | PCOD/PCOS risk questionnaire |
-| `/api/notifications/<user_id>` | GET | Partner's notifications |
-| `/api/journal/add` | POST | Add a journal entry (mood detection is a stretch goal, not yet wired) |
+| `GET` | `/api/spaces` | Query all active spaces with optional category filters |
+| `GET` | `/api/spaces/<id>` | Retrieve detailed metadata, amenities, and AI specs for a space |
+| `POST` | `/api/spaces/ai-scan` | Run AI Space Inspector on photos/notes to extract specs & price |
+| `POST` | `/api/spaces` | Publish a new space listing |
+| `POST` | `/api/spaces/ai-match` | Natural language seeker query matching & scoring |
+| `POST` | `/api/bookings` | Instant booking + automated AI Micro-Lease generation |
+| `POST` | `/api/calculator/estimate`| Dynamic pricing & host earnings calculation |
+| `POST` | `/api/ai/chat` | Chat with LoopBot AI Concierge |
 
-## Important framing note
+---
 
-Everything under "PCOD/PCOS" and "is this normal" is a **self-reported risk
-indicator / informational tool**, not a medical diagnosis. Keep this framing
-in the UI copy and in the pitch — it's both more honest and safer.
+## 🏆 Hack2Ignite AI Disclosure
 
-## AI usage disclosure
-
-This starter scaffold (project structure, models, rule-based symptom/PCOD
-logic, and this README) was generated with the help of Claude (Anthropic),
-per Hack2Ignite rule 2 ("Use of AI is allowed, teams must disclose usage of
-AI in PPT / GitHub readme"). All further development happens live during the
-48-hour window — update this section with anything else the team uses AI for
-(e.g. the mood-detection LLM call, if added).
+In accordance with Hack2Ignite guidelines:
+- **LLM / AI Model Usage:** Used for multimodal space analysis, semantic matchmaking scoring, dynamic micro-leasing agreement synthesis, and real-time user assistance.
+- **Architectural Fallback:** Includes deterministic heuristic algorithms ensuring zero disruption during live stage evaluations.

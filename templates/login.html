@@ -1,39 +1,112 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Log in</title>
-<link rel="stylesheet" href="/static/style.css">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Welcome Back — Cycle Care</title>
+  <link rel="stylesheet" href="/static/style.css">
+  <link rel="manifest" href="/static/manifest.json">
+  <meta name="theme-color" content="#CE6B4E">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="Cycle Care">
+  <link rel="apple-touch-icon" href="/static/icons/apple-touch-icon.png">
+  <link rel="icon" type="image/png" href="/static/icons/favicon.png">
+  <style>
+    .auth-card {
+      max-width: 440px;
+      margin: 3rem auto;
+    }
+    .demo-accounts {
+      background: var(--bg-card-subtle);
+      border-radius: var(--radius-md);
+      padding: 1rem;
+      margin-top: 1.5rem;
+      border: 1px dashed var(--border);
+    }
+  </style>
 </head>
 <body>
-<div class="container">
-  <h1>Welcome back</h1>
-  <label>Email</label>
-  <input type="email" id="email">
-  <label>Password</label>
-  <input type="password" id="password">
-  <button onclick="doLogin()">Log in</button>
-  <div class="error" id="err"></div>
-  <p style="margin-top:16px; font-size:13px;">
-    New here? <a class="top-link" href="/register">Create an account</a>
-  </p>
+<div class="app-shell">
+  <div class="card auth-card">
+    <div style="text-align: center; margin-bottom: 1.5rem;">
+      <h2>Welcome Back</h2>
+      <p>Sign in to your private sanctuary</p>
+    </div>
+
+    <div id="errorBox" class="result-box flag" style="display:none; margin-bottom: 1rem;"></div>
+
+    <form id="loginForm" onsubmit="handleLogin(event)">
+      <label for="email">Email Address</label>
+      <input type="email" id="email" required placeholder="you@domain.com">
+
+      <label for="password">Password</label>
+      <input type="password" id="password" required placeholder="Enter your password">
+
+      <button type="submit" id="submitBtn" style="width: 100%; margin-top: 1.25rem;">Sign In</button>
+    </form>
+
+    <!-- 1-Click Demo Section for Hackathon Evaluators -->
+    <div class="demo-accounts">
+      <p style="font-size: 0.8rem; font-weight: 700; text-transform: uppercase; color: var(--aubergine); margin-bottom: 0.5rem;">
+        ⚡ 1-Click Hackathon Evaluator Login:
+      </p>
+      <div style="display: flex; gap: 0.5rem;">
+        <button type="button" class="btn btn-secondary btn-sm" style="flex: 1; margin:0;" onclick="quickDemoLogin('self')">
+          🌸 Maya (Self)
+        </button>
+        <button type="button" class="btn btn-secondary btn-sm" style="flex: 1; margin:0;" onclick="quickDemoLogin('partner')">
+          🤝 Alex (Partner)
+        </button>
+      </div>
+    </div>
+
+    <div style="text-align: center; margin-top: 1.5rem; border-top: 1px solid var(--border); padding-top: 1.25rem;">
+      <p style="font-size: 0.88rem;">New to Cycle Care? <a href="/register" style="color: var(--terracotta); font-weight: 600; text-decoration: none;">Create account</a></p>
+    </div>
+  </div>
 </div>
+
 <script src="/static/app.js"></script>
 <script>
-async function doLogin() {
-  const body = {
-    email: document.getElementById("email").value,
-    password: document.getElementById("password").value,
-  };
-  try {
-    const user = await apiPost("/api/login", body);
-    setUser(user);
-    window.location.href = user.role === "self" ? "/dashboard" : "/partner";
-  } catch (e) {
-    document.getElementById("err").innerText = e.message;
+  async function handleLogin(e) {
+    e.preventDefault();
+    const btn = document.getElementById("submitBtn");
+    const errBox = document.getElementById("errorBox");
+    errBox.style.display = "none";
+    btn.disabled = true;
+    btn.innerText = "Signing in...";
+
+    const email = document.getElementById("email").value.trim();
+    const password = document.getElementById("password").value;
+
+    try {
+      const user = await apiPost("/api/login", { email, password });
+      setUser(user);
+      showToast(`Welcome back, ${user.name}!`);
+      setTimeout(() => {
+        window.location.href = user.role === "partner" ? "/partner" : "/dashboard";
+      }, 400);
+    } catch (err) {
+      errBox.innerText = err.message || "Invalid credentials. Please check your email and password.";
+      errBox.style.display = "block";
+      btn.disabled = false;
+      btn.innerText = "Sign In";
+    }
   }
-}
+
+  async function quickDemoLogin(role) {
+    try {
+      const user = await apiPost(`/api/demo-login/${role}`, {});
+      setUser(user);
+      showToast(`Logged in as demo ${role}: ${user.name}`);
+      setTimeout(() => {
+        window.location.href = role === "partner" ? "/partner" : "/dashboard";
+      }, 400);
+    } catch (err) {
+      showToast("Demo login error: " + err.message);
+    }
+  }
 </script>
 </body>
 </html>

@@ -1,30 +1,351 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Partner Space</title>
-<link rel="stylesheet" href="/static/style.css">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Partner Care Hub — Cycle Care</title>
+  <link rel="stylesheet" href="/static/style.css">
+  <link rel="manifest" href="/static/manifest.json">
+  <meta name="theme-color" content="#CE6B4E">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="Cycle Care">
+  <link rel="apple-touch-icon" href="/static/icons/apple-touch-icon.png">
+  <link rel="icon" type="image/png" href="/static/icons/favicon.png">
+  <style>
+    .vibe-card {
+      background: linear-gradient(135deg, #FFFDFB 0%, #FBF3EE 100%);
+      border: 1.5px solid #E8DDD6;
+      border-radius: var(--radius-lg);
+      padding: 1.25rem;
+      margin-bottom: 1.25rem;
+    }
+    [data-theme="dark"] .vibe-card {
+      background: linear-gradient(135deg, #251B22 0%, #1F161C 100%) !important;
+      border-color: #3D2D37 !important;
+    }
+    .human-meaning-box {
+      background: var(--bg-card);
+      border-radius: var(--radius-md);
+      padding: 0.85rem 1.1rem;
+      border: 1px solid var(--border);
+      margin-bottom: 1rem;
+    }
+    [data-theme="dark"] .human-meaning-box {
+      background: #251B22 !important;
+      border-color: #3D2D37 !important;
+    }
+    .care-tip-box {
+      background: #FFF;
+      padding: 1rem 1.25rem;
+      border-radius: var(--radius-md);
+      border: 1px solid var(--border);
+      border-left: 4px solid var(--terracotta);
+    }
+    [data-theme="dark"] .care-tip-box {
+      background: #2C2028 !important;
+      border-color: #3D2D37 !important;
+      border-left-color: #E2795B !important;
+    }
+    .meter-box {
+      background: var(--bg-card);
+      padding: 0.75rem 1rem;
+      border-radius: var(--radius-md);
+      border: 1px solid var(--border);
+    }
+    [data-theme="dark"] .meter-box {
+      background: #291E25 !important;
+      border-color: #3D2D37 !important;
+    }
+    .meter-bar {
+      height: 8px;
+      background: #E8DDD6;
+      border-radius: 4px;
+      overflow: hidden;
+      margin-top: 4px;
+    }
+    [data-theme="dark"] .meter-bar {
+      background: #3A2A35 !important;
+    }
+    .meter-fill {
+      height: 100%;
+      background: var(--terracotta);
+      border-radius: 4px;
+      transition: width 0.5s ease;
+    }
+    .dos-donts-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+      margin-top: 0.75rem;
+    }
+    @media (max-width: 600px) {
+      .dos-donts-grid { grid-template-columns: 1fr; }
+    }
+    .dos-card {
+      background: #EDF7F1;
+      border: 1px solid #C3E6D0;
+      border-radius: var(--radius-md);
+      padding: 1rem;
+    }
+    .dos-card b, .dos-card .dos-title { color: #174E2B; }
+    .dos-card ul, .dos-card li { color: #174E2B; }
+    [data-theme="dark"] .dos-card {
+      background: rgba(95, 135, 110, 0.16) !important;
+      border-color: #31523B !important;
+    }
+    [data-theme="dark"] .dos-card b, [data-theme="dark"] .dos-card .dos-title {
+      color: #8DE0A6 !important;
+    }
+    [data-theme="dark"] .dos-card ul, [data-theme="dark"] .dos-card li {
+      color: #C8EEDB !important;
+    }
+
+    .donts-card {
+      background: #FDF1EE;
+      border: 1px solid #F6D0C4;
+      border-radius: var(--radius-md);
+      padding: 1rem;
+    }
+    .donts-card b, .donts-card .donts-title { color: #8C2F15; }
+    .donts-card ul, .donts-card li { color: #8C2F15; }
+    [data-theme="dark"] .donts-card {
+      background: rgba(206, 107, 78, 0.16) !important;
+      border-color: #5E2F23 !important;
+    }
+    [data-theme="dark"] .donts-card b, [data-theme="dark"] .donts-card .donts-title {
+      color: #FFA58E !important;
+    }
+    [data-theme="dark"] .donts-card ul, [data-theme="dark"] .donts-card li {
+      color: #FAD1C7 !important;
+    }
+
+    .companion-briefing-card {
+      border: 1.5px solid var(--terracotta);
+      background: var(--bg-card);
+      border-radius: var(--radius-lg);
+      padding: 1.25rem;
+      margin-bottom: 1.25rem;
+    }
+    [data-theme="dark"] .companion-briefing-card {
+      background: #221820 !important;
+      border-color: #E2795B !important;
+    }
+    .briefing-content-box {
+      background: var(--bg-card-subtle);
+      border-radius: var(--radius-md);
+      padding: 0.9rem 1.1rem;
+      border-left: 3.5px solid var(--terracotta);
+    }
+    [data-theme="dark"] .briefing-content-box {
+      background: #2A1D26 !important;
+      border-left-color: #E2795B !important;
+    }
+  </style>
 </head>
 <body>
 <div class="app-shell">
   {% include "_partner_nav.html" %}
-  <div class="app-body">
-    <h1 id="greeting">Hi</h1>
-    <p style="opacity:0.7; margin-top:2px;">Here's how you can support them today.</p>
 
-    <div class="section" id="linkSection">
-      <h2>Connect</h2>
-      <label>Enter the code they shared with you</label>
-      <input type="text" id="connectCode" placeholder="e.g. 279511DB">
-      <button onclick="linkPartner()">Connect</button>
-      <div class="error" id="linkErr"></div>
+  <!-- Unlinked State -->
+  <div id="unlinkedView" class="card" style="display:none; max-width: 520px; margin: 2rem auto; text-align: center;">
+    <span style="font-size: 3rem; display: block; margin-bottom: 0.5rem;">🤝</span>
+    <h2>Connect with Your Partner</h2>
+    <p style="margin-bottom: 1.25rem;">
+      Enter the unique mutual connect code from her Cycle Care dashboard (e.g. <b>CARE-2026</b>) to start receiving compassionate phase tips and sending micro-care.
+    </p>
+
+    <div style="text-align: left;">
+      <label for="connectCodeInput">Her Connect Code</label>
+      <input type="text" id="connectCodeInput" placeholder="CARE-XXXX" style="font-size: 1.1rem; text-transform: uppercase; letter-spacing: 0.1em;">
+      <button onclick="linkWithPartner()" style="width: 100%; margin-top: 1rem;">Link Accounts</button>
     </div>
 
-    <div class="section">
-      <h2>Updates</h2>
-      <div id="notifList"><p style="font-size:13px; opacity:0.6;">No updates yet.</p></div>
-      <button class="secondary" onclick="loadNotifications()">Refresh</button>
+    <div style="background: var(--bg-card-subtle); padding: 0.75rem 1rem; border-radius: var(--radius-sm); margin-top: 1.25rem; font-size: 0.8rem; color: var(--text-muted); text-align: left;">
+      🔒 <b>Privacy Promise:</b> Cycle Care derives care tips and energy alerts. Her private journal entries and conversations with the AI companion remain 100% private.
+    </div>
+  </div>
+
+  <!-- Linked State: The Empathy Bridge -->
+  <div id="linkedView" style="display:none;">
+    <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 1.25rem;">
+      <div>
+        <h1 id="partnerGreeting">Supporting</h1>
+        <p>Your real-time empathy bridge for thoughtful care.</p>
+      </div>
+      <div>
+        <span class="pill low" id="connectedPill">Linked</span>
+      </div>
+    </div>
+
+    <!-- 🤖 AI Companion Care Briefing -->
+    <div class="card companion-briefing-card" id="briefingCard">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem; flex-wrap: wrap; gap: 0.5rem;">
+        <div style="display: flex; align-items: center; gap: 0.6rem;">
+          <span style="font-size: 1.4rem;">🤖</span>
+          <div>
+            <h3 style="margin: 0; font-size: 1.05rem;">Companion Care Briefing</h3>
+            <span style="font-size: 0.75rem; color: var(--text-muted);">Privacy-safe AI summary of her recent check-ins</span>
+          </div>
+        </div>
+        <span class="pill" id="briefingTonePill" style="background: rgba(206, 107, 78, 0.15); color: var(--terracotta); font-weight: 600;">Tone Loading...</span>
+      </div>
+
+      <!-- Plain English Summary -->
+      <div class="briefing-content-box">
+        <p id="briefingSummaryText" style="font-size: 0.92rem; color: var(--text-main); margin: 0; line-height: 1.55;"></p>
+      </div>
+
+      <!-- Suggested Partner Move & 1-Tap Action -->
+      <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.75rem; padding-top: 0.4rem;">
+        <div style="flex: 1; min-width: 240px;">
+          <span style="font-size: 0.78rem; font-weight: 700; color: var(--aubergine); text-transform: uppercase; letter-spacing: 0.05em; display: block; margin-bottom: 2px;">
+            💡 Recommended Move:
+          </span>
+          <span id="briefingActionNudge" style="font-size: 0.88rem; color: var(--text-muted);"></span>
+        </div>
+        <button id="briefingActionBtn" onclick="triggerBriefingAction()" class="btn-primary" style="padding: 0.5rem 1rem; font-size: 0.85rem; white-space: nowrap; margin-top: 0;">
+          Send Care ❤️
+        </button>
+      </div>
+
+      <div style="margin-top: 0.75rem; padding-top: 0.5rem; border-top: 1px dashed var(--border); font-size: 0.74rem; color: var(--text-muted); display: flex; align-items: center; gap: 0.4rem;">
+        <span>🔒</span>
+        <span><b>Privacy Shield Active:</b> Cycle Care derives emotional tone and care tips only. Her raw conversation logs and personal diary remain 100% confidential.</span>
+      </div>
+    </div>
+
+    <!-- Live Vibe Gauge: Human-Friendly & Plain English -->
+    <div class="card vibe-card">
+      <div class="card-header" style="margin-bottom: 0.75rem; align-items: flex-start;">
+        <div>
+          <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.25rem;">
+            <span class="pill" id="herPhasePill">Phase</span>
+            <span id="seasonBadge" style="font-size: 0.8rem; font-weight: 600; color: var(--text-muted);">Season</span>
+          </div>
+          <h2 id="herPhaseTitle" style="margin-top: 0.2rem; font-size: 1.45rem; display: flex; align-items: center; gap: 0.45rem;">
+            <span id="herPhaseIcon">✨</span>
+            <span id="herPhaseMainTitle">Phase</span>
+          </h2>
+          <div id="herPhaseSubtitle" style="font-size: 0.95rem; font-weight: 600; color: var(--terracotta); margin-top: 2px;">
+            Subtitle
+          </div>
+        </div>
+        <div style="text-align: right;">
+          <span id="cycleDayInfo" style="font-size: 0.95rem; font-weight: 700; color: var(--aubergine); display: block;">Day --</span>
+          <span id="daysUntilNextPeriod" style="font-size: 0.78rem; color: var(--text-muted);">~14 days until period</span>
+        </div>
+      </div>
+
+      <!-- Plain-English Explanation Box -->
+      <div class="human-meaning-box">
+        <div style="font-size: 0.78rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--aubergine); margin-bottom: 0.25rem;">
+          💬 What this means for her right now:
+        </div>
+        <p id="herPhasePlainMeaning" style="font-size: 0.92rem; color: var(--text-main); margin: 0; line-height: 1.5;"></p>
+
+        <div style="margin-top: 0.6rem; padding-top: 0.5rem; border-top: 1px dashed var(--border); display: flex; align-items: center; gap: 0.5rem;">
+          <span style="font-size: 0.82rem; font-weight: 600; color: var(--aubergine);">🌿 Her Current Vibe:</span>
+          <span id="herVibeSummary" style="font-size: 0.84rem; color: var(--text-muted); font-weight: 500;"></span>
+        </div>
+      </div>
+
+      <!-- Energy & Comfort Meters -->
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
+        <div class="meter-box">
+          <div style="display:flex; justify-content:space-between; font-size: 0.82rem; font-weight: 600;">
+            <span>⚡ Energy Battery</span>
+            <span id="energyValText">3/5</span>
+          </div>
+          <div class="meter-bar">
+            <div id="energyMeter" class="meter-fill" style="width: 60%;"></div>
+          </div>
+          <span id="energyDescSub" style="font-size: 0.72rem; color: var(--text-muted); display: block; margin-top: 4px;">Energy Status</span>
+        </div>
+        <div class="meter-box">
+          <div style="display:flex; justify-content:space-between; font-size: 0.82rem; font-weight: 600;">
+            <span>💖 Emotional Vibe</span>
+            <span id="moodValText" style="text-transform: capitalize;">Balanced</span>
+          </div>
+          <div class="meter-bar">
+            <div id="moodMeter" class="meter-fill" style="width: 75%; background: var(--aubergine);"></div>
+          </div>
+          <span id="moodDescSub" style="font-size: 0.72rem; color: var(--text-muted); display: block; margin-top: 4px;">Checked in today</span>
+        </div>
+      </div>
+
+      <!-- #1 Priority Actionable Care Tip -->
+      <div class="care-tip-box">
+        <b style="color: var(--aubergine); font-size: 0.9rem; display: flex; align-items: center; gap: 0.35rem;">
+          <span>💡</span> Your #1 Best Care Move Today:
+        </b>
+        <p id="careTipText" style="font-size: 0.92rem; color: var(--text-main); margin-top: 0.35rem; line-height: 1.5;"></p>
+      </div>
+    </div>
+
+    <!-- Phase Do's and Don'ts -->
+    <div class="card">
+      <h3>Phase Care Playbook</h3>
+      <p style="font-size: 0.85rem;">Thoughtful communication and support guidelines based on her current cycle stage.</p>
+
+      <div class="dos-donts-grid">
+        <div class="dos-card">
+          <b class="dos-title" style="font-size: 0.88rem;">✅ What to Do:</b>
+          <ul id="dosList" style="margin: 0.5rem 0 0 1.2rem; font-size: 0.85rem; line-height: 1.6;">
+            <li>Offer warm drinks and comfort food without waiting to be asked.</li>
+            <li>Take over dinner or evening chores so she can rest.</li>
+            <li>Give her a quiet hug and let her set the social pace.</li>
+          </ul>
+        </div>
+        <div class="donts-card">
+          <b class="donts-title" style="font-size: 0.88rem;">❌ What to Avoid:</b>
+          <ul id="dontsList" style="margin: 0.5rem 0 0 1.2rem; font-size: 0.85rem; line-height: 1.6;">
+            <li>Don't dismiss her mood as 'just hormones'—her feelings are real.</li>
+            <li>Don't force intense social events if she is tired.</li>
+            <li>Don't jump immediately to problem-solving; just listen and validate.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- Send Micro-Care Actions -->
+    <div class="card">
+      <h3>Send a Micro-Care Action</h3>
+      <p style="font-size: 0.88rem;">Tap a token to send an instant warm gesture directly to her dashboard.</p>
+
+      <div class="care-grid">
+        <div class="care-card" onclick="sendCare('heat_pack')">
+          <span class="care-icon">🔥</span>
+          <div class="care-label">Virtual Heat Pack</div>
+        </div>
+        <div class="care-card" onclick="sendCare('sweet_treat')">
+          <span class="care-icon">🍫</span>
+          <div class="care-label">Sweet Treat</div>
+        </div>
+        <div class="care-card" onclick="sendCare('warm_tea')">
+          <span class="care-icon">🍵</span>
+          <div class="care-label">Calming Tea</div>
+        </div>
+        <div class="care-card" onclick="sendCare('dinner_taken_care')">
+          <span class="care-icon">🍲</span>
+          <div class="care-label">Dinner Handled</div>
+        </div>
+        <div class="care-card" onclick="sendCare('gentle_hug')">
+          <span class="care-icon">🫂</span>
+          <div class="care-label">Gentle Hug</div>
+        </div>
+      </div>
+
+      <label for="customCareMsg">Optional Loving Message</label>
+      <input type="text" id="customCareMsg" placeholder="e.g. Taking care of dinner tonight, just rest!">
+    </div>
+
+    <!-- Notifications History -->
+    <div class="card">
+      <h3>Recent Care Updates</h3>
+      <div id="notificationsList" style="margin-top: 0.75rem;">
+        <p style="font-size: 0.85rem; font-style: italic;">No recent updates.</p>
+      </div>
     </div>
   </div>
 </div>
@@ -32,33 +353,189 @@
 <script src="/static/app.js"></script>
 <script>
 const user = requireUser("partner");
+let linkedSelfUserId = null;
+let currentRecommendedAction = "sweet_treat";
+
 if (user) {
-  document.getElementById("greeting").innerText = "Hi, " + user.name;
-  loadNotifications();
+  checkPartnerLink();
 }
 
-async function linkPartner() {
-  const code = document.getElementById("connectCode").value.trim();
-  if (!code) return;
+async function checkPartnerLink() {
   try {
-    const result = await apiPost("/api/partner/link", { partner_user_id: user.id, connect_code: code });
-    document.getElementById("linkSection").innerHTML = `<h2>Connected with ${result.linked_with}</h2>`;
-    loadNotifications();
+    const status = await apiGet(`/api/partner/status/${user.id}`);
+    if (status.is_linked) {
+      document.getElementById("unlinkedView").style.display = "none";
+      document.getElementById("linkedView").style.display = "block";
+      document.getElementById("partnerGreeting").innerText = `Supporting ${status.partner_name}`;
+      loadPartnerVibe();
+      loadNotifications();
+    } else {
+      document.getElementById("unlinkedView").style.display = "block";
+      document.getElementById("linkedView").style.display = "none";
+    }
   } catch (e) {
-    document.getElementById("linkErr").innerText = e.message;
+    console.error(e);
+  }
+}
+
+async function linkWithPartner() {
+  const code = document.getElementById("connectCodeInput").value.trim().toUpperCase();
+  if (!code) { alert("Please enter the connect code."); return; }
+
+  try {
+    const res = await apiPost("/api/partner/link", {
+      partner_user_id: user.id,
+      connect_code: code
+    });
+    showToast(`Connected with ${res.linked_with}!`);
+    checkPartnerLink();
+  } catch (err) {
+    alert("Could not link: " + err.message);
+  }
+}
+
+async function loadPartnerVibe() {
+  try {
+    const vibe = await apiGet(`/api/partner/view/${user.id}`);
+    linkedSelfUserId = vibe.self_user_id;
+
+    // Phase Pill & Icon
+    const pill = document.getElementById("herPhasePill");
+    pill.className = `pill ${vibe.phase}`;
+    pill.innerText = `${vibe.phase} Phase`;
+
+    document.getElementById("herPhaseIcon").innerText = vibe.vibe_icon || "🌸";
+    document.getElementById("herPhaseMainTitle").innerText = `${vibe.phase} Phase`;
+    document.getElementById("herPhaseSubtitle").innerText = vibe.simple_title || vibe.phase_desc;
+    document.getElementById("seasonBadge").innerText = vibe.season_label || "";
+
+    document.getElementById("cycleDayInfo").innerText = vibe.day_in_cycle ? `Day ${vibe.day_in_cycle}` : "";
+    document.getElementById("daysUntilNextPeriod").innerText = vibe.days_until_next != null ? `~${vibe.days_until_next} days until period` : "";
+
+    document.getElementById("herPhasePlainMeaning").innerText = vibe.simple_meaning || vibe.phase_desc;
+    document.getElementById("herVibeSummary").innerText = vibe.her_vibe_summary || (vibe.recent_mood ? `Feeling ${vibe.recent_mood}` : "Resting & Balanced");
+    document.getElementById("careTipText").innerText = vibe.primary_action || vibe.partner_tip;
+
+    // Energy & mood meters
+    const energy = vibe.recent_energy || 3;
+    document.getElementById("energyValText").innerText = `${energy}/5`;
+    document.getElementById("energyMeter").style.width = `${(energy / 5) * 100}%`;
+    document.getElementById("energyDescSub").innerText = energy >= 4 ? "High Stamina & Vitality" : (energy <= 2 ? "Low Battery / Needs Rest" : "Moderate & Steady");
+
+    document.getElementById("moodValText").innerText = vibe.recent_mood || "Balanced";
+
+    // AI Companion Care Briefing
+    if (vibe.chat_summary) {
+      const bs = vibe.chat_summary;
+      document.getElementById("briefingTonePill").innerText = bs.tone || "Peaceful";
+      document.getElementById("briefingSummaryText").innerText = bs.summary || "All is peaceful today.";
+      document.getElementById("briefingActionNudge").innerText = bs.action_nudge || "Send a gentle check-in note.";
+      if (bs.recommended_action) {
+        currentRecommendedAction = bs.recommended_action;
+      }
+      if (bs.action_label) {
+        document.getElementById("briefingActionBtn").innerText = bs.action_label;
+      }
+    }
+
+    updatePlaybook(vibe.phase);
+  } catch (e) {
+    console.error(e);
+  }
+}
+
+async function triggerBriefingAction() {
+  if (!currentRecommendedAction) {
+    currentRecommendedAction = "sweet_treat";
+  }
+  await sendCare(currentRecommendedAction);
+}
+
+function updatePlaybook(phase) {
+  const dos = document.getElementById("dosList");
+  const donts = document.getElementById("dontsList");
+
+  if (phase === "Menstrual") {
+    dos.innerHTML = `
+      <li><b>Bring warmth:</b> Offer a hot water bottle or heating pad without waiting to be asked.</li>
+      <li><b>Handle chores:</b> Take care of dinner and cleaning so she can rest peacefully.</li>
+      <li><b>Comfort snacks:</b> Have magnesium-rich dark chocolate or herbal tea handy.</li>
+    `;
+    donts.innerHTML = `
+      <li><b>Don't plan heavy outings:</b> Avoid high-exertion workouts or late-night social commitments.</li>
+      <li><b>Don't rush her:</b> Her body is actively shedding lining—let her set the pace.</li>
+    `;
+  } else if (phase === "Follicular") {
+    dos.innerHTML = `
+      <li><b>Plan fun outings:</b> Schedule outdoor walks, dates, or explore new activities together.</li>
+      <li><b>Brainstorm together:</b> Her mental clarity and creativity are surging—listen to her ideas!</li>
+      <li><b>Match her enthusiasm:</b> Celebrate her optimism and renewed motivation.</li>
+    `;
+    donts.innerHTML = `
+      <li><b>Don't hold back:</b> She has high stamina right now, so feel free to tackle shared goals.</li>
+    `;
+  } else if (phase === "Ovulation") {
+    dos.innerHTML = `
+      <li><b>Connect deeply:</b> Enjoy rich conversations—she loves expressing herself right now.</li>
+      <li><b>Compliment her:</b> Acknowledge her vibrant glow and positive magnetism.</li>
+      <li><b>Spend quality time:</b> Plan a special date night or romantic evening.</li>
+    `;
+    donts.innerHTML = `
+      <li><b>Don't be distracted:</b> Give her your full presence and active listening.</li>
+      <li><b>Be mindful:</b> Keep shared family planning goals in mind (peak fertility window).</li>
+    `;
+  } else { // Luteal
+    dos.innerHTML = `
+      <li><b>Be extra patient:</b> Hormones are dropping, which can cause emotional sensitivity.</li>
+      <li><b>Keep comfort snacks near:</b> Her metabolism is burning more calories—bring her favorite treats!</li>
+      <li><b>Give warm hugs:</b> Offer loving physical comfort and a calm, cozy environment.</li>
+    `;
+    donts.innerHTML = `
+      <li><b>Never dismiss her:</b> Never say "Are you just PMSing?"—her feelings are completely real.</li>
+      <li><b>Don't crowd her:</b> If she needs a quiet moment to unwind alone, give her space gently.</li>
+    `;
+  }
+}
+
+async function sendCare(actionType) {
+  if (!linkedSelfUserId) {
+    alert("Partner not loaded yet.");
+    return;
+  }
+  const customMsg = document.getElementById("customCareMsg").value.trim();
+
+  try {
+    await apiPost("/api/partner/care-action", {
+      sender_id: user.id,
+      recipient_id: linkedSelfUserId,
+      action_type: actionType,
+      custom_message: customMsg
+    });
+    document.getElementById("customCareMsg").value = "";
+    showToast("Micro-care token sent to her dashboard! ❤️");
+    loadNotifications();
+  } catch (err) {
+    alert("Error sending care: " + err.message);
   }
 }
 
 async function loadNotifications() {
-  const notes = await apiGet(`/api/notifications/${user.id}`);
-  const list = document.getElementById("notifList");
-  if (!notes.length) {
-    list.innerHTML = `<p style="font-size:13px; opacity:0.6;">No updates yet.</p>`;
-    return;
+  try {
+    const notes = await apiGet(`/api/notifications/${user.id}`);
+    const container = document.getElementById("notificationsList");
+    if (!notes || !notes.length) {
+      container.innerHTML = `<p style="font-size:0.85rem; font-style:italic;">No recent updates.</p>`;
+      return;
+    }
+    container.innerHTML = notes.map(n => `
+      <div style="background: var(--bg-card-subtle); padding: 0.75rem 1rem; border-radius: var(--radius-sm); margin-bottom: 0.5rem; font-size: 0.88rem; border-left: 3px solid var(--terracotta);">
+        <span style="font-size:0.75rem; color:var(--text-muted); display:block; margin-bottom:2px;">${n.created_at}</span>
+        ${n.message}
+      </div>
+    `).join("");
+  } catch (e) {
+    console.error(e);
   }
-  list.innerHTML = notes.map(n =>
-    `<div class="notif">${n.message}<br><span style="font-size:11px; opacity:0.55;">${new Date(n.created_at).toLocaleString()}</span></div>`
-  ).join("");
 }
 </script>
 </body>

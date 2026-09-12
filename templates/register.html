@@ -1,48 +1,97 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Register</title>
-<link rel="stylesheet" href="/static/style.css">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Create Your Space — Cycle Care</title>
+  <link rel="stylesheet" href="/static/style.css">
+  <link rel="manifest" href="/static/manifest.json">
+  <meta name="theme-color" content="#CE6B4E">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="Cycle Care">
+  <link rel="apple-touch-icon" href="/static/icons/apple-touch-icon.png">
+  <link rel="icon" type="image/png" href="/static/icons/favicon.png">
+  <style>
+    .auth-card {
+      max-width: 440px;
+      margin: 3rem auto;
+    }
+  </style>
 </head>
 <body>
-<div class="container">
-  <h1>Create your account</h1>
-  <label>Name</label>
-  <input type="text" id="name">
-  <label>Email</label>
-  <input type="email" id="email">
-  <label>Password</label>
-  <input type="password" id="password">
-  <label>I am registering as</label>
-  <select id="role">
-    <option value="self">Myself (tracking my cycle)</option>
-    <option value="partner">A partner (supporting someone)</option>
-  </select>
-  <button onclick="doRegister()">Create account</button>
-  <div class="error" id="err"></div>
-  <p style="margin-top:16px; font-size:13px;">
-    Already have an account? <a class="top-link" href="/login">Log in</a>
-  </p>
+<div class="app-shell">
+  <div class="card auth-card">
+    <div style="text-align: center; margin-bottom: 1.5rem;">
+      <span class="pill Follicular" style="margin-bottom: 0.5rem;">Private & Secure</span>
+      <h2>Create an Account</h2>
+      <p>Begin your mindful wellness journey</p>
+    </div>
+
+    <div id="errorBox" class="result-box flag" style="display:none; margin-bottom: 1rem;"></div>
+
+    <form id="regForm" onsubmit="handleRegister(event)">
+      <label for="name">Your Name</label>
+      <input type="text" id="name" required placeholder="e.g. Maya">
+
+      <label for="email">Email Address</label>
+      <input type="email" id="email" required placeholder="you@domain.com">
+
+      <label for="password">Password</label>
+      <input type="password" id="password" required minlength="6" placeholder="At least 6 characters">
+
+      <label for="role">Your Role</label>
+      <select id="role">
+        <option value="self">I am tracking my own cycle (Self)</option>
+        <option value="partner">I am supporting my partner (Partner)</option>
+      </select>
+
+      <button type="submit" id="submitBtn" style="width: 100%; margin-top: 1.25rem;">Create Account</button>
+    </form>
+
+    <div style="text-align: center; margin-top: 1.5rem; border-top: 1px solid var(--border); padding-top: 1.25rem;">
+      <p style="font-size: 0.88rem;">Already have an account? <a href="/login" style="color: var(--terracotta); font-weight: 600; text-decoration: none;">Log in</a></p>
+    </div>
+  </div>
 </div>
+
 <script src="/static/app.js"></script>
 <script>
-async function doRegister() {
-  const body = {
-    name: document.getElementById("name").value,
-    email: document.getElementById("email").value,
-    password: document.getElementById("password").value,
-    role: document.getElementById("role").value,
-  };
-  try {
-    const user = await apiPost("/api/register", body);
-    setUser(user);
-    window.location.href = user.role === "self" ? "/dashboard" : "/partner";
-  } catch (e) {
-    document.getElementById("err").innerText = e.message;
+  const urlParams = new URLSearchParams(window.location.search);
+  const roleParam = urlParams.get("role");
+  if (roleParam === "partner") {
+    document.getElementById("role").value = "partner";
   }
-}
+
+  async function handleRegister(e) {
+    e.preventDefault();
+    const btn = document.getElementById("submitBtn");
+    const errBox = document.getElementById("errorBox");
+    errBox.style.display = "none";
+    btn.disabled = true;
+    btn.innerText = "Creating account...";
+
+    const payload = {
+      name: document.getElementById("name").value.trim(),
+      email: document.getElementById("email").value.trim(),
+      password: document.getElementById("password").value,
+      role: document.getElementById("role").value
+    };
+
+    try {
+      const user = await apiPost("/api/register", payload);
+      setUser(user);
+      showToast("Account created successfully!");
+      setTimeout(() => {
+        window.location.href = user.role === "partner" ? "/partner" : "/dashboard";
+      }, 500);
+    } catch (err) {
+      errBox.innerText = err.message || "Registration failed. Please try again.";
+      errBox.style.display = "block";
+      btn.disabled = false;
+      btn.innerText = "Create Account";
+    }
+  }
 </script>
 </body>
 </html>

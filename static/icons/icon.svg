@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <rect width="512" height="512" rx="110" fill="#FAF6F2"/>
+  <circle cx="256" cy="256" r="210" fill="#CE6B4E"/>
+  <circle cx="256" cy="256" r="170" fill="#FDF1EB"/>
+  <!-- Center Crescent & Star Motif -->
+  <path d="M 256 156 A 100 100 0 1 0 356 256 A 85 85 0 1 1 256 156 Z" fill="#341D2C"/>
+  <circle cx="320" cy="190" r="18" fill="#DF9B38"/>
+</svg>

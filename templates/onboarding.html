@@ -1,24 +1,127 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Cycle Care</title>
-<link rel="stylesheet" href="/static/style.css">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cycle Care & Partner Connect — Pure Wellness</title>
+  <link rel="stylesheet" href="/static/style.css">
+  <link rel="manifest" href="/static/manifest.json">
+  <meta name="theme-color" content="#CE6B4E">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="Cycle Care">
+  <link rel="apple-touch-icon" href="/static/icons/apple-touch-icon.png">
+  <link rel="icon" type="image/png" href="/static/icons/favicon.png">
+  <style>
+    .hero-box {
+      text-align: center;
+      padding: 3.5rem 1rem 2.5rem 1rem;
+    }
+    .hero-subtitle {
+      font-size: 1.15rem;
+      max-width: 580px;
+      margin: 0.75rem auto 2.5rem auto;
+      color: var(--text-muted);
+    }
+    .role-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.5rem;
+      max-width: 720px;
+      margin: 0 auto;
+      text-align: left;
+    }
+    @media (max-width: 640px) {
+      .role-grid { grid-template-columns: 1fr; }
+    }
+    .role-card {
+      background: var(--bg-card);
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 2rem;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      transition: all 0.25s ease;
+      cursor: pointer;
+      text-decoration: none;
+      color: inherit;
+    }
+    .role-card:hover {
+      border-color: var(--terracotta);
+      transform: translateY(-4px);
+      box-shadow: var(--shadow-lg);
+    }
+    .role-icon {
+      font-size: 2.5rem;
+      margin-bottom: 1rem;
+      display: inline-block;
+    }
+    .feature-list {
+      margin: 1rem 0 1.5rem 0;
+      list-style: none;
+      font-size: 0.88rem;
+      color: var(--text-muted);
+    }
+    .feature-list li {
+      margin-bottom: 0.45rem;
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+  </style>
 </head>
 <body>
-  <div class="container" style="text-align:center; margin-top: 90px;">
-    <div class="hero-shape"></div>
-    <h1>You're taken care of here.</h1>
-    <p style="margin-top:14px; opacity:0.8;">
-      A quiet space to track how you feel, understand your cycle, and let someone
-      who cares about you stay gently informed — without you having to explain
-      everything yourself.
+<div class="app-shell">
+  <div class="hero-box">
+    <span class="pill Follicular" style="margin-bottom: 1rem;">Privacy-First • Zero Ad-Tracking</span>
+    <h1>Cycle Care & Partner Connect</h1>
+    <p class="hero-subtitle">
+      A calm, scientifically grounded space for your body's natural biorhythm, paired with an empathetic bridge for your partner.
     </p>
-    <a class="btn" style="display:inline-block; text-decoration:none; margin-top:22px;" href="/register">Let's begin</a>
-    <p style="margin-top:18px; font-size:13px;">
-      Already have an account? <a class="top-link" href="/login">Log in</a>
-    </p>
+
+    <div class="role-grid">
+      <!-- Self Card -->
+      <a href="/register?role=self" class="role-card">
+        <div>
+          <span class="role-icon">🌸</span>
+          <h2>For You</h2>
+          <p>Track your hormonal rhythm with peace of mind and complete data privacy.</p>
+          <ul class="feature-list">
+            <li>✨ Dynamic Hormone Wave & phase advice</li>
+            <li>🌿 Multi-mode empathetic AI companion</li>
+            <li>🛡️ Discreet Panic Shield mode (Esc)</li>
+            <li>🔒 100% private journal & zero ad tracking</li>
+          </ul>
+        </div>
+        <div class="btn" style="width: 100%; margin-top: 1rem;">Track My Cycle &rarr;</div>
+      </a>
+
+      <!-- Partner Card -->
+      <a href="/register?role=partner" class="role-card">
+        <div>
+          <span class="role-icon">🤝</span>
+          <h2>For Your Partner</h2>
+          <p>Learn how to support her with thoughtful care without intrusive surveillance.</p>
+          <ul class="feature-list">
+            <li>💡 Real-time Vibe Gauge & energy forecasts</li>
+            <li>🍵 Send Micro-Care (tea, heat packs, hugs)</li>
+            <li>📖 Science-backed Do's & Don'ts per phase</li>
+            <li>🔐 Zero access to private chats or journals</li>
+          </ul>
+        </div>
+        <div class="btn btn-secondary" style="width: 100%; margin-top: 1rem;">Support My Partner &rarr;</div>
+      </a>
+    </div>
+
+    <div style="margin-top: 2.5rem;">
+      <p style="font-size: 0.9rem;">
+        Already have an account? <a href="/login" style="color: var(--terracotta); font-weight: 600; text-decoration: none;">Log in here</a>
+      </p>
+    </div>
   </div>
+</div>
+
+<script src="/static/app.js"></script>
 </body>
 </html>
