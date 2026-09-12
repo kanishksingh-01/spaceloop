@@ -1,7 +1,22 @@
-<div class="topnav">
-  <div class="wordmark">Cycle Care</div>
-  <div class="navlinks">
-    <a href="/partner" class="{{ 'active' if active_tab == 'home' else '' }}">Home</a>
-    <a href="/settings" class="{{ 'active' if active_tab == 'settings' else '' }}">Settings</a>
+<header class="app-nav">
+  <a href="/partner" class="nav-brand">
+    <span>Cycle Care</span>
+    <span class="brand-badge" style="background: var(--aubergine);">Partner</span>
+  </a>
+  <nav class="nav-links">
+    <a href="/partner" class="{% if active_tab == 'partner' %}active{% endif %}">Partner Hub</a>
+    <a href="/settings" class="{% if active_tab == 'settings' %}active{% endif %}">Settings</a>
+  </nav>
+  <div class="nav-actions">
+    <button class="btn-theme-toggle" onclick="toggleTheme()" title="Toggle Dark / Light Mode">
+      <span class="theme-icon">🌙</span>
+    </button>
+    <button class="btn-install-pwa" onclick="promptInstallApp()" title="Install Cycle Care as an application">
+      📲 <span class="hide-mobile">Install</span>
+    </button>
+    <button class="btn-panic-shield" onclick="togglePanicShield()" title="Instantly hide screen (Esc)">
+      🛡️ <span class="hide-mobile">Discreet</span>
+    </button>
+    <button class="btn btn-secondary btn-sm" onclick="logout()" style="margin-top:0;">Exit</button>
   </div>
-</div>
+</header>

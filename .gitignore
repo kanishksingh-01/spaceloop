@@ -1,6 +1,10 @@
 __pycache__/
-*.pyc
-app.db
-.env
+*.py[cod]
+*$py.class
+.venv/
+env/
 venv/
-.vscode/
+app.db
+*.db
+.DS_Store
+.env

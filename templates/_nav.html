@@ -1,9 +1,24 @@
-<div class="topnav">
-  <div class="wordmark">Cycle Care</div>
-  <div class="navlinks">
-    <a href="/dashboard" class="{{ 'active' if active_tab == 'home' else '' }}">Home</a>
-    <a href="/chat" class="{{ 'active' if active_tab == 'chat' else '' }}">Chat</a>
-    <a href="/insights" class="{{ 'active' if active_tab == 'insights' else '' }}">Insights</a>
-    <a href="/settings" class="{{ 'active' if active_tab == 'settings' else '' }}">Settings</a>
+<header class="app-nav">
+  <a href="/dashboard" class="nav-brand">
+    <span>Cycle Care</span>
+    <span class="brand-badge">Self</span>
+  </a>
+  <nav class="nav-links">
+    <a href="/dashboard" class="{% if active_tab == 'home' %}active{% endif %}">Space</a>
+    <a href="/chat" class="{% if active_tab == 'chat' %}active{% endif %}">Companion</a>
+    <a href="/insights" class="{% if active_tab == 'insights' %}active{% endif %}">Insights</a>
+    <a href="/settings" class="{% if active_tab == 'settings' %}active{% endif %}">Settings</a>
+  </nav>
+  <div class="nav-actions">
+    <button class="btn-theme-toggle" onclick="toggleTheme()" title="Toggle Dark / Light Mode">
+      <span class="theme-icon">🌙</span>
+    </button>
+    <button class="btn-install-pwa" onclick="promptInstallApp()" title="Install Cycle Care as an application">
+      📲 <span class="hide-mobile">Install</span>
+    </button>
+    <button class="btn-panic-shield" onclick="togglePanicShield()" title="Instantly hide screen (Esc)">
+      🛡️ <span class="hide-mobile">Discreet</span>
+    </button>
+    <button class="btn btn-secondary btn-sm" onclick="logout()" style="margin-top:0;">Exit</button>
   </div>
-</div>
+</header>

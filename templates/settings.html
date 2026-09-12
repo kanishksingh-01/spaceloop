@@ -1,53 +1,211 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Settings</title>
-<link rel="stylesheet" href="/static/style.css">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Settings &amp; Privacy Vault — Cycle Care</title>
+  <link rel="stylesheet" href="/static/style.css">
+  <link rel="manifest" href="/static/manifest.json">
+  <meta name="theme-color" content="#CE6B4E">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="Cycle Care">
+  <link rel="apple-touch-icon" href="/static/icons/apple-touch-icon.png">
+  <link rel="icon" type="image/png" href="/static/icons/favicon.png">
 </head>
 <body>
 <div class="app-shell">
-  {% include "_nav.html" %}
-  <div class="app-body">
-    <h1>Settings</h1>
-    <div class="section">
-      <h2>Profile</h2>
-      <div class="card">
-        <p><b id="pName"></b></p>
-        <p style="opacity:0.7; font-size:13.5px;" id="pEmail"></p>
+  <div id="navContainer">
+    {% include "_nav.html" %}
+  </div>
+
+  <div style="margin-bottom: 1.5rem;">
+    <h1>Settings &amp; Preferences</h1>
+    <p>Personalize your experience, companion, and privacy controls.</p>
+  </div>
+
+  <!-- 1. THEME & APPEARANCE (DARK / LIGHT MODE) -->
+  <div class="card">
+    <div style="display: flex; justify-content: space-between; align-items: center;">
+      <div>
+        <h3>Appearance &amp; Theme</h3>
+        <p style="font-size: 0.88rem; margin-top: 0.2rem;">
+          Choose between Warm Ivory (Light) or Midnight Aubergine (Dark).
+        </p>
       </div>
+      <button class="btn btn-secondary btn-sm" onclick="toggleTheme()" style="margin:0; display:inline-flex; align-items:center; gap:6px;">
+        <span class="theme-icon">🌙</span> <span id="themeToggleText">Switch Theme</span>
+      </button>
     </div>
-    <div class="section" id="codeSection">
-      <h2>Connect code</h2>
-      <p style="font-size:13px; opacity:0.7;">Share this with your partner so they can follow your cycle.</p>
-      <div class="code-box" id="connectCode">----</div>
-      <button class="secondary" onclick="regenerateCode()">Generate a new code</button>
+  </div>
+
+  <!-- 2. AI COMPANION CUSTOMIZATION (CHANGE NAME) -->
+  <div class="card">
+    <h3>AI Companion Customization</h3>
+    <p style="font-size: 0.88rem; margin-bottom: 0.75rem;">
+      Choose a name for your supportive AI companion (e.g. <b>Aura</b>, <b>Luna</b>, <b>Maya</b>, <b>Sage</b>).
+    </p>
+    <div style="display: flex; gap: 0.6rem; max-width: 440px;">
+      <input type="text" id="companionNameInput" placeholder="Enter companion name" style="flex:1;">
+      <button class="btn btn-sm" onclick="saveCompanionName()" style="margin:0; white-space:nowrap;">Save Name</button>
     </div>
-    <div class="section">
-      <button class="secondary" onclick="logout()">Log out</button>
+  </div>
+
+  <!-- 3. CONNECT CODE (FOR SELF USERS) -->
+  <div class="card" id="codeSection" style="display:none;">
+    <h3>Partner Connect Code</h3>
+    <p style="font-size: 0.88rem; margin-bottom: 0.5rem;">
+      Share this code with your partner to grant them access to your real-time Vibe Gauge and derived phase care tips.
+    </p>
+    <div class="code-box" id="connectCodeBox">CARE-XXXX</div>
+    <div style="display: flex; gap: 0.5rem; margin-top: 0.75rem;">
+      <button class="btn btn-secondary btn-sm" onclick="copyCode()">Copy Code</button>
+      <button class="btn btn-secondary btn-sm" onclick="regenerateCode()">Regenerate New Code</button>
     </div>
+  </div>
+
+  <!-- 4. PARTNER LINK STATUS -->
+  <div class="card">
+    <h3>Partner Link Status</h3>
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 0.5rem;">
+      <div>
+        <p id="partnerLinkText" style="margin:0; font-weight:600; color:var(--aubergine);">Checking status...</p>
+        <span id="partnerDetailSub" style="font-size:0.8rem; color:var(--text-muted);">Derived care tips and vibe alerts</span>
+      </div>
+      <button id="unlinkBtn" class="btn btn-secondary btn-sm" onclick="unlinkPartner()" style="display:none; margin:0;">Disconnect</button>
+    </div>
+  </div>
+
+  <!-- 5. DISCREET PANIC SHIELD GUIDANCE -->
+  <div class="card">
+    <div style="display: flex; justify-content: space-between; align-items: center;">
+      <div>
+        <h3>Discreet Panic Shield</h3>
+        <p style="font-size: 0.88rem; margin-top: 0.2rem;">
+          Press the <kbd style="background:var(--bg-card-subtle); padding:2px 6px; border-radius:4px; font-weight:bold; border:1px solid var(--border);">Esc</kbd> key or the <b>🛡️ Discreet</b> button anytime to instantly disguise the screen into innocent lecture notes.
+        </p>
+      </div>
+      <button class="btn btn-secondary btn-sm" onclick="togglePanicShield()" style="margin:0;">Preview Shield</button>
+    </div>
+  </div>
+
+  <!-- 6. DATA SOVEREIGNTY VAULT -->
+  <div class="card" style="border-color: #F8CBBC;">
+    <h3 style="color: #9B1C1C;">Data Sovereignty Vault</h3>
+    <p style="font-size: 0.88rem; margin-top: 0.25rem;">
+      Cycle Care does not sell data to ad networks or third-party trackers. You hold 100% data sovereignty.
+    </p>
+    <button class="btn btn-sm" style="background:#9B1C1C; margin-top: 1rem;" onclick="wipeAllData()">
+      Permanently Erase All Health Records
+    </button>
+  </div>
+
+  <div style="margin-top: 2rem; text-align: center;">
+    <button class="btn btn-secondary" onclick="logout()">Sign Out of Cycle Care</button>
   </div>
 </div>
 
 <script src="/static/app.js"></script>
 <script>
-const user = requireUser();
-if (user) {
-  document.getElementById("pName").innerText = user.name;
-  document.getElementById("pEmail").innerText = user.email;
-  if (user.role === "self") {
-    document.getElementById("connectCode").innerText = user.connect_code || "----";
-  } else {
-    document.getElementById("codeSection").style.display = "none";
+const user = getUser();
+if (!user) {
+  window.location.href = "/login";
+}
+
+// Adjust navigation for partner role
+if (user.role === "partner") {
+  const brand = document.querySelector(".nav-brand .brand-badge");
+  if (brand) {
+    brand.innerText = "Partner";
+    brand.style.background = "var(--aubergine)";
+  }
+  const spaceLink = document.querySelector(".nav-links a[href='/dashboard']");
+  if (spaceLink) {
+    spaceLink.href = "/partner";
+    spaceLink.innerText = "Partner Hub";
+  }
+} else {
+  document.getElementById("codeSection").style.display = "block";
+  document.getElementById("connectCodeBox").innerText = user.connect_code || "CARE-XXXX";
+}
+
+// Initialize Companion Name Input
+const currentCompanionName = getCompanionName();
+document.getElementById("companionNameInput").value = currentCompanionName;
+
+function saveCompanionName() {
+  const input = document.getElementById("companionNameInput");
+  const newName = setCompanionName(input.value);
+  input.value = newName;
+}
+
+loadLinkStatus();
+
+async function loadLinkStatus() {
+  try {
+    const res = await apiGet(`/api/partner/status/${user.id}`);
+    const text = document.getElementById("partnerLinkText");
+    const sub = document.getElementById("partnerDetailSub");
+    const unlinkBtn = document.getElementById("unlinkBtn");
+
+    if (res.is_linked) {
+      text.innerText = `Currently linked with ${res.partner_name}`;
+      sub.innerText = "Sharing privacy-safe phase alerts and care tokens.";
+      unlinkBtn.style.display = "inline-flex";
+    } else {
+      text.innerText = "No partner linked currently.";
+      sub.innerText = user.role === "self" ? "Share your connect code above to link." : "Enter a code on the Partner Hub to link.";
+      unlinkBtn.style.display = "none";
+    }
+  } catch (e) {
+    console.error(e);
   }
 }
 
+async function unlinkPartner() {
+  if (!confirm("Are you sure you want to disconnect from your partner?")) return;
+  try {
+    await apiPost("/api/partner/unlink", { user_id: user.id });
+    showToast("Partner disconnected.");
+    loadLinkStatus();
+  } catch (err) {
+    alert("Error disconnecting: " + err.message);
+  }
+}
+
+function copyCode() {
+  const code = document.getElementById("connectCodeBox").innerText;
+  navigator.clipboard.writeText(code);
+  showToast("Connect code copied to clipboard!");
+}
+
 async function regenerateCode() {
-  const result = await apiPost("/api/user/regenerate_code", { user_id: user.id });
-  document.getElementById("connectCode").innerText = result.connect_code;
-  user.connect_code = result.connect_code;
-  setUser(user);
+  if (!confirm("Regenerating your code will invalidate your previous code. Continue?")) return;
+  try {
+    const res = await apiPost("/api/user/regenerate_code", { user_id: user.id });
+    document.getElementById("connectCodeBox").innerText = res.connect_code;
+    user.connect_code = res.connect_code;
+    setUser(user);
+    showToast("New connect code generated!");
+  } catch (err) {
+    alert("Error: " + err.message);
+  }
+}
+
+async function wipeAllData() {
+  const answer = prompt("Type 'DELETE' to confirm permanent purge of all cycle, daily, chat, and journal data:");
+  if (answer !== "DELETE") {
+    alert("Action cancelled.");
+    return;
+  }
+
+  try {
+    const res = await apiPost("/api/user/wipe-data", { user_id: user.id });
+    alert(res.message);
+    window.location.href = "/dashboard";
+  } catch (err) {
+    alert("Error purging data: " + err.message);
+  }
 }
 </script>
 </body>
