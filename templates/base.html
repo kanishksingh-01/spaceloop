@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}SpaceLoop | AI-Powered Temporary Spaces{% endblock %}</title>
+  
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              50: '#eef2ff',
+              100: '#e0e7ff',
+              500: '#6366f1',
+              600: '#4f46e5',
+              700: '#4338ca',
+              800: '#3730a3',
+              900: '#312e81',
+            },
+            accent: {
+              emerald: '#10b981',
+              amber: '#f59e0b',
+              violet: '#8b5cf6'
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col antialiased selection:bg-brand-500 selection:text-white">
+
+  <!-- Main Navigation Bar -->
+  <header class="sticky top-0 z-40 backdrop-blur-md bg-slate-950/80 border-b border-slate-800/80">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+      
+      <!-- Brand Logo -->
+      <a href="{{ url_for('index') }}" class="flex items-center gap-2.5 group">
+        <div class="w-9 h-9 rounded-xl bg-gradient-to-tr from-brand-600 via-violet-600 to-indigo-400 flex items-center justify-center shadow-lg shadow-indigo-500/25 group-hover:scale-105 transition duration-200">
+          <i class="fa-solid fa-infinity text-white text-lg"></i>
+        </div>
+        <div>
+          <span class="text-xl font-bold tracking-tight text-white flex items-center gap-1.5">
+            Space<span class="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-violet-400">Loop</span>
+            <span class="text-[10px] uppercase font-semibold tracking-wider px-1.5 py-0.5 rounded bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">AI</span>
+          </span>
+        </div>
+      </a>
+
+      <!-- Center Nav Links -->
+      <nav class="hidden md:flex items-center gap-1 text-sm font-medium text-slate-300">
+        <a href="{{ url_for('index') }}" class="px-3.5 py-2 rounded-lg hover:text-white hover:bg-slate-800/60 transition">
+          <i class="fa-solid fa-compass mr-1.5 text-slate-400"></i> Explore Spaces
+        </a>
+        <a href="{{ url_for('list_space_page') }}" class="px-3.5 py-2 rounded-lg hover:text-white hover:bg-slate-800/60 transition flex items-center gap-1.5">
+          <i class="fa-solid fa-wand-magic-sparkles text-indigo-400"></i> List with AI
+        </a>
+        <a href="{{ url_for('calculator_page') }}" class="px-3.5 py-2 rounded-lg hover:text-white hover:bg-slate-800/60 transition">
+          <i class="fa-solid fa-calculator mr-1.5 text-slate-400"></i> Earnings Calculator
+        </a>
+        <a href="{{ url_for('dashboard_page') }}" class="px-3.5 py-2 rounded-lg hover:text-white hover:bg-slate-800/60 transition">
+          <i class="fa-solid fa-layer-group mr-1.5 text-slate-400"></i> My Dashboard
+        </a>
+        <a href="{{ url_for('verify_page') }}" class="px-3.5 py-2 rounded-lg hover:text-white hover:bg-slate-800/60 transition flex items-center gap-1.5">
+          <i class="fa-solid fa-shield-halved text-emerald-400"></i> Verification
+          {% if current_user and (current_user.is_student_verified or current_user.is_host_verified) %}
+          <span class="w-1.5 h-1.5 rounded-full bg-emerald-400" title="Identity Verified"></span>
+          {% else %}
+          <span class="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" title="KYC Pending"></span>
+          {% endif %}
+        </a>
+        <a href="{{ url_for('how_it_works') }}" class="px-3.5 py-2 rounded-lg hover:text-white hover:bg-slate-800/60 transition">
+          <i class="fa-regular fa-lightbulb mr-1.5 text-slate-400"></i> How It Works
+        </a>
+      </nav>
+
+      <!-- Right Action Controls -->
+      <div class="flex items-center gap-3">
+        <!-- Quick Switch Demo Persona -->
+        <div class="hidden sm:flex items-center bg-slate-900 border border-slate-800 rounded-lg p-1 text-xs">
+          <span class="text-slate-400 px-2 flex items-center gap-1.5">
+            <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+            Demo as:
+          </span>
+          <form method="POST" action="{{ url_for('switch_user', user_id=3) }}" class="inline">
+            <button type="submit" class="px-2.5 py-1 rounded font-medium {% if current_user and current_user.role == 'seeker' %}bg-indigo-600 text-white{% else %}text-slate-400 hover:text-white{% endif %}">
+              Student
+            </button>
+          </form>
+          <form method="POST" action="{{ url_for('switch_user', user_id=1) }}" class="inline">
+            <button type="submit" class="px-2.5 py-1 rounded font-medium {% if current_user and current_user.role == 'owner' %}bg-indigo-600 text-white{% else %}text-slate-400 hover:text-white{% endif %}">
+              Host
+            </button>
+          </form>
+        </div>
+
+        <a href="{{ url_for('list_space_page') }}" class="hidden lg:inline-flex items-center gap-2 bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white font-medium text-xs sm:text-sm px-4 py-2 rounded-lg shadow-md shadow-indigo-600/20 transition">
+          <i class="fa-solid fa-plus"></i> List Space
+        </a>
+      </div>
+
+    </div>
+  </header>
+
+  <!-- Main Content Area -->
+  <main class="flex-grow pb-20 md:pb-0">
+    {% block content %}{% endblock %}
+  </main>
+
+  <!-- Mobile App Bottom Navigation Bar -->
+  <nav class="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-slate-950/95 backdrop-blur-lg border-t border-slate-800/80 px-2 py-2 flex items-center justify-around text-[10px] font-medium text-slate-400">
+    <a href="{{ url_for('index') }}" class="flex flex-col items-center gap-1 hover:text-indigo-400 {% if request.endpoint == 'index' %}text-indigo-400{% endif %}">
+      <i class="fa-solid fa-compass text-base"></i>
+      <span>Explore</span>
+    </a>
+    <a href="{{ url_for('verify_page') }}" class="flex flex-col items-center gap-1 hover:text-emerald-400 {% if request.endpoint == 'verify_page' %}text-emerald-400{% endif %}">
+      <i class="fa-solid fa-shield-halved text-base"></i>
+      <span>KYC Hub</span>
+    </a>
+    <a href="{{ url_for('list_space_page') }}" class="flex flex-col items-center gap-1 text-white">
+      <div class="w-8 h-8 rounded-full bg-gradient-to-r from-indigo-600 to-violet-600 flex items-center justify-center -mt-3 shadow-lg shadow-indigo-600/40">
+        <i class="fa-solid fa-plus text-xs"></i>
+      </div>
+      <span>List</span>
+    </a>
+    <a href="{{ url_for('dashboard_page') }}" class="flex flex-col items-center gap-1 hover:text-indigo-400 {% if request.endpoint == 'dashboard_page' %}text-indigo-400{% endif %}">
+      <i class="fa-solid fa-layer-group text-base"></i>
+      <span>Dashboard</span>
+    </a>
+    <a href="{{ url_for('calculator_page') }}" class="flex flex-col items-center gap-1 hover:text-indigo-400 {% if request.endpoint == 'calculator_page' %}text-indigo-400{% endif %}">
+      <i class="fa-solid fa-calculator text-base"></i>
+      <span>Earnings</span>
+    </a>
+  </nav>
+
+  <!-- Floating LoopBot Concierge Launcher -->
+  <div class="fixed bottom-20 md:bottom-6 right-4 sm:right-6 z-40">
+    <button id="openConciergeBtn" class="flex items-center gap-2.5 bg-gradient-to-r from-indigo-600 via-violet-600 to-indigo-700 text-white px-3.5 py-2.5 sm:px-4 sm:py-3 rounded-full shadow-2xl shadow-indigo-500/30 hover:scale-105 transition-all duration-200 border border-indigo-400/30">
+      <div class="relative">
+        <i class="fa-solid fa-robot text-sm sm:text-base"></i>
+        <span class="absolute -top-1 -right-1 w-2.5 h-2.5 bg-emerald-400 rounded-full border-2 border-slate-900"></span>
+      </div>
+      <span class="text-xs sm:text-sm font-semibold tracking-wide">Ask LoopBot</span>
+    </button>
+  </div>
+
+  <!-- AI Concierge Modal -->
+  <div id="conciergeModal" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 hidden">
+    <div class="bg-slate-900 border border-slate-800 w-full sm:max-w-lg rounded-t-2xl sm:rounded-2xl shadow-2xl flex flex-col h-[560px] max-h-[90vh] overflow-hidden">
+      <!-- Modal Header -->
+      <div class="p-4 bg-slate-950/80 border-b border-slate-800 flex items-center justify-between">
+        <div class="flex items-center gap-3">
+          <div class="w-8 h-8 rounded-lg bg-indigo-600/20 border border-indigo-500/30 flex items-center justify-center text-indigo-400">
+            <i class="fa-solid fa-robot text-sm"></i>
+          </div>
+          <div>
+            <h3 class="text-sm font-semibold text-white">LoopBot AI Concierge</h3>
+            <p class="text-xs text-emerald-400 flex items-center gap-1">
+              <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span> Online & Ready
+            </p>
+          </div>
+        </div>
+        <button id="closeConciergeBtn" class="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800 transition">
+          <i class="fa-solid fa-xmark text-lg"></i>
+        </button>
+      </div>
+
+      <!-- Message History -->
+      <div id="chatMessages" class="flex-grow p-4 overflow-y-auto space-y-3.5 text-sm">
+        <div class="flex gap-2.5">
+          <div class="w-7 h-7 rounded-full bg-indigo-600/30 text-indigo-300 flex items-center justify-center shrink-0 text-xs">
+            <i class="fa-solid fa-robot"></i>
+          </div>
+          <div class="bg-slate-800/90 text-slate-200 p-3 rounded-2xl rounded-tl-sm max-w-[85%] border border-slate-700/50 leading-relaxed">
+            Hi! I'm <strong>LoopBot</strong>, your SpaceLoop AI assistant. Looking for temporary studio, storage, parking, or pop-up space? Or want tips on monetizing your own unused square footage? Ask away!
+          </div>
+        </div>
+      </div>
+
+      <!-- Quick Suggested Chips -->
+      <div class="px-4 py-2 bg-slate-950/50 border-t border-slate-800/60 flex items-center gap-2 overflow-x-auto text-xs whitespace-nowrap scrollbar-none">
+        <button onclick="sendQuickPrompt('How do AI micro-lease agreements protect owners?')" class="px-2.5 py-1 rounded-full bg-slate-800 text-slate-300 hover:text-white hover:bg-slate-700 border border-slate-700">
+          🛡️ Micro-Lease Protections
+        </button>
+        <button onclick="sendQuickPrompt('How much can I earn renting an empty garage?')" class="px-2.5 py-1 rounded-full bg-slate-800 text-slate-300 hover:text-white hover:bg-slate-700 border border-slate-700">
+          💰 Garage Earnings
+        </button>
+        <button onclick="sendQuickPrompt('Find me a podcast studio with natural light')" class="px-2.5 py-1 rounded-full bg-slate-800 text-slate-300 hover:text-white hover:bg-slate-700 border border-slate-700">
+          🎙️ Find Podcast Studio
+        </button>
+      </div>
+
+      <!-- Input Bar -->
+      <form id="chatForm" class="p-3 bg-slate-950 border-t border-slate-800 flex gap-2">
+        <input type="text" id="chatInput" placeholder="Ask about spaces, rules, or earnings..." class="flex-grow bg-slate-900 border border-slate-700/80 rounded-xl px-3.5 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500 transition">
+        <button type="submit" class="bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2.5 rounded-xl font-medium text-sm transition shrink-0 flex items-center justify-center">
+          <i class="fa-solid fa-arrow-up"></i>
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <footer class="bg-slate-950 border-t border-slate-800/80 mt-20 py-12">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="grid grid-cols-1 md:grid-cols-4 gap-8 mb-8">
+        
+        <div class="md:col-span-2 space-y-3">
+          <div class="flex items-center gap-2">
+            <div class="w-7 h-7 rounded-lg bg-indigo-600 flex items-center justify-center text-white text-xs">
+              <i class="fa-solid fa-infinity"></i>
+            </div>
+            <span class="text-lg font-bold text-white">SpaceLoop</span>
+          </div>
+          <p class="text-sm text-slate-400 max-w-sm">
+            The AI-powered platform transforming unused property square footage into useful, affordable, and flexible temporary spaces.
+          </p>
+          <div class="flex items-center gap-2 text-xs text-indigo-400 font-medium">
+            <i class="fa-solid fa-shield-halved"></i> Verified Space Inspector & Automated Micro-Leasing
+          </div>
+        </div>
+
+        <div>
+          <h4 class="text-xs font-semibold uppercase tracking-wider text-slate-300 mb-3">Explore</h4>
+          <ul class="space-y-2 text-sm text-slate-400">
+            <li><a href="{{ url_for('index', category='Studio') }}" class="hover:text-white transition">Creative & Podcast Studios</a></li>
+            <li><a href="{{ url_for('index', category='Storage') }}" class="hover:text-white transition">Garage & Basement Storage</a></li>
+            <li><a href="{{ url_for('index', category='Parking') }}" class="hover:text-white transition">Driveways & EV Parking</a></li>
+            <li><a href="{{ url_for('index', category='Pop-up/Retail') }}" class="hover:text-white transition">Pop-up & Storefronts</a></li>
+          </ul>
+        </div>
+
+        <div>
+          <h4 class="text-xs font-semibold uppercase tracking-wider text-slate-300 mb-3">Host Tools</h4>
+          <ul class="space-y-2 text-sm text-slate-400">
+            <li><a href="{{ url_for('list_space_page') }}" class="hover:text-white transition">AI Space Scanner</a></li>
+            <li><a href="{{ url_for('calculator_page') }}" class="hover:text-white transition">Passive Revenue Calculator</a></li>
+            <li><a href="{{ url_for('how_it_works') }}" class="hover:text-white transition">Safety & Insurance Protocol</a></li>
+            <li><a href="{{ url_for('dashboard_page') }}" class="hover:text-white transition">Host Dashboard</a></li>
+          </ul>
+        </div>
+
+      </div>
+
+      <div class="pt-8 border-t border-slate-900 flex flex-col sm:flex-row items-center justify-between text-xs text-slate-500 gap-4">
+        <p>© 2026 SpaceLoop AI Inc. Built for Hack2Ignite. All rights reserved.</p>
+        <p class="flex items-center gap-4">
+          <span>Powered by Gemini & Groq Multimodal AI</span>
+          <span>•</span>
+          <span>Instant Micro-Lease Protection</span>
+        </p>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Core App Scripts -->
+  <script src="{{ url_for('static', filename='app.js') }}"></script>
+  {% block scripts %}{% endblock %}
+</body>
+</html>

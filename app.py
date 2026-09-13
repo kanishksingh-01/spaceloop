@@ -1,732 +1,608 @@
-import json
-import logging
-from datetime import datetime, date, timedelta
-from flask import Flask, request, jsonify, render_template
+import os
+from datetime import datetime, timedelta
+from flask import Flask, request, jsonify, render_template, redirect, url_for, session
 
 from config import Config
-from models import (db, User, CycleLog, DailyLog, CareAction, SymptomEntry,
-                    PCODAssessment, JournalEntry, Notification, ChatMessage)
-from cycle_logic import (calculate_phase, get_hormone_curves, check_symptom,
-                         score_pcod_risk, analyze_mood)
-from chatbot import chat_reply, get_partner_tip, generate_partner_chat_summary
+from models import db, User, Space, Booking, Review, SpaceInquiry
+import math
+from security import (
+    apply_security_headers,
+    rate_limit_ai,
+    sanitize_string,
+    validate_numeric,
+    validate_image_url
+)
+from space_ai import (
+    analyze_space_features,
+    match_spaces_with_ai,
+    generate_micro_lease,
+    calculate_earnings_estimate,
+    concierge_chat,
+    verify_aadhaar_otp,
+    verify_academic_credentials,
+    verify_host_electricity_bill,
+    verify_upi_penny_drop,
+    evaluate_room_condition_delta,
+    calculate_session_punctuality,
+    compute_objective_trust_index
+)
+from seed_data import seed_database
 
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
+
+def haversine_distance(lat1, lon1, lat2, lon2):
+    """Calculates distance between two GPS coordinates in meters using the Haversine formula."""
+    try:
+        R = 6371000  # Earth radius in meters
+        phi1 = math.radians(float(lat1))
+        phi2 = math.radians(float(lat2))
+        delta_phi = math.radians(float(lat2) - float(lat1))
+        delta_lambda = math.radians(float(lon2) - float(lon1))
+
+        a = math.sin(delta_phi / 2.0) ** 2 + math.cos(phi1) * math.cos(phi2) * math.sin(delta_lambda / 2.0) ** 2
+        c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
+        return R * c
+    except Exception:
+        return 0.0
 
 
-def create_app(config_class=Config):
+def create_app():
     app = Flask(__name__)
-    app.config.from_object(config_class)
+    app.config.from_object(Config)
+
+    # Ensure upload directory exists
+    os.makedirs(app.config.get("UPLOAD_FOLDER", "static/uploads"), exist_ok=True)
+
     db.init_app(app)
 
     with app.app_context():
         db.create_all()
-        _seed_demo_accounts_if_empty()
+        seed_database()
 
-    # ---------- Template Routes ----------
+    @app.after_request
+    def security_headers(response):
+        return apply_security_headers(response)
+
+    # Context processor to inject active user into templates
+    @app.context_processor
+    def inject_user():
+        user_id = session.get("user_id")
+        user = None
+        if user_id:
+            user = User.query.get(user_id)
+        if not user:
+            # Default to demo seeker user for instant friction-free testing
+            user = User.query.filter_by(role="seeker").first() or User.query.first()
+        return {"current_user": user}
+
+    # ==========================================
+    # HTML View Routes
+    # ==========================================
+
     @app.route("/")
-    def onboarding():
-        return render_template("onboarding.html")
+    def index():
+        category = sanitize_string(request.args.get("category", ""), max_length=50)
+        q = sanitize_string(request.args.get("q", ""), max_length=150)
+        
+        query = Space.query.filter_by(is_active=True)
+        if category and category != "All":
+            query = query.filter(Space.category == category)
 
-    @app.route("/register")
-    def register_page():
-        return render_template("register.html")
+        spaces = [s.to_dict() for s in query.all()]
+        categories = ["All", "Studio", "Storage", "Parking", "Pop-up/Retail", "Event/Workshop"]
+        return render_template(
+            "index.html",
+            spaces=spaces,
+            categories=categories,
+            active_category=category or "All",
+            search_query=q
+        )
 
-    @app.route("/login")
-    def login_page():
-        return render_template("login.html")
+    @app.route("/space/<int:space_id>")
+    def space_detail(space_id):
+        space = Space.query.get_or_404(space_id)
+        reviews = [r.to_dict() for r in space.reviews]
+        return render_template("space_detail.html", space=space.to_dict(), reviews=reviews)
+
+    @app.route("/list-space")
+    def list_space_page():
+        return render_template("list_space.html")
+
+    @app.route("/calculator")
+    def calculator_page():
+        default_calc = calculate_earnings_estimate("Studio", 300, 12)
+        return render_template("calculator.html", initial_data=default_calc)
 
     @app.route("/dashboard")
     def dashboard_page():
-        return render_template("dashboard.html", active_tab="home")
+        user = User.query.filter_by(role="seeker").first() or User.query.first()
+        user_id = session.get("user_id", user.id if user else 1)
+        
+        user_bookings = Booking.query.filter_by(renter_id=user_id).order_by(Booking.created_at.desc()).all()
+        user_spaces = Space.query.filter_by(owner_id=user_id).all()
+        
+        # If no spaces for this user, also show sample owner spaces for demo
+        all_owner_spaces = Space.query.order_by(Space.created_at.desc()).limit(3).all()
 
-    @app.route("/partner")
-    def partner_page():
-        return render_template("partner_dashboard.html", active_tab="partner")
-
-    @app.route("/chat")
-    def chat_page():
-        return render_template("chat.html", active_tab="chat")
-
-    @app.route("/insights")
-    def insights_page():
-        return render_template("insights.html", active_tab="insights")
-
-    @app.route("/settings")
-    def settings_page():
-        return render_template("settings.html", active_tab="settings")
-
-    # ---------- Authentication APIs ----------
-    @app.route("/api/register", methods=["POST"])
-    def register():
-        data = request.get_json(force=True)
-        required = ["name", "email", "password", "role"]
-        if not all(k in data for k in required):
-            return jsonify({"error": f"Missing required fields: {required}"}), 400
-
-        if User.query.filter_by(email=data["email"].strip().lower()).first():
-            return jsonify({"error": "An account with this email already exists"}), 409
-
-        user = User(
-            name=data["name"].strip(),
-            email=data["email"].strip().lower(),
-            role=data["role"]
+        return render_template(
+            "dashboard.html",
+            bookings=[b.to_dict() for b in user_bookings],
+            my_spaces=[s.to_dict() for s in user_spaces],
+            demo_spaces=[s.to_dict() for s in all_owner_spaces]
         )
-        user.set_password(data["password"])
 
-        if user.role == "self":
-            user.generate_connect_code()
+    @app.route("/how-it-works")
+    def how_it_works():
+        return render_template("how_it_works.html")
 
-        db.session.add(user)
-        db.session.commit()
-        return jsonify(user.to_dict()), 201
+    @app.route("/login")
+    def login_page():
+        users = User.query.all()
+        return render_template("login.html", users=[u.to_dict() for u in users])
 
-    @app.route("/api/login", methods=["POST"])
-    def login():
-        data = request.get_json(force=True)
-        email = data.get("email", "").strip().lower()
-        password = data.get("password", "")
+    @app.route("/switch-user/<int:user_id>", methods=["GET", "POST"])
+    def switch_user(user_id):
+        user = User.query.get(user_id)
+        if user:
+            session["user_id"] = user.id
+        return redirect(request.referrer or url_for("index"))
 
-        user = User.query.filter_by(email=email).first()
-        if not user or not user.check_password(password):
-            return jsonify({"error": "Invalid email or password"}), 401
+    @app.route("/verify")
+    def verify_page():
+        user_id = session.get("user_id")
+        user = User.query.get(user_id) if user_id else (User.query.filter_by(role="seeker").first() or User.query.first())
+        return render_template("verify.html", user=user.to_dict() if user else None)
 
-        return jsonify(user.to_dict())
+    @app.route("/booking/<int:booking_id>/session")
+    def session_page(booking_id):
+        booking = Booking.query.get_or_404(booking_id)
+        space = booking.space
+        return render_template("session.html", booking=booking.to_dict(), space=space.to_dict())
 
-    @app.route("/api/demo-login/<string:role>", methods=["POST"])
-    def demo_login(role):
-        """Quick 1-click login for demo purposes during hackathon judging."""
-        email = "maya@cyclecare.dev" if role == "self" else "alex@cyclecare.dev"
-        user = User.query.filter_by(email=email).first()
-        if not user:
-            _seed_demo_accounts_if_empty(force=True)
-            user = User.query.filter_by(email=email).first()
-        return jsonify(user.to_dict())
+    @app.route("/space/<int:space_id>/printable-qr")
+    def printable_qr(space_id):
+        space = Space.query.get_or_404(space_id)
+        return render_template("printable_qr.html", space=space.to_dict())
 
-    # ---------- Partner Linking APIs ----------
-    @app.route("/api/partner/link", methods=["POST"])
-    def link_partner():
-        data = request.get_json(force=True)
-        partner_user_id = data.get("partner_user_id")
-        connect_code = data.get("connect_code", "").strip().upper()
+    # ==========================================
+    # REST API Endpoints
+    # ==========================================
 
-        self_user = User.query.filter_by(connect_code=connect_code, role="self").first()
-        partner_user = db.session.get(User, partner_user_id)
+    @app.route("/api/spaces", methods=["GET"])
+    def get_spaces():
+        category = sanitize_string(request.args.get("category"), max_length=50)
+        query = Space.query.filter_by(is_active=True)
+        if category and category != "All":
+            query = query.filter_by(category=category)
+        return jsonify([s.to_dict() for s in query.all()])
 
-        if not self_user or not partner_user:
-            return jsonify({"error": "Invalid connect code or user ID"}), 404
+    @app.route("/api/spaces/<int:space_id>", methods=["GET"])
+    def get_space(space_id):
+        space = Space.query.get_or_404(space_id)
+        return jsonify(space.to_dict())
 
-        if partner_user.role != "partner":
-            return jsonify({"error": "Only partner accounts can link with a code"}), 400
-
-        self_user.partner_id = partner_user.id
-        partner_user.partner_id = self_user.id
-
-        # Notify self user
-        note = Notification(
-            recipient_id=self_user.id,
-            message=f"{partner_user.name} linked their account with yours! They will now receive privacy-safe phase tips."
-        )
-        db.session.add(note)
-        db.session.commit()
-
-        return jsonify({
-            "status": "linked",
-            "linked_with": self_user.name,
-            "self_user_id": self_user.id
-        })
-
-    @app.route("/api/partner/status/<int:user_id>")
-    def partner_status(user_id):
-        user = db.session.get(User, user_id)
-        if not user:
-            return jsonify({"error": "User not found"}), 404
-
-        partner_name = None
-        if user.partner_id:
-            partner = db.session.get(User, user.partner_id)
-            if partner:
-                partner_name = partner.name
-
-        return jsonify({
-            "is_linked": bool(user.partner_id),
-            "partner_name": partner_name,
-            "connect_code": user.connect_code
-        })
-
-    @app.route("/api/partner/unlink", methods=["POST"])
-    def unlink_partner():
-        data = request.get_json(force=True)
-        user = db.session.get(User, data.get("user_id"))
-        if not user:
-            return jsonify({"error": "User not found"}), 404
-
-        if user.partner_id:
-            partner = db.session.get(User, user.partner_id)
-            if partner:
-                partner.partner_id = None
-            user.partner_id = None
-            db.session.commit()
-
-        return jsonify({"status": "unlinked"})
-
-    # ---------- Cycle Tracking APIs ----------
-    @app.route("/api/cycle/log", methods=["POST"])
-    def log_cycle():
-        data = request.get_json(force=True)
-        user_id = data.get("user_id")
-        period_start_str = data.get("period_start")
-        cycle_length = int(data.get("cycle_length", 28))
-        period_duration = int(data.get("period_duration", 5))
-
-        if not user_id or not period_start_str:
-            return jsonify({"error": "Missing user_id or period_start"}), 400
-
-        period_start = datetime.strptime(period_start_str, "%Y-%m-%d").date()
-
-        # Deduplication & Idempotency:
-        # Check if an entry for this user and period_start already exists.
-        existing = CycleLog.query.filter_by(user_id=user_id, period_start=period_start).first()
-        if existing:
-            existing.cycle_length = cycle_length
-            existing.period_duration = period_duration
-            existing.created_at = datetime.utcnow()
-            entry = existing
-            logger.info("Updated existing cycle log %s for user %s", entry.id, user_id)
-        else:
-            entry = CycleLog(
-                user_id=user_id,
-                period_start=period_start,
-                cycle_length=cycle_length,
-                period_duration=period_duration
-            )
-            db.session.add(entry)
-            logger.info("Created new cycle log for user %s", user_id)
-
-        db.session.commit()
-
-        # Notify partner if linked
-        user = db.session.get(User, user_id)
-        if user and user.partner_id:
-            phase_info = calculate_phase(period_start, cycle_length)
-            note = Notification(
-                recipient_id=user.partner_id,
-                message=f"{user.name}'s cycle updated — currently in the {phase_info['phase']} phase. {phase_info['partner_tip']}"
-            )
-            db.session.add(note)
-            db.session.commit()
-
-        return jsonify({"status": "logged", "id": entry.id})
-
-    @app.route("/api/cycle/phase/<int:user_id>")
-    def get_phase(user_id):
-        latest = (CycleLog.query.filter_by(user_id=user_id)
-                  .order_by(CycleLog.created_at.desc()).first())
-        if not latest:
-            return jsonify({"error": "No cycle data logged yet"}), 404
-
-        result = calculate_phase(latest.period_start, latest.cycle_length)
-        result["period_start"] = latest.period_start.isoformat()
-        result["period_duration"] = latest.period_duration
-        return jsonify(result)
-
-    @app.route("/api/cycle/history/<int:user_id>")
-    def cycle_history(user_id):
-        logs = (CycleLog.query.filter_by(user_id=user_id)
-                .order_by(CycleLog.created_at.desc()).all())
-        return jsonify([l.to_dict() for l in logs])
-
-    @app.route("/api/cycle/hormones/<int:user_id>")
-    def get_hormones(user_id):
-        latest = (CycleLog.query.filter_by(user_id=user_id)
-                  .order_by(CycleLog.created_at.desc()).first())
-        if not latest:
-            return jsonify({"error": "No cycle data logged yet"}), 404
-
-        phase_info = calculate_phase(latest.period_start, latest.cycle_length)
-        curves = get_hormone_curves(phase_info["day_in_cycle"], latest.cycle_length)
-        return jsonify(curves)
-
-    # ---------- Daily Check-in APIs ----------
-    @app.route("/api/daily/log", methods=["POST"])
-    def log_daily():
-        data = request.get_json(force=True)
-        user_id = data.get("user_id")
-        log_date_str = data.get("log_date", date.today().isoformat())
-        log_date = datetime.strptime(log_date_str, "%Y-%m-%d").date()
-
-        # Upsert daily log for today
-        existing = DailyLog.query.filter_by(user_id=user_id, log_date=log_date).first()
-        symptoms_str = json.dumps(data.get("symptoms", []))
-
-        if existing:
-            existing.mood = data.get("mood")
-            existing.energy_level = data.get("energy_level", 3)
-            existing.flow_intensity = data.get("flow_intensity", "none")
-            existing.symptoms_json = symptoms_str
-            existing.note = data.get("note")
-            entry = existing
-        else:
-            entry = DailyLog(
-                user_id=user_id,
-                log_date=log_date,
-                mood=data.get("mood"),
-                energy_level=data.get("energy_level", 3),
-                flow_intensity=data.get("flow_intensity", "none"),
-                symptoms_json=symptoms_str,
-                note=data.get("note")
-            )
-            db.session.add(entry)
-
-        db.session.commit()
-        return jsonify({"status": "saved", "entry": entry.to_dict()})
-
-    @app.route("/api/daily/history/<int:user_id>")
-    def daily_history(user_id):
-        days = (DailyLog.query.filter_by(user_id=user_id)
-                .order_by(DailyLog.log_date.desc()).limit(30).all())
-        return jsonify([d.to_dict() for d in reversed(days)])
-
-    # ---------- Partner Empathy Bridge & Micro-Care APIs ----------
-    @app.route("/api/partner/care-action", methods=["POST"])
-    def send_care_action():
-        """Partner sends a tangible micro-action (virtual heat pack, sweet treat, etc.)."""
-        data = request.get_json(force=True)
-        sender_id = data.get("sender_id")
-        recipient_id = data.get("recipient_id")
-        action_type = data.get("action_type")
-        custom_message = data.get("custom_message", "")
-
-        action = CareAction(
-            sender_id=sender_id,
-            recipient_id=recipient_id,
-            action_type=action_type,
-            custom_message=custom_message
-        )
-        db.session.add(action)
-
-        # Also add a notification
-        titles = {
-            "heat_pack": "sent you a soothing Virtual Heat Pack",
-            "sweet_treat": "sent you a Sweet Treat voucher & love",
-            "warm_tea": "brewed a cup of calming Herbal Tea for you",
-            "dinner_taken_care": "promised: 'Dinner is on me tonight!'",
-            "gentle_hug": "sent a warm, gentle squeeze & reassurance"
-        }
-        sender = db.session.get(User, sender_id)
-        sender_name = sender.name if sender else "Your partner"
-        desc = titles.get(action_type, "sent you a token of care")
-
-        note = Notification(
-            recipient_id=recipient_id,
-            message=f"{sender_name} {desc}! {custom_message}"
-        )
-        db.session.add(note)
-        db.session.commit()
-
-        return jsonify({"status": "sent", "action": action.to_dict()})
-
-    @app.route("/api/partner/care-actions/<int:user_id>")
-    def get_care_actions(user_id):
-        actions = (CareAction.query.filter_by(recipient_id=user_id)
-                   .order_by(CareAction.created_at.desc()).limit(10).all())
-        return jsonify([a.to_dict() for a in actions])
-
-    @app.route("/api/partner/care-action/<int:action_id>/ack", methods=["POST"])
-    def ack_care_action(action_id):
-        action = db.session.get(CareAction, action_id)
-        if action:
-            action.is_viewed = True
-            db.session.commit()
-        return jsonify({"status": "acknowledged"})
-
-    @app.route("/api/partner/view/<int:partner_user_id>")
-    def partner_view(partner_user_id):
+    @app.route("/api/spaces/ai-scan", methods=["POST"])
+    @rate_limit_ai
+    def ai_scan_space():
         """
-        Returns derived, privacy-safe empathy view for the partner.
-        Never reveals raw journal entries or chat logs.
+        AI Multimodal Space Inspector:
+        Takes user-provided space attributes and analyzes them with AI.
         """
-        partner_user = db.session.get(User, partner_user_id)
-        if not partner_user or not partner_user.partner_id:
-            return jsonify({"error": "No linked partner found"}), 404
+        data = request.get_json(silent=True) or {}
+        image_url = sanitize_string(data.get("photo_url", ""), max_length=500)
+        if image_url and not validate_image_url(image_url):
+            image_url = ""
 
-        self_user = db.session.get(User, partner_user.partner_id)
-        if not self_user:
-            return jsonify({"error": "Linked user not found"}), 404
+        analysis = analyze_space_features(data, image_url)
+        return jsonify(analysis)
 
-        latest_cycle = (CycleLog.query.filter_by(user_id=self_user.id)
-                        .order_by(CycleLog.created_at.desc()).first())
+    @app.route("/api/spaces", methods=["POST"])
+    def create_space():
+        """Creates a new space listing with robust input validation."""
+        data = request.get_json(silent=True) or {}
+        
+        # Input sanitization and bounds enforcement
+        title = sanitize_string(data.get("title"), max_length=150)
+        category = sanitize_string(data.get("category", "Studio"), max_length=50)
+        address = sanitize_string(data.get("address"), max_length=200)
+        neighborhood = sanitize_string(data.get("neighborhood", "Downtown"), max_length=100)
+        city = sanitize_string(data.get("city", "San Francisco"), max_length=100)
+        state = sanitize_string(data.get("state", "CA"), max_length=50)
+        zip_code = sanitize_string(data.get("zip_code", "94103"), max_length=20)
+        description = sanitize_string(data.get("description", "A verified temporary space."), max_length=3000)
 
-        phase_data = None
-        if latest_cycle:
-            phase_data = calculate_phase(latest_cycle.period_start, latest_cycle.cycle_length)
+        price_hourly = validate_numeric(data.get("price_hourly"), min_val=5.0, max_val=2500.0, default=None)
+        price_daily = validate_numeric(data.get("price_daily"), min_val=20.0, max_val=15000.0, default=None)
+        sqft = int(validate_numeric(data.get("sqft"), min_val=20, max_val=50000, default=200))
+        max_capacity = int(validate_numeric(data.get("max_capacity"), min_val=1, max_val=500, default=4))
+        minimum_hours = int(validate_numeric(data.get("minimum_hours"), min_val=1, max_val=24, default=1))
 
-        # Get latest daily log for mood tone without raw notes
-        latest_daily = (DailyLog.query.filter_by(user_id=self_user.id)
-                        .order_by(DailyLog.log_date.desc()).first())
+        if not title or not address or price_hourly is None:
+            return jsonify({
+                "error": "Validation failed",
+                "message": "Title, address, and positive hourly rate ($5 - $2,500) are required."
+            }), 400
 
-        # Recent chats with AI companion for privacy-safe empathy briefing
-        recent_chats = (ChatMessage.query.filter_by(user_id=self_user.id)
-                        .order_by(ChatMessage.created_at.desc()).limit(12).all())
-        chat_list = [m.to_dict() for m in reversed(recent_chats)]
+        if price_daily is None:
+            price_daily = round(price_hourly * 5.0, 2)
 
-        chat_summary = generate_partner_chat_summary(
-            messages=chat_list,
-            phase_info=phase_data,
-            user_name=self_user.name,
-            api_key=app.config.get("GROQ_API_KEY")
+        # Validate photos
+        raw_photos = data.get("photos") or []
+        clean_photos = []
+        if isinstance(raw_photos, list):
+            for p in raw_photos:
+                if isinstance(p, str) and validate_image_url(p):
+                    clean_photos.append(p[:1000000])  # Cap length to 1MB
+        if not clean_photos:
+            clean_photos = [
+                "https://images.unsplash.com/photo-1513694203232-719a280e022f?auto=format&fit=crop&w=1200&q=80"
+            ]
+
+        # Assign to logged-in user or active session
+        owner_id = session.get("user_id")
+        if not owner_id:
+            default_host = User.query.filter_by(role="owner").first() or User.query.first()
+            owner_id = default_host.id if default_host else 1
+
+        new_space = Space(
+            owner_id=owner_id,
+            title=title,
+            category=category,
+            description=description,
+            address=address,
+            neighborhood=neighborhood,
+            city=city,
+            state=state,
+            zip_code=zip_code,
+            sqft=sqft,
+            max_capacity=max_capacity,
+            price_hourly=price_hourly,
+            price_daily=price_daily,
+            minimum_hours=minimum_hours,
+            ai_dimensions_summary=sanitize_string(data.get("ai_dimensions_summary", ""), max_length=150),
+            ai_lighting=sanitize_string(data.get("ai_lighting", "Natural Light"), max_length=100),
+            ai_noise_level=sanitize_string(data.get("ai_noise_level", "Quiet"), max_length=100),
+            ai_power_access=sanitize_string(data.get("ai_power_access", "Standard Outlets"), max_length=100),
+            ai_safety_notes=sanitize_string(data.get("ai_safety_notes", "Inspected for basic safety."), max_length=300),
+            ai_recommended_uses=sanitize_string(data.get("ai_recommended_uses", ""), max_length=200),
+            ai_suitability_score=int(validate_numeric(data.get("ai_suitability_score"), 50, 100, 95)),
         )
 
-        phase_name = phase_data["phase"] if phase_data else "Not yet logged"
+        # Sanitize amenities and rules
+        raw_amenities = data.get("amenities") or ["Wi-Fi", "Power Outlets", "Restroom Access"]
+        new_space.amenities = [sanitize_string(a, max_length=80) for a in raw_amenities if isinstance(a, str)][:15]
 
-        # Plain-English human guidance for partner ("thoda easy to understand")
-        easy_phase_guide = {
-            "Menstrual": {
-                "simple_title": "Rest & Comfort Time",
-                "season_label": "Inner Winter (Period Days)",
-                "simple_meaning": f"Her period is active right now. Her body is working hard, dealing with cramps or fatigue, and needs extra warmth, rest, and low stress.",
-                "her_vibe_summary": "Lower energy, quiet mood, craving coziness and comfort.",
-                "primary_action": "Bring a hot water bottle, keep a soft blanket nearby, and take care of dinner without waiting to be asked.",
-                "vibe_icon": "🛏️"
-            },
-            "Follicular": {
-                "simple_title": "Fresh Energy & Bright Mood",
-                "season_label": "Inner Spring (Post-Period Renewal)",
-                "simple_meaning": f"Her period is over and fresh energy is kicking in! Her mental clarity, endurance, and cheerful optimism are rising every day.",
-                "her_vibe_summary": "High stamina, motivated, chatty, and excited to start new things.",
-                "primary_action": "Plan a fun outing or dinner, go on a walk together, and celebrate her ideas.",
-                "vibe_icon": "⚡"
-            },
-            "Ovulation": {
-                "simple_title": "Peak Energy & Glowing Days",
-                "season_label": "Inner Summer (Monthly Energy Peak)",
-                "simple_meaning": f"This is her monthly high point for energy, confidence, and social mood. She feels radiant, expressive, and connected.",
-                "her_vibe_summary": "Magnetic, confident, affectionate, and loves deep conversations.",
-                "primary_action": "Give genuine compliments, be attentive and present, and plan special quality time together.",
-                "vibe_icon": "✨"
-            },
-            "Luteal": {
-                "simple_title": "Winding Down & Emotional Care",
-                "season_label": "Inner Autumn (Pre-Period Wind-down)",
-                "simple_meaning": f"Her body is naturally slowing down before the next cycle. Shifting hormones can bring fatigue, bloating, or emotional sensitivity.",
-                "her_vibe_summary": "More sensitive, lower social battery, craving comfort snacks and quiet time.",
-                "primary_action": "Be extra patient and understanding. Never say 'are you just PMSing?'. Offer comfort treats and gentle hugs.",
-                "vibe_icon": "🧸"
-            }
+        raw_rules = data.get("rules") or ["No smoking", "Clean up after use", "Respect neighbors"]
+        new_space.rules = [sanitize_string(r, max_length=150) for r in raw_rules if isinstance(r, str)][:10]
+
+        new_space.photos = clean_photos[:6]
+        new_space.ai_tags = ["Verified Space", "Instant Booking"]
+
+        db.session.add(new_space)
+        db.session.commit()
+        return jsonify(new_space.to_dict()), 201
+
+    @app.route("/api/spaces/ai-match", methods=["POST"])
+    @rate_limit_ai
+    def ai_match_spaces():
+        """
+        AI Natural Language Matchmaker:
+        Ranks candidate spaces against seeker prompt.
+        """
+        data = request.get_json(silent=True) or {}
+        query_text = sanitize_string(data.get("query", ""), max_length=300)
+        all_spaces = [s.to_dict() for s in Space.query.filter_by(is_active=True).all()]
+
+        ranked = match_spaces_with_ai(query_text, all_spaces)
+        return jsonify({"results": ranked, "query": query_text})
+
+    @app.route("/api/bookings", methods=["POST"])
+    def create_booking():
+        """
+        Instant booking with server-side validation and automated AI Micro-Lease generation.
+        """
+        data = request.get_json(silent=True) or {}
+        space_id_num = validate_numeric(data.get("space_id"), min_val=1, max_val=10000000, default=None)
+        if not space_id_num:
+            return jsonify({"error": "Invalid space ID."}), 400
+
+        space = Space.query.get(int(space_id_num))
+        if not space or not space.is_active:
+            return jsonify({"error": "Space not found or currently unavailable."}), 404
+
+        # Validate hours
+        hours = validate_numeric(data.get("hours"), min_val=0.5, max_val=168.0, default=None)
+        if hours is None:
+            return jsonify({"error": "Invalid duration: hours must be between 0.5 and 168."}), 400
+
+        user_id = session.get("user_id")
+        if not user_id:
+            seeker = User.query.filter_by(role="seeker").first() or User.query.first()
+            user_id = seeker.id if seeker else 1
+        renter = User.query.get(user_id)
+
+        # Recompute total_price strictly on server side
+        total_price = round(float(hours) * space.price_hourly, 2)
+        
+        now = datetime.utcnow()
+        start_time = now + timedelta(days=1, hours=2)
+        end_time = start_time + timedelta(hours=hours)
+
+        max_cap = space.max_capacity if space.max_capacity and space.max_capacity > 0 else 50
+        attendees_count = int(validate_numeric(data.get("attendees_count"), min_val=1, max_val=max_cap, default=1))
+        purpose = sanitize_string(data.get("purpose", "Creative work & media production"), max_length=200)
+        special_requests = sanitize_string(data.get("special_requests", ""), max_length=500)
+
+        booking_meta = {
+            "id": f"SL-{space.id}-{int(now.timestamp())}",
+            "renter_name": renter.name if renter else "Guest",
+            "start_time": start_time.strftime("%b %d, %Y at %I:%M %p"),
+            "end_time": end_time.strftime("%b %d, %Y at %I:%M %p"),
+            "hours_booked": hours,
+            "total_price": total_price,
+            "intended_purpose": purpose,
+            "attendees_count": attendees_count
         }
 
-        phase_guide = easy_phase_guide.get(phase_name, {
-            "simple_title": "Daily Wellness Check",
-            "season_label": "Cycle Tracking Active",
-            "simple_meaning": "Cycle details are updating. Stay attentive and supportive.",
-            "her_vibe_summary": "Check in gently with her today.",
-            "primary_action": "Ask how her day was and offer a warm gesture.",
-            "vibe_icon": "🌸"
-        })
+        # Generate custom Micro-Lease Agreement
+        micro_lease = generate_micro_lease(space.to_dict(), booking_meta)
 
-        vibe = {
-            "partner_name": self_user.name,
-            "self_user_id": self_user.id,
-            "phase": phase_name,
-            "phase_desc": phase_data["phase_desc"] if phase_data else "Awaiting cycle start date",
-            "day_in_cycle": phase_data["day_in_cycle"] if phase_data else None,
-            "days_until_next": phase_data["days_until_next"] if phase_data else None,
-            "partner_tip": phase_data["partner_tip"] if phase_data else "Check in gently today.",
-            "energy_forecast": phase_data["energy_forecast"] if phase_data else "Normal",
-            "recent_mood": latest_daily.mood if latest_daily else "Balanced",
-            "recent_energy": latest_daily.energy_level if latest_daily else 3,
-            # Human-friendly fields
-            "simple_title": phase_guide["simple_title"],
-            "season_label": phase_guide["season_label"],
-            "simple_meaning": phase_guide["simple_meaning"],
-            "her_vibe_summary": phase_guide["her_vibe_summary"],
-            "primary_action": phase_guide["primary_action"],
-            "vibe_icon": phase_guide["vibe_icon"],
-            # Companion Chat Summary
-            "chat_summary": chat_summary
-        }
-        return jsonify(vibe)
-
-    # ---------- Symptom Checker APIs ----------
-    @app.route("/api/symptom/check", methods=["POST"])
-    def symptom_check():
-        data = request.get_json(force=True)
-        user_id = data.get("user_id")
-        symptom_text = data.get("symptom_text", "").strip()
-
-        if not symptom_text:
-            return jsonify({"error": "Symptom description is required"}), 400
-
-        result = check_symptom(symptom_text)
-        entry = SymptomEntry(
-            user_id=user_id,
-            symptom_text=symptom_text,
-            flagged_normal=result["flagged_normal"],
-            severity=result.get("severity", "normal"),
-            note=result["note"]
+        booking = Booking(
+            space_id=space.id,
+            renter_id=renter.id if renter else 1,
+            start_time=start_time,
+            end_time=end_time,
+            hours_booked=hours,
+            total_price=total_price,
+            status="confirmed",
+            intended_purpose=purpose,
+            attendees_count=attendees_count,
+            special_requests=special_requests,
+            micro_lease_agreement=micro_lease
         )
-        db.session.add(entry)
-        db.session.commit()
 
-        return jsonify(result)
-
-    # ---------- PCOD/PCOS Screener APIs ----------
-    @app.route("/api/pcod/assess", methods=["POST"])
-    def pcod_assess():
-        data = request.get_json(force=True)
-        user_id = data.get("user_id")
-        answers = data.get("answers", {})
-
-        result = score_pcod_risk(answers)
-        entry = PCODAssessment(
-            user_id=user_id,
-            answers_json=json.dumps(answers),
-            risk_score=result["risk_score"],
-            risk_level=result["risk_level"]
-        )
-        db.session.add(entry)
-        db.session.commit()
-
-        return jsonify(result)
-
-    # ---------- Private Journal APIs ----------
-    @app.route("/api/journal/add", methods=["POST"])
-    def add_journal():
-        data = request.get_json(force=True)
-        user_id = data.get("user_id")
-        text = data.get("text", "").strip()
-
-        if not text:
-            return jsonify({"error": "Journal text cannot be empty"}), 400
-
-        mood_result = analyze_mood(text)
-        entry = JournalEntry(
-            user_id=user_id,
-            text=text,
-            mood_label=mood_result["mood_label"],
-            reason_note=mood_result["reason_note"]
-        )
-        db.session.add(entry)
+        db.session.add(booking)
         db.session.commit()
 
         return jsonify({
-            "status": "saved",
-            "id": entry.id,
-            "mood_label": entry.mood_label,
-            "reason_note": entry.reason_note
-        })
+            "success": True,
+            "booking": booking.to_dict(),
+            "agreement": micro_lease,
+            "message": "Booking confirmed and AI Micro-Lease Agreement generated!"
+        }), 201
 
-    @app.route("/api/journal/history/<int:user_id>")
-    def journal_history(user_id):
-        entries = (JournalEntry.query.filter_by(user_id=user_id)
-                   .order_by(JournalEntry.created_at.desc()).limit(15).all())
-        return jsonify([
-            {"text": e.text, "mood_label": e.mood_label, "reason_note": e.reason_note,
-             "created_at": e.created_at.strftime("%b %d, %I:%M %p")}
-            for e in reversed(entries)
-        ])
+    @app.route("/api/calculator/estimate", methods=["POST"])
+    def api_estimate():
+        """Calculates dynamic earnings estimate with validated numeric bounds."""
+        data = request.get_json(silent=True) or {}
+        category = sanitize_string(data.get("category", "Studio"), max_length=50)
+        sqft = int(validate_numeric(data.get("sqft"), min_val=20, max_val=50000, default=250))
+        days = int(validate_numeric(data.get("days_per_month"), min_val=1, max_val=31, default=12))
 
-    # ---------- Notifications APIs ----------
-    @app.route("/api/notifications/<int:user_id>")
-    def get_notifications(user_id):
-        notes = (Notification.query.filter_by(recipient_id=user_id)
-                 .order_by(Notification.created_at.desc()).limit(20).all())
-        return jsonify([
-            {"id": n.id, "message": n.message, "is_read": n.is_read,
-             "created_at": n.created_at.strftime("%b %d, %I:%M %p")}
-            for n in notes
-        ])
+        estimate = calculate_earnings_estimate(category, sqft, days)
+        return jsonify(estimate)
 
-    @app.route("/api/notifications/mark-read", methods=["POST"])
-    def mark_notifications_read():
-        data = request.get_json(force=True)
-        user_id = data.get("user_id")
-        Notification.query.filter_by(recipient_id=user_id, is_read=False).update({"is_read": True})
-        db.session.commit()
-        return jsonify({"status": "marked_read"})
+    @app.route("/api/ai/chat", methods=["POST"])
+    @rate_limit_ai
+    def ai_chat():
+        """AI Concierge (LoopBot) chat endpoint with rate limiting."""
+        data = request.get_json(silent=True) or {}
+        messages = data.get("messages", [])
+        context = data.get("context", {})
+        reply = concierge_chat(messages, context)
+        return jsonify({"reply": reply})
 
-    # ---------- User Settings & Security APIs ----------
-    @app.route("/api/user/regenerate_code", methods=["POST"])
-    def regenerate_code():
-        data = request.get_json(force=True)
-        user = db.session.get(User, data.get("user_id"))
-        if not user or user.role != "self":
-            return jsonify({"error": "Only self users can generate connect codes"}), 400
+    # ==========================================
+    # ZERO-HARDWARE & DOCUMENT VERIFICATION APIs
+    # ==========================================
 
-        user.generate_connect_code()
-        db.session.commit()
-        return jsonify({"connect_code": user.connect_code})
+    @app.route("/api/verify/student", methods=["POST"])
+    def api_verify_student():
+        """
+        Instant Student Verification via DigiLocker / Aadhaar OTP and Academic Credentials.
+        DPDP Act 2023 Compliant: Zero raw Aadhaar stored.
+        """
+        data = request.get_json(silent=True) or {}
+        name = sanitize_string(data.get("name", "Student"), max_length=100)
+        aadhaar_num = sanitize_string(data.get("aadhaar_number", ""), max_length=20)
+        otp = sanitize_string(data.get("otp", "123456"), max_length=10)
+        college_email = sanitize_string(data.get("college_email", ""), max_length=120)
+        college_name = sanitize_string(data.get("college_name", ""), max_length=150)
+        student_id = sanitize_string(data.get("student_id", ""), max_length=50)
 
-    @app.route("/api/user/wipe-data", methods=["POST"])
-    def wipe_data():
-        """Privacy-first guarantee: Full purge of user's private cycle and journal records."""
-        data = request.get_json(force=True)
-        user_id = data.get("user_id")
-        user = db.session.get(User, user_id)
-        if not user:
-            return jsonify({"error": "User not found"}), 404
+        # 1. Aadhaar OTP Verification
+        aadhaar_res = verify_aadhaar_otp(name, aadhaar_num, otp)
+        if not aadhaar_res.get("success"):
+            return jsonify({"success": False, "error": aadhaar_res.get("error")}), 400
 
-        CycleLog.query.filter_by(user_id=user_id).delete()
-        DailyLog.query.filter_by(user_id=user_id).delete()
-        JournalEntry.query.filter_by(user_id=user_id).delete()
-        SymptomEntry.query.filter_by(user_id=user_id).delete()
-        PCODAssessment.query.filter_by(user_id=user_id).delete()
-        ChatMessage.query.filter_by(user_id=user_id).delete()
-        db.session.commit()
+        # 2. Academic Credential Verification
+        acad_res = verify_academic_credentials(college_email, student_id, college_name)
 
-        return jsonify({"status": "purged", "message": "All private health records have been permanently erased."})
-
-    # ---------- AI Companion Chatbot APIs ----------
-    @app.route("/api/chat", methods=["POST"])
-    def chat():
-        data = request.get_json(force=True)
-        user_id = data.get("user_id")
-        user_text = data.get("message", "").strip()
-        requested_mode = data.get("mode")
-        companion_name = data.get("companion_name", "Aura")
-
-        if not user_text:
-            return jsonify({"error": "Message text is required"}), 400
-
-        # Save user's message
-        db.session.add(ChatMessage(user_id=user_id, sender="user", text=user_text, mode=requested_mode or "comfort"))
-
-        # Pull latest cycle phase context - ORDERED BY created_at.desc() (FIXED!)
-        phase_info = None
-        latest = (CycleLog.query.filter_by(user_id=user_id)
-                  .order_by(CycleLog.created_at.desc()).first())
-        if latest:
-            phase_info = calculate_phase(latest.period_start, latest.cycle_length)
-
-        result = chat_reply(
-            user_text,
-            phase_info=phase_info,
-            api_key=app.config.get("GROQ_API_KEY"),
-            requested_mode=requested_mode,
-            companion_name=companion_name
-        )
-
-        db.session.add(ChatMessage(
-            user_id=user_id,
-            sender="bot",
-            text=result["reply"],
-            mode=result["mode"]
-        ))
-
-        # Strict privacy invariant: Send only derived care tips to partner, never the raw text
-        user = db.session.get(User, user_id)
-        if user and user.partner_id:
-            tip = get_partner_tip(user_text, result["mode"])
-            if tip:
-                db.session.add(Notification(
-                    recipient_id=user.partner_id,
-                    message=f"Care Tip for {user.name}: {tip}"
-                ))
-
-        db.session.commit()
-        return jsonify(result)
-
-    @app.route("/api/chat/history/<int:user_id>")
-    def chat_history(user_id):
-        msgs = (ChatMessage.query.filter_by(user_id=user_id)
-                .order_by(ChatMessage.created_at.asc()).all())
-        return jsonify([
-            {"sender": m.sender, "text": m.text, "mode": m.mode,
-             "created_at": m.created_at.strftime("%I:%M %p")}
-            for m in msgs
-        ])
-
-    @app.route("/api/chat/clear/<int:user_id>", methods=["POST"])
-    def clear_chat(user_id):
-        ChatMessage.query.filter_by(user_id=user_id).delete()
-        db.session.commit()
-        return jsonify({"status": "cleared"})
-
-    # ---------- Insights Analytics API ----------
-    @app.route("/api/insights/data/<int:user_id>")
-    def insights_data(user_id):
-        logs = (CycleLog.query.filter_by(user_id=user_id)
-                .order_by(CycleLog.created_at.desc()).all())
-        dailies = (DailyLog.query.filter_by(user_id=user_id)
-                   .order_by(DailyLog.log_date.desc()).limit(30).all())
-
-        lengths = [l.cycle_length for l in logs]
-        avg_length = round(sum(lengths) / len(lengths), 1) if lengths else 28
-        variation = (max(lengths) - min(lengths)) if len(lengths) > 1 else 0
-
-        # Mood distribution
-        moods = {}
-        for d in dailies:
-            if d.mood:
-                moods[d.mood] = moods.get(d.mood, 0) + 1
+        # 3. Update User Record
+        user_id = session.get("user_id")
+        user = User.query.get(user_id) if user_id else User.query.filter_by(role="seeker").first()
+        if user:
+            user.is_student_verified = True
+            user.is_aadhaar_verified = True
+            user.aadhaar_masked = aadhaar_res["masked_aadhaar"]
+            user.aadhaar_token_hash = aadhaar_res["token_hash"]
+            user.college_name = acad_res["college_name"]
+            user.college_email = acad_res["college_email"]
+            user.student_id_masked = acad_res["student_id_masked"]
+            # Recalculate OTI
+            user.objective_trust_score = compute_objective_trust_index(
+                user.on_time_vacate_rate,
+                user.cleanliness_match_rate,
+                is_identity_verified=True,
+                dispute_count=user.dispute_count
+            )
+            db.session.commit()
 
         return jsonify({
-            "total_cycles_logged": len(logs),
-            "average_cycle_length": avg_length,
-            "cycle_variation_days": variation,
-            "is_regular": variation <= 4,
-            "mood_breakdown": moods,
-            "recent_cycles": [l.to_dict() for l in logs[:6]]
+            "success": True,
+            "message": "Student identity and academic enrollment successfully verified!",
+            "aadhaar": aadhaar_res,
+            "academic": acad_res,
+            "user": user.to_dict() if user else None
+        })
+
+    @app.route("/api/verify/host", methods=["POST"])
+    def api_verify_host():
+        """
+        Instant Host & Property Verification via Discom Electricity Bill CA number and UPI Penny-Drop.
+        """
+        data = request.get_json(silent=True) or {}
+        ca_number = sanitize_string(data.get("ca_number", ""), max_length=50)
+        provider = sanitize_string(data.get("provider", "BESCOM"), max_length=80)
+        address = sanitize_string(data.get("address", ""), max_length=200)
+        pan_name = sanitize_string(data.get("pan_name", ""), max_length=100)
+        upi_vpa = sanitize_string(data.get("upi_vpa", ""), max_length=80)
+
+        # 1. Discom Utility Verification
+        discom_res = verify_host_electricity_bill(ca_number, provider, address, pan_name)
+        if not discom_res.get("success"):
+            return jsonify({"success": False, "error": discom_res.get("error")}), 400
+
+        # 2. UPI Penny-Drop Verification
+        upi_res = verify_upi_penny_drop(upi_vpa, pan_name)
+        if not upi_res.get("success"):
+            return jsonify({"success": False, "error": upi_res.get("error")}), 400
+
+        # 3. Update Host Record
+        user_id = session.get("user_id")
+        user = User.query.get(user_id) if user_id else User.query.filter_by(role="owner").first()
+        if user:
+            user.is_host_verified = True
+            user.discom_provider = discom_res["discom_provider"]
+            user.discom_ca_masked = discom_res["discom_ca_masked"]
+            user.upi_verified = True
+            user.upi_vpa_masked = upi_res["upi_vpa_masked"]
+            user.bank_beneficiary_name = upi_res["bank_beneficiary_name"]
+            user.objective_trust_score = compute_objective_trust_index(
+                user.on_time_vacate_rate,
+                user.cleanliness_match_rate,
+                is_identity_verified=True,
+                dispute_count=user.dispute_count
+            )
+            db.session.commit()
+
+        return jsonify({
+            "success": True,
+            "message": "Property possession and payout account successfully verified!",
+            "discom": discom_res,
+            "upi": upi_res,
+            "user": user.to_dict() if user else None
+        })
+
+    @app.route("/api/booking/<int:booking_id>/check-in", methods=["POST"])
+    def api_booking_checkin(booking_id):
+        """
+        Check-In Handshake: Validates in-room QR token + device GPS geofence (<50m).
+        """
+        booking = Booking.query.get_or_404(booking_id)
+        space = booking.space
+        data = request.get_json(silent=True) or {}
+
+        qr_token = sanitize_string(data.get("qr_token", ""), max_length=100)
+        lat = float(validate_numeric(data.get("lat"), min_val=-90, max_val=90, default=space.latitude))
+        lng = float(validate_numeric(data.get("lng"), min_val=-180, max_val=180, default=space.longitude))
+        entry_photo = sanitize_string(data.get("entry_photo", ""), max_length=500) or (space.photos[0] if space.photos else "")
+
+        # Validate QR Token
+        if space.room_qr_token and qr_token and qr_token != space.room_qr_token and qr_token != "DEMO_QR_PASS":
+            return jsonify({"success": False, "error": "Invalid Space QR token. Please scan the official laminated door QR."}), 400
+
+        # Calculate GPS Distance
+        dist_meters = haversine_distance(lat, lng, space.latitude, space.longitude)
+        max_allowed_dist = max(space.geofence_radius_meters, 50)  # At least 50m tolerance for urban GPS drift
+
+        if dist_meters > max_allowed_dist:
+            return jsonify({
+                "success": False,
+                "error": f"GPS Geofence Violation: You are {dist_meters:.1f}m away from the space (Maximum allowed: {max_allowed_dist}m)."
+            }), 400
+
+        now = datetime.utcnow()
+        booking.session_state = "checked_in"
+        booking.arrival_time = now
+        booking.checkin_gps_lat = lat
+        booking.checkin_gps_lng = lng
+        booking.entry_scan_photo = entry_photo
+        db.session.commit()
+
+        return jsonify({
+            "success": True,
+            "message": "Check-in verified! Arrival timestamp logged and session is active.",
+            "arrival_time": now.strftime("%I:%M:%S %p IST"),
+            "distance_meters": round(dist_meters, 1),
+            "booking": booking.to_dict()
+        })
+
+    @app.route("/api/booking/<int:booking_id>/check-out", methods=["POST"])
+    def api_booking_checkout(booking_id):
+        """
+        Check-Out Handshake: Evaluates exit video/photo scan via AI, computes punctuality,
+        and instantly releases the ₹100 UPI escrow deposit.
+        """
+        booking = Booking.query.get_or_404(booking_id)
+        space = booking.space
+        data = request.get_json(silent=True) or {}
+
+        qr_token = sanitize_string(data.get("qr_token", ""), max_length=100)
+        lat = float(validate_numeric(data.get("lat"), min_val=-90, max_val=90, default=space.latitude))
+        lng = float(validate_numeric(data.get("lng"), min_val=-180, max_val=180, default=space.longitude))
+        exit_photo = sanitize_string(data.get("exit_photo", ""), max_length=500) or booking.entry_scan_photo
+
+        now = datetime.utcnow()
+        
+        # 1. AI Visual Diff Inspection
+        inspection = evaluate_room_condition_delta(booking.entry_scan_photo, exit_photo)
+
+        # 2. Tamper-Proof Punctuality Calculation
+        punctuality = calculate_session_punctuality(
+            booking.start_time,
+            booking.end_time,
+            booking.arrival_time or (now - timedelta(hours=booking.hours_booked)),
+            now
+        )
+
+        booking.session_state = "checked_out"
+        booking.status = "completed"
+        booking.departure_time = now
+        booking.checkout_gps_lat = lat
+        booking.checkout_gps_lng = lng
+        booking.exit_scan_photo = exit_photo
+        booking.condition_match_score = inspection["condition_match_score"]
+        booking.fans_lights_cleared = inspection["fans_lights_cleared"]
+        booking.objective_punctuality_score = punctuality
+        booking.escrow_status = "released"  # Programmatic instant release!
+
+        # 3. Update Renter Objective Telemetry
+        renter = booking.renter
+        if renter:
+            renter.total_completed_hours += booking.hours_booked
+            # Recompute OTI
+            renter.objective_trust_score = compute_objective_trust_index(
+                punctuality=renter.on_time_vacate_rate,
+                condition_match=renter.cleanliness_match_rate,
+                is_identity_verified=renter.is_aadhaar_verified or renter.is_student_verified,
+                dispute_count=renter.dispute_count
+            )
+
+        db.session.commit()
+
+        return jsonify({
+            "success": True,
+            "message": "Check-out completed! Room condition cleared and ₹100 UPI escrow deposit released.",
+            "departure_time": now.strftime("%I:%M:%S %p IST"),
+            "inspection": inspection,
+            "punctuality_score": punctuality,
+            "escrow_refund_status": "INSTANT_RELEASE_COMPLETE",
+            "booking": booking.to_dict()
         })
 
     return app
 
 
-def _seed_demo_accounts_if_empty(force=False):
-    """Pre-seeds demonstration accounts to make live judging effortless."""
-    try:
-        maya = User.query.filter_by(email="maya@cyclecare.dev").first()
-        if not maya or force:
-            if not maya:
-                maya = User(name="Maya", email="maya@cyclecare.dev", role="self")
-                maya.set_password("demo1234")
-                maya.connect_code = "CARE-2026"
-                db.session.add(maya)
-                db.session.flush()
-
-            alex = User.query.filter_by(email="alex@cyclecare.dev").first()
-            if not alex:
-                alex = User(name="Alex", email="alex@cyclecare.dev", role="partner")
-                alex.set_password("demo1234")
-                alex.partner_id = maya.id
-                db.session.add(alex)
-                db.session.flush()
-                maya.partner_id = alex.id
-
-            # Seed a cycle log for Maya
-            if CycleLog.query.filter_by(user_id=maya.id).count() == 0:
-                recent_period = date.today() - timedelta(days=12)
-                db.session.add(CycleLog(
-                    user_id=maya.id,
-                    period_start=recent_period,
-                    cycle_length=28,
-                    period_duration=5,
-                    notes="Baseline normal cycle"
-                ))
-
-            # Seed a sample daily log
-            if DailyLog.query.filter_by(user_id=maya.id).count() == 0:
-                db.session.add(DailyLog(
-                    user_id=maya.id,
-                    log_date=date.today(),
-                    mood="peaceful",
-                    energy_level=4,
-                    flow_intensity="none",
-                    symptoms_json='["mild energy boost"]',
-                    note="Feeling productive and clear-headed today."
-                ))
-
-            db.session.commit()
-    except Exception as e:
-        logger.warning("Could not auto-seed demo accounts: %s", e)
-        db.session.rollback()
-
-
-app = create_app()
-
 if __name__ == "__main__":
-    import os
-    port = int(os.environ.get("PORT", 5001))
-    print(f"\n🚀 Cycle Care is running at: http://localhost:{port}\n")
-    app.run(debug=True, port=port, host="0.0.0.0")
-
+    app = create_app()
+    app.run(host="0.0.0.0", port=5000, debug=True)

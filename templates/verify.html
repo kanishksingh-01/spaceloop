@@ -1,0 +1,459 @@
+{% extends "base.html" %}
+
+{% block title %}SpaceLoop | Dual-Sided Verification Center (India Stack){% endblock %}
+
+{% block content %}
+<div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+
+  <!-- Header Banner -->
+  <div class="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 border border-indigo-500/30 rounded-2xl p-6 sm:p-8 mb-8 shadow-xl shadow-indigo-950/40 relative overflow-hidden">
+    <div class="absolute -right-10 -bottom-10 w-64 h-64 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none"></div>
+    <div class="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
+      <div>
+        <div class="flex items-center gap-2 mb-2">
+          <span class="px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 flex items-center gap-1.5">
+            <i class="fa-solid fa-shield-check"></i> DPDP Act 2023 Compliant
+          </span>
+          <span class="px-2.5 py-1 rounded-full text-xs font-semibold bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
+            India Stack Gateway
+          </span>
+        </div>
+        <h1 class="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
+          Trust & Identity Verification Center
+        </h1>
+        <p class="text-slate-300 text-sm mt-1.5 max-w-2xl">
+          Automated zero-knowledge onboarding under 30 seconds. Powered by <b>DigiLocker / UIDAI sandbox</b> for students and <b>State Discom Electricity APIs + NPCI UPI</b> for property owners.
+        </p>
+      </div>
+
+      <!-- Current Trust Score Pill -->
+      <div class="bg-slate-950/80 border border-slate-800 rounded-xl p-4 flex items-center gap-4 shrink-0">
+        <div class="w-12 h-12 rounded-xl bg-indigo-600/20 border border-indigo-500/40 flex items-center justify-center text-indigo-400 text-xl font-bold">
+          <i class="fa-solid fa-chart-line"></i>
+        </div>
+        <div>
+          <div class="text-xs text-slate-400 uppercase tracking-wider font-semibold">Objective Trust Index</div>
+          <div class="text-2xl font-black text-white flex items-center gap-1.5">
+            {{ current_user.objective_trust_score or 98.5 }}<span class="text-xs text-slate-400 font-normal">/100</span>
+          </div>
+          <div class="text-[11px] text-emerald-400 font-medium flex items-center gap-1">
+            <i class="fa-solid fa-circle-check text-[9px]"></i> 
+            {% if current_user.is_student_verified or current_user.is_host_verified %}
+              KYC Active
+            {% else %}
+              Unverified
+            {% endif %}
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tab Selector -->
+  <div class="flex items-center gap-2 border-b border-slate-800 pb-4 mb-8">
+    <button id="tabStudentBtn" onclick="switchTab('student')" class="px-5 py-2.5 rounded-xl font-medium text-sm transition flex items-center gap-2 bg-indigo-600 text-white shadow-lg shadow-indigo-600/20">
+      <i class="fa-solid fa-graduation-cap"></i> Student & Renter Verification
+    </button>
+    <button id="tabHostBtn" onclick="switchTab('host')" class="px-5 py-2.5 rounded-xl font-medium text-sm transition flex items-center gap-2 text-slate-400 hover:text-white hover:bg-slate-900">
+      <i class="fa-solid fa-house-circle-check"></i> Host & Property Verification
+    </button>
+  </div>
+
+  <!-- ============================================================ -->
+  <!-- TAB 1: STUDENT / RENTER VERIFICATION -->
+  <!-- ============================================================ -->
+  <div id="studentTabContent" class="space-y-6">
+
+    <!-- Status Bar -->
+    <div class="bg-slate-900/60 border border-slate-800 rounded-xl p-4 flex flex-wrap items-center justify-between gap-4">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-full {% if current_user.is_student_verified %}bg-emerald-500/20 text-emerald-400 border border-emerald-500/40{% else %}bg-amber-500/20 text-amber-400 border border-amber-500/40{% endif %} flex items-center justify-center font-bold">
+          {% if current_user.is_student_verified %}
+            <i class="fa-solid fa-check"></i>
+          {% else %}
+            <i class="fa-solid fa-clock"></i>
+          {% endif %}
+        </div>
+        <div>
+          <h3 class="text-sm font-semibold text-white">Student Verification Status</h3>
+          <p class="text-xs text-slate-400">
+            {% if current_user.is_student_verified %}
+              Verified with {{ current_user.college_name or "College ID" }} &bull; Masked Aadhaar: {{ current_user.aadhaar_masked }}
+            {% else %}
+              Complete 20-second verification to unlock instant access to student-rate study spaces.
+            {% endif %}
+          </p>
+        </div>
+      </div>
+      <div>
+        {% if current_user.is_student_verified %}
+          <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">
+            <i class="fa-solid fa-badge-check"></i> Verified Student
+          </span>
+        {% else %}
+          <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-amber-500/10 text-amber-400 border border-amber-500/30">
+            Pending Handshake
+          </span>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Student Form Card -->
+    <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 sm:p-8 shadow-xl">
+      <h2 class="text-lg font-bold text-white mb-2 flex items-center gap-2">
+        <i class="fa-solid fa-id-card text-indigo-400"></i> Instant Student KYC Handshake
+      </h2>
+      <p class="text-xs text-slate-400 mb-6">
+        Zero raw identity data is stored. Aadhaar details are verified via UIDAI OTP sandbox and cryptographically hashed under DPDP Act 2023.
+      </p>
+
+      <form id="studentVerifyForm" onsubmit="handleStudentVerify(event)" class="space-y-6">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          
+          <!-- Full Name -->
+          <div>
+            <label class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2">
+              Full Legal Name (as per Aadhaar / ID)
+            </label>
+            <input type="text" id="studentName" required value="{{ current_user.name }}" placeholder="e.g. Aarav Patel"
+              class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-indigo-500 transition">
+          </div>
+
+          <!-- Aadhaar Number -->
+          <div>
+            <label class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2 flex items-center justify-between">
+              <span>12-Digit Aadhaar Number</span>
+              <span class="text-[10px] text-emerald-400"><i class="fa-solid fa-lock"></i> Masked upon verification</span>
+            </label>
+            <input type="text" id="studentAadhaar" required maxlength="14" placeholder="4821 9021 3412" value="482190213412"
+              class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-indigo-500 font-mono transition">
+          </div>
+
+          <!-- College Institutional Email -->
+          <div>
+            <label class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2 flex items-center justify-between">
+              <span>College Email (.ac.in / .edu)</span>
+              <span class="text-[10px] text-indigo-400">Instant Domain Match</span>
+            </label>
+            <input type="email" id="studentEmail" required value="{{ current_user.college_email or current_user.email }}" placeholder="aarav@iitd.ac.in"
+              class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-indigo-500 transition">
+          </div>
+
+          <!-- College / University Name -->
+          <div>
+            <label class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2">
+              University / College Name
+            </label>
+            <input type="text" id="studentCollege" required value="{{ current_user.college_name or 'Indian Institute of Technology (IIT) Delhi' }}" placeholder="IIT Delhi / Delhi University / BITS Pilani"
+              class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-indigo-500 transition">
+          </div>
+
+          <!-- Student Roll Number / ID Card -->
+          <div>
+            <label class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2">
+              Student ID Card / Roll Number
+            </label>
+            <input type="text" id="studentRollNo" value="2024CS10921" placeholder="e.g. 2024CS10921"
+              class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-indigo-500 font-mono transition">
+          </div>
+
+          <!-- Simulated UIDAI OTP -->
+          <div>
+            <label class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2 flex items-center justify-between">
+              <span>UIDAI Security OTP (6 Digits)</span>
+              <span class="text-[10px] text-slate-400">Default sandbox: 123456</span>
+            </label>
+            <div class="flex gap-2">
+              <input type="text" id="studentOtp" maxlength="6" value="123456" required
+                class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-indigo-500 font-mono tracking-widest text-center transition">
+              <button type="button" onclick="alert('Demo OTP: 123456 has been dispatched to your Aadhaar registered mobile.');"
+                class="px-4 py-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-semibold text-slate-200 transition shrink-0">
+                Resend OTP
+              </button>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Verification Guarantee Card -->
+        <div class="bg-indigo-950/30 border border-indigo-500/20 rounded-xl p-4 flex items-start gap-3">
+          <i class="fa-solid fa-shield-halved text-indigo-400 text-lg mt-0.5"></i>
+          <div class="text-xs text-slate-300">
+            <b>Zero Data Leak Guarantee:</b> SpaceLoop never stores your unmasked 12-digit Aadhaar number or raw ID scans. Only a cryptographic SHA-256 hash token is recorded in compliance with the Digital Personal Data Protection Act, 2023.
+          </div>
+        </div>
+
+        <button type="submit" id="studentSubmitBtn" class="w-full sm:w-auto px-8 py-3.5 rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white font-bold text-sm shadow-lg shadow-indigo-600/30 transition flex items-center justify-center gap-2">
+          <i class="fa-solid fa-bolt"></i> Complete Instant Verification (< 20s)
+        </button>
+      </form>
+
+      <!-- Results Container -->
+      <div id="studentResultBox" class="hidden mt-6 p-5 rounded-xl bg-emerald-950/30 border border-emerald-500/40 text-sm">
+        <div class="flex items-center gap-3 text-emerald-400 font-bold mb-2">
+          <i class="fa-solid fa-circle-check text-lg"></i>
+          <span>Verification Succeeded!</span>
+        </div>
+        <div id="studentResultDetails" class="text-xs text-slate-300 space-y-1"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================================ -->
+  <!-- TAB 2: HOST & PROPERTY VERIFICATION -->
+  <!-- ============================================================ -->
+  <div id="hostTabContent" class="hidden space-y-6">
+
+    <!-- Status Bar -->
+    <div class="bg-slate-900/60 border border-slate-800 rounded-xl p-4 flex flex-wrap items-center justify-between gap-4">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-full {% if current_user.is_host_verified %}bg-emerald-500/20 text-emerald-400 border border-emerald-500/40{% else %}bg-amber-500/20 text-amber-400 border border-amber-500/40{% endif %} flex items-center justify-center font-bold">
+          {% if current_user.is_host_verified %}
+            <i class="fa-solid fa-check"></i>
+          {% else %}
+            <i class="fa-solid fa-building-circle-check"></i>
+          {% endif %}
+        </div>
+        <div>
+          <h3 class="text-sm font-semibold text-white">Host & Premise Verification Status</h3>
+          <p class="text-xs text-slate-400">
+            {% if current_user.is_host_verified %}
+              Verified with {{ current_user.discom_provider }} (CA: {{ current_user.discom_ca_masked }}) &bull; UPI: {{ current_user.upi_vpa_masked }}
+            {% else %}
+              Verify your property via State Electricity Board (Discom) CA number and UPI ₹1 Penny Drop.
+            {% endif %}
+          </p>
+        </div>
+      </div>
+      <div>
+        {% if current_user.is_host_verified %}
+          <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">
+            <i class="fa-solid fa-badge-check"></i> Verified Property Host
+          </span>
+        {% else %}
+          <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-amber-500/10 text-amber-400 border border-amber-500/30">
+            Utility Check Pending
+          </span>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Host Form Card -->
+    <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 sm:p-8 shadow-xl">
+      <h2 class="text-lg font-bold text-white mb-2 flex items-center gap-2">
+        <i class="fa-solid fa-bolt-lightning text-amber-400"></i> Discom Utility & Payout Verification
+      </h2>
+      <p class="text-xs text-slate-400 mb-6">
+        Eliminates ghost listings without requiring 50-page property deeds. Matches your 10-digit electricity Consumer Account (CA) number directly with the state power board.
+      </p>
+
+      <form id="hostVerifyForm" onsubmit="handleHostVerify(event)" class="space-y-6">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+
+          <!-- Electricity Board Provider -->
+          <div>
+            <label class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2">
+              State Electricity Board (Discom)
+            </label>
+            <select id="discomProvider" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-indigo-500 transition">
+              <option value="TPDDL (Tata Power Delhi)">TPDDL (Tata Power Delhi)</option>
+              <option value="BESCOM (Bangalore)">BESCOM (Bangalore Electricity)</option>
+              <option value="MSEDCL (Maharashtra)">MSEDCL (Maharashtra State)</option>
+              <option value="UPPCL (Uttar Pradesh)">UPPCL (Uttar Pradesh Power)</option>
+              <option value="Adani Electricity (Mumbai)">Adani Electricity (Mumbai)</option>
+              <option value="BSES Yamuna / Rajdhani">BSES Yamuna / Rajdhani (Delhi)</option>
+            </select>
+          </div>
+
+          <!-- Consumer Account Number -->
+          <div>
+            <label class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2 flex items-center justify-between">
+              <span>Consumer Account (CA) Number</span>
+              <span class="text-[10px] text-slate-400">From monthly power bill</span>
+            </label>
+            <input type="text" id="caNumber" required placeholder="e.g. 1004928172" value="1004928172"
+              class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-indigo-500 font-mono transition">
+          </div>
+
+          <!-- Property Installation Address -->
+          <div>
+            <label class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2">
+              Property Address (as per Bill)
+            </label>
+            <input type="text" id="hostAddress" required placeholder="B-4/22 Hauz Khas Enclave, New Delhi" value="B-4/22 Hauz Khas Enclave, New Delhi"
+              class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-indigo-500 transition">
+          </div>
+
+          <!-- Legal Host / Owner Name -->
+          <div>
+            <label class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2">
+              Registered Owner Name (PAN/Bank)
+            </label>
+            <input type="text" id="panName" required placeholder="Sunita Sharma" value="Sunita Sharma"
+              class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-indigo-500 transition">
+          </div>
+
+          <!-- Host Payout UPI VPA -->
+          <div>
+            <label class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2 flex items-center justify-between">
+              <span>Payout UPI ID (PhonePe / GPay / Paytm)</span>
+              <span class="text-[10px] text-emerald-400">₹1 Penny-Drop Validated</span>
+            </label>
+            <input type="text" id="upiVpa" required placeholder="sunita@okhdfcbank" value="sunita@okhdfcbank"
+              class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-indigo-500 font-mono transition">
+          </div>
+
+          <!-- Physical Space Access Type -->
+          <div>
+            <label class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2">
+              Physical Key Handover Model
+            </label>
+            <select id="accessType" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-indigo-500 transition">
+              <option value="caretaker_handshake">Model A: Caretaker / Host Handshake (4-digit PIN) — ₹0 Cost</option>
+              <option value="mechanical_keybox">Model B: Weatherproof 4-Digit Mechanical Keybox (Grill Lock) — ₹400 One-time</option>
+            </select>
+          </div>
+
+        </div>
+
+        <div class="bg-amber-950/30 border border-amber-500/20 rounded-xl p-4 flex items-start gap-3">
+          <i class="fa-solid fa-receipt text-amber-400 text-lg mt-0.5"></i>
+          <div class="text-xs text-slate-300">
+            <b>Anti-Scam Protection:</b> Cross-referencing the state power bill Consumer Account (CA) with the GPS coordinates prevents ghost listings and fake sublets. The ₹1 UPI penny-drop ensures fast, direct booking payouts to your verified bank account.
+          </div>
+        </div>
+
+        <button type="submit" id="hostSubmitBtn" class="w-full sm:w-auto px-8 py-3.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold text-sm shadow-lg shadow-emerald-600/30 transition flex items-center justify-center gap-2">
+          <i class="fa-solid fa-shield-check"></i> Verify Space & Bank Account (< 15s)
+        </button>
+      </form>
+
+      <!-- Host Results Container -->
+      <div id="hostResultBox" class="hidden mt-6 p-5 rounded-xl bg-emerald-950/30 border border-emerald-500/40 text-sm">
+        <div class="flex items-center gap-3 text-emerald-400 font-bold mb-2">
+          <i class="fa-solid fa-circle-check text-lg"></i>
+          <span>Property & Bank Account Verified!</span>
+        </div>
+        <div id="hostResultDetails" class="text-xs text-slate-300 space-y-1"></div>
+      </div>
+    </div>
+
+  </div>
+
+</div>
+
+<script>
+function switchTab(tab) {
+  const studentBtn = document.getElementById('tabStudentBtn');
+  const hostBtn = document.getElementById('tabHostBtn');
+  const studentContent = document.getElementById('studentTabContent');
+  const hostContent = document.getElementById('hostTabContent');
+
+  if (tab === 'student') {
+    studentBtn.className = 'px-5 py-2.5 rounded-xl font-medium text-sm transition flex items-center gap-2 bg-indigo-600 text-white shadow-lg shadow-indigo-600/20';
+    hostBtn.className = 'px-5 py-2.5 rounded-xl font-medium text-sm transition flex items-center gap-2 text-slate-400 hover:text-white hover:bg-slate-900';
+    studentContent.classList.remove('hidden');
+    hostContent.classList.add('hidden');
+  } else {
+    hostBtn.className = 'px-5 py-2.5 rounded-xl font-medium text-sm transition flex items-center gap-2 bg-indigo-600 text-white shadow-lg shadow-indigo-600/20';
+    studentBtn.className = 'px-5 py-2.5 rounded-xl font-medium text-sm transition flex items-center gap-2 text-slate-400 hover:text-white hover:bg-slate-900';
+    hostContent.classList.remove('hidden');
+    studentContent.classList.add('hidden');
+  }
+}
+
+async function handleStudentVerify(e) {
+  e.preventDefault();
+  const btn = document.getElementById('studentSubmitBtn');
+  const resBox = document.getElementById('studentResultBox');
+  const resDetails = document.getElementById('studentResultDetails');
+
+  btn.disabled = true;
+  btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Contacting UIDAI & DigiLocker Gateway...';
+
+  try {
+    const payload = {
+      name: document.getElementById('studentName').value,
+      aadhaar_number: document.getElementById('studentAadhaar').value,
+      college_email: document.getElementById('studentEmail').value,
+      college_name: document.getElementById('studentCollege').value,
+      student_id: document.getElementById('studentRollNo').value,
+      otp: document.getElementById('studentOtp').value
+    };
+
+    const res = await fetch('/api/verify/student', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    const data = await res.json();
+
+    if (data.success) {
+      resBox.classList.remove('hidden');
+      resDetails.innerHTML = `
+        <div>&bull; <b>DigiLocker Status:</b> Verified (${data.aadhaar.masked_aadhaar})</div>
+        <div>&bull; <b>Academic Affiliation:</b> ${data.academic.college_name} (${data.academic.college_email})</div>
+        <div>&bull; <b>DPDP Compliance:</b> ${data.aadhaar.dpdp_status}</div>
+        <div>&bull; <b>Updated Trust Index:</b> <b>${data.user.objective_trust_score}/100</b></div>
+      `;
+      btn.innerHTML = '<i class="fa-solid fa-check"></i> Identity Verified!';
+      setTimeout(() => window.location.reload(), 2000);
+    } else {
+      alert(data.error || 'Verification failed. Please check inputs.');
+      btn.disabled = false;
+      btn.innerHTML = '<i class="fa-solid fa-bolt"></i> Complete Instant Verification';
+    }
+  } catch (err) {
+    alert('Network error connecting to verification gateway.');
+    btn.disabled = false;
+    btn.innerHTML = '<i class="fa-solid fa-bolt"></i> Complete Instant Verification';
+  }
+}
+
+async function handleHostVerify(e) {
+  e.preventDefault();
+  const btn = document.getElementById('hostSubmitBtn');
+  const resBox = document.getElementById('hostResultBox');
+  const resDetails = document.getElementById('hostResultDetails');
+
+  btn.disabled = true;
+  btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Checking Discom Gateway & UPI Penny-Drop...';
+
+  try {
+    const payload = {
+      provider: document.getElementById('discomProvider').value,
+      ca_number: document.getElementById('caNumber').value,
+      address: document.getElementById('hostAddress').value,
+      pan_name: document.getElementById('panName').value,
+      upi_vpa: document.getElementById('upiVpa').value
+    };
+
+    const res = await fetch('/api/verify/host', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    const data = await res.json();
+
+    if (data.success) {
+      resBox.classList.remove('hidden');
+      resDetails.innerHTML = `
+        <div>&bull; <b>Discom Utility Match:</b> ${data.discom.discom_provider} (CA: ${data.discom.discom_ca_masked}) &bull; Active Connection</div>
+        <div>&bull; <b>UPI Penny-Drop:</b> Validated (${data.upi.upi_vpa_masked}) &bull; Name: ${data.upi.bank_beneficiary_name}</div>
+        <div>&bull; <b>Listing Trust Badge:</b> <b>Discom Electricity Verified Host</b></div>
+      `;
+      btn.innerHTML = '<i class="fa-solid fa-check"></i> Property & Bank Verified!';
+      setTimeout(() => window.location.reload(), 2000);
+    } else {
+      alert(data.error || 'Host verification failed. Please check inputs.');
+      btn.disabled = false;
+      btn.innerHTML = '<i class="fa-solid fa-shield-check"></i> Verify Space & Bank Account';
+    }
+  } catch (err) {
+    alert('Network error connecting to Discom utility gateway.');
+    btn.disabled = false;
+    btn.innerHTML = '<i class="fa-solid fa-shield-check"></i> Verify Space & Bank Account';
+  }
+}
+</script>
+{% endblock %}

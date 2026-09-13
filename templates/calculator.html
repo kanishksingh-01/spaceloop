@@ -1,0 +1,222 @@
+{% extends "base.html" %}
+
+{% block title %}Space Monetization Calculator | SpaceLoop{% endblock %}
+
+{% block content %}
+
+<div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+
+  <!-- Header -->
+  <div class="text-center max-w-2xl mx-auto mb-10">
+    <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-semibold mb-3">
+      <i class="fa-solid fa-coins"></i> Passive Revenue Estimator
+    </div>
+    <h1 class="text-3xl sm:text-4xl font-extrabold text-white tracking-tight">
+      Calculate Your Space's Earning Potential
+    </h1>
+    <p class="mt-2 text-sm text-slate-400">
+      See how much passive income your empty garage, spare studio, off-peak cafe, or driveway can generate each month.
+    </p>
+  </div>
+
+  <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+    
+    <!-- Sliders and Inputs (7 cols) -->
+    <div class="lg:col-span-7 bg-slate-900/90 border border-slate-800 rounded-3xl p-6 sm:p-8 shadow-xl space-y-6">
+      
+      <!-- Space Category -->
+      <div>
+        <label class="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-3">
+          1. Select Type of Dead Space
+        </label>
+        <div class="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
+          <button type="button" onclick="setCalcCategory('Studio')" class="cat-btn px-3 py-2.5 rounded-xl border border-indigo-500 bg-indigo-600/20 text-white font-medium text-xs flex items-center justify-center gap-1.5 transition">
+            <i class="fa-solid fa-camera text-indigo-400"></i> Spare Studio
+          </button>
+          <button type="button" onclick="setCalcCategory('Storage')" class="cat-btn px-3 py-2.5 rounded-xl border border-slate-700 bg-slate-950 text-slate-400 hover:text-white font-medium text-xs flex items-center justify-center gap-1.5 transition">
+            <i class="fa-solid fa-boxes-stacked text-amber-400"></i> Garage Storage
+          </button>
+          <button type="button" onclick="setCalcCategory('Parking')" class="cat-btn px-3 py-2.5 rounded-xl border border-slate-700 bg-slate-950 text-slate-400 hover:text-white font-medium text-xs flex items-center justify-center gap-1.5 transition">
+            <i class="fa-solid fa-charging-station text-emerald-400"></i> Driveway / EV
+          </button>
+          <button type="button" onclick="setCalcCategory('Pop-up/Retail')" class="cat-btn px-3 py-2.5 rounded-xl border border-slate-700 bg-slate-950 text-slate-400 hover:text-white font-medium text-xs flex items-center justify-center gap-1.5 transition">
+            <i class="fa-solid fa-store text-pink-400"></i> Storefront
+          </button>
+          <button type="button" onclick="setCalcCategory('Event/Workshop')" class="cat-btn px-3 py-2.5 rounded-xl border border-slate-700 bg-slate-950 text-slate-400 hover:text-white font-medium text-xs flex items-center justify-center gap-1.5 transition">
+            <i class="fa-solid fa-users text-cyan-400"></i> Off-Peak Cafe
+          </button>
+          <button type="button" onclick="setCalcCategory('Workspace')" class="cat-btn px-3 py-2.5 rounded-xl border border-slate-700 bg-slate-950 text-slate-400 hover:text-white font-medium text-xs flex items-center justify-center gap-1.5 transition">
+            <i class="fa-solid fa-laptop text-violet-400"></i> Spare Desk / Nook
+          </button>
+        </div>
+      </div>
+
+      <!-- Square Footage Slider -->
+      <div>
+        <div class="flex items-center justify-between mb-2">
+          <label class="text-xs font-bold uppercase tracking-wider text-slate-400">
+            2. Usable Square Footage
+          </label>
+          <span id="sqftDisplay" class="text-sm font-extrabold text-white bg-slate-800 px-2.5 py-1 rounded-lg">
+            300 sqft
+          </span>
+        </div>
+        <input 
+          type="range" 
+          id="sqftSlider" 
+          min="80" 
+          max="1200" 
+          step="20" 
+          value="300"
+          oninput="recalc()" 
+          class="w-full accent-indigo-500 cursor-pointer h-2 bg-slate-800 rounded-lg"
+        >
+        <div class="flex justify-between text-[11px] text-slate-500 mt-1">
+          <span>80 sqft (Car spot / Nook)</span>
+          <span>500 sqft (Garage)</span>
+          <span>1,200 sqft (Loft / Store)</span>
+        </div>
+      </div>
+
+      <!-- Days Booked Slider -->
+      <div>
+        <div class="flex items-center justify-between mb-2">
+          <label class="text-xs font-bold uppercase tracking-wider text-slate-400">
+            3. Estimated Days Booked / Month
+          </label>
+          <span id="daysDisplay" class="text-sm font-extrabold text-indigo-400 bg-indigo-950/60 border border-indigo-500/30 px-2.5 py-1 rounded-lg">
+            12 days / month
+          </span>
+        </div>
+        <input 
+          type="range" 
+          id="daysSlider" 
+          min="2" 
+          max="28" 
+          step="1" 
+          value="12"
+          oninput="recalc()" 
+          class="w-full accent-indigo-500 cursor-pointer h-2 bg-slate-800 rounded-lg"
+        >
+        <div class="flex justify-between text-[11px] text-slate-500 mt-1">
+          <span>Weekends only (4-8 days)</span>
+          <span>Moderate (12-16 days)</span>
+          <span>High demand (20+ days)</span>
+        </div>
+      </div>
+
+      <!-- Dynamic Feature Note -->
+      <div class="p-4 bg-slate-950/70 border border-slate-800 rounded-2xl text-xs space-y-1.5 text-slate-400">
+        <div class="text-slate-300 font-semibold flex items-center gap-1.5">
+          <i class="fa-solid fa-chart-line text-indigo-400"></i> AI Micro-Pricing Insights
+        </div>
+        <p>
+          Rates are calculated using live neighborhood density indices, amenity premiums, and off-peak yield optimization.
+        </p>
+      </div>
+
+    </div>
+
+    <!-- Results Card (5 cols) -->
+    <div class="lg:col-span-5 bg-gradient-to-b from-indigo-950/60 via-slate-900 to-slate-900 border border-indigo-500/40 rounded-3xl p-6 sm:p-8 shadow-2xl space-y-6">
+      
+      <div>
+        <span class="text-xs font-bold uppercase tracking-wider text-indigo-300 block mb-1">
+          Projected Passive Income
+        </span>
+        <div class="flex items-baseline gap-2">
+          <span id="monthlyEarnings" class="text-4xl sm:text-5xl font-extrabold text-white">
+            ₹{{ initial_data.estimated_monthly }}
+          </span>
+          <span class="text-sm text-slate-400 font-medium">/ month</span>
+        </div>
+        <div class="text-xs text-emerald-400 mt-1 flex items-center gap-1 font-semibold">
+          <i class="fa-solid fa-arrow-trend-up"></i>
+          <span id="annualEarnings">₹{{ initial_data.estimated_annual }} / year</span>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-2 gap-3 pt-4 border-t border-slate-800 text-xs">
+        <div class="p-3 bg-slate-950/80 border border-slate-800 rounded-xl">
+          <span class="text-slate-400 block mb-0.5">Optimal Hourly Rate</span>
+          <span id="suggestedHourly" class="text-base font-extrabold text-white">₹{{ initial_data.suggested_hourly }}/hr</span>
+        </div>
+        <div class="p-3 bg-slate-950/80 border border-slate-800 rounded-xl">
+          <span class="text-slate-400 block mb-0.5">Optimal Daily Rate</span>
+          <span id="suggestedDaily" class="text-base font-extrabold text-white">₹{{ initial_data.suggested_daily }}/day</span>
+        </div>
+      </div>
+
+      <!-- Comparison Card -->
+      <div class="p-4 bg-indigo-900/20 border border-indigo-500/30 rounded-2xl text-xs space-y-2">
+        <div class="flex items-center justify-between text-indigo-200 font-semibold">
+          <span>Market Price Advantage</span>
+          <span class="text-emerald-400">High Demand</span>
+        </div>
+        <p class="text-slate-300 leading-relaxed">
+          Traditional commercial spaces charge <span id="commercialComparison" class="font-bold text-white">₹{{ initial_data.commercial_comparison }}/mo</span> for equivalent footprint. SpaceLoop delivers affordable access to seekers while putting pure passive revenue into your pocket.
+        </p>
+      </div>
+
+      <!-- Action CTA -->
+      <a href="{{ url_for('list_space_page') }}" class="w-full bg-gradient-to-r from-indigo-600 via-violet-600 to-indigo-700 hover:from-indigo-500 hover:to-violet-500 text-white font-bold text-sm py-3.5 rounded-xl shadow-lg shadow-indigo-600/30 transition flex items-center justify-center gap-2">
+        <i class="fa-solid fa-wand-magic-sparkles"></i>
+        <span>List This Space with AI</span>
+      </a>
+
+    </div>
+
+  </div>
+
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+  let currentCategory = "Studio";
+
+  function setCalcCategory(cat) {
+    currentCategory = cat;
+    document.querySelectorAll('.cat-btn').forEach(btn => {
+      if (btn.innerText.includes(cat) || (cat === 'Studio' && btn.innerText.includes('Spare Studio')) || (cat === 'Storage' && btn.innerText.includes('Garage Storage')) || (cat === 'Parking' && btn.innerText.includes('Driveway')) || (cat === 'Pop-up/Retail' && btn.innerText.includes('Storefront')) || (cat === 'Event/Workshop' && btn.innerText.includes('Off-Peak')) || (cat === 'Workspace' && btn.innerText.includes('Spare Desk'))) {
+        btn.classList.add('border-indigo-500', 'bg-indigo-600/20', 'text-white');
+        btn.classList.remove('border-slate-700', 'bg-slate-950', 'text-slate-400');
+      } else {
+        btn.classList.remove('border-indigo-500', 'bg-indigo-600/20', 'text-white');
+        btn.classList.add('border-slate-700', 'bg-slate-950', 'text-slate-400');
+      }
+    });
+    recalc();
+  }
+
+  async function recalc() {
+    const sqft = parseInt(document.getElementById('sqftSlider').value);
+    const days = parseInt(document.getElementById('daysSlider').value);
+
+    document.getElementById('sqftDisplay').textContent = `${sqft} sqft`;
+    document.getElementById('daysDisplay').textContent = `${days} days / month`;
+
+    try {
+      const resp = await fetch('/api/calculator/estimate', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({
+          category: currentCategory,
+          sqft: sqft,
+          days_per_month: days
+        })
+      });
+      const data = await resp.json();
+
+      document.getElementById('monthlyEarnings').textContent = `₹${data.estimated_monthly}`;
+      document.getElementById('annualEarnings').textContent = `₹${data.estimated_annual} / year`;
+      document.getElementById('suggestedHourly').textContent = `₹${data.suggested_hourly}/hr`;
+      document.getElementById('suggestedDaily').textContent = `₹${data.suggested_daily}/day`;
+      document.getElementById('commercialComparison').textContent = `₹${data.commercial_comparison}/mo`;
+    } catch (e) {
+      console.error(e);
+    }
+  }
+</script>
+{% endblock %}
