@@ -1,20 +1,29 @@
+from datetime import timedelta
 import os
 
 basedir = os.path.abspath(os.path.dirname(__file__))
 
-_db_url = os.environ.get("DATABASE_URL", "sqlite:///" + os.path.join(basedir, "app.db"))
-# Render's managed Postgres gives a "postgres://" URL; SQLAlchemy 2.x needs "postgresql://".
-if _db_url.startswith("postgres://"):
-    _db_url = _db_url.replace("postgres://", "postgresql://", 1)
-
 
 class Config:
-    SECRET_KEY = os.environ.get("SECRET_KEY", "cycle-care-secret-key-2026")
-    SQLALCHEMY_DATABASE_URI = _db_url
+    # Use environment secret key; in production this must be kept confidential
+    SECRET_KEY = os.environ.get("SECRET_KEY", "spaceloop-dev-secret-key-change-in-prod-2026")
+    SQLALCHEMY_DATABASE_URI = os.environ.get(
+        "DATABASE_URL", "sqlite:///" + os.path.join(basedir, "app.db")
+    )
     SQLALCHEMY_TRACK_MODIFICATIONS = False
-    SQLALCHEMY_ENGINE_OPTIONS = {
-        "pool_pre_ping": True,
-        "pool_recycle": 300,
-    } if not _db_url.startswith("sqlite") else {}
 
+    # Security: Cookie & Session hardening
+    SESSION_COOKIE_HTTPONLY = True
+    SESSION_COOKIE_SAMESITE = "Lax"
+    SESSION_COOKIE_SECURE = os.environ.get("FLASK_ENV") == "production"
+    PERMANENT_SESSION_LIFETIME = timedelta(days=7)
+
+    # Security: Limit maximum request size to 5MB to prevent memory DoS
+    MAX_CONTENT_LENGTH = 5 * 1024 * 1024
+
+    # AI Service Keys
     GROQ_API_KEY = os.environ.get("GROQ_API_KEY", "")
+    GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", os.environ.get("GOOGLE_API_KEY", ""))
+    
+    # Upload settings
+    UPLOAD_FOLDER = os.path.join(basedir, "static", "uploads")

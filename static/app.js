@@ -1,250 +1,350 @@
-/**
- * Cycle Care & Partner Connect - Shared Client Utilities
- */
-
-function getUser() {
-  try {
-    const raw = localStorage.getItem("cycle_user");
-    return raw ? JSON.parse(raw) : null;
-  } catch (e) {
-    return null;
-  }
-}
-
-function setUser(user) {
-  localStorage.setItem("cycle_user", JSON.stringify(user));
-}
-
-function requireUser(expectedRole = null) {
-  const user = getUser();
-  if (!user) {
-    window.location.href = "/login";
-    return null;
-  }
-  if (expectedRole && user.role !== expectedRole) {
-    if (user.role === "partner") {
-      window.location.href = "/partner";
-    } else {
-      window.location.href = "/dashboard";
-    }
-    return null;
-  }
-  return user;
-}
-
-function logout() {
-  localStorage.removeItem("cycle_user");
-  window.location.href = "/login";
-}
-
-async function apiGet(url) {
-  try {
-    const res = await fetch(url);
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({ error: "Request failed" }));
-      throw new Error(err.error || `HTTP ${res.status}`);
-    }
-    return await res.json();
-  } catch (e) {
-    console.error("API GET Error:", e);
-    throw e;
-  }
-}
-
-async function apiPost(url, data) {
-  try {
-    const res = await fetch(url, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(data)
-    });
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({ error: "Request failed" }));
-      throw new Error(err.error || `HTTP ${res.status}`);
-    }
-    return await res.json();
-  } catch (e) {
-    console.error("API POST Error:", e);
-    throw e;
-  }
-}
-
-// ---------- THEME MANAGEMENT (DARK / LIGHT MODE) ----------
-function initTheme() {
-  const savedTheme = localStorage.getItem("cycle_theme") || "light";
-  document.documentElement.setAttribute("data-theme", savedTheme);
-  updateThemeIcons(savedTheme);
-}
-
-function toggleTheme() {
-  const current = document.documentElement.getAttribute("data-theme") || "light";
-  const next = current === "dark" ? "light" : "dark";
-  document.documentElement.setAttribute("data-theme", next);
-  localStorage.setItem("cycle_theme", next);
-  updateThemeIcons(next);
-  showToast(`Switched to ${next === "dark" ? "Dark" : "Light"} Mode`);
-}
-
-function updateThemeIcons(theme) {
-  document.querySelectorAll(".theme-icon").forEach(el => {
-    el.innerText = theme === "dark" ? "☀️" : "🌙";
-  });
-}
-
-// ---------- COMPANION NAME CUSTOMIZATION ----------
-function getCompanionName() {
-  return localStorage.getItem("companion_name") || "Aura";
-}
-
-function setCompanionName(name) {
-  const clean = name ? name.trim() : "Aura";
-  localStorage.setItem("companion_name", clean || "Aura");
-  showToast(`Companion name set to ${clean}!`);
-  return clean;
-}
-
-// ---------- DISCREET PANIC SHIELD ----------
-function togglePanicShield() {
-  if (document.body.classList.contains("panic-shield-active")) {
-    exitPanicShield();
-  } else {
-    document.body.classList.add("panic-shield-active");
-  }
-}
-
-function exitPanicShield() {
-  document.body.classList.remove("panic-shield-active");
-  localStorage.removeItem("panic_shield");
-}
-
-function initPanicShield() {
-  // Clear any sticky panic shield from previous sessions so user is never trapped
-  localStorage.removeItem("panic_shield");
-  document.body.classList.remove("panic-shield-active");
-
-  if (!document.getElementById("panicShieldDocument")) {
-    const decoy = document.createElement("div");
-    decoy.id = "panicShieldDocument";
-    decoy.innerHTML = `
-      <button class="exit-panic-btn" onclick="exitPanicShield()" title="Resume private app view">
-        ✕ Exit Discreet View (Esc)
-      </button>
-      <h1>BIOCHEM 301: Advanced Cellular Metabolism & Enzymatic Pathways</h1>
-      <p style="color:#666; font-size:12px;">Last modified: Today, 11:42 AM • Shared with Course Study Group</p>
-      
-      <h2>1. Glycolysis & Substrate-Level Phosphorylation</h2>
-      <p>The hexokinase-catalyzed step is thermodynamically irreversible under standard physiological conditions (ΔG°' = -16.7 kJ/mol). Notice how the glucose-6-phosphate intermediate is trapped intracellularly due to its negative charge.</p>
-      
-      <h2>2. Citric Acid Cycle Regulation</h2>
-      <p>Isocitrate dehydrogenase functions as the rate-limiting step, exhibiting positive cooperativity with ADP and allosteric inhibition by elevated ATP and NADH ratios. Review Figure 4.2 for the succinate dehydrogenase complex mechanism.</p>
-      
-      <h2>3. Homework & Lab Deadlines</h2>
-      <p>• Thursday: Submit Spectrophotometry calibration curve writeup.<br>• Next Tuesday: Midterm examination covering modules 1 through 5.</p>
-    `;
-    const shell = document.querySelector(".app-shell") || document.body;
-    shell.appendChild(decoy);
-  }
-
-  // Keybind: Pressing Escape exits or toggles Panic Shield
-  window.addEventListener("keydown", (e) => {
-    if (e.key === "Escape") {
-      togglePanicShield();
-    }
-  });
-}
-
-// Toast notification helper
-function showToast(message, type = "info") {
-  let toast = document.getElementById("appToast");
-  if (!toast) {
-    toast = document.createElement("div");
-    toast.id = "appToast";
-    toast.style.cssText = `
-      position: fixed;
-      bottom: 24px;
-      left: 50%;
-      transform: translateX(-50%);
-      background: #341D2C;
-      color: #FFF;
-      padding: 12px 24px;
-      border-radius: 9999px;
-      font-size: 14px;
-      font-weight: 600;
-      box-shadow: 0 8px 24px rgba(0,0,0,0.18);
-      z-index: 9999;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      transition: all 0.3s ease;
-      opacity: 0;
-      pointer-events: none;
-    `;
-    document.body.appendChild(toast);
-  }
-  toast.innerText = message;
-  toast.style.opacity = "1";
-  toast.style.transform = "translateX(-50%) translateY(0)";
-
-  setTimeout(() => {
-    toast.style.opacity = "0";
-    toast.style.transform = "translateX(-50%) translateY(10px)";
-  }, 3500);
-}
-
-// ---------- PWA INSTALL & SERVICE WORKER ----------
-let deferredInstallPrompt = null;
-
-function initPWA() {
-  // Register Service Worker
-  if ('serviceWorker' in navigator) {
-    window.addEventListener('load', () => {
-      navigator.serviceWorker.register('/static/sw.js')
-        .then((reg) => console.log('Service Worker registered with scope:', reg.scope))
-        .catch((err) => console.warn('Service Worker registration failed:', err));
-    });
-  }
-
-  // Handle Chrome / Android / Desktop Install Prompt
-  window.addEventListener('beforeinstallprompt', (e) => {
-    e.preventDefault();
-    deferredInstallPrompt = e;
-    const installBtns = document.querySelectorAll('.btn-install-pwa');
-    installBtns.forEach(b => b.style.display = 'inline-flex');
-  });
-
-  window.addEventListener('appinstalled', () => {
-    deferredInstallPrompt = null;
-    const installBtns = document.querySelectorAll('.btn-install-pwa');
-    installBtns.forEach(b => b.style.display = 'none');
-    showToast('Cycle Care installed successfully! Enjoy your native app experience. 🎉');
-  });
-}
-
-function promptInstallApp() {
-  if (deferredInstallPrompt) {
-    deferredInstallPrompt.prompt();
-    deferredInstallPrompt.userChoice.then((choiceResult) => {
-      if (choiceResult.outcome === 'accepted') {
-        console.log('User accepted the PWA install prompt');
-      }
-      deferredInstallPrompt = null;
-    });
-  } else {
-    // Check if iOS
-    const isIos = /iphone|ipad|ipod/.test(window.navigator.userAgent.toLowerCase());
-    if (isIos) {
-      alert("To install Cycle Care on iPhone/iPad:\n1. Tap the Share button (square with arrow up ⎋) at the bottom of Safari.\n2. Scroll down and tap 'Add to Home Screen' ➕.\n3. Tap 'Add' to run it as a standalone app!");
-    } else {
-      alert("To install on Desktop or Mobile: Look for the 'Install' icon ⊕ in your browser address bar, or use Chrome/Edge Menu > 'Install Cycle Care'.");
-    }
-  }
-}
-
-// Initialize theme immediately to prevent flashing
-initTheme();
+// SpaceLoop Core Client Application Script
 
 document.addEventListener("DOMContentLoaded", () => {
-  initPanicShield();
-  initPWA();
-  initTheme();
+  initConcierge();
+  initAiSearch();
 });
+
+/* ==========================================
+   AI Concierge (LoopBot)
+   ========================================== */
+function initConcierge() {
+  const openBtn = document.getElementById("openConciergeBtn");
+  const closeBtn = document.getElementById("closeConciergeBtn");
+  const modal = document.getElementById("conciergeModal");
+  const form = document.getElementById("chatForm");
+  const input = document.getElementById("chatInput");
+  const chatMessages = document.getElementById("chatMessages");
+
+  if (!modal) return;
+
+  if (openBtn) {
+    openBtn.addEventListener("click", () => {
+      modal.classList.remove("hidden");
+      if (input) input.focus();
+    });
+  }
+
+  if (closeBtn) {
+    closeBtn.addEventListener("click", () => {
+      modal.classList.add("hidden");
+    });
+  }
+
+  if (form && input && chatMessages) {
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const text = input.value.trim();
+      if (!text) return;
+
+      appendChatMessage("user", text);
+      input.value = "";
+
+      const typingId = appendTypingIndicator();
+
+      try {
+        const resp = await fetch("/api/ai/chat", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            messages: [{ role: "user", content: text }],
+          }),
+        });
+        const data = await resp.json();
+        removeTypingIndicator(typingId);
+        appendChatMessage("assistant", data.reply || "I am here to help you navigate SpaceLoop!");
+      } catch (err) {
+        removeTypingIndicator(typingId);
+        appendChatMessage("assistant", "I had trouble connecting to the AI service. Please try again.");
+      }
+    });
+  }
+}
+
+function appendChatMessage(role, text) {
+  const container = document.getElementById("chatMessages");
+  if (!container) return;
+
+  const row = document.createElement("div");
+  row.className = "flex gap-2.5 " + (role === "user" ? "justify-end" : "");
+
+  if (role === "assistant") {
+    row.innerHTML = `
+      <div class="w-7 h-7 rounded-full bg-indigo-600/30 text-indigo-300 flex items-center justify-center shrink-0 text-xs">
+        <i class="fa-solid fa-robot"></i>
+      </div>
+      <div class="bg-slate-800 text-slate-200 p-3 rounded-2xl rounded-tl-sm max-w-[85%] border border-slate-700/50 leading-relaxed text-xs">
+        ${formatMarkdown(text)}
+      </div>
+    `;
+  } else {
+    row.innerHTML = `
+      <div class="bg-indigo-600 text-white p-3 rounded-2xl rounded-tr-sm max-w-[85%] leading-relaxed text-xs">
+        ${escapeHtml(text)}
+      </div>
+    `;
+  }
+
+  container.appendChild(row);
+  container.scrollTop = container.scrollHeight;
+}
+
+function appendTypingIndicator() {
+  const container = document.getElementById("chatMessages");
+  if (!container) return null;
+
+  const id = "typing-" + Date.now();
+  const row = document.createElement("div");
+  row.id = id;
+  row.className = "flex gap-2.5";
+  row.innerHTML = `
+    <div class="w-7 h-7 rounded-full bg-indigo-600/30 text-indigo-300 flex items-center justify-center shrink-0 text-xs">
+      <i class="fa-solid fa-robot"></i>
+    </div>
+    <div class="bg-slate-800 text-slate-400 px-3 py-2 rounded-2xl rounded-tl-sm text-xs flex items-center gap-1">
+      <span class="w-1.5 h-1.5 bg-indigo-400 rounded-full animate-bounce"></span>
+      <span class="w-1.5 h-1.5 bg-indigo-400 rounded-full animate-bounce [animation-delay:0.2s]"></span>
+      <span class="w-1.5 h-1.5 bg-indigo-400 rounded-full animate-bounce [animation-delay:0.4s]"></span>
+    </div>
+  `;
+  container.appendChild(row);
+  container.scrollTop = container.scrollHeight;
+  return id;
+}
+
+function removeTypingIndicator(id) {
+  if (!id) return;
+  const el = document.getElementById(id);
+  if (el) el.remove();
+}
+
+function sendQuickPrompt(promptText) {
+  const input = document.getElementById("chatInput");
+  const form = document.getElementById("chatForm");
+  if (input && form) {
+    input.value = promptText;
+    form.dispatchEvent(new Event("submit"));
+  }
+}
+
+/* ==========================================
+   AI Natural Language Search
+   ========================================== */
+function initAiSearch() {
+  const searchForm = document.getElementById("aiSearchForm");
+  const queryInput = document.getElementById("aiQueryInput");
+
+  if (!searchForm || !queryInput) return;
+
+  searchForm.addEventListener("submit", (e) => {
+    e.preventDefault();
+    const query = queryInput.value.trim();
+    if (!query) return;
+    executeAiSearch(query);
+  });
+}
+
+function applySearchPrompt(promptText) {
+  const input = document.getElementById("aiQueryInput");
+  if (input) {
+    input.value = promptText;
+    executeAiSearch(promptText);
+  }
+}
+
+async function executeAiSearch(queryText) {
+  const btn = document.getElementById("aiSearchBtn");
+  const grid = document.getElementById("spacesGrid");
+  const matchHeader = document.getElementById("aiMatchHeader");
+  const queryLabel = document.getElementById("aiMatchQueryLabel");
+  const noResults = document.getElementById("noResultsState");
+
+  if (btn) {
+    btn.disabled = true;
+    btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin text-xs"></i> <span>Matching...</span>`;
+  }
+
+  try {
+    const resp = await fetch("/api/spaces/ai-match", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ query: queryText }),
+    });
+    const data = await resp.json();
+    const results = data.results || [];
+
+    if (matchHeader && queryLabel) {
+      matchHeader.classList.remove("hidden");
+      queryLabel.textContent = `Scored & sorted for: "${queryText}"`;
+    }
+
+    if (results.length === 0) {
+      if (grid) grid.innerHTML = "";
+      if (noResults) noResults.classList.remove("hidden");
+      return;
+    }
+
+    if (noResults) noResults.classList.add("hidden");
+
+    // Render ranked cards
+    if (grid) {
+      grid.innerHTML = results
+        .map((item) => renderSpaceCard(item.space, item))
+        .join("");
+    }
+
+    // Scroll smoothly to results
+    if (matchHeader) {
+      matchHeader.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  } catch (err) {
+    console.error("AI Search failed:", err);
+  } finally {
+    if (btn) {
+      btn.disabled = false;
+      btn.innerHTML = `<span>Match with AI</span> <i class="fa-solid fa-arrow-right text-xs group-hover:translate-x-0.5 transition"></i>`;
+    }
+  }
+}
+
+function resetSearch() {
+  window.location.href = "/";
+}
+
+function sanitizePhotoUrl(url) {
+  if (!url || typeof url !== 'string') {
+    return 'https://images.unsplash.com/photo-1513694203232-719a280e022f?auto=format&fit=crop&w=800&q=80';
+  }
+  const clean = url.trim();
+  const lower = clean.toLowerCase();
+  if (lower.startsWith('javascript:') || lower.startsWith('vbscript:') || lower.includes('<script')) {
+    return 'https://images.unsplash.com/photo-1513694203232-719a280e022f?auto=format&fit=crop&w=800&q=80';
+  }
+  if (lower.startsWith('http://') || lower.startsWith('https://') || lower.startsWith('data:image/')) {
+    return escapeHtml(clean);
+  }
+  return 'https://images.unsplash.com/photo-1513694203232-719a280e022f?auto=format&fit=crop&w=800&q=80';
+}
+
+function renderSpaceCard(space, matchMeta) {
+  const score = matchMeta?.match_score || space.ai_suitability_score || 92;
+  const badge = matchMeta?.match_badge || "Top Match";
+  const reasons = matchMeta?.match_reasons || [];
+  const reasonHtml =
+    reasons.length > 0
+      ? `<div class="mb-3 p-2 rounded-lg bg-indigo-950/40 border border-indigo-500/20 text-xs text-indigo-300">
+           <i class="fa-solid fa-check text-emerald-400 mr-1"></i> ${escapeHtml(reasons[0])}
+         </div>`
+      : "";
+
+  const photoUrl = sanitizePhotoUrl(space.photos && space.photos[0]);
+
+  return `
+    <div class="space-card group bg-slate-900/90 border border-slate-800 rounded-2xl overflow-hidden hover:border-indigo-500/50 transition-all duration-300 flex flex-col hover:shadow-xl hover:shadow-indigo-950/40">
+      
+      <div class="relative aspect-[16/10] overflow-hidden bg-slate-950">
+        <img 
+          src="${photoUrl}" 
+          alt="${escapeHtml(space.title)}" 
+          class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+          loading="lazy"
+        >
+        <div class="absolute inset-0 bg-gradient-to-t from-slate-950/90 via-transparent to-black/30"></div>
+
+        <div class="absolute top-3 left-3">
+          <span class="px-2.5 py-1 rounded-lg text-xs font-semibold backdrop-blur-md bg-slate-900/80 text-white border border-white/10 shadow-sm">
+            ${escapeHtml(space.category)}
+          </span>
+        </div>
+
+        <div class="absolute top-3 right-3">
+          <span class="px-2.5 py-1 rounded-lg text-xs font-bold backdrop-blur-md bg-emerald-500/90 text-white shadow-sm flex items-center gap-1">
+            <i class="fa-solid fa-sparkles text-[10px]"></i>
+            <span>${score}% ${escapeHtml(badge)}</span>
+          </span>
+        </div>
+
+        <div class="absolute bottom-3 left-3 right-3 flex items-end justify-between">
+          <div>
+            <span class="text-2xl font-extrabold text-white">₹${Math.round(space.price_hourly)}</span>
+            <span class="text-xs text-slate-300 font-medium">/hour</span>
+            <span class="text-xs text-slate-400 ml-1.5">• ₹${Math.round(space.price_daily)}/day</span>
+          </div>
+          <div class="text-xs text-slate-300 flex items-center gap-1 font-medium bg-black/40 px-2 py-0.5 rounded backdrop-blur-sm">
+            <i class="fa-solid fa-star text-amber-400 text-[11px]"></i> ${space.rating || 4.9}
+          </div>
+        </div>
+      </div>
+
+      <div class="p-5 flex flex-col flex-grow">
+        <div class="flex items-center gap-2 text-xs text-slate-400 mb-1.5">
+          <i class="fa-solid fa-location-dot text-indigo-400"></i>
+          <span>${escapeHtml(space.neighborhood || space.city)}, ${escapeHtml(space.state)}</span>
+          <span>•</span>
+          <span>${space.sqft} sqft</span>
+          <span>•</span>
+          <span>Up to ${space.max_capacity} ppl</span>
+        </div>
+
+        <h3 class="text-base font-bold text-white group-hover:text-indigo-300 transition line-clamp-1 mb-2">
+          <a href="/space/${space.id}">
+            ${escapeHtml(space.title)}
+          </a>
+        </h3>
+
+        <p class="text-xs text-slate-400 line-clamp-2 mb-4 flex-grow leading-relaxed">
+          ${escapeHtml(space.description)}
+        </p>
+
+        <div class="p-2.5 rounded-xl bg-slate-950/70 border border-slate-800/80 mb-4 space-y-1.5 text-xs">
+          <div class="flex items-center gap-2 text-slate-300">
+            <i class="fa-solid fa-sun text-amber-400 w-4 text-center"></i>
+            <span class="text-slate-400 truncate">${escapeHtml(space.ai_lighting || "Natural lighting")}</span>
+          </div>
+          <div class="flex items-center gap-2 text-slate-300">
+            <i class="fa-solid fa-volume-xmark text-cyan-400 w-4 text-center"></i>
+            <span class="text-slate-400 truncate">${escapeHtml(space.ai_noise_level || "Quiet environment")}</span>
+          </div>
+        </div>
+
+        ${reasonHtml}
+
+        <div class="pt-3 border-t border-slate-800/80 flex items-center justify-between gap-3">
+          <span class="text-[11px] text-slate-500 flex items-center gap-1">
+            <i class="fa-solid fa-file-signature text-slate-400"></i> AI Micro-Lease
+          </span>
+          <a 
+            href="/space/${space.id}"
+            class="px-3.5 py-1.5 rounded-lg bg-indigo-600/20 hover:bg-indigo-600 text-indigo-300 hover:text-white border border-indigo-500/30 text-xs font-semibold transition"
+          >
+            View & Book Space
+          </a>
+        </div>
+      </div>
+
+    </div>
+  `;
+}
+
+function escapeHtml(str) {
+  if (!str) return "";
+  return String(str)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
+function formatMarkdown(text) {
+  if (!text) return "";
+  let out = escapeHtml(text);
+  // Bold
+  out = out.replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>");
+  // Bullet lists
+  out = out.replace(/\n\* (.*?)/g, "<br>• $1");
+  out = out.replace(/\n- (.*?)/g, "<br>• $1");
+  // New lines
+  out = out.replace(/\n/g, "<br>");
+  return out;
+}

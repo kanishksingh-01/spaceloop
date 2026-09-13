@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Printable Door QR Code | {{ space.title }}</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    @media print {
+      .no-print { display: none !important; }
+      body { background: white !important; color: black !important; padding: 0 !important; }
+      .sheet { border: 2px dashed #000 !important; box-shadow: none !important; margin: 0 !important; width: 100% !important; }
+    }
+  </style>
+</head>
+<body class="bg-slate-100 text-slate-900 min-h-screen p-4 sm:p-8 flex flex-col items-center justify-center font-sans antialiased">
+
+  <!-- Print Controls (hidden in print) -->
+  <div class="no-print max-w-xl w-full mb-6 flex items-center justify-between">
+    <button onclick="window.history.back()" class="px-4 py-2 rounded-lg bg-white border border-slate-300 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition flex items-center gap-2">
+      <i class="fa-solid fa-arrow-left"></i> Back
+    </button>
+    <div class="flex items-center gap-3">
+      <span class="text-xs text-slate-500 font-medium">Laminate for ₹5 and tape to room door</span>
+      <button onclick="window.print()" class="px-5 py-2.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold transition flex items-center gap-2 shadow-md">
+        <i class="fa-solid fa-print"></i> Print QR Pass
+      </button>
+    </div>
+  </div>
+
+  <!-- The Printable Sign (A4 / Letter Sheet Format) -->
+  <div class="sheet max-w-xl w-full bg-white border-2 border-slate-900 rounded-3xl p-8 sm:p-12 shadow-2xl text-center flex flex-col items-center relative">
+    
+    <!-- Top Branding -->
+    <div class="flex items-center gap-2 mb-4">
+      <div class="w-8 h-8 rounded-lg bg-black text-white flex items-center justify-center font-bold text-base">
+        <i class="fa-solid fa-infinity"></i>
+      </div>
+      <span class="text-xl font-black tracking-tight text-slate-900">
+        Space<span class="text-indigo-600">Loop</span>
+      </span>
+      <span class="text-[10px] uppercase font-bold tracking-widest px-2 py-0.5 rounded bg-slate-100 border border-slate-300 text-slate-700">
+        Official Door Pass
+      </span>
+    </div>
+
+    <!-- Space Title & Address -->
+    <h1 class="text-2xl sm:text-3xl font-black text-slate-950 tracking-tight leading-snug">
+      {{ space.title }}
+    </h1>
+    <p class="text-sm font-medium text-slate-600 mt-1 mb-6">
+      {{ space.address }}, {{ space.neighborhood }}, {{ space.city }}
+    </p>
+
+    <!-- Large High-Contrast QR Code Card -->
+    <div class="p-6 bg-slate-50 border-2 border-black rounded-2xl mb-6 flex flex-col items-center shadow-inner">
+      <!-- Simulated High-Precision QR Matrix -->
+      <div class="w-56 h-56 bg-white border border-slate-300 rounded-xl p-3 flex flex-col items-center justify-center relative">
+        <!-- SVG Generated QR Simulation -->
+        <svg viewBox="0 0 100 100" class="w-full h-full">
+          <!-- Outer Positioning Markers -->
+          <rect x="5" y="5" width="28" height="28" fill="black" rx="2" />
+          <rect x="9" y="9" width="20" height="20" fill="white" />
+          <rect x="13" y="13" width="12" height="12" fill="black" />
+
+          <rect x="67" y="5" width="28" height="28" fill="black" rx="2" />
+          <rect x="71" y="9" width="20" height="20" fill="white" />
+          <rect x="75" y="13" width="12" height="12" fill="black" />
+
+          <rect x="5" y="67" width="28" height="28" fill="black" rx="2" />
+          <rect x="9" y="71" width="20" height="20" fill="white" />
+          <rect x="13" y="75" width="12" height="12" fill="black" />
+
+          <!-- Internal Data Elements -->
+          <rect x="37" y="10" width="6" height="6" fill="black" />
+          <rect x="47" y="10" width="6" height="6" fill="black" />
+          <rect x="57" y="10" width="6" height="6" fill="black" />
+          <rect x="37" y="20" width="6" height="6" fill="black" />
+          <rect x="47" y="24" width="6" height="6" fill="black" />
+          <rect x="57" y="20" width="6" height="6" fill="black" />
+
+          <rect x="10" y="37" width="6" height="6" fill="black" />
+          <rect x="20" y="37" width="6" height="6" fill="black" />
+          <rect x="37" y="37" width="10" height="10" fill="black" />
+          <rect x="52" y="37" width="6" height="6" fill="black" />
+          <rect x="65" y="37" width="6" height="6" fill="black" />
+          <rect x="75" y="37" width="15" height="6" fill="black" />
+
+          <rect x="10" y="47" width="12" height="6" fill="black" />
+          <rect x="26" y="47" width="6" height="6" fill="black" />
+          <rect x="37" y="50" width="6" height="6" fill="black" />
+          <rect x="47" y="47" width="6" height="15" fill="black" />
+          <rect x="57" y="50" width="12" height="6" fill="black" />
+          <rect x="75" y="47" width="6" height="6" fill="black" />
+          <rect x="85" y="47" width="6" height="6" fill="black" />
+
+          <rect x="10" y="57" width="6" height="6" fill="black" />
+          <rect x="22" y="57" width="8" height="6" fill="black" />
+          <rect x="37" y="65" width="14" height="6" fill="black" />
+          <rect x="57" y="65" width="6" height="12" fill="black" />
+          <rect x="68" y="57" width="6" height="6" fill="black" />
+          <rect x="80" y="57" width="10" height="6" fill="black" />
+
+          <rect x="37" y="75" width="6" height="15" fill="black" />
+          <rect x="47" y="80" width="12" height="6" fill="black" />
+          <rect x="68" y="75" width="18" height="6" fill="black" />
+          <rect x="75" y="85" width="12" height="6" fill="black" />
+        </svg>
+      </div>
+      <div class="font-mono text-xs font-bold text-slate-800 tracking-widest uppercase mt-3">
+        {{ space.room_qr_token or 'SPACELOOP_QR_IITD_ROOM1' }}
+      </div>
+    </div>
+
+    <!-- Instructions for Renter -->
+    <div class="w-full bg-slate-50 border border-slate-300 rounded-xl p-4 text-left mb-6">
+      <div class="text-xs font-bold uppercase tracking-wider text-slate-900 mb-2">
+        <i class="fa-solid fa-list-check text-indigo-600 mr-1"></i> How to Access this Space:
+      </div>
+      <ol class="text-xs text-slate-700 space-y-1.5 list-decimal list-inside font-medium">
+        <li>Open your <b>SpaceLoop App</b> on arrival.</li>
+        <li>Tap <b>"In-Room Console"</b> and scan this QR code.</li>
+        <li>Show your <b>4-digit Arrival PIN</b> to the caretaker for the key.</li>
+        <li>When leaving, scan this QR again to <b>instantly release your ₹100 deposit</b>.</li>
+      </ol>
+    </div>
+
+    <!-- Bottom Footer -->
+    <div class="w-full border-t border-slate-300 pt-4 flex items-center justify-between text-[11px] text-slate-500 font-semibold">
+      <span>Verified Host: {{ space.owner_name }}</span>
+      <span>Discom CA: {{ space.discom_ca_number or 'Verified' }}</span>
+      <span>Support: spaceloop.in</span>
+    </div>
+
+  </div>
+
+</body>
+</html>

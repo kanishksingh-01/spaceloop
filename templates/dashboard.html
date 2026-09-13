@@ -1,638 +1,204 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Your Private Space — Cycle Care</title>
-  <link rel="stylesheet" href="/static/style.css">
-  <link rel="manifest" href="/static/manifest.json">
-  <meta name="theme-color" content="#CE6B4E">
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="default">
-  <meta name="apple-mobile-web-app-title" content="Cycle Care">
-  <link rel="apple-touch-icon" href="/static/icons/apple-touch-icon.png">
-  <link rel="icon" type="image/png" href="/static/icons/favicon.png">
-  <style>
-    .hormone-chart-svg {
-      width: 100%;
-      height: 180px;
-      overflow: visible;
-    }
-    .tag-cloud {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 0.45rem;
-      margin: 0.5rem 0 1rem 0;
-    }
-    .symptom-tag {
-      background: var(--bg-card);
-      border: 1px solid var(--border);
-      border-radius: var(--radius-full);
-      padding: 0.35rem 0.8rem;
-      font-size: 0.8rem;
-      cursor: pointer;
-      user-select: none;
-      transition: all 0.15s;
-    }
-    .symptom-tag.active {
-      background: var(--aubergine);
-      color: #FFF;
-      border-color: var(--aubergine);
-    }
-    .care-received-banner {
-      background: linear-gradient(135deg, #FCEFE9 0%, #F8E3DB 100%);
-      border: 1.5px solid #E8CFC5;
-      border-radius: var(--radius-lg);
-      padding: 1rem 1.25rem;
-      margin-bottom: 1.25rem;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      box-shadow: var(--shadow-sm);
-    }
-  </style>
-</head>
-<body>
-<div class="app-shell">
-  {% include "_nav.html" %}
+{% extends "base.html" %}
 
-  <div class="app-body">
-    <!-- Partner Micro-Care Notification Banner (if any) -->
-    <div id="careBanner" class="care-received-banner" style="display:none;">
-      <div style="display: flex; align-items: center; gap: 0.75rem;">
-        <span id="careIcon" style="font-size: 2rem;">💌</span>
-        <div>
-          <h3 id="careTitle" style="font-size: 1rem; margin-bottom: 2px;">A care token from your partner</h3>
-          <p id="careMsg" style="font-size: 0.85rem; color: var(--aubergine-soft); margin: 0;"></p>
-        </div>
-      </div>
-      <button class="btn btn-secondary btn-sm" onclick="ackCareAction()" style="margin: 0; white-space: nowrap;">Acknowledge ❤️</button>
-    </div>
+{% block title %}My SpaceLoop Dashboard | Bookings & Agreements{% endblock %}
 
-    <!-- Header & Partner Status -->
-    <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 1.25rem;">
+{% block content %}
+
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+
+  <!-- Dashboard User Header -->
+  <div class="bg-slate-900/90 border border-slate-800 rounded-3xl p-6 sm:p-8 mb-8 flex flex-col md:flex-row md:items-center justify-between gap-6 shadow-xl">
+    <div class="flex items-center gap-4">
+      <img src="{{ current_user.avatar_url or 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80' }}" alt="{{ current_user.name }}" class="w-16 h-16 rounded-2xl object-cover border-2 border-indigo-500/40">
       <div>
-        <h1 id="greeting">Welcome</h1>
-        <p id="subGreeting">Your private sanctuary for balance & rhythm.</p>
-      </div>
-      <div style="text-align: right;">
-        <span id="partnerBadge" class="pill low">Connecting...</span>
-      </div>
-    </div>
-
-    <!-- Tab Bar -->
-    <div class="tabbar">
-      <button class="active" data-tab="cycle" onclick="showTab('cycle')">Cycle Hub</button>
-      <button data-tab="daily" onclick="showTab('daily')">Daily Check-in</button>
-      <button data-tab="symptom" onclick="showTab('symptom')">Is this normal?</button>
-      <button data-tab="pcod" onclick="showTab('pcod')">PCOD Check</button>
-      <button data-tab="journal" onclick="showTab('journal')">Private Journal</button>
-    </div>
-
-    <!-- TAB 1: CYCLE HUB -->
-    <div class="tab-panel active" id="tab-cycle">
-      <!-- Top Grid: Circular Phase Wheel + Biorhythm Info -->
-      <div class="card" id="phaseCard" style="display: none;">
-        <div class="phase-hero-grid">
-          <!-- Circular Gauge -->
-          <div class="cycle-ring-container">
-            <svg class="cycle-ring-svg" viewBox="0 0 100 100">
-              <circle class="cycle-ring-bg" cx="50" cy="50" r="40"></circle>
-              <circle id="cycleProgressCircle" class="cycle-ring-progress" cx="50" cy="50" r="40" stroke-dasharray="251.2" stroke-dashoffset="251.2"></circle>
-            </svg>
-            <div class="cycle-ring-inner">
-              <div class="day-number" id="ringDayNum">--</div>
-              <div class="day-label" id="ringPhaseName">Phase</div>
-            </div>
-          </div>
-
-          <!-- Biorhythm Details -->
-          <div>
-            <span class="pill" id="phasePill">Phase</span>
-            <h2 id="phaseTitle" style="margin-top: 0.4rem; font-size: 1.4rem;">Phase Name</h2>
-            <p id="phaseDesc" style="margin-bottom: 0.75rem; font-size: 0.9rem;">Phase summary...</p>
-
-            <div style="background: var(--bg-card-subtle); padding: 0.75rem 1rem; border-radius: var(--radius-md); font-size: 0.85rem; margin-bottom: 0.5rem;">
-              <b>Next Period:</b> <span id="nextPeriodText">--</span><br>
-              <b>Fertility Window:</b> <span id="fertilityText">--</span>
-            </div>
-          </div>
+        <div class="flex flex-wrap items-center gap-2 mb-1">
+          <h1 class="text-2xl font-extrabold text-white">{{ current_user.name }}</h1>
+          <span class="px-2 py-0.5 rounded text-[11px] font-semibold bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 uppercase">
+            {{ current_user.role }}
+          </span>
+          {% if current_user.is_student_verified %}
+          <span class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 flex items-center gap-1">
+            <i class="fa-solid fa-badge-check"></i> DigiLocker Verified Student
+          </span>
+          {% endif %}
+          {% if current_user.is_host_verified %}
+          <span class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 flex items-center gap-1">
+            <i class="fa-solid fa-bolt"></i> Discom Verified Host
+          </span>
+          {% endif %}
         </div>
-
-        <!-- Phase Step Dots -->
-        <div class="phase-track" id="phaseTrack">
-          <div class="phase-step" id="step-Menstrual"><div class="dot"></div><div class="step-title">Menstrual</div></div>
-          <div class="phase-step" id="step-Follicular"><div class="dot"></div><div class="step-title">Follicular</div></div>
-          <div class="phase-step" id="step-Ovulation"><div class="dot"></div><div class="step-title">Ovulation</div></div>
-          <div class="phase-step" id="step-Luteal"><div class="dot"></div><div class="step-title">Luteal</div></div>
-        </div>
-      </div>
-
-      <!-- Dynamic Hormone Wave Card -->
-      <div class="card hormone-canvas-card" id="hormoneCard" style="display: none;">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
-          <h3>Dynamic Hormone Wave</h3>
-          <span style="font-size: 0.78rem; color: var(--text-muted);">Real-time hormonal curve across 28 days</span>
-        </div>
-        <div class="hormone-legend">
-          <div class="legend-item"><div class="legend-color" style="background:#CE6B4E;"></div> Estrogen (<span id="estrogenVal">--</span>%)</div>
-          <div class="legend-item"><div class="legend-color" style="background:#4E2C43;"></div> Progesterone (<span id="progVal">--</span>%)</div>
-          <div class="legend-item"><div class="legend-color" style="background:#DF9B38;"></div> LH Surge (<span id="lhVal">--</span>%)</div>
-          <div class="legend-item"><div class="legend-color" style="background:#5F876E;"></div> FSH (<span id="fshVal">--</span>%)</div>
-        </div>
-        <svg id="hormoneSvg" class="hormone-chart-svg" viewBox="0 0 500 160"></svg>
-      </div>
-
-      <!-- Phase Lifestyle Advice Grid -->
-      <div class="card" id="adviceCard" style="display: none;">
-        <h3>Daily Phase Intelligence</h3>
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-top: 0.75rem;">
-          <div style="background: var(--bg-card-subtle); padding: 0.9rem; border-radius: var(--radius-md);">
-            <b style="color: var(--aubergine); font-size: 0.88rem;">🥗 Phase Nutrition</b>
-            <p id="nutritionAdvice" style="font-size: 0.85rem; margin-top: 0.25rem;">...</p>
-          </div>
-          <div style="background: var(--bg-card-subtle); padding: 0.9rem; border-radius: var(--radius-md);">
-            <b style="color: var(--aubergine); font-size: 0.88rem;">🏃‍♀️ Recommended Movement</b>
-            <p id="workoutAdvice" style="font-size: 0.85rem; margin-top: 0.25rem;">...</p>
-          </div>
-        </div>
-      </div>
-
-      <!-- Period Logging Form with Backend Deduplication -->
-      <div class="card">
-        <h3>Log Period Date</h3>
-        <p style="font-size: 0.88rem; margin-bottom: 0.75rem;">Keep your cycle baseline accurate. Updates automatically sync phase predictions.</p>
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
-          <div>
-            <label for="periodStart">Period Start Date</label>
-            <input type="date" id="periodStart">
-          </div>
-          <div>
-            <label for="cycleLength">Average Cycle Length (days)</label>
-            <input type="number" id="cycleLength" value="28" min="20" max="45">
-          </div>
-        </div>
-        <button id="logCycleBtn" onclick="logCycle(event)">Log &amp; Update Phase</button>
-        <div id="cycleLogMsg" class="result-box ok" style="display:none;"></div>
-      </div>
-    </div>
-
-    <!-- TAB 2: DAILY 10-SECOND CHECK-IN -->
-    <div class="tab-panel" id="tab-daily">
-      <div class="card">
-        <h2>10-Second Daily Check-in</h2>
-        <p>A quick tap to align with your body's energy and emotional climate.</p>
-
-        <label>How is your mood today?</label>
-        <div class="daily-mood-picker">
-          <div class="mood-btn" onclick="selectMood('radiant', this)">
-            <span class="mood-icon">✨</span><span class="mood-name">Radiant</span>
-          </div>
-          <div class="mood-btn selected" onclick="selectMood('peaceful', this)">
-            <span class="mood-icon">🌿</span><span class="mood-name">Peaceful</span>
-          </div>
-          <div class="mood-btn" onclick="selectMood('sensitive', this)">
-            <span class="mood-icon">💧</span><span class="mood-name">Sensitive</span>
-          </div>
-          <div class="mood-btn" onclick="selectMood('exhausted', this)">
-            <span class="mood-icon">🌙</span><span class="mood-name">Exhausted</span>
-          </div>
-          <div class="mood-btn" onclick="selectMood('irritable', this)">
-            <span class="mood-icon">⚡</span><span class="mood-name">Irritable</span>
-          </div>
-        </div>
-
-        <label>Physical Energy Level (1 = Exhausted, 5 = Peak Vitality): <b id="energyDisplay">3/5</b></label>
-        <input type="range" id="energyRange" min="1" max="5" value="3" style="width: 100%; margin: 0.5rem 0;" oninput="document.getElementById('energyDisplay').innerText = this.value + '/5'">
-
-        <label>Flow Intensity</label>
-        <select id="flowSelect">
-          <option value="none">None / Clear</option>
-          <option value="spotting">Spotting / Very Light</option>
-          <option value="light">Light Flow</option>
-          <option value="medium">Medium Flow</option>
-          <option value="heavy">Heavy Flow</option>
-        </select>
-
-        <label>Sensations &amp; Symptoms (Tap to toggle)</label>
-        <div class="tag-cloud" id="symptomTags">
-          <span class="symptom-tag" onclick="toggleTag(this)">Mild cramps</span>
-          <span class="symptom-tag" onclick="toggleTag(this)">Bloating</span>
-          <span class="symptom-tag" onclick="toggleTag(this)">Headache</span>
-          <span class="symptom-tag" onclick="toggleTag(this)">Tender breasts</span>
-          <span class="symptom-tag" onclick="toggleTag(this)">Clear skin</span>
-          <span class="symptom-tag" onclick="toggleTag(this)">Sweet cravings</span>
-          <span class="symptom-tag" onclick="toggleTag(this)">High focus</span>
-        </div>
-
-        <label for="dailyNote">Personal Note (Optional)</label>
-        <input type="text" id="dailyNote" placeholder="A brief reflection on today...">
-
-        <button onclick="saveDailyLog()">Save Daily Check-in</button>
-        <div id="dailyResult" class="result-box ok" style="display:none;"></div>
-      </div>
-    </div>
-
-    <!-- TAB 3: IS THIS NORMAL? -->
-    <div class="tab-panel" id="tab-symptom">
-      <div class="card">
-        <h2>"Is This Normal?" Symptom Triage</h2>
-        <p>Type any sensation or symptom you are experiencing. Our clinical rules engine checks for expected physiological patterns and flags red-flag concerns.</p>
-
-        <label for="symptomText">Describe what you are experiencing:</label>
-        <textarea id="symptomText" placeholder="e.g. Sharp lower abdominal cramping on day 1, or feeling unusually bloated and emotional..."></textarea>
-        <button onclick="checkSymptom()">Evaluate Symptom</button>
-
-        <div id="symptomResult" class="result-box" style="display:none;"></div>
-      </div>
-    </div>
-
-    <!-- TAB 4: PCOD/PCOS SCREENER -->
-    <div class="tab-panel" id="tab-pcod">
-      <div class="card">
-        <h2>PCOD / PCOS Clinical Risk Indicator</h2>
-        <p style="margin-bottom: 1rem;">
-          Grounded in the <b>Rotterdam Diagnostic Consensus</b>. Check the symptoms you regularly experience to evaluate your risk profile and generate a doctor consultation checklist.
+        <p class="text-xs text-slate-400">
+          {{ current_user.email }} 
+          {% if current_user.college_name %} &bull; <span class="text-indigo-300 font-medium">{{ current_user.college_name }}</span>{% endif %}
+          &bull; <a href="{{ url_for('verify_page') }}" class="text-indigo-400 hover:underline font-medium">Manage KYC &rarr;</a>
         </p>
-
-        <div id="pcodQuestions"></div>
-        <button onclick="submitPcod()">Calculate Risk Profile</button>
-        <div id="pcodResult" class="result-box" style="display:none;"></div>
       </div>
     </div>
 
-    <!-- TAB 5: PRIVATE JOURNAL -->
-    <div class="tab-panel" id="tab-journal">
-      <div class="card">
-        <h2>Private Sanctuary Journal</h2>
-        <p style="margin-bottom: 0.75rem;">Your reflections here are completely safe and never shared with partners or third parties.</p>
+    <!-- Quick Stats & Objective Trust Telemetry -->
+    <div class="grid grid-cols-3 gap-4 border-t md:border-t-0 md:border-l border-slate-800 pt-4 md:pt-0 md:pl-6 text-center">
+      <div>
+        <div class="text-xl font-extrabold text-white">{{ bookings|length }}</div>
+        <div class="text-[11px] text-slate-400">Reservations</div>
+      </div>
+      <div>
+        <div class="text-xl font-extrabold text-indigo-400">{{ current_user.on_time_vacate_rate|round(1) }}%</div>
+        <div class="text-[11px] text-slate-400">On-Time Vacate</div>
+      </div>
+      <div>
+        <div class="text-xl font-extrabold text-emerald-400">{{ current_user.objective_trust_score or 99.2 }}</div>
+        <div class="text-[11px] text-slate-400">Trust Index</div>
+      </div>
+    </div>
+  </div>
 
-        <textarea id="journalText" placeholder="Pour your thoughts freely..."></textarea>
-        <button onclick="submitJournal()">Save &amp; Reflect</button>
-        <div id="journalResult" class="result-box" style="display:none;"></div>
+  <!-- Dashboard Tabs -->
+  <div class="space-y-8">
+    
+    <!-- Section: My Bookings & Micro-Agreements -->
+    <div>
+      <div class="flex items-center justify-between mb-4">
+        <h2 class="text-lg font-bold text-white flex items-center gap-2">
+          <i class="fa-solid fa-calendar-check text-indigo-400"></i>
+          My Bookings & AI Micro-Agreements
+        </h2>
+        <span class="text-xs text-slate-400">{{ bookings|length }} active reservations</span>
+      </div>
 
-        <h3 style="margin-top: 1.5rem; margin-bottom: 0.75rem;">Past Reflections</h3>
-        <div id="journalHistoryList"></div>
+      <div class="space-y-4">
+        {% for b in bookings %}
+          <div class="bg-slate-900/70 border border-slate-800 hover:border-slate-700 rounded-2xl p-5 transition flex flex-col md:flex-row md:items-center justify-between gap-4">
+            
+            <div class="flex items-center gap-4">
+              <img src="{{ b.space_photo or 'https://images.unsplash.com/photo-1513694203232-719a280e022f?auto=format&fit=crop&w=400&q=80' }}" class="w-20 h-20 rounded-xl object-cover shrink-0">
+              <div>
+                <div class="flex items-center gap-2 mb-1">
+                  <span class="text-xs font-semibold px-2 py-0.5 rounded bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">
+                    {{ b.space_category }}
+                  </span>
+                  <span class="text-xs text-emerald-400 flex items-center gap-1">
+                    <i class="fa-solid fa-check-circle"></i> {{ b.status|capitalize }}
+                  </span>
+                </div>
+                <h3 class="text-base font-bold text-white mb-1">
+                  <a href="{{ url_for('space_detail', space_id=b.space_id) }}" class="hover:text-indigo-400 transition">
+                    {{ b.space_title }}
+                  </a>
+                </h3>
+                <p class="text-xs text-slate-400">
+                  <i class="fa-regular fa-clock mr-1"></i> {{ b.start_time }} ({{ b.hours_booked }} hours)
+                </p>
+                <p class="text-xs text-slate-500 mt-0.5">
+                  Purpose: <span class="text-slate-300 font-medium">{{ b.intended_purpose }}</span>
+                </p>
+              </div>
+            </div>
+
+            <div class="flex items-center justify-between md:flex-col md:items-end gap-3 shrink-0 pt-3 md:pt-0 border-t md:border-t-0 border-slate-800">
+              <div class="text-left md:text-right">
+                <span class="text-lg font-extrabold text-white">₹{{ b.total_price|int }}</span>
+                <span class="text-[11px] text-slate-400 block">Total paid (+ ₹100 Escrow)</span>
+              </div>
+              <div class="flex flex-wrap items-center gap-2">
+                <a href="{{ url_for('session_page', booking_id=b.id) }}" class="px-3.5 py-2 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white text-xs font-bold transition flex items-center gap-1.5 shadow-md shadow-emerald-600/20">
+                  <i class="fa-solid fa-door-open"></i>
+                  <span>In-Room Console</span>
+                </a>
+                <script type="text/plain" id="agreement-data-{{ b.id }}">{{ b.micro_lease_agreement }}</script>
+                <button onclick="viewAgreementModal('{{ b.id }}')" class="px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700 text-xs font-semibold transition flex items-center gap-1.5">
+                  <i class="fa-solid fa-file-contract"></i>
+                  <span>Lease</span>
+                </button>
+              </div>
+            </div>
+
+          </div>
+        {% else %}
+          <div class="p-8 text-center bg-slate-900/40 border border-slate-800 rounded-2xl">
+            <i class="fa-solid fa-calendar-xmark text-slate-600 text-3xl mb-2"></i>
+            <p class="text-sm text-slate-400">No active bookings yet.</p>
+            <a href="{{ url_for('index') }}" class="mt-3 inline-block text-xs font-semibold text-indigo-400 hover:text-indigo-300">
+              Explore Spaces to Book &rarr;
+            </a>
+          </div>
+        {% endfor %}
+      </div>
+    </div>
+
+    <!-- Section: My Listed Spaces -->
+    <div>
+      <div class="flex items-center justify-between mb-4">
+        <h2 class="text-lg font-bold text-white flex items-center gap-2">
+          <i class="fa-solid fa-warehouse text-indigo-400"></i>
+          My Listed Spaces
+        </h2>
+        <a href="{{ url_for('list_space_page') }}" class="text-xs text-indigo-400 hover:text-indigo-300 font-semibold flex items-center gap-1">
+          <i class="fa-solid fa-plus"></i> List New Space
+        </a>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
+        {% for s in (my_spaces or demo_spaces) %}
+          <div class="bg-slate-900/80 border border-slate-800 rounded-2xl overflow-hidden p-4 space-y-3">
+            <img src="{{ s.photos[0] }}" class="w-full h-36 object-cover rounded-xl">
+            <div>
+              <span class="text-[10px] font-bold uppercase tracking-wider text-indigo-400">{{ s.category }}</span>
+              <h3 class="text-sm font-bold text-white truncate">{{ s.title }}</h3>
+              <p class="text-xs text-slate-400">{{ s.sqft }} sqft • ₹{{ s.price_hourly|int }}/hr</p>
+            </div>
+            <div class="pt-2 border-t border-slate-800/80 flex items-center justify-between text-xs">
+              <a href="{{ url_for('printable_qr', space_id=s.id) }}" target="_blank" class="text-indigo-400 hover:text-indigo-300 font-semibold flex items-center gap-1">
+                <i class="fa-solid fa-print"></i> Door Pass QR
+              </a>
+              <a href="{{ url_for('space_detail', space_id=s.id) }}" class="text-slate-300 hover:text-white font-semibold">
+                View &rarr;
+              </a>
+            </div>
+          </div>
+        {% endfor %}
       </div>
     </div>
 
   </div>
+
 </div>
 
-<script src="/static/app.js"></script>
+<!-- Agreement Modal -->
+<div id="dashAgreementModal" class="fixed inset-0 bg-black/75 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+  <div class="bg-slate-900 border border-slate-800 w-full max-w-2xl rounded-2xl shadow-2xl max-h-[90vh] flex flex-col overflow-hidden">
+    <div class="p-4 bg-slate-950 border-b border-slate-800 flex items-center justify-between">
+      <div class="flex items-center gap-2">
+        <i class="fa-solid fa-file-contract text-indigo-400"></i>
+        <h3 class="text-sm font-bold text-white">SpaceLoop Temporary Use Agreement</h3>
+      </div>
+      <button onclick="closeDashAgreementModal()" class="text-slate-400 hover:text-white p-1">
+        <i class="fa-solid fa-xmark text-lg"></i>
+      </button>
+    </div>
+    <div class="p-6 overflow-y-auto flex-grow">
+      <pre id="dashAgreementText" class="font-mono text-xs whitespace-pre-wrap text-slate-300 bg-slate-950 p-4 rounded-xl border border-slate-800"></pre>
+    </div>
+    <div class="p-4 bg-slate-950 border-t border-slate-800 flex justify-end">
+      <button onclick="closeDashAgreementModal()" class="px-4 py-2 rounded-xl bg-slate-800 text-white text-xs font-semibold">
+        Close
+      </button>
+    </div>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
 <script>
-const user = requireUser("self");
-let selectedMood = "peaceful";
-let currentCareActionId = null;
-
-if (user) {
-  document.getElementById("greeting").innerText = "Hi, " + user.name;
-  loadPartnerStatus();
-  loadPhase();
-  loadCareActions();
-  loadJournalHistory();
-}
-
-function showTab(name) {
-  document.querySelectorAll(".tab-panel").forEach(p => p.classList.remove("active"));
-  document.querySelectorAll(".tabbar button").forEach(b => b.classList.remove("active"));
-  const panel = document.getElementById("tab-" + name);
-  if (panel) panel.classList.add("active");
-  const tabBtn = document.querySelector(`.tabbar button[data-tab="${name}"]`);
-  if (tabBtn) tabBtn.classList.add("active");
-}
-
-// Partner status badge
-async function loadPartnerStatus() {
-  try {
-    const res = await apiGet(`/api/partner/status/${user.id}`);
-    const badge = document.getElementById("partnerBadge");
-    if (res.is_linked) {
-      badge.className = "pill low";
-      badge.innerText = `Linked with ${res.partner_name}`;
-    } else {
-      badge.className = "pill moderate";
-      badge.innerText = "Partner Not Linked";
-    }
-  } catch (e) {
-    console.error(e);
-  }
-}
-
-// Load Cycle Phase & Hormone Curves
-async function loadPhase() {
-  try {
-    const phase = await apiGet(`/api/cycle/phase/${user.id}`);
-    renderPhase(phase);
-    loadHormones();
-  } catch (e) {
-    // No cycle logged yet
-    document.getElementById("subGreeting").innerText = "Log your last period date below to unlock your biorhythm forecast.";
-  }
-}
-
-function renderPhase(phase) {
-  document.getElementById("phaseCard").style.display = "block";
-  document.getElementById("adviceCard").style.display = "block";
-
-  document.getElementById("ringDayNum").innerText = phase.day_in_cycle;
-  document.getElementById("ringPhaseName").innerText = phase.phase;
-  
-  const pill = document.getElementById("phasePill");
-  pill.className = `pill ${phase.phase}`;
-  pill.innerText = `${phase.phase} Phase`;
-
-  document.getElementById("phaseTitle").innerText = `${phase.phase} Phase — Day ${phase.day_in_cycle}`;
-  document.getElementById("phaseDesc").innerText = phase.phase_desc;
-  document.getElementById("nextPeriodText").innerText = `${phase.next_period_estimate} (${phase.days_until_next} days away)`;
-  document.getElementById("fertilityText").innerText = `${phase.fertile_window} (${phase.fertility_status})`;
-
-  document.getElementById("nutritionAdvice").innerText = phase.nutrition_tip;
-  document.getElementById("workoutAdvice").innerText = phase.workout_tip;
-
-  // Animate SVG Ring
-  const circle = document.getElementById("cycleProgressCircle");
-  const circumference = 2 * Math.PI * 40; // ~251.2
-  const offset = circumference - (phase.progress_pct / 100) * circumference;
-  circle.style.strokeDashoffset = offset;
-
-  // Highlight step dots
-  const phaseOrder = ["Menstrual", "Follicular", "Ovulation", "Luteal"];
-  const currentIdx = phaseOrder.indexOf(phase.phase);
-  phaseOrder.forEach((p, idx) => {
-    const el = document.getElementById(`step-${p}`);
-    if (el) {
-      el.classList.toggle("active", idx <= currentIdx);
-    }
-  });
-}
-
-// Render dynamic hormone wave SVG
-async function loadHormones() {
-  try {
-    const data = await apiGet(`/api/cycle/hormones/${user.id}`);
-    document.getElementById("hormoneCard").style.display = "block";
-
-    document.getElementById("estrogenVal").innerText = data.today_levels.estrogen;
-    document.getElementById("progVal").innerText = data.today_levels.progesterone;
-    document.getElementById("lhVal").innerText = data.today_levels.lh;
-    document.getElementById("fshVal").innerText = data.today_levels.fsh;
-
-    renderHormoneSvg(data);
-  } catch (e) {
-    console.error(e);
-  }
-}
-
-function renderHormoneSvg(data) {
-  const svg = document.getElementById("hormoneSvg");
-  const width = 500;
-  const height = 150;
-  const daysCount = data.days.length;
-
-  function toPath(series) {
-    return series.map((val, i) => {
-      const x = (i / (daysCount - 1)) * width;
-      const y = height - (val / 100) * (height - 20) - 10;
-      return `${i === 0 ? 'M' : 'L'} ${x.toFixed(1)} ${y.toFixed(1)}`;
-    }).join(' ');
+  function viewAgreementModal(bookingId) {
+    const el = document.getElementById('agreement-data-' + bookingId);
+    const agreementText = el ? el.textContent : "No agreement document found.";
+    document.getElementById('dashAgreementText').textContent = agreementText;
+    document.getElementById('dashAgreementModal').classList.remove('hidden');
   }
 
-  svg.innerHTML = `
-    <!-- Grid baseline -->
-    <line x1="0" y1="${height - 10}" x2="${width}" y2="${height - 10}" stroke="#E8DDD6" stroke-width="1" />
-    
-    <!-- Estrogen (Terracotta) -->
-    <path d="${toPath(data.estrogen_series)}" fill="none" stroke="#CE6B4E" stroke-width="2.5" />
-    
-    <!-- Progesterone (Aubergine) -->
-    <path d="${toPath(data.progesterone_series)}" fill="none" stroke="#4E2C43" stroke-width="2.5" stroke-dasharray="4 2" />
-    
-    <!-- LH Surge (Honey) -->
-    <path d="${toPath(data.lh_series)}" fill="none" stroke="#DF9B38" stroke-width="2" />
-    
-    <!-- FSH (Sage) -->
-    <path d="${toPath(data.fsh_series)}" fill="none" stroke="#5F876E" stroke-width="1.8" stroke-dasharray="2 2" />
-  `;
-}
-
-// Log cycle with button debouncing & deduplication
-async function logCycle(e) {
-  const periodStart = document.getElementById("periodStart").value;
-  const cycleLength = parseInt(document.getElementById("cycleLength").value || "28");
-  if (!periodStart) { alert("Please pick a period start date."); return; }
-
-  const btn = document.getElementById("logCycleBtn");
-  btn.disabled = true;
-  const orig = btn.innerText;
-  btn.innerText = "Syncing...";
-
-  try {
-    await apiPost("/api/cycle/log", {
-      user_id: user.id,
-      period_start: periodStart,
-      cycle_length: cycleLength
-    });
-    const phase = await apiGet(`/api/cycle/phase/${user.id}`);
-    renderPhase(phase);
-    loadHormones();
-
-    const msgBox = document.getElementById("cycleLogMsg");
-    msgBox.style.display = "block";
-    msgBox.innerText = `Updated! Currently in your ${phase.phase} phase (Day ${phase.day_in_cycle}).`;
-    showToast("Cycle phase updated successfully!");
-  } catch (err) {
-    alert("Error logging cycle: " + err.message);
-  } finally {
-    btn.disabled = false;
-    btn.innerText = orig;
+  function closeDashAgreementModal() {
+    document.getElementById('dashAgreementModal').classList.add('hidden');
   }
-}
-
-// 10-Second Daily Check-in
-function selectMood(mood, el) {
-  selectedMood = mood;
-  document.querySelectorAll(".mood-btn").forEach(b => b.classList.remove("selected"));
-  el.classList.add("selected");
-}
-
-function toggleTag(el) {
-  el.classList.toggle("active");
-}
-
-async function saveDailyLog() {
-  const energy = parseInt(document.getElementById("energyRange").value);
-  const flow = document.getElementById("flowSelect").value;
-  const note = document.getElementById("dailyNote").value.trim();
-  const symptoms = Array.from(document.querySelectorAll(".symptom-tag.active")).map(el => el.innerText);
-
-  try {
-    await apiPost("/api/daily/log", {
-      user_id: user.id,
-      mood: selectedMood,
-      energy_level: energy,
-      flow_intensity: flow,
-      symptoms: symptoms,
-      note: note
-    });
-    const box = document.getElementById("dailyResult");
-    box.style.display = "block";
-    box.innerText = "Daily check-in recorded! Your biorhythm baseline has been refreshed.";
-    showToast("Daily check-in saved!");
-  } catch (err) {
-    alert("Error saving daily log: " + err.message);
-  }
-}
-
-// Check Symptom
-async function checkSymptom() {
-  const text = document.getElementById("symptomText").value.trim();
-  if (!text) return;
-  const box = document.getElementById("symptomResult");
-  box.style.display = "none";
-
-  try {
-    const res = await apiPost("/api/symptom/check", { user_id: user.id, symptom_text: text });
-    box.style.display = "block";
-    box.className = "result-box " + (res.severity === "urgent" ? "urgent" : res.flagged_normal ? "ok" : "flag");
-    box.innerHTML = `
-      <b>${res.category}</b><br>
-      ${res.note}<br><br>
-      <b>Recommended Care:</b> ${res.remedy}<br>
-      <span style="font-size:0.78rem; opacity:0.75; display:block; margin-top:6px;">⚠️ ${res.disclaimer}</span>
-    `;
-  } catch (err) {
-    alert("Error checking symptom: " + err.message);
-  }
-}
-
-// PCOD Assessment
-const pcodQuestionsList = [
-  ["irregular_periods", "My menstrual cycles are irregular (longer than 35 days, or fewer than 8 periods a year)"],
-  ["excess_hair_growth", "I have excess or coarse hair growth on my upper lip, chin, chest, or inner thighs (hirsutism)"],
-  ["acne_or_oily_skin", "I experience persistent acne along the jawline or chronically oily skin"],
-  ["weight_gain_unexplained", "I struggle with unexplained weight gain or severe difficulty losing weight"],
-  ["hair_thinning", "I have noticed progressive hair thinning or widening part on the crown of my head"],
-  ["pelvic_pain_chronic", "I frequently feel deep pelvic pressure or mild ache outside of menstruation"],
-  ["family_history", "A close blood relative (mother, sister, aunt) has been diagnosed with PCOD/PCOS or diabetes"]
-];
-
-const pcodDiv = document.getElementById("pcodQuestions");
-pcodQuestionsList.forEach(([key, label]) => {
-  const row = document.createElement("div");
-  row.style.cssText = "display: flex; gap: 0.6rem; margin-bottom: 0.65rem; align-items: flex-start;";
-  row.innerHTML = `<input type="checkbox" id="${key}" style="margin-top: 4px; width: 18px; height: 18px;"><label for="${key}" style="margin:0; font-weight: normal; font-size: 0.9rem; cursor:pointer;">${label}</label>`;
-  pcodDiv.appendChild(row);
-});
-
-async function submitPcod() {
-  const answers = {};
-  pcodQuestionsList.forEach(([key]) => {
-    answers[key] = document.getElementById(key).checked;
-  });
-
-  try {
-    const res = await apiPost("/api/pcod/assess", { user_id: user.id, answers });
-    const box = document.getElementById("pcodResult");
-    box.style.display = "block";
-    box.className = "result-box";
-
-    const checklistHtml = res.doctor_checklist.map(item => `<li>${item}</li>`).join("");
-
-    box.innerHTML = `
-      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.5rem;">
-        <b>Risk Assessment Result</b>
-        <span class="pill ${res.risk_level}">${res.risk_level.toUpperCase()} RISK</span>
-      </div>
-      <p style="margin-bottom:0.5rem;">${res.summary}</p>
-      <p><b>Recommended Steps:</b> ${res.guidance}</p>
-      
-      <div style="background:var(--bg-card); padding:0.75rem 1rem; border-radius:var(--radius-sm); margin-top:0.75rem; border:1px solid var(--border);">
-        <b style="font-size:0.85rem; color:var(--aubergine);">📋 Doctor Consultation Checklist:</b>
-        <ul style="margin: 0.4rem 0 0 1.2rem; font-size: 0.85rem; color:var(--text-muted);">
-          ${checklistHtml}
-        </ul>
-      </div>
-      <span style="font-size:0.75rem; opacity:0.7; display:block; margin-top:0.75rem;">ℹ️ ${res.disclaimer}</span>
-    `;
-  } catch (err) {
-    alert("Error assessing PCOD: " + err.message);
-  }
-}
-
-// Journal
-async function submitJournal() {
-  const text = document.getElementById("journalText").value.trim();
-  if (!text) return;
-
-  try {
-    const res = await apiPost("/api/journal/add", { user_id: user.id, text });
-    document.getElementById("journalText").value = "";
-    const box = document.getElementById("journalResult");
-    box.style.display = "block";
-    box.innerHTML = `Entry saved into your private vault.<br>Detected mood tone: <b>${res.mood_label}</b> (${res.reason_note})`;
-    loadJournalHistory();
-  } catch (err) {
-    alert("Error saving journal: " + err.message);
-  }
-}
-
-async function loadJournalHistory() {
-  try {
-    const entries = await apiGet(`/api/journal/history/${user.id}`);
-    const list = document.getElementById("journalHistoryList");
-    if (!entries.length) {
-      list.innerHTML = `<p style="font-size:0.85rem; font-style:italic;">No journal entries yet.</p>`;
-      return;
-    }
-    list.innerHTML = entries.map(e => `
-      <div style="background: var(--bg-card-subtle); padding: 0.85rem 1rem; border-radius: var(--radius-md); margin-bottom: 0.6rem;">
-        <div style="display:flex; justify-content:space-between; font-size:0.78rem; color:var(--text-muted); margin-bottom:4px;">
-          <span>${e.created_at}</span>
-          <span class="pill low" style="text-transform:none;">${e.mood_label || 'Reflective'}</span>
-        </div>
-        <p style="font-size:0.9rem; color:var(--text-main); margin:0;">${e.text}</p>
-      </div>
-    `).join("");
-  } catch (e) {
-    console.error(e);
-  }
-}
-
-// Partner Micro-Care Actions
-async function loadCareActions() {
-  try {
-    const actions = await apiGet(`/api/partner/care-actions/${user.id}`);
-    const unread = actions.find(a => !a.is_viewed);
-    if (unread) {
-      currentCareActionId = unread.id;
-      const banner = document.getElementById("careBanner");
-      const icon = document.getElementById("careIcon");
-      const msg = document.getElementById("careMsg");
-
-      const iconMap = {
-        "heat_pack": "🔥",
-        "sweet_treat": "🍫",
-        "warm_tea": "🍵",
-        "dinner_taken_care": "🍲",
-        "gentle_hug": "🫂"
-      };
-      icon.innerText = iconMap[unread.action_type] || "💌";
-      msg.innerText = unread.custom_message || "Thinking of you and sending warm comfort!";
-      banner.style.display = "flex";
-    }
-  } catch (e) {
-    console.error(e);
-  }
-}
-
-async function ackCareAction() {
-  if (currentCareActionId) {
-    await apiPost(`/api/partner/care-action/${currentCareActionId}/ack`, {});
-    document.getElementById("careBanner").style.display = "none";
-    showToast("Sent love back to your partner! ❤️");
-  }
-}
 </script>
-</body>
-</html>
+{% endblock %}
