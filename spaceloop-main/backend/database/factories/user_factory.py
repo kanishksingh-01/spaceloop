@@ -1,0 +1,2 @@
+class UserFactory:
+    pass

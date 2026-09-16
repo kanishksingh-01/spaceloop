@@ -1,0 +1,209 @@
+{% extends 'base.html' %}
+{% block title %}Student Academic Verification (DPDP Act 2023) | SpaceLoop{% endblock %}
+
+{% block content %}
+<div class="max-w-3xl mx-auto px-4 py-12 space-y-8">
+    
+    <!-- Header -->
+    <div class="text-center space-y-3">
+        <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 text-xs font-semibold">
+            <i class="fa-solid fa-shield-check"></i>
+            DPDP Act 2023 Section 8 Compliant &bull; Sub-20s Verification
+        </div>
+        <h1 class="text-3xl font-display font-extrabold text-slate-900">
+            Student Academic & Identity Verification
+        </h1>
+        <p class="text-xs sm:text-sm text-slate-600 max-w-xl mx-auto leading-relaxed">
+            Unlock subsidized <strong>₹40 to ₹75/hour</strong> rates across all campus micro-spaces. 
+            SpaceLoop operates under a strict Zero Raw Aadhaar Storage directive.
+        </p>
+    </div>
+
+    <!-- Dual-Layer Verification Card -->
+    <div class="bg-white rounded-3xl border border-slate-200 shadow-xl overflow-hidden p-6 sm:p-8 space-y-8">
+        
+        <!-- Step 1: DigiLocker Aadhaar OTP Handshake -->
+        <div class="space-y-4">
+            <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+                <div class="flex items-center gap-3">
+                    <span class="w-8 h-8 rounded-xl bg-indigo-600 text-white flex items-center justify-center font-bold text-xs">1</span>
+                    <div>
+                        <h3 class="font-display font-bold text-base text-slate-900">DigiLocker / UIDAI Aadhaar Handshake</h3>
+                        <p class="text-[11px] text-slate-500">Zero Raw Data: Encrypted OTP Tokenization</p>
+                    </div>
+                </div>
+                <span class="text-[10px] font-mono bg-slate-100 text-slate-700 px-2 py-1 rounded">UIDAI Sandbox</span>
+            </div>
+
+            <!-- Aadhaar Input Form -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
+                <div class="space-y-1.5">
+                    <label class="font-bold text-slate-700">Full Name (as per Aadhaar):</label>
+                    <input type="text" id="stu-name" value="Rohit Verma" 
+                           class="w-full bg-slate-50 border border-slate-200 p-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-500 font-medium text-slate-800">
+                </div>
+
+                <div class="space-y-1.5">
+                    <label class="font-bold text-slate-700">12-Digit Aadhaar Number:</label>
+                    <input type="text" id="stu-aadhaar" value="984512344821" maxlength="12"
+                           placeholder="12 numeric digits"
+                           class="w-full bg-slate-50 border border-slate-200 p-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-500 font-mono text-slate-800">
+                </div>
+            </div>
+
+            <!-- DPDP Security Explanation Alert -->
+            <div class="bg-indigo-50 border border-indigo-200 p-3.5 rounded-2xl text-[11px] text-indigo-900 flex items-start gap-2.5">
+                <i class="fa-solid fa-lock text-indigo-600 shrink-0 mt-0.5"></i>
+                <div class="leading-relaxed">
+                    <strong>Zero Raw Aadhaar Storage Directive:</strong> Under Section 8 of the DPDP Act 2023, SpaceLoop never saves your 12-digit Aadhaar number or biometrics. We only store a masked display (<span class="font-mono font-bold">XXXX-XXXX-4821</span>) and a one-way salted SHA-256 token hash.
+                </div>
+            </div>
+
+            <!-- OTP Input -->
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 items-end text-xs">
+                <div class="sm:col-span-2 space-y-1.5">
+                    <label class="font-bold text-slate-700">6-Digit Verification OTP (Demo: 123456):</label>
+                    <input type="text" id="stu-otp" value="123456" maxlength="6"
+                           placeholder="Enter 6-digit OTP"
+                           class="w-full bg-slate-50 border border-slate-200 p-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-500 font-mono text-slate-800">
+                </div>
+                <button type="button" onclick="requestOtp()" class="bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold p-3 rounded-xl transition-colors text-center border border-slate-200">
+                    Resend OTP
+                </button>
+            </div>
+        </div>
+
+        <!-- Step 2: Institutional Email Verification -->
+        <div class="space-y-4 pt-4 border-t border-slate-100">
+            <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+                <div class="flex items-center gap-3">
+                    <span class="w-8 h-8 rounded-xl bg-cyan-600 text-white flex items-center justify-center font-bold text-xs">2</span>
+                    <div>
+                        <h3 class="font-display font-bold text-base text-slate-900">Institutional Credential Validation</h3>
+                        <p class="text-[11px] text-slate-500">Domain Regex (.ac.in / .edu.in) &bull; ID Card Masking</p>
+                    </div>
+                </div>
+                <span class="text-[10px] font-mono bg-cyan-50 text-cyan-700 px-2 py-1 rounded">Domain Token</span>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
+                <div class="space-y-1.5">
+                    <label class="font-bold text-slate-700">College Institutional Email (.ac.in / .edu.in):</label>
+                    <input type="email" id="stu-email" value="rohit@iitd.ac.in" 
+                           placeholder="e.g. rohit@iitd.ac.in"
+                           class="w-full bg-slate-50 border border-slate-200 p-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-500 font-mono text-slate-800">
+                </div>
+
+                <div class="space-y-1.5">
+                    <label class="font-bold text-slate-700">College / Institute Name:</label>
+                    <input type="text" id="stu-college" value="IIT Delhi (Hauz Khas)" 
+                           class="w-full bg-slate-50 border border-slate-200 p-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-500 text-slate-800">
+                </div>
+            </div>
+
+            <div class="space-y-1.5 text-xs">
+                <label class="font-bold text-slate-700">Student Roll / ID Card Number:</label>
+                <input type="text" id="stu-id" value="2024CS1044" 
+                       placeholder="e.g. 2024CS1044 (Masked as STU-***-1044)"
+                       class="w-full bg-slate-50 border border-slate-200 p-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-500 font-mono text-slate-800">
+            </div>
+        </div>
+
+        <!-- Submit Button -->
+        <div class="pt-4 border-t border-slate-100 space-y-4">
+            <button type="button" id="verify-student-btn" onclick="submitStudentVerification()"
+                    class="w-full bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-bold text-sm py-4 px-6 rounded-2xl shadow-lg shadow-emerald-500/25 transition-all flex items-center justify-center gap-2">
+                <i class="fa-solid fa-id-card-clip"></i>
+                <span>Complete Dual-Layer Student Verification (&lt;20s)</span>
+            </button>
+            <p class="text-center text-[11px] text-slate-400">
+                By verifying, you confirm enrollment and agree to Section 52 revocable license terms.
+            </p>
+        </div>
+
+        <!-- Verification Success Card (Dynamic) -->
+        <div id="stu-verify-success-box" class="hidden bg-emerald-50 border-2 border-emerald-300 p-6 rounded-3xl space-y-3">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-emerald-600 text-white flex items-center justify-center text-lg">
+                    <i class="fa-solid fa-circle-check"></i>
+                </div>
+                <div>
+                    <h4 class="font-display font-bold text-base text-emerald-950">Student Verification Completed!</h4>
+                    <p class="text-xs text-emerald-800">Subsidized study rates (₹40–₹75/hr) unlocked.</p>
+                </div>
+            </div>
+
+            <div class="bg-white/80 p-4 rounded-2xl border border-emerald-200 grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
+                <div>
+                    <span class="text-slate-500 block text-[10px]">Aadhaar Masked:</span>
+                    <span id="res-masked-aadhaar" class="font-mono font-bold text-slate-900"></span>
+                </div>
+                <div>
+                    <span class="text-slate-500 block text-[10px]">College Domain:</span>
+                    <span id="res-college" class="font-semibold text-slate-900"></span>
+                </div>
+                <div>
+                    <span class="text-slate-500 block text-[10px]">Masked Student ID:</span>
+                    <span id="res-stu-id" class="font-mono font-bold text-slate-900"></span>
+                </div>
+            </div>
+
+            <div class="pt-2 flex gap-3">
+                <a href="{{ url_for('index') }}" class="bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-xs py-2.5 px-4 rounded-xl transition-colors">
+                    Browse Subsidized Campus Spaces
+                </a>
+            </div>
+        </div>
+
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function requestOtp() {
+    showToast('UIDAI OTP sent: 123456 (Sandbox Simulator)', 'info');
+}
+
+async function submitStudentVerification() {
+    const btn = document.getElementById('verify-student-btn');
+    const origText = btn.innerHTML;
+    btn.innerHTML = `<i class="fa-solid fa-circle-notch fa-spin"></i> Tokenizing via DigiLocker Sandbox...`;
+    btn.disabled = true;
+
+    const payload = {
+        name: document.getElementById('stu-name').value.trim(),
+        aadhaar_number: document.getElementById('stu-aadhaar').value.trim(),
+        otp: document.getElementById('stu-otp').value.trim(),
+        college_email: document.getElementById('stu-email').value.trim(),
+        college_name: document.getElementById('stu-college').value.trim(),
+        student_id: document.getElementById('stu-id').value.trim()
+    };
+
+    try {
+        const res = await fetch('/api/verify/student', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+        btn.innerHTML = origText;
+        btn.disabled = false;
+
+        if (data.success) {
+            document.getElementById('res-masked-aadhaar').innerText = data.masked_aadhaar;
+            document.getElementById('res-college').innerText = data.college_verified;
+            document.getElementById('res-stu-id').innerText = data.student_id_masked;
+            document.getElementById('stu-verify-success-box').classList.remove('hidden');
+            showToast('Student identity and academic credentials verified!', 'success');
+        } else {
+            showToast(data.error || 'Verification failed', 'error');
+        }
+    } catch (err) {
+        btn.innerHTML = origText;
+        btn.disabled = false;
+        showToast('Verification gateway error', 'error');
+    }
+}
+</script>
+{% endblock %}

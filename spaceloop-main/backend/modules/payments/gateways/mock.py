@@ -1,0 +1,2 @@
+class MockUPIPaymentGateway:
+    pass

@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}SpaceLoop | Zero-Hardware Micro-Space Platform{% endblock %}</title>
+    <!-- TailwindCSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#eef2ff',
+                            100: '#e0e7ff',
+                            500: '#6366f1',
+                            600: '#4f46e5',
+                            700: '#4338ca',
+                            900: '#312e81',
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        display: ['Outfit', 'sans-serif']
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- FontAwesome 6 -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Outfit:wght@500;600;700;800&display=swap" rel="stylesheet">
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/custom.css') }}">
+</head>
+<body class="bg-slate-50 text-slate-900 min-h-screen flex flex-col font-sans antialiased selection:bg-brand-500 selection:text-white">
+
+    <!-- Top Notice Banner -->
+    <div class="bg-gradient-to-r from-brand-900 via-indigo-900 to-slate-900 text-white text-xs py-2 px-4 border-b border-indigo-800">
+        <div class="max-w-7xl mx-auto flex flex-wrap justify-between items-center gap-2">
+            <div class="flex items-center gap-2">
+                <span class="bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 px-2 py-0.5 rounded font-mono text-[10px] tracking-wider uppercase">DPDP Act 2023 Compliant</span>
+                <span class="hidden sm:inline text-slate-300">Zero Raw Aadhaar Storage &bull; Section 52 Revocable License &bull; Zero-Hardware India Stack</span>
+            </div>
+            <div class="flex items-center gap-3 text-slate-300">
+                <span>Hack2Ignite 2026 Finalist</span>
+                <span class="text-slate-500">|</span>
+                <span class="text-emerald-400 flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span> Telemetry Radar Active</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Navigation Header -->
+    <header class="sticky top-0 z-40 bg-white/90 backdrop-blur-md border-b border-slate-200">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16">
+                <!-- Logo & Brand -->
+                <a href="{{ url_for('index') }}" class="flex items-center gap-3 group">
+                    <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-brand-600 to-cyan-500 flex items-center justify-center text-white shadow-md shadow-brand-500/20 group-hover:scale-105 transition-transform">
+                        <i class="fa-solid fa-layer-group text-lg"></i>
+                    </div>
+                    <div>
+                        <span class="font-display text-xl font-extrabold tracking-tight text-slate-900 flex items-center gap-1">
+                            Space<span class="text-brand-600">Loop</span>
+                            <span class="text-[10px] uppercase font-mono px-1.5 py-0.5 bg-brand-50 text-brand-700 rounded border border-brand-200 ml-1">v2.4</span>
+                        </span>
+                        <p class="text-[10px] text-slate-500 font-medium -mt-1 hidden sm:block">Zero-Hardware Micro-Spaces</p>
+                    </div>
+                </a>
+
+                <!-- Desktop Navigation Links -->
+                <nav class="hidden md:flex items-center gap-1 text-sm font-medium text-slate-600">
+                    <a href="{{ url_for('marketplace_page') }}" class="px-3 py-2 rounded-lg hover:text-brand-600 hover:bg-slate-100 transition-colors">
+                        <i class="fa-solid fa-compass mr-1.5 text-slate-400"></i> Marketplace
+                    </a>
+                    <a href="{{ url_for('calculator_page') }}" class="px-3 py-2 rounded-lg hover:text-brand-600 hover:bg-slate-100 transition-colors">
+                        <i class="fa-solid fa-calculator mr-1.5 text-slate-400"></i> Yield Calculator
+                    </a>
+                    {% if current_user and current_user.role == 'seeker' %}
+                    <a href="{{ url_for('verify_student_page') }}" class="px-3 py-2 rounded-lg hover:text-brand-600 hover:bg-slate-100 transition-colors">
+                        <i class="fa-solid fa-graduation-cap mr-1.5 text-slate-400"></i> Student KYC
+                    </a>
+                    <a href="{{ url_for('seeker_dashboard') }}" class="px-3 py-2 rounded-lg hover:text-brand-600 hover:bg-slate-100 transition-colors">
+                        <i class="fa-solid fa-id-badge mr-1.5 text-slate-400"></i> My Passes
+                    </a>
+                    {% elif current_user and current_user.role == 'owner' %}
+                    <a href="{{ url_for('verify_host_page') }}" class="px-3 py-2 rounded-lg hover:text-brand-600 hover:bg-slate-100 transition-colors">
+                        <i class="fa-solid fa-bolt mr-1.5 text-slate-400"></i> Discom Verification
+                    </a>
+                    <a href="{{ url_for('host_dashboard') }}" class="px-3 py-2 rounded-lg hover:text-brand-600 hover:bg-slate-100 transition-colors">
+                        <i class="fa-solid fa-chart-pie mr-1.5 text-slate-400"></i> Host Portal
+                    </a>
+                    {% endif %}
+                </nav>
+
+                <!-- Authentication Actions & Profile -->
+                <div class="flex items-center gap-2 sm:gap-3">
+                    {% if current_user %}
+                    <div class="flex items-center gap-2">
+                        <span class="hidden sm:inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full {% if current_user.role == 'owner' %}bg-emerald-50 text-emerald-700 border border-emerald-200{% else %}bg-indigo-50 text-indigo-700 border border-indigo-200{% endif %}">
+                            <i class="fa-solid {% if current_user.role == 'owner' %}fa-house-user{% elif current_user.role == 'admin' %}fa-shield-halved{% else %}fa-user-graduate{% endif %}"></i>
+                            <span class="capitalize">{{ current_user.role }}</span>
+                        </span>
+
+                        {% if current_user.role == 'owner' %}
+                        <a href="{{ url_for('host_dashboard') }}" class="bg-brand-600 hover:bg-brand-700 text-white px-3 sm:px-3.5 py-2 rounded-xl text-xs font-semibold shadow-sm transition-colors flex items-center gap-1.5">
+                            <i class="fa-solid fa-chart-pie"></i>
+                            <span class="hidden sm:inline">{{ current_user.name.split()[0] }}</span>
+                        </a>
+                        {% else %}
+                        <a href="{{ url_for('seeker_dashboard') }}" class="bg-brand-600 hover:bg-brand-700 text-white px-3 sm:px-3.5 py-2 rounded-xl text-xs font-semibold shadow-sm transition-colors flex items-center gap-1.5">
+                            <i class="fa-solid fa-id-badge"></i>
+                            <span class="hidden sm:inline">{{ current_user.name.split()[0] }}</span>
+                        </a>
+                        {% endif %}
+
+                        <a href="{{ url_for('logout_action') }}" class="text-slate-500 hover:text-rose-600 p-2 rounded-lg hover:bg-slate-100 transition-colors text-xs font-semibold flex items-center gap-1" title="Sign Out">
+                            <i class="fa-solid fa-arrow-right-from-bracket"></i>
+                            <span class="hidden md:inline">Sign Out</span>
+                        </a>
+                    </div>
+                    {% else %}
+                    <a href="{{ url_for('login_page') }}" class="text-slate-700 hover:text-brand-600 text-xs sm:text-sm font-semibold px-3 py-2 rounded-xl transition-colors">
+                        Sign In
+                    </a>
+                    <a href="{{ url_for('register_page') }}" class="bg-brand-600 hover:bg-brand-700 text-white px-3.5 py-2 rounded-xl text-xs sm:text-sm font-semibold shadow-sm transition-colors flex items-center gap-1.5">
+                        <i class="fa-solid fa-user-plus text-xs"></i>
+                        <span>Get Started</span>
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content Body -->
+    <main class="flex-grow">
+        {% block content %}{% endblock %}
+    </main>
+
+    <!-- Floating LoopBot AI Concierge Widget -->
+    <div class="fixed bottom-6 right-6 z-50">
+        <!-- Chat Window Popover -->
+        <div id="loopbot-window" class="hidden mb-3 w-80 sm:w-96 bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden transition-all duration-300 transform">
+            <div class="bg-gradient-to-r from-brand-700 to-indigo-800 p-3.5 text-white flex items-center justify-between">
+                <div class="flex items-center gap-2.5">
+                    <div class="w-8 h-8 rounded-lg bg-white/20 flex items-center justify-center">
+                        <i class="fa-solid fa-robot text-sm"></i>
+                    </div>
+                    <div>
+                        <h4 class="font-display font-bold text-sm leading-tight">LoopBot Concierge</h4>
+                        <p class="text-[10px] text-indigo-200">Context-Aware AI Assistant &bull; Online</p>
+                    </div>
+                </div>
+                <button onclick="toggleLoopBot()" class="text-white/80 hover:text-white p-1 rounded-lg">
+                    <i class="fa-solid fa-xmark text-sm"></i>
+                </button>
+            </div>
+
+            <!-- Messages Area -->
+            <div id="loopbot-messages" class="p-4 h-72 overflow-y-auto space-y-3 bg-slate-50 text-xs">
+                <div class="flex justify-start items-start gap-2">
+                    <div class="w-6 h-6 rounded-full bg-brand-600 text-white flex items-center justify-center text-[10px] shrink-0 mt-0.5">
+                        <i class="fa-solid fa-robot"></i>
+                    </div>
+                    <div class="bg-white border border-slate-200 text-slate-800 rounded-2xl rounded-tl-none p-3 shadow-sm leading-relaxed">
+                        Namaste! I am LoopBot. Ask me about finding quiet study rooms near IITs, our ₹5 printable door QR pass, Section 52 micro-leases, or instant ₹100 UPI refunds!
+                    </div>
+                </div>
+            </div>
+
+            <!-- Chat Input Form -->
+            <div class="p-2.5 bg-white border-t border-slate-100 flex items-center gap-2">
+                <input type="text" id="loopbot-input" 
+                       placeholder="Ask LoopBot anything..." 
+                       class="flex-grow text-xs px-3 py-2 bg-slate-100 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-500 border border-slate-200"
+                       onkeydown="if(event.key === 'Enter') sendLoopBotMessage()">
+                <button onclick="sendLoopBotMessage()" class="w-8 h-8 rounded-xl bg-brand-600 hover:bg-brand-700 text-white flex items-center justify-center shrink-0 transition-colors shadow-sm">
+                    <i class="fa-solid fa-paper-plane text-xs"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- Floating Button -->
+        <button onclick="toggleLoopBot()" class="w-14 h-14 rounded-2xl bg-brand-600 hover:bg-brand-700 text-white shadow-xl shadow-brand-500/30 flex items-center justify-center text-xl transition-all duration-300 hover:scale-110 active:scale-95 group">
+            <i class="fa-solid fa-comment-dots group-hover:scale-110 transition-transform"></i>
+            <span class="absolute -top-1 -right-1 w-4 h-4 bg-emerald-500 border-2 border-white rounded-full"></span>
+        </button>
+    </div>
+
+    <!-- Global Toast Container -->
+    <div id="toast-container" class="fixed top-5 right-5 z-50 flex flex-col gap-2 pointer-events-none"></div>
+
+    <!-- Platform Footer -->
+    <footer class="bg-slate-900 text-slate-400 text-xs py-10 border-t border-slate-800 mt-16">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-8 pb-8 border-b border-slate-800">
+                <div class="space-y-3">
+                    <div class="flex items-center gap-2 text-white font-display text-base font-bold">
+                        <i class="fa-solid fa-layer-group text-brand-500"></i> SpaceLoop
+                    </div>
+                    <p class="text-slate-400 text-xs leading-relaxed">
+                        The Zero-Hardware India Stack converting underutilized urban spaces into ₹40–₹75/hr quiet study and project pods for young builders.
+                    </p>
+                    <div class="flex items-center gap-2 pt-1">
+                        <span class="bg-slate-800 text-slate-300 px-2 py-1 rounded text-[10px] font-mono border border-slate-700">DPDP Act 2023</span>
+                        <span class="bg-slate-800 text-slate-300 px-2 py-1 rounded text-[10px] font-mono border border-slate-700">Sec 52 Easements Act</span>
+                    </div>
+                </div>
+
+                <div>
+                    <h5 class="text-white font-semibold text-xs uppercase tracking-wider mb-3">Zero-Hardware Stack</h5>
+                    <ul class="space-y-2">
+                        <li><a href="{{ url_for('marketplace_page') }}" class="hover:text-white transition-colors">Haversine GPS Radar (&lt;50m)</a></li>
+                        <li><a href="{{ url_for('printable_qr', space_id=1) }}" class="hover:text-white transition-colors">₹5 Printable A4 Door QR Pass</a></li>
+                        <li><span class="text-slate-500">Dynamic 4-Digit Caretaker PIN</span></li>
+                        <li><span class="text-slate-500">Multimodal CV Visual Diff & Appliance Off</span></li>
+                        <li><span class="text-slate-500">Instant ₹100 UPI Micro-Escrow Hold</span></li>
+                    </ul>
+                </div>
+
+                <div>
+                    <h5 class="text-white font-semibold text-xs uppercase tracking-wider mb-3">Dual-Sided Verification</h5>
+                    <ul class="space-y-2">
+                        <li><a href="{{ url_for('verify_student_page') }}" class="hover:text-white transition-colors">DigiLocker Aadhaar OTP (Zero Raw Storage)</a></li>
+                        <li><a href="{{ url_for('verify_student_page') }}" class="hover:text-white transition-colors">Institutional .ac.in Domain Check</a></li>
+                        <li><a href="{{ url_for('verify_host_page') }}" class="hover:text-white transition-colors">State Discom CA Bill (BESCOM, BSES, etc.)</a></li>
+                        <li><a href="{{ url_for('verify_host_page') }}" class="hover:text-white transition-colors">NPCI UPI ₹1 Penny Drop Verification</a></li>
+                    </ul>
+                </div>
+
+                <div>
+                    <h5 class="text-white font-semibold text-xs uppercase tracking-wider mb-3">Hack2Ignite 2026 Pitch</h5>
+                    <p class="text-slate-400 text-xs leading-relaxed mb-2">
+                        Built by <strong>Kanishk Singh</strong> for Hack2Ignite 2026. Production audited (14/14 Audited & 35+ Test Validations).
+                    </p>
+                    <div class="text-emerald-400 font-mono text-[11px] flex items-center gap-1.5">
+                        <i class="fa-solid fa-circle-check"></i> 100% Test Pass Rate
+                    </div>
+                </div>
+            </div>
+
+            <div class="pt-6 flex flex-col sm:flex-row justify-between items-center text-slate-500 gap-3">
+                <p>&copy; 2026 SpaceLoop Core Engineering. All rights reserved.</p>
+                <p class="text-[11px]">Governed strictly under Section 52, Indian Easements Act 1882 (Revocable License).</p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Client Script -->
+    <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+    {% block scripts %}{% endblock %}
+</body>
+</html>

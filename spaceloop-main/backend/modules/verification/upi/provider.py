@@ -1,0 +1,2 @@
+class NpciPennyDropAdapter:
+    pass

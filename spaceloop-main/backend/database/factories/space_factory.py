@@ -1,0 +1,2 @@
+class SpaceFactory:
+    pass

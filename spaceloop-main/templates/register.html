@@ -1,0 +1,122 @@
+{% extends 'base.html' %}
+{% block title %}Create Account | SpaceLoop{% endblock %}
+
+{% block content %}
+<div class="min-h-[80vh] flex flex-col justify-center py-12 sm:px-6 lg:px-8 bg-slate-50">
+    <div class="sm:mx-auto sm:w-full sm:max-w-md text-center space-y-2">
+        <div class="inline-flex items-center justify-center w-12 h-12 rounded-2xl bg-gradient-to-tr from-brand-600 to-cyan-500 text-white shadow-lg shadow-brand-500/30">
+            <i class="fa-solid fa-user-plus text-xl"></i>
+        </div>
+        <h2 class="text-3xl font-display font-extrabold text-slate-900 tracking-tight">
+            Create Your SpaceLoop Account
+        </h2>
+        <p class="text-xs sm:text-sm text-slate-500">
+            Join India's zero-hardware micro-space community.
+        </p>
+    </div>
+
+    <div class="mt-8 sm:mx-auto sm:w-full sm:max-w-md px-4">
+        <div class="bg-white py-8 px-6 sm:px-10 shadow-xl shadow-slate-200/50 rounded-3xl border border-slate-200 space-y-6">
+            
+            {% if error %}
+            <div class="bg-rose-50 border border-rose-200 text-rose-700 text-xs sm:text-sm rounded-xl p-4 flex items-center gap-3">
+                <i class="fa-solid fa-circle-exclamation text-rose-500 text-base shrink-0"></i>
+                <div>{{ error }}</div>
+            </div>
+            {% endif %}
+
+            <form action="{{ url_for('register_action') }}" method="POST" class="space-y-4">
+                <!-- Role Selection -->
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">I am registering as:</label>
+                    <div class="grid grid-cols-2 gap-3">
+                        <label class="relative flex flex-col p-3 rounded-2xl border-2 cursor-pointer transition-all border-brand-500 bg-brand-50/40" id="role-seeker-label">
+                            <input type="radio" name="role" value="seeker" class="sr-only" checked onchange="toggleRoleSelect('seeker')">
+                            <div class="flex items-center gap-2 font-bold text-xs text-brand-900">
+                                <i class="fa-solid fa-graduation-cap text-brand-600"></i>
+                                <span>Student / Seeker</span>
+                            </div>
+                            <span class="text-[10px] text-slate-500 mt-1">Book quiet study & project pods</span>
+                        </label>
+
+                        <label class="relative flex flex-col p-3 rounded-2xl border-2 cursor-pointer transition-all border-slate-200 bg-white" id="role-owner-label">
+                            <input type="radio" name="role" value="owner" class="sr-only" onchange="toggleRoleSelect('owner')">
+                            <div class="flex items-center gap-2 font-bold text-xs text-slate-900">
+                                <i class="fa-solid fa-house-user text-emerald-600"></i>
+                                <span>Host / Owner</span>
+                            </div>
+                            <span class="text-[10px] text-slate-500 mt-1">List daytime-vacant rooms</span>
+                        </label>
+                    </div>
+                </div>
+
+                <div>
+                    <label for="name" class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Full Legal Name</label>
+                    <div class="relative">
+                        <i class="fa-solid fa-user absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-sm"></i>
+                        <input type="text" id="name" name="name" required
+                               placeholder="e.g. Rohit Verma"
+                               class="w-full text-xs sm:text-sm bg-slate-50 border border-slate-300 rounded-xl pl-10 pr-4 py-3 focus:bg-white focus:outline-none focus:ring-2 focus:ring-brand-500 font-medium text-slate-900">
+                    </div>
+                </div>
+
+                <div>
+                    <label for="email" class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Email Address</label>
+                    <div class="relative">
+                        <i class="fa-solid fa-envelope absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-sm"></i>
+                        <input type="email" id="email" name="email" required
+                               placeholder="rohit@iitd.ac.in or personal@email.com"
+                               class="w-full text-xs sm:text-sm bg-slate-50 border border-slate-300 rounded-xl pl-10 pr-4 py-3 focus:bg-white focus:outline-none focus:ring-2 focus:ring-brand-500 font-medium text-slate-900">
+                    </div>
+                    <p class="text-[10px] text-slate-500 mt-1">Use your <code>.ac.in</code> institutional email for automatic student discount unlocks.</p>
+                </div>
+
+                <div>
+                    <label for="password" class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Create Password</label>
+                    <div class="relative">
+                        <i class="fa-solid fa-key absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-sm"></i>
+                        <input type="password" id="password" name="password" required minlength="6"
+                               placeholder="At least 6 characters"
+                               class="w-full text-xs sm:text-sm bg-slate-50 border border-slate-300 rounded-xl pl-10 pr-4 py-3 focus:bg-white focus:outline-none focus:ring-2 focus:ring-brand-500 font-medium text-slate-900">
+                    </div>
+                </div>
+
+                <div class="pt-3">
+                    <button type="submit"
+                            class="w-full bg-brand-600 hover:bg-brand-700 text-white font-bold py-3.5 px-4 rounded-xl shadow-md transition-colors text-sm flex items-center justify-center gap-2">
+                        <span>Complete Registration</span>
+                        <i class="fa-solid fa-arrow-right text-xs"></i>
+                    </button>
+                </div>
+            </form>
+
+            <div class="pt-2 text-center text-xs text-slate-600">
+                Already have an account? 
+                <a href="{{ url_for('login_page') }}" class="font-bold text-brand-600 hover:text-brand-700 underline">
+                    Sign In
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function toggleRoleSelect(role) {
+    const seekerLabel = document.getElementById('role-seeker-label');
+    const ownerLabel = document.getElementById('role-owner-label');
+    if (role === 'seeker') {
+        seekerLabel.className = "relative flex flex-col p-3 rounded-2xl border-2 cursor-pointer transition-all border-brand-500 bg-brand-50/40";
+        ownerLabel.className = "relative flex flex-col p-3 rounded-2xl border-2 cursor-pointer transition-all border-slate-200 bg-white";
+    } else {
+        ownerLabel.className = "relative flex flex-col p-3 rounded-2xl border-2 cursor-pointer transition-all border-emerald-500 bg-emerald-50/40";
+        seekerLabel.className = "relative flex flex-col p-3 rounded-2xl border-2 cursor-pointer transition-all border-slate-200 bg-white";
+    }
+}
+// Initialize based on URL query
+const urlParams = new URLSearchParams(window.location.search);
+if (urlParams.get('role') === 'owner') {
+    document.querySelector('input[value="owner"]').checked = true;
+    toggleRoleSelect('owner');
+}
+</script>
+{% endblock %}
