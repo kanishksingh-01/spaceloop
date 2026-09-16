@@ -1,0 +1,1 @@
+# inquiries module models
