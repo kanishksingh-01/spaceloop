@@ -1,2 +1,0 @@
-class SpaceListingService:
-    pass

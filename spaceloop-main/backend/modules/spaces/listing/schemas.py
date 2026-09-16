@@ -1,1 +1,0 @@
-# Space listing schemas

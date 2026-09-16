@@ -1,1 +1,0 @@
-from india_stack import verify_academic_credentials

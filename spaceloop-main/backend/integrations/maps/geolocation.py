@@ -1,1 +1,0 @@
-from telemetry import haversine_distance, verify_gps_geofence

@@ -1,2 +1,0 @@
-class BookingCheckout:
-    pass

@@ -1,2 +1,0 @@
-class BookingStateMachine:
-    pass
