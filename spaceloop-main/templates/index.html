@@ -1,0 +1,365 @@
+{% extends 'base.html' %}
+{% block title %}SpaceLoop | Marketplace & Natural Language Matchmaker{% endblock %}
+
+{% block content %}
+<!-- Hero Section -->
+<section class="relative overflow-hidden bg-gradient-to-b from-slate-900 via-brand-900 to-slate-900 text-white py-16 px-4 sm:px-6 lg:px-8">
+    <div class="absolute inset-0 bg-[radial-gradient(#6366f1_1px,transparent_1px)] [background-size:24px_24px] opacity-20"></div>
+    <div class="relative max-w-5xl mx-auto text-center space-y-6">
+        <div class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-brand-500/20 border border-brand-400/30 text-brand-300 text-xs font-semibold backdrop-blur-md">
+            <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+            Zero-Hardware Micro-Leasing Platform &bull; Hack2Ignite 2026
+        </div>
+
+        <h1 class="text-4xl sm:text-6xl font-display font-extrabold tracking-tight leading-tight">
+            Quiet Campus Micro-Spaces at <br class="hidden sm:inline">
+            <span class="bg-gradient-to-r from-brand-300 via-cyan-300 to-emerald-300 bg-clip-text text-transparent">
+                ₹40 to ₹75 / Student Hour
+            </span>
+        </h1>
+
+        <p class="max-w-2xl mx-auto text-slate-300 text-sm sm:text-base leading-relaxed font-light">
+            No ₹20,000 IoT smart locks. No rigid 11-month commercial leases.
+            Access air-conditioned, acoustically verified study and project spaces powered by a 
+            <strong>₹5 Laminated Door QR</strong>, <strong>Smartphone GPS Radar</strong>, and <strong>Section 52 Micro-Leases</strong>.
+        </p>
+
+        <!-- Conversational Natural Language AI Matchmaker -->
+        <div class="max-w-3xl mx-auto mt-8 bg-white/10 backdrop-blur-md border border-white/20 p-2 sm:p-3 rounded-2xl shadow-2xl">
+            <form id="ai-match-form" onsubmit="handleAiMatch(event)" class="flex flex-col sm:flex-row gap-2">
+                <div class="relative flex-grow">
+                    <i class="fa-solid fa-wand-magic-sparkles absolute left-3.5 top-1/2 -translate-y-1/2 text-cyan-400 text-sm"></i>
+                    <input type="text" id="ai-match-query" 
+                           placeholder="Try: 'Quiet study room near IIT Gate 1 under ₹60/hr with AC' or 'Podcast studio for 3 pax'"
+                           value="{{ search_query }}"
+                           class="w-full bg-white/90 text-slate-900 placeholder-slate-400 text-xs sm:text-sm pl-10 pr-4 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-400 font-medium">
+                </div>
+                <button type="submit" id="ai-match-btn"
+                        class="bg-gradient-to-r from-brand-500 to-cyan-500 hover:from-brand-600 hover:to-cyan-600 text-white font-semibold text-xs sm:text-sm px-6 py-3 rounded-xl shadow-lg shadow-brand-500/30 flex items-center justify-center gap-2 transition-all shrink-0">
+                    <i class="fa-solid fa-bolt"></i>
+                    <span>AI Semantic Match</span>
+                </button>
+            </form>
+            <div class="mt-2 text-left px-2 flex flex-wrap items-center justify-between text-[11px] text-slate-300">
+                <div class="flex items-center gap-2">
+                    <span class="text-slate-400">Popular:</span>
+                    <button type="button" onclick="setQuery('Quiet study pod near IIT Delhi under ₹60/hr')" class="underline hover:text-white">Near IIT Gate 1</button>
+                    <span>&bull;</span>
+                    <button type="button" onclick="setQuery('Podcast and video recording studio in Delhi under ₹80/hr')" class="underline hover:text-white">Podcast Studio</button>
+                    <span>&bull;</span>
+                    <button type="button" onclick="setQuery('Coding sprint loft in Koramangala under ₹60/hr')" class="underline hover:text-white">Koramangala Coding</button>
+                </div>
+                <span class="text-cyan-300 font-mono text-[10px]">Dual-AI Engine: Groq 70B &bull; Gemini Flash</span>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Stats Bar -->
+<section class="bg-white border-b border-slate-200 py-6">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-6 text-center">
+            <div class="space-y-1">
+                <div class="text-2xl sm:text-3xl font-extrabold text-slate-900 font-display">₹40 – ₹75<span class="text-xs text-slate-500 font-normal">/hr</span></div>
+                <div class="text-xs text-slate-500 font-medium">Average Student Rate (65% Savings)</div>
+            </div>
+            <div class="space-y-1">
+                <div class="text-2xl sm:text-3xl font-extrabold text-emerald-600 font-display">₹5 Pass</div>
+                <div class="text-xs text-slate-500 font-medium">Printable Door QR (Zero Smart Lock)</div>
+            </div>
+            <div class="space-y-1">
+                <div class="text-2xl sm:text-3xl font-extrabold text-brand-600 font-display">&lt; 50m Radar</div>
+                <div class="text-xs text-slate-500 font-medium">Smartphone Haversine Geofencing</div>
+            </div>
+            <div class="space-y-1">
+                <div class="text-2xl sm:text-3xl font-extrabold text-indigo-600 font-display">Instant ₹100</div>
+                <div class="text-xs text-slate-500 font-medium">UPI Micro-Escrow Programmatic Release</div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Main Marketplace Section -->
+<section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-8">
+    
+    <!-- AI Results Container (Dynamically Populated if Matchmaker is Run) -->
+    <div id="ai-match-results-container" class="hidden">
+        <div class="bg-gradient-to-r from-brand-50 to-cyan-50 border border-brand-200 rounded-2xl p-4 sm:p-6 mb-8 space-y-4">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center gap-2">
+                    <div class="w-8 h-8 rounded-lg bg-brand-600 text-white flex items-center justify-center text-sm shadow-sm">
+                        <i class="fa-solid fa-wand-magic-sparkles"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-base font-bold text-slate-900 font-display">AI Semantic Match Results</h3>
+                        <p id="ai-match-summary-text" class="text-xs text-slate-600">Scored against your natural language criteria</p>
+                    </div>
+                </div>
+                <button onclick="clearAiMatch()" class="text-xs text-slate-500 hover:text-slate-800 underline">
+                    Show All Spaces
+                </button>
+            </div>
+            <div id="ai-match-cards" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"></div>
+        </div>
+    </div>
+
+    <!-- Category Filter Bar -->
+    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div>
+            <h2 class="text-xl font-display font-bold text-slate-900">Verified Campus Micro-Spaces</h2>
+            <p class="text-xs text-slate-500">Zero hardware requirement &bull; Inspected for acoustics, power, and high-speed Wi-Fi</p>
+        </div>
+
+        <!-- Filter Pills -->
+        <div class="flex flex-wrap items-center gap-1.5 bg-slate-100 p-1.5 rounded-2xl border border-slate-200 text-xs font-semibold">
+            {% set cats = ['All', 'Workspace', 'Studio', 'Storage', 'Event', 'Pop-up'] %}
+            {% for cat in cats %}
+            <a href="{{ url_for('index', category=cat if cat != 'All' else '') }}"
+               class="px-3 py-1.5 rounded-xl transition-all {{ 'bg-white text-brand-600 shadow-sm font-bold' if selected_category == cat else 'text-slate-600 hover:text-slate-900' }}">
+               {{ cat }}
+            </a>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Micro-Spaces Grid -->
+    <div id="default-spaces-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {% for space in spaces %}
+        <div class="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col group">
+            <!-- Photo & Badges -->
+            <div class="relative h-48 overflow-hidden bg-slate-100">
+                <img src="{{ space.image_url }}" alt="{{ space.title }}" 
+                     class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500">
+                <div class="absolute inset-0 bg-gradient-to-t from-slate-950/70 via-transparent to-black/20"></div>
+
+                <!-- Top Badges -->
+                <div class="absolute top-3 left-3 flex items-center gap-1.5">
+                    <span class="px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider bg-slate-900/80 text-white backdrop-blur-md border border-white/20">
+                        {{ space.category }}
+                    </span>
+                    {% if space.discom_ca_number %}
+                    <span class="px-2 py-1 rounded-lg text-[10px] font-semibold bg-emerald-500/90 text-white backdrop-blur-md flex items-center gap-1">
+                        <i class="fa-solid fa-bolt text-[9px]"></i> Discom CA Verified
+                    </span>
+                    {% endif %}
+                </div>
+
+                <!-- OTI Reliability Score Badge -->
+                <div class="absolute top-3 right-3">
+                    <span class="px-2.5 py-1 rounded-lg text-[10px] font-bold bg-indigo-600 text-white backdrop-blur-md shadow-md flex items-center gap-1">
+                        <i class="fa-solid fa-shield-halved text-[9px]"></i> OTI {{ space.ai_suitability_score }}%
+                    </span>
+                </div>
+
+                <!-- Bottom Photo Overlay Details -->
+                <div class="absolute bottom-3 left-3 right-3 flex justify-between items-end text-white">
+                    <div>
+                        <div class="text-lg font-extrabold font-display">₹{{ space.price_hourly|round|int }} <span class="text-xs font-normal text-slate-200">/ hour</span></div>
+                        <p class="text-[11px] text-slate-300 flex items-center gap-1">
+                            <i class="fa-solid fa-location-dot text-rose-400"></i> {{ space.address }}
+                        </p>
+                    </div>
+                    <span class="text-[11px] font-mono bg-white/20 px-2 py-0.5 rounded backdrop-blur-md">
+                        {{ space.sqft }} sq ft
+                    </span>
+                </div>
+            </div>
+
+            <!-- Card Body -->
+            <div class="p-5 flex-grow flex flex-col justify-between space-y-4">
+                <div class="space-y-2">
+                    <h3 class="font-display font-bold text-base text-slate-900 leading-snug group-hover:text-brand-600 transition-colors">
+                        <a href="{{ url_for('space_detail', space_id=space.id) }}">{{ space.title }}</a>
+                    </h3>
+                    <p class="text-xs text-slate-500 line-clamp-2 leading-relaxed">
+                        {{ space.description }}
+                    </p>
+                </div>
+
+                <!-- Spatial Telemetry Metrics -->
+                <div class="grid grid-cols-2 gap-2 pt-2 border-t border-slate-100 text-[11px]">
+                    <div class="flex items-center gap-2 text-slate-600 bg-slate-50 p-2 rounded-xl">
+                        <i class="fa-solid fa-volume-xmark text-emerald-600"></i>
+                        <span class="truncate">{{ space.ai_noise_level }}</span>
+                    </div>
+                    <div class="flex items-center gap-2 text-slate-600 bg-slate-50 p-2 rounded-xl">
+                        <i class="fa-solid fa-plug text-indigo-600"></i>
+                        <span class="truncate">{{ space.circuit_load }}</span>
+                    </div>
+                </div>
+
+                <!-- Action CTA -->
+                <div class="pt-2 flex items-center gap-2">
+                    <a href="{{ url_for('space_detail', space_id=space.id) }}" 
+                       class="flex-grow bg-brand-600 hover:bg-brand-700 text-white font-semibold text-xs py-2.5 px-4 rounded-xl text-center shadow-sm transition-colors flex items-center justify-center gap-1.5">
+                        <i class="fa-solid fa-calendar-check"></i>
+                        <span>Instant Book (Sec 52)</span>
+                    </a>
+                    <a href="{{ url_for('printable_qr', space_id=space.id) }}" 
+                       title="Print Laminated Door Pass"
+                       class="w-10 h-9 rounded-xl border border-slate-200 text-slate-600 hover:text-brand-600 hover:bg-slate-50 flex items-center justify-center text-xs transition-colors shrink-0">
+                        <i class="fa-solid fa-qrcode"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+</section>
+
+<!-- Zero-Hardware Telemetry Architecture Breakdown -->
+<section class="bg-slate-100 border-t border-slate-200 py-16">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="text-center max-w-3xl mx-auto mb-12 space-y-3">
+            <span class="text-xs font-bold uppercase tracking-wider text-brand-600">The SpaceLoop Breakthrough</span>
+            <h2 class="text-3xl font-display font-extrabold text-slate-900">How We Eliminate Hardware Costs Entirely</h2>
+            <p class="text-sm text-slate-600">
+                Conventional PropTech forces property owners to install ₹15,000–₹25,000 IoT smart locks. 
+                SpaceLoop substitutes expensive hardware with four cryptographic software layers:
+            </p>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+            <!-- Pillar 1 -->
+            <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-3">
+                <div class="w-12 h-12 rounded-xl bg-brand-50 text-brand-600 flex items-center justify-center text-xl font-bold">
+                    <i class="fa-solid fa-qrcode"></i>
+                </div>
+                <h4 class="font-display font-bold text-base text-slate-900">1. ₹5 Printable Door QR</h4>
+                <p class="text-xs text-slate-500 leading-relaxed">
+                    Hosts print an A4 door pass for under ₹5. It embeds a high-entropy 64-character SHA-256 room token validated strictly server-side.
+                </p>
+            </div>
+
+            <!-- Pillar 2 -->
+            <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-3">
+                <div class="w-12 h-12 rounded-xl bg-cyan-50 text-cyan-600 flex items-center justify-center text-xl font-bold">
+                    <i class="fa-solid fa-satellite-dish"></i>
+                </div>
+                <h4 class="font-display font-bold text-base text-slate-900">2. GPS Haversine Radar</h4>
+                <p class="text-xs text-slate-500 leading-relaxed">
+                    Smartphone GPS coordinates are matched against property coordinates in real-time. Rejects check-in if distance exceeds 50 meters.
+                </p>
+            </div>
+
+            <!-- Pillar 3 -->
+            <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-3">
+                <div class="w-12 h-12 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center text-xl font-bold">
+                    <i class="fa-solid fa-key"></i>
+                </div>
+                <h4 class="font-display font-bold text-base text-slate-900">3. Dynamic Caretaker PIN</h4>
+                <p class="text-xs text-slate-500 leading-relaxed">
+                    Upon QR + GPS match, the browser displays a rotating 4-digit arrival PIN to show the caretaker or unlock a ₹400 mechanical keybox.
+                </p>
+            </div>
+
+            <!-- Pillar 4 -->
+            <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-3">
+                <div class="w-12 h-12 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center text-xl font-bold">
+                    <i class="fa-solid fa-camera"></i>
+                </div>
+                <h4 class="font-display font-bold text-base text-slate-900">4. CV Visual Diff & Escrow</h4>
+                <p class="text-xs text-slate-500 leading-relaxed">
+                    Exit walkthrough photo confirms room cleanliness and verifies fans/lights/AC are powered off, triggering instant ₹100 UPI escrow refund.
+                </p>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function setQuery(text) {
+    document.getElementById('ai-match-query').value = text;
+    document.getElementById('ai-match-form').dispatchEvent(new Event('submit'));
+}
+
+async function handleAiMatch(e) {
+    e.preventDefault();
+    const queryInput = document.getElementById('ai-match-query');
+    const query = queryInput.value.trim();
+    if (!query) return;
+
+    const btn = document.getElementById('ai-match-btn');
+    const originalText = btn.innerHTML;
+    btn.innerHTML = `<i class="fa-solid fa-circle-notch fa-spin"></i> Matching...`;
+    btn.disabled = true;
+
+    try {
+        const res = await fetch('/api/spaces/ai-match', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ query: query })
+        });
+        const data = await res.json();
+        btn.innerHTML = originalText;
+        btn.disabled = false;
+
+        if (data.results && data.results.length > 0) {
+            renderAiMatchResults(data.results, query);
+        } else {
+            showToast('No matching spaces found for query', 'warning');
+        }
+    } catch (err) {
+        btn.innerHTML = originalText;
+        btn.disabled = false;
+        showToast('AI matchmaker service error', 'error');
+    }
+}
+
+function renderAiMatchResults(results, query) {
+    const container = document.getElementById('ai-match-results-container');
+    const cardsGrid = document.getElementById('ai-match-cards');
+    const summary = document.getElementById('ai-match-summary-text');
+    const defaultGrid = document.getElementById('default-spaces-grid');
+
+    summary.innerHTML = `Found <strong>${results.length}</strong> spaces tailored for: <em>"${query}"</em>`;
+    cardsGrid.innerHTML = '';
+
+    results.forEach(item => {
+        const space = item.space;
+        const badgeColors = {
+            'Top Pick': 'bg-emerald-600 text-white',
+            'Great Match': 'bg-brand-600 text-white',
+            'Alternative': 'bg-slate-700 text-white'
+        }[item.badge] || 'bg-brand-600 text-white';
+
+        const card = document.createElement('div');
+        card.className = 'bg-white rounded-2xl border-2 border-brand-300 overflow-hidden shadow-md flex flex-col p-4 space-y-3';
+        card.innerHTML = `
+            <div class="flex items-center justify-between">
+                <span class="px-2.5 py-1 rounded-lg text-xs font-bold ${badgeColors}">
+                    ${item.badge} &bull; ${item.match_score}% Match
+                </span>
+                <span class="font-display font-extrabold text-base text-slate-900">₹${Math.round(space.price_hourly)}/hr</span>
+            </div>
+            <h4 class="font-bold text-sm text-slate-900 leading-snug">${space.title}</h4>
+            <p class="text-xs text-slate-500 line-clamp-2">${space.address}</p>
+            
+            <div class="bg-brand-50 p-2.5 rounded-xl text-xs space-y-1">
+                <div class="text-brand-900 font-semibold text-[11px] flex items-center gap-1">
+                    <i class="fa-solid fa-check text-emerald-600"></i> Why it matches:
+                </div>
+                <p class="text-brand-800 text-[11px]">${item.match_reasons.join(', ')}</p>
+            </div>
+
+            <div class="pt-2 flex items-center gap-2">
+                <a href="/space/${space.id}" class="flex-grow bg-brand-600 hover:bg-brand-700 text-white font-semibold text-xs py-2 px-3 rounded-xl text-center transition-colors">
+                    View & Instant Book
+                </a>
+            </div>
+        `;
+        cardsGrid.appendChild(card);
+    });
+
+    container.classList.remove('hidden');
+    container.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function clearAiMatch() {
+    document.getElementById('ai-match-results-container').classList.add('hidden');
+}
+</script>
+{% endblock %}

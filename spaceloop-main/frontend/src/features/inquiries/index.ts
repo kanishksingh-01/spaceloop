@@ -1,0 +1,2 @@
+// inquiries feature module
+export {};

@@ -1,0 +1,17 @@
+# Python bytecode
+__pycache__/
+*.py[cod]
+*$py.class
+
+# SQLite Database
+*.db
+*.sqlite3
+
+# Environment & Virtualenvs
+.env
+.venv
+env/
+venv/
+
+# macOS
+.DS_Store

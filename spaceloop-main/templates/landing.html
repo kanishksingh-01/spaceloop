@@ -1,0 +1,343 @@
+{% extends 'base.html' %}
+{% block title %}SpaceLoop | Monetize Unused Spaces. Unlock Affordable Micro-Workspaces.{% endblock %}
+
+{% block content %}
+<!-- Hero Section -->
+<section class="relative overflow-hidden bg-gradient-to-b from-slate-950 via-slate-900 to-brand-950 text-white pt-20 pb-24 px-4 sm:px-6 lg:px-8">
+    <!-- Ambient Glow & Mesh Background -->
+    <div class="absolute inset-0 bg-[radial-gradient(#4f46e5_1px,transparent_1px)] [background-size:28px_28px] opacity-25"></div>
+    <div class="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-brand-600/20 rounded-full blur-3xl pointer-events-none"></div>
+    <div class="absolute bottom-10 right-10 w-80 h-80 bg-cyan-500/10 rounded-full blur-3xl pointer-events-none"></div>
+
+    <div class="relative max-w-6xl mx-auto text-center space-y-8">
+        <!-- Top Status Pill -->
+        <div class="inline-flex items-center gap-2.5 px-4 py-2 rounded-full bg-white/10 border border-white/15 text-indigo-200 text-xs font-semibold backdrop-blur-md shadow-lg shadow-black/20">
+            <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse"></span>
+            <span>Zero-Hardware India Stack &bull; Quiet Campus Micro-Spaces &bull; Section 52 Micro-Leases &bull; DPDP Act 2023 Compliant</span>
+        </div>
+
+        <!-- Headline -->
+        <h1 class="text-4xl sm:text-6xl lg:text-7xl font-display font-extrabold tracking-tight leading-[1.1]">
+            Monetize Unused Spaces.<br class="hidden sm:inline">
+            <span class="bg-gradient-to-r from-brand-300 via-cyan-300 to-emerald-300 bg-clip-text text-transparent">
+                Unlock ₹40/hr Micro-Workspaces.
+            </span>
+        </h1>
+
+        <!-- Subheadline -->
+        <p class="max-w-3xl mx-auto text-slate-300 text-base sm:text-lg lg:text-xl font-light leading-relaxed">
+            India's first peer-to-peer platform connecting university students with daytime-vacant urban micro-spaces. 
+            Powered by a <strong>₹5 Laminated Door QR</strong>, <strong>Smartphone GPS Radar (&lt;50m)</strong>, and 
+            <strong>Instant ₹100 UPI Micro-Escrow</strong>. Zero expensive IoT smart locks. Zero 11-month tenancy risk.
+        </p>
+
+        <!-- CTA Action Buttons -->
+        <div class="flex flex-wrap items-center justify-center gap-4 pt-2">
+            <a href="{{ url_for('marketplace_page') }}" 
+               class="bg-gradient-to-r from-brand-500 to-indigo-600 hover:from-brand-600 hover:to-indigo-700 text-white font-bold text-sm sm:text-base px-8 py-4 rounded-2xl shadow-xl shadow-brand-500/25 flex items-center gap-2.5 transition-all transform hover:-translate-y-0.5">
+                <i class="fa-solid fa-compass"></i>
+                <span>Explore Micro-Spaces</span>
+            </a>
+            <a href="{{ url_for('register_page', role='owner') }}" 
+               class="bg-white/10 hover:bg-white/20 text-white font-bold text-sm sm:text-base px-8 py-4 rounded-2xl border border-white/20 backdrop-blur-md transition-all transform hover:-translate-y-0.5 flex items-center gap-2.5">
+                <i class="fa-solid fa-house-chimney-medical text-emerald-400"></i>
+                <span>List Your Unused Space</span>
+            </a>
+            <a href="{{ url_for('calculator_page') }}" 
+               class="text-slate-300 hover:text-white text-sm font-semibold px-4 py-2 transition-colors flex items-center gap-1.5">
+                <i class="fa-solid fa-calculator text-cyan-400"></i>
+                <span>Calculate Monthly Yield &rarr;</span>
+            </a>
+        </div>
+
+        <!-- Quick Search Bar -->
+        <div class="max-w-3xl mx-auto mt-6 bg-white/10 backdrop-blur-xl border border-white/20 p-2.5 rounded-2xl shadow-2xl">
+            <form action="{{ url_for('marketplace_page') }}" method="GET" class="flex flex-col sm:flex-row gap-2">
+                <div class="relative flex-grow">
+                    <i class="fa-solid fa-magnifying-glass absolute left-4 top-1/2 -translate-y-1/2 text-cyan-400 text-sm"></i>
+                    <input type="text" name="q" 
+                           placeholder="Search by campus, city, or space type (e.g. 'IIT Delhi', 'Podcast', 'Koramangala')"
+                           class="w-full bg-white/95 text-slate-900 placeholder-slate-400 text-sm pl-11 pr-4 py-3.5 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-400 font-medium shadow-inner">
+                </div>
+                <button type="submit" 
+                        class="bg-gradient-to-r from-brand-600 to-cyan-600 hover:from-brand-700 hover:to-cyan-700 text-white font-bold text-sm px-6 py-3.5 rounded-xl shadow-md flex items-center justify-center gap-2 transition-all shrink-0">
+                    <i class="fa-solid fa-bolt"></i>
+                    <span>Find Spaces</span>
+                </button>
+            </form>
+            <div class="mt-2.5 text-left px-3 flex flex-wrap items-center justify-between text-xs text-slate-300 gap-2">
+                <div class="flex items-center gap-2">
+                    <span class="text-slate-400 font-medium">Hotspots:</span>
+                    <a href="{{ url_for('marketplace_page', q='Hauz Khas') }}" class="underline hover:text-white">IIT Delhi (Hauz Khas)</a>
+                    <span>&bull;</span>
+                    <a href="{{ url_for('marketplace_page', q='Powai') }}" class="underline hover:text-white">IIT Bombay (Powai)</a>
+                    <span>&bull;</span>
+                    <a href="{{ url_for('marketplace_page', q='Koramangala') }}" class="underline hover:text-white">Koramangala Bangalore</a>
+                </div>
+                <span class="text-emerald-400 font-mono text-[11px]"><i class="fa-solid fa-shield-halved"></i> 100% Aadhaar & Discom Verified</span>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Metrics & Reality Strip -->
+<section class="bg-white border-b border-slate-200 py-8 relative z-10 shadow-sm">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-6 text-center">
+            <div class="space-y-1 border-r border-slate-100 last:border-0">
+                <div class="text-3xl sm:text-4xl font-extrabold text-slate-900 font-display">₹40 – ₹75<span class="text-xs text-slate-500 font-normal">/hr</span></div>
+                <div class="text-xs text-slate-600 font-semibold">Student Micro-Lease Rate</div>
+                <div class="text-[11px] text-emerald-600 font-medium">65% Cheaper than Coworking</div>
+            </div>
+            <div class="space-y-1 border-r border-slate-100 last:border-0">
+                <div class="text-3xl sm:text-4xl font-extrabold text-emerald-600 font-display">₹5 Pass</div>
+                <div class="text-xs text-slate-600 font-semibold">Printable Door QR Access</div>
+                <div class="text-[11px] text-slate-500 font-medium">Replaces ₹20,000 Smart Locks</div>
+            </div>
+            <div class="space-y-1 border-r border-slate-100 last:border-0">
+                <div class="text-3xl sm:text-4xl font-extrabold text-brand-600 font-display">&lt; 50m</div>
+                <div class="text-xs text-slate-600 font-semibold">GPS Haversine Radar</div>
+                <div class="text-[11px] text-slate-500 font-medium">Anti-Spoof Geofence Validation</div>
+            </div>
+            <div class="space-y-1">
+                <div class="text-3xl sm:text-4xl font-extrabold text-indigo-600 font-display">Instant ₹100</div>
+                <div class="text-xs text-slate-600 font-semibold">UPI Micro-Escrow Refund</div>
+                <div class="text-[11px] text-indigo-600 font-medium">AI Photo Diff Cleanliness Check</div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- The Zero-Hardware India Stack Flow -->
+<section class="py-20 bg-slate-50 border-b border-slate-200">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-12">
+        <div class="text-center max-w-3xl mx-auto space-y-3">
+            <span class="text-xs font-mono font-bold text-brand-600 uppercase tracking-widest bg-brand-50 border border-brand-200 px-3 py-1 rounded-full">
+                Zero-Hardware Physical Access Architecture
+            </span>
+            <h2 class="text-3xl sm:text-4xl font-display font-extrabold text-slate-900">
+                How SpaceLoop Works End-to-End
+            </h2>
+            <p class="text-slate-600 text-sm sm:text-base">
+                Eliminating hardware friction with India Stack identity tokens, spatial GPS verification, and Section 52 revocable licenses.
+            </p>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+            <!-- Step 1 -->
+            <div class="bg-white rounded-3xl p-8 border border-slate-200 shadow-sm hover:shadow-md transition-shadow relative overflow-hidden flex flex-col justify-between">
+                <div class="space-y-4">
+                    <div class="w-12 h-12 rounded-2xl bg-indigo-50 border border-indigo-100 text-indigo-600 flex items-center justify-center text-xl font-bold font-mono">
+                        01
+                    </div>
+                    <h3 class="text-xl font-display font-bold text-slate-900">Dual-Layer Identity Trust</h3>
+                    <p class="text-xs text-slate-600 leading-relaxed">
+                        Students verify via <strong>DigiLocker Aadhaar OTP tokenization</strong> (DPDP Act Section 8 zero raw storage) and <code>.ac.in</code> credentials. Hosts verify active property ownership via <strong>State Discom electricity bills</strong> (BESCOM, BSES, TPDDL) and NPCI UPI Penny Drop.
+                    </p>
+                </div>
+                <div class="mt-6 pt-4 border-t border-slate-100 flex items-center gap-2 text-xs font-semibold text-indigo-600">
+                    <i class="fa-solid fa-id-card-clip"></i>
+                    <span>Instant KYC Verification &bull; &lt;20 sec</span>
+                </div>
+            </div>
+
+            <!-- Step 2 -->
+            <div class="bg-white rounded-3xl p-8 border border-slate-200 shadow-sm hover:shadow-md transition-shadow relative overflow-hidden flex flex-col justify-between">
+                <div class="space-y-4">
+                    <div class="w-12 h-12 rounded-2xl bg-brand-50 border border-brand-100 text-brand-600 flex items-center justify-center text-xl font-bold font-mono">
+                        02
+                    </div>
+                    <h3 class="text-xl font-display font-bold text-slate-900">Zero-Hardware Radar Handshake</h3>
+                    <p class="text-xs text-slate-600 leading-relaxed">
+                        No expensive smart locks. The host prints an A4 door pass with a <strong>64-character SHA-256 QR token</strong>. The student scans the QR upon arrival, and browser <strong>Haversine GPS radar confirms proximity &lt;50m</strong>, revealing the mechanical keybox code or caretaker PIN.
+                    </p>
+                </div>
+                <div class="mt-6 pt-4 border-t border-slate-100 flex items-center gap-2 text-xs font-semibold text-brand-600">
+                    <i class="fa-solid fa-satellite-dish"></i>
+                    <span>GPS Radar Geofencing Active</span>
+                </div>
+            </div>
+
+            <!-- Step 3 -->
+            <div class="bg-white rounded-3xl p-8 border border-slate-200 shadow-sm hover:shadow-md transition-shadow relative overflow-hidden flex flex-col justify-between">
+                <div class="space-y-4">
+                    <div class="w-12 h-12 rounded-2xl bg-emerald-50 border border-emerald-100 text-emerald-600 flex items-center justify-center text-xl font-bold font-mono">
+                        03
+                    </div>
+                    <h3 class="text-xl font-display font-bold text-slate-900">AI Exit Diff & Escrow Release</h3>
+                    <p class="text-xs text-slate-600 leading-relaxed">
+                        Before vacating, the student snaps an exit photo. Multimodal AI computes cleanliness match scores and verifies all fans and appliances are turned off. Punctuality is scored, and the <strong>₹100 micro-escrow is instantly refunded to their UPI VPA</strong> within seconds.
+                    </p>
+                </div>
+                <div class="mt-6 pt-4 border-t border-slate-100 flex items-center gap-2 text-xs font-semibold text-emerald-600">
+                    <i class="fa-solid fa-money-bill-transfer"></i>
+                    <span>Instant UPI Micro-Escrow Release</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Dual-Sided Value Propositions (Seeker vs Host) -->
+<section class="py-20 bg-white">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-16">
+        <div class="text-center max-w-2xl mx-auto space-y-3">
+            <h2 class="text-3xl sm:text-4xl font-display font-extrabold text-slate-900">
+                Engineered for Both Sides of the Campus
+            </h2>
+            <p class="text-slate-600 text-sm sm:text-base">
+                Whether you need a distraction-free space for study sprints or have an empty daytime room to monetize.
+            </p>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <!-- Student / Seeker Card -->
+            <div class="bg-gradient-to-br from-indigo-900 via-slate-900 to-brand-950 text-white rounded-3xl p-8 sm:p-10 flex flex-col justify-between space-y-8 relative overflow-hidden border border-slate-800 shadow-xl">
+                <div class="space-y-6">
+                    <div class="inline-flex items-center gap-2 bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider">
+                        <i class="fa-solid fa-graduation-cap"></i> For Students & Seekers
+                    </div>
+                    <h3 class="text-2xl sm:text-3xl font-display font-extrabold">
+                        Distraction-Free Focus Pods at Pocket-Friendly Rates
+                    </h3>
+                    <ul class="space-y-3 text-xs sm:text-sm text-slate-300">
+                        <li class="flex items-start gap-2.5">
+                            <i class="fa-solid fa-circle-check text-emerald-400 mt-1 shrink-0"></i>
+                            <span><strong>65% Cost Reduction:</strong> Pay ₹40–₹75/hr instead of ₹250/hr at commercial cafes with purchase mandates.</span>
+                        </li>
+                        <li class="flex items-start gap-2.5">
+                            <i class="fa-solid fa-circle-check text-emerald-400 mt-1 shrink-0"></i>
+                            <span><strong>Acoustic Certification:</strong> Verified ambient noise levels (&lt;34 dB) so you can attend interviews or code in peace.</span>
+                        </li>
+                        <li class="flex items-start gap-2.5">
+                            <i class="fa-solid fa-circle-check text-emerald-400 mt-1 shrink-0"></i>
+                            <span><strong>Zero Long-Term Lock-in:</strong> Book for 1 hour, 3 hours, or a single day. No leases, security deposits, or brokers.</span>
+                        </li>
+                        <li class="flex items-start gap-2.5">
+                            <i class="fa-solid fa-circle-check text-emerald-400 mt-1 shrink-0"></i>
+                            <span><strong>Live In-Room HUD:</strong> Monitor session countdown, dynamic WiFi passwords, and power toggles on your phone.</span>
+                        </li>
+                    </ul>
+                </div>
+                <div class="pt-4">
+                    <a href="{{ url_for('marketplace_page') }}" 
+                       class="inline-flex items-center gap-2 bg-brand-500 hover:bg-brand-600 text-white font-bold text-sm px-6 py-3.5 rounded-xl shadow-lg transition-all">
+                        <span>Find Study Spaces Near You</span>
+                        <i class="fa-solid fa-arrow-right"></i>
+                    </a>
+                </div>
+            </div>
+
+            <!-- Host / Owner Card -->
+            <div class="bg-gradient-to-br from-emerald-950 via-slate-900 to-teal-950 text-white rounded-3xl p-8 sm:p-10 flex flex-col justify-between space-y-8 relative overflow-hidden border border-slate-800 shadow-xl">
+                <div class="space-y-6">
+                    <div class="inline-flex items-center gap-2 bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider">
+                        <i class="fa-solid fa-house-user"></i> For Property Hosts & Owners
+                    </div>
+                    <h3 class="text-2xl sm:text-3xl font-display font-extrabold">
+                        Turn Daytime-Vacant Rooms into ₹15,000–₹45,000/Month
+                    </h3>
+                    <ul class="space-y-3 text-xs sm:text-sm text-slate-300">
+                        <li class="flex items-start gap-2.5">
+                            <i class="fa-solid fa-circle-check text-emerald-400 mt-1 shrink-0"></i>
+                            <span><strong>Zero Tenancy Risk (Section 52):</strong> Governed by Section 52 of the Indian Easements Act, 1882. Grants strictly temporary licenses; creates zero tenancy rights.</span>
+                        </li>
+                        <li class="flex items-start gap-2.5">
+                            <i class="fa-solid fa-circle-check text-emerald-400 mt-1 shrink-0"></i>
+                            <span><strong>Zero Hardware Investment:</strong> Print our ₹5 door QR. Use your existing mechanical lockbox or building caretaker.</span>
+                        </li>
+                        <li class="flex items-start gap-2.5">
+                            <i class="fa-solid fa-circle-check text-emerald-400 mt-1 shrink-0"></i>
+                            <span><strong>AI Spatial Diagnostics:</strong> Take 2 photos; our AI estimates square footage, lighting lux, circuit load, and recommends pricing.</span>
+                        </li>
+                        <li class="flex items-start gap-2.5">
+                            <i class="fa-solid fa-circle-check text-emerald-400 mt-1 shrink-0"></i>
+                            <span><strong>Automated Payouts:</strong> Payouts transferred directly to your verified UPI VPA upon session checkout.</span>
+                        </li>
+                    </ul>
+                </div>
+                <div class="pt-4">
+                    <a href="{{ url_for('register_page', role='owner') }}" 
+                       class="inline-flex items-center gap-2 bg-emerald-500 hover:bg-emerald-600 text-white font-bold text-sm px-6 py-3.5 rounded-xl shadow-lg transition-all">
+                        <span>List Your Space in 3 Minutes</span>
+                        <i class="fa-solid fa-arrow-right"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Featured Campus Micro-Spaces Showcase -->
+<section class="py-20 bg-slate-50 border-t border-b border-slate-200">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-10">
+        <div class="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
+            <div class="space-y-2">
+                <span class="text-xs font-mono font-bold text-brand-600 uppercase tracking-wider">Live Marketplace</span>
+                <h2 class="text-3xl font-display font-extrabold text-slate-900">Featured High-Trust Micro-Spaces</h2>
+                <p class="text-slate-600 text-xs sm:text-sm">Verified spaces equipped with high-speed WiFi, power backup, and quiet acoustic scores.</p>
+            </div>
+            <a href="{{ url_for('marketplace_page') }}" class="text-brand-600 hover:text-brand-700 text-xs sm:text-sm font-bold flex items-center gap-1.5 shrink-0">
+                <span>View all listings</span>
+                <i class="fa-solid fa-arrow-right"></i>
+            </a>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {% for space in spaces[:3] %}
+            <div class="bg-white rounded-3xl border border-slate-200 overflow-hidden shadow-sm hover:shadow-md transition-shadow flex flex-col justify-between">
+                <div class="relative">
+                    <img src="{{ space.image_url }}" alt="{{ space.title }}" class="w-full h-48 object-cover">
+                    <div class="absolute top-3 left-3 bg-white/90 backdrop-blur-md px-2.5 py-1 rounded-lg text-[11px] font-bold text-slate-900 border border-white/50">
+                        {{ space.category }}
+                    </div>
+                    <div class="absolute top-3 right-3 bg-emerald-600 text-white px-2.5 py-1 rounded-lg text-[11px] font-bold shadow-md">
+                        ₹{{ space.price_hourly|int }}/hr
+                    </div>
+                </div>
+                <div class="p-5 space-y-3 flex-grow flex flex-col justify-between">
+                    <div>
+                        <h4 class="font-display font-bold text-sm text-slate-900 line-clamp-1">{{ space.title }}</h4>
+                        <p class="text-xs text-slate-500 mt-1 flex items-center gap-1.5">
+                            <i class="fa-solid fa-location-dot text-brand-500"></i>
+                            <span class="truncate">{{ space.address }}</span>
+                        </p>
+                    </div>
+                    <div class="pt-3 border-t border-slate-100 flex items-center justify-between text-[11px]">
+                        <span class="text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded font-semibold">
+                            <i class="fa-solid fa-check"></i> {{ space.ai_noise_level }}
+                        </span>
+                        <a href="{{ url_for('space_detail', space_id=space.id) }}" class="text-brand-600 font-bold hover:underline">
+                            View Details &rarr;
+                        </a>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</section>
+
+<!-- CTA Banner -->
+<section class="py-20 bg-slate-900 text-white relative overflow-hidden">
+    <div class="absolute inset-0 bg-gradient-to-r from-brand-900/60 to-indigo-900/60 pointer-events-none"></div>
+    <div class="relative max-w-4xl mx-auto text-center px-4 sm:px-6 lg:px-8 space-y-6">
+        <h2 class="text-3xl sm:text-5xl font-display font-extrabold tracking-tight">
+            Ready to Experience Zero-Hardware Micro-Spaces?
+        </h2>
+        <p class="text-slate-300 text-sm sm:text-base max-w-2xl mx-auto font-light">
+            Join thousands of university students and urban property hosts pioneering affordable, flexible, and fully verified spaces across India.
+        </p>
+        <div class="flex flex-wrap items-center justify-center gap-4 pt-4">
+            <a href="{{ url_for('register_page') }}" 
+               class="bg-brand-600 hover:bg-brand-700 text-white font-bold text-sm px-8 py-4 rounded-2xl shadow-xl transition-transform hover:-translate-y-0.5">
+                Create Free Account
+            </a>
+            <a href="{{ url_for('login_page') }}" 
+               class="bg-white/10 hover:bg-white/20 text-white font-bold text-sm px-8 py-4 rounded-2xl border border-white/20 transition-colors">
+                Sign In to SpaceLoop
+            </a>
+        </div>
+    </div>
+</section>
+{% endblock %}
