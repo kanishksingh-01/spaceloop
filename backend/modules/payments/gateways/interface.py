@@ -1,0 +1,2 @@
+class PaymentGatewayInterface:
+    pass

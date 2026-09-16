@@ -1,0 +1,2 @@
+class BookingCheckin:
+    pass

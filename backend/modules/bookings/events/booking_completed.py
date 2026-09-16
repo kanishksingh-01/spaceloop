@@ -1,0 +1,2 @@
+class BookingCompleted:
+    pass
