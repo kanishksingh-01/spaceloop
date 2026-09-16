@@ -1,1 +1,0 @@
-# Activity Restrictions Covenants

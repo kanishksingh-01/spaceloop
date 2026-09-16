@@ -1,2 +1,0 @@
-class AmenitiesService:
-    pass

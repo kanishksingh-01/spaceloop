@@ -1,1 +1,0 @@
-# inspections module schemas

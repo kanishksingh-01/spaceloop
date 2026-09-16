@@ -1,2 +1,0 @@
-// onboarding feature module
-export {};
