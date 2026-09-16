@@ -134,7 +134,7 @@ python3 -W ignore -m unittest test_all_features_functional.py
 
 ---
 
-## 🏃 Running the Application
+##  Running the Application
 
 To start the server locally:
 
