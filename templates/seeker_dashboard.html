@@ -1,0 +1,112 @@
+{% extends 'base.html' %}
+{% block title %}My Student Passes & Reservations | SpaceLoop{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+
+    <!-- Seeker Profile & India Stack Credentials Header -->
+    <div class="bg-gradient-to-r from-slate-900 via-indigo-950 to-brand-950 text-white p-6 sm:p-8 rounded-3xl shadow-xl border border-slate-800 flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+        <div class="space-y-2">
+            <div class="flex items-center gap-2">
+                <span class="w-2.5 h-2.5 rounded-full bg-emerald-400"></span>
+                <span class="text-xs font-mono font-bold text-emerald-400 uppercase tracking-wider">Student Innovator Profile</span>
+            </div>
+            <h1 class="text-2xl sm:text-3xl font-display font-extrabold text-white">
+                {{ user.name if user else 'Rohit Verma' }}
+            </h1>
+            <div class="flex flex-wrap items-center gap-2 pt-1 text-xs">
+                <span class="bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 px-2.5 py-1 rounded-lg font-semibold flex items-center gap-1.5">
+                    <i class="fa-solid fa-graduation-cap"></i> {{ user.college_name if user and user.college_name else 'IIT Delhi' }}
+                </span>
+                <span class="bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 px-2.5 py-1 rounded-lg font-mono flex items-center gap-1.5">
+                    <i class="fa-solid fa-shield-halved"></i> {{ user.aadhaar_masked if user and user.aadhaar_masked else 'XXXX-XXXX-4821' }}
+                </span>
+                <span class="bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 px-2.5 py-1 rounded-lg font-semibold">
+                    ₹40–₹75/hr Subsidized Rates Unlocked
+                </span>
+            </div>
+        </div>
+
+        <div class="bg-white/10 border border-white/10 p-4 rounded-2xl flex items-center gap-4 text-xs shrink-0">
+            <div class="text-right">
+                <div class="text-slate-400 text-[10px] uppercase font-bold">Personal OTI Score</div>
+                <div class="text-xl font-display font-extrabold text-brand-300">{{ user.objective_trust_score if user else 97.5 }}%</div>
+                <span class="text-[10px] text-emerald-400 font-bold">Elite Trust &bull; 100% On-Time</span>
+            </div>
+            <div class="w-10 h-10 rounded-xl bg-brand-600 text-white flex items-center justify-center text-lg shadow-sm">
+                <i class="fa-solid fa-medal"></i>
+            </div>
+        </div>
+    </div>
+
+    <!-- Active & Past Reservations -->
+    <div class="bg-white rounded-3xl border border-slate-200 shadow-sm p-6 sm:p-8 space-y-6">
+        <div class="flex items-center justify-between">
+            <div>
+                <h3 class="text-lg font-display font-bold text-slate-900">My Space Reservations</h3>
+                <p class="text-xs text-slate-500">Access passes, dynamic PINs, and Section 52 micro-leases</p>
+            </div>
+            <a href="{{ url_for('index') }}" class="bg-brand-600 hover:bg-brand-700 text-white font-bold text-xs py-2 px-4 rounded-xl transition-colors">
+                + Book New Space
+            </a>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {% for b in bookings %}
+            <div class="bg-slate-50 border border-slate-200 rounded-3xl p-5 space-y-4 flex flex-col justify-between hover:shadow-md transition-shadow">
+                
+                <div class="space-y-2">
+                    <div class="flex items-center justify-between text-xs">
+                        <span class="font-mono text-[11px] font-bold text-slate-500">#BK-{{ b.id }}</span>
+                        <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold capitalize {% if b.session_state == 'checked_in' %}bg-emerald-100 text-emerald-800 animate-pulse{% elif b.session_state == 'checked_out' %}bg-indigo-100 text-indigo-800{% else %}bg-amber-100 text-amber-800{% endif %}">
+                            {{ b.session_state.replace('_', ' ') }}
+                        </span>
+                    </div>
+
+                    <h4 class="font-bold text-base text-slate-900 leading-snug">
+                        {{ b.space.title }}
+                    </h4>
+                    <p class="text-xs text-slate-500 flex items-center gap-1.5">
+                        <i class="fa-solid fa-location-dot text-rose-400"></i> {{ b.space.address }}
+                    </p>
+                </div>
+
+                <div class="bg-white p-3 rounded-2xl border border-slate-200 grid grid-cols-3 gap-2 text-center text-xs">
+                    <div>
+                        <span class="text-slate-400 block text-[10px]">Arrival PIN:</span>
+                        <span class="font-mono font-black text-brand-600 text-sm">{{ b.arrival_pin }}</span>
+                    </div>
+                    <div>
+                        <span class="text-slate-400 block text-[10px]">Duration:</span>
+                        <span class="font-bold text-slate-800 text-xs">{{ b.hours_booked }} hrs</span>
+                    </div>
+                    <div>
+                        <span class="text-slate-400 block text-[10px]">₹100 Escrow:</span>
+                        <span class="font-bold text-xs {% if b.escrow_status == 'refunded' %}text-emerald-600{% else %}text-indigo-600{% endif %}">
+                            {{ b.escrow_status|capitalize }}
+                        </span>
+                    </div>
+                </div>
+
+                <!-- CTAs -->
+                <div class="flex items-center gap-2 pt-2">
+                    <a href="{{ url_for('session_console', booking_id=b.id) }}" 
+                       class="flex-grow bg-brand-600 hover:bg-brand-700 text-white font-bold text-xs py-2.5 px-3 rounded-xl text-center shadow-sm transition-colors flex items-center justify-center gap-1.5">
+                        <i class="fa-solid fa-satellite-dish"></i>
+                        <span>Live Session Console (HUD)</span>
+                    </a>
+                    <a href="{{ url_for('view_lease', booking_id=b.id) }}" target="_blank"
+                       title="View Indian Easements Act Section 52 License Agreement"
+                       class="bg-white border border-slate-200 hover:bg-slate-100 text-slate-700 text-xs font-semibold py-2.5 px-3 rounded-xl flex items-center gap-1 transition-colors shrink-0">
+                        <i class="fa-solid fa-file-contract text-emerald-600"></i>
+                        <span>License</span>
+                    </a>
+                </div>
+
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+</div>
+{% endblock %}

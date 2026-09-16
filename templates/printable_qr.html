@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Printable Door Pass | {{ space.title }}</title>
+    <!-- TailwindCSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=Outfit:wght@600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/custom.css') }}">
+    <style>
+        @page {
+            size: A4 portrait;
+            margin: 10mm;
+        }
+    </style>
+</head>
+<body class="bg-slate-100 font-sans text-slate-900 p-4 sm:p-8 print:p-0 print:bg-white flex flex-col items-center">
+
+    <!-- Print Action Bar (Hidden on print) -->
+    <div class="no-print max-w-2xl w-full mb-6 flex items-center justify-between bg-white p-4 rounded-2xl shadow-sm border border-slate-200">
+        <a href="{{ url_for('space_detail', space_id=space.id) }}" class="text-xs font-semibold text-slate-600 hover:text-indigo-600 flex items-center gap-1.5">
+            <i class="fa-solid fa-arrow-left"></i> Return to Space
+        </a>
+        <div class="flex items-center gap-3">
+            <span class="text-xs text-slate-500 font-mono">Cost: &lt; ₹5 to print & laminate</span>
+            <button onclick="window.print()" class="bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold px-4 py-2 rounded-xl shadow-md flex items-center gap-1.5 transition-colors">
+                <i class="fa-solid fa-print"></i> Print A4 Door Pass
+            </button>
+        </div>
+    </div>
+
+    <!-- The A4 Laminated Door Pass Container -->
+    <div id="printable-pass-container" 
+         class="max-w-[700px] w-full bg-white border-4 border-slate-900 rounded-3xl p-8 sm:p-10 shadow-2xl print:shadow-none print:border-4 print:border-black flex flex-col justify-between space-y-6">
+        
+        <!-- Header -->
+        <div class="border-b-2 border-slate-900 pb-5 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <div class="w-12 h-12 rounded-2xl bg-slate-900 text-white flex items-center justify-center text-2xl font-bold">
+                    <i class="fa-solid fa-layer-group"></i>
+                </div>
+                <div>
+                    <h1 class="font-display font-black text-2xl tracking-tight uppercase text-slate-900">
+                        Space<span class="text-indigo-600">Loop</span> Pass
+                    </h1>
+                    <p class="text-xs font-bold text-slate-500 uppercase tracking-wider">Zero-Hardware Physical Door Access</p>
+                </div>
+            </div>
+            <div class="text-right">
+                <div class="inline-block bg-slate-900 text-white px-3 py-1 rounded-lg text-xs font-mono font-bold uppercase">
+                    Space #SP-{{ space.id }}
+                </div>
+                <div class="text-[10px] text-emerald-700 font-bold uppercase tracking-wider mt-1">
+                    <i class="fa-solid fa-shield-check"></i> Discom Verified Premise
+                </div>
+            </div>
+        </div>
+
+        <!-- Space Identification -->
+        <div class="bg-slate-50 border-2 border-slate-200 rounded-2xl p-4 text-center space-y-1">
+            <div class="text-xs font-bold uppercase tracking-widest text-indigo-700">{{ space.category }} Micro-Space</div>
+            <h2 class="text-xl font-display font-extrabold text-slate-900">{{ space.title }}</h2>
+            <p class="text-xs text-slate-600 font-medium">{{ space.address }}, {{ space.city }}</p>
+        </div>
+
+        <!-- Giant Cryptographic QR Code -->
+        <div class="flex flex-col items-center justify-center space-y-3 py-2">
+            <div class="p-4 bg-white border-4 border-slate-900 rounded-3xl shadow-inner">
+                <img src="https://api.qrserver.com/v1/create-qr-code/?size=260x260&data={{ space.room_qr_token }}" 
+                     alt="Cryptographic Door QR" 
+                     class="w-56 h-56 sm:w-64 sm:h-64 object-contain">
+            </div>
+            <div class="text-center space-y-1 max-w-sm">
+                <div class="text-xs font-mono font-bold text-slate-800 break-all bg-slate-100 px-3 py-1.5 rounded-lg border border-slate-200">
+                    TOKEN: {{ space.room_qr_token[:16] }}...{{ space.room_qr_token[-16:] }}
+                </div>
+                <p class="text-[10px] text-slate-500 uppercase font-semibold tracking-wider">
+                    High-Entropy SHA-256 Server-Side Validated Token
+                </p>
+            </div>
+        </div>
+
+        <!-- 4-Step Access Handshake Instructions -->
+        <div class="space-y-3">
+            <h3 class="text-xs font-extrabold uppercase tracking-wider text-slate-900 flex items-center gap-2">
+                <i class="fa-solid fa-list-check text-indigo-600"></i>
+                Student 4-Step Physical Access Handshake:
+            </h3>
+
+            <div class="grid grid-cols-2 gap-3 text-xs">
+                <div class="bg-slate-50 border border-slate-200 p-3 rounded-xl space-y-1">
+                    <div class="font-bold text-slate-900 flex items-center gap-1.5">
+                        <span class="w-5 h-5 rounded-full bg-slate-900 text-white flex items-center justify-center text-[10px]">1</span>
+                        Stand Near Door (&lt;50m)
+                    </div>
+                    <p class="text-[11px] text-slate-600">Smartphone GPS radar verifies physical presence within 50 meters.</p>
+                </div>
+
+                <div class="bg-slate-50 border border-slate-200 p-3 rounded-xl space-y-1">
+                    <div class="font-bold text-slate-900 flex items-center gap-1.5">
+                        <span class="w-5 h-5 rounded-full bg-slate-900 text-white flex items-center justify-center text-[10px]">2</span>
+                        Scan Door QR
+                    </div>
+                    <p class="text-[11px] text-slate-600">Open mobile browser or camera to validate room cryptographic token.</p>
+                </div>
+
+                <div class="bg-slate-50 border border-slate-200 p-3 rounded-xl space-y-1">
+                    <div class="font-bold text-slate-900 flex items-center gap-1.5">
+                        <span class="w-5 h-5 rounded-full bg-slate-900 text-white flex items-center justify-center text-[10px]">3</span>
+                        Show Dynamic PIN
+                    </div>
+                    <p class="text-[11px] text-slate-600">
+                        {% if space.physical_access_type == 'keybox' %}
+                        Enter code on mechanical keybox for physical key.
+                        {% else %}
+                        Show 4-digit PIN to on-site caretaker for entry.
+                        {% endif %}
+                    </p>
+                </div>
+
+                <div class="bg-slate-50 border border-slate-200 p-3 rounded-xl space-y-1">
+                    <div class="font-bold text-slate-900 flex items-center gap-1.5">
+                        <span class="w-5 h-5 rounded-full bg-slate-900 text-white flex items-center justify-center text-[10px]">4</span>
+                        Exit Scan & ₹100 Refund
+                    </div>
+                    <p class="text-[11px] text-slate-600">Turn off all fans/lights and scan exit photo for instant UPI escrow release.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer Notice & Legal Protection -->
+        <div class="border-t-2 border-slate-900 pt-4 flex flex-col sm:flex-row justify-between items-center text-[10px] text-slate-500 gap-2">
+            <div class="flex items-center gap-2">
+                <span class="font-bold text-slate-800">DPDP Act 2023 Compliant</span>
+                <span>&bull;</span>
+                <span>Section 52 Indian Easements Act 1882</span>
+            </div>
+            <div class="font-mono text-slate-700">
+                Print & laminate on standard A4 sheet (&lt; ₹5)
+            </div>
+        </div>
+
+    </div>
+
+</body>
+</html>
