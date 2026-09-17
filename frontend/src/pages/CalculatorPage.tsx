@@ -68,7 +68,7 @@ export const CalculatorPage: React.FC = () => {
       <View className="max-w-4xl mx-auto px-4 sm:px-6 mt-8">
         <View className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {/* Inputs */}
-          <View className="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-4">
+          <View className="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-4 floating-container">
             <Text className="text-base font-bold text-white mb-2">Space Specifications</Text>
 
             <View>
@@ -78,7 +78,7 @@ export const CalculatorPage: React.FC = () => {
                   <Pressable
                     key={cat}
                     onPress={() => setSpaceType(cat)}
-                    className={`px-3 py-2 rounded-xl border text-xs font-semibold transition ${
+                    className={`px-3 py-2 rounded-xl border text-xs font-semibold transition floating-interactive ${
                       spaceType === cat
                         ? 'bg-indigo-600 border-indigo-400 text-white'
                         : 'bg-slate-950 border-slate-800 text-slate-300'
@@ -111,7 +111,7 @@ export const CalculatorPage: React.FC = () => {
                   <Pressable
                     key={c}
                     onPress={() => setCity(c)}
-                    className={`flex-1 py-2 rounded-xl border text-center transition ${
+                    className={`flex-1 py-2 rounded-xl border text-center transition floating-interactive ${
                       city === c
                         ? 'bg-indigo-600 border-indigo-400 text-white'
                         : 'bg-slate-950 border-slate-800 text-slate-300'
@@ -127,7 +127,7 @@ export const CalculatorPage: React.FC = () => {
           </View>
 
           {/* Results Card */}
-          <View className="bg-slate-900 border border-indigo-500/30 rounded-2xl p-6 flex-col justify-between shadow-2xl shadow-indigo-950/40">
+          <View className="bg-slate-900 border border-indigo-500/30 rounded-2xl p-6 flex-col justify-between floating-panel">
             <View>
               <Text className="text-xs font-bold text-indigo-300 uppercase tracking-wider mb-1">
                 Projected Monthly Return

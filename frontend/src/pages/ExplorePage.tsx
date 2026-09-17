@@ -152,7 +152,7 @@ export const ExplorePage: React.FC = () => {
 
           {/* AI Intent-Based Search Engine Bar */}
           <div className="max-w-4xl mx-auto">
-            <div className="bg-slate-900/90 backdrop-blur-xl border border-indigo-500/30 rounded-2xl p-3 sm:p-4 shadow-2xl shadow-indigo-950/50 transition-all hover:border-indigo-500/50">
+            <div className="bg-slate-900/90 backdrop-blur-xl border border-indigo-500/30 rounded-2xl p-3 sm:p-4 floating-panel transition-all hover:border-indigo-500/50">
               <form
                 onSubmit={(e) => {
                   e.preventDefault();
@@ -246,19 +246,19 @@ export const ExplorePage: React.FC = () => {
 
             {/* Quick Platform Stats */}
             <div className="mt-8 grid grid-cols-2 sm:grid-cols-4 gap-4 text-center">
-              <div className="bg-slate-900/50 border border-slate-800/70 rounded-xl p-3">
+              <div className="bg-slate-900/50 border border-slate-800/70 rounded-xl p-3.5 floating-interactive">
                 <div className="text-xl font-bold text-white">400M+ sqft</div>
                 <div className="text-xs text-slate-400">Unused Urban Dead Space</div>
               </div>
-              <div className="bg-slate-900/50 border border-slate-800/70 rounded-xl p-3">
+              <div className="bg-slate-900/50 border border-slate-800/70 rounded-xl p-3.5 floating-interactive">
                 <div className="text-xl font-bold text-indigo-400">65% Cheaper</div>
                 <div className="text-xs text-slate-400">Vs Commercial Studios</div>
               </div>
-              <div className="bg-slate-900/50 border border-slate-800/70 rounded-xl p-3">
+              <div className="bg-slate-900/50 border border-slate-800/70 rounded-xl p-3.5 floating-interactive">
                 <div className="text-xl font-bold text-emerald-400">&lt; 30 Seconds</div>
                 <div className="text-xs text-slate-400">AI Micro-Lease Generation</div>
               </div>
-              <div className="bg-slate-900/50 border border-slate-800/70 rounded-xl p-3">
+              <div className="bg-slate-900/50 border border-slate-800/70 rounded-xl p-3.5 floating-interactive">
                 <div className="text-xl font-bold text-amber-400">₹15,000/mo</div>
                 <div className="text-xs text-slate-400">Avg Host Passive Income</div>
               </div>
@@ -283,7 +283,7 @@ export const ExplorePage: React.FC = () => {
                     setActiveCategory(cat.value);
                     setAiMatchActive(false);
                   }}
-                  className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-medium transition whitespace-nowrap ${
+                  className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-medium transition whitespace-nowrap floating-interactive ${
                     isSelected
                       ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30'
                       : 'bg-slate-900 text-slate-400 hover:text-white hover:bg-slate-800 border border-slate-800'
@@ -307,7 +307,7 @@ export const ExplorePage: React.FC = () => {
         </div>
 
         {/* Location & Radius Dynamic Discovery Filter Bar */}
-        <div className="bg-slate-900/80 border border-slate-800/90 rounded-2xl p-4 mb-8 shadow-xl">
+        <div className="bg-slate-900/80 border border-slate-800/90 rounded-2xl p-4 mb-8 floating-container">
           <form
             onSubmit={(e) => {
               e.preventDefault();

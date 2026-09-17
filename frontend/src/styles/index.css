@@ -196,3 +196,111 @@ html.light .glass-panel {
   color: #0f172a !important;
   box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.08) !important;
 }
+
+/* =========================================================================
+   SUBTLE FLOATING & GENTLE ELEVATION SYSTEM
+   Soft, diffused depth with 2-4px smooth hover elevation across themes
+   ========================================================================= */
+
+/* 1. Base Floating Container (gentle depth above background) */
+.floating-container {
+  box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.38), 0 2px 6px -1px rgba(0, 0, 0, 0.22);
+  transition: transform 250ms cubic-bezier(0.16, 1, 0.3, 1), box-shadow 250ms cubic-bezier(0.16, 1, 0.3, 1), border-color 250ms ease;
+  will-change: transform, box-shadow;
+}
+
+/* 2. Interactive Floating Card (smooth 2-3px lift and soft shadow increase on hover) */
+.floating-card,
+.floating-interactive {
+  box-shadow: 0 4px 18px -2px rgba(0, 0, 0, 0.35), 0 2px 6px -1px rgba(0, 0, 0, 0.2);
+  transform: translateY(0);
+  transition: transform 250ms cubic-bezier(0.16, 1, 0.3, 1), box-shadow 250ms cubic-bezier(0.16, 1, 0.3, 1), border-color 250ms ease;
+  will-change: transform, box-shadow;
+}
+
+.floating-card:hover,
+.floating-interactive:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 12px 28px -4px rgba(0, 0, 0, 0.52), 0 4px 10px -2px rgba(0, 0, 0, 0.32);
+}
+
+/* 3. Deep Floating Panel (for high-focus cards, booking checkout, modals) */
+.floating-panel {
+  box-shadow: 0 8px 32px -4px rgba(0, 0, 0, 0.48), 0 3px 8px -2px rgba(0, 0, 0, 0.28);
+  transform: translateY(0);
+  transition: transform 250ms cubic-bezier(0.16, 1, 0.3, 1), box-shadow 250ms cubic-bezier(0.16, 1, 0.3, 1), border-color 250ms ease;
+  will-change: transform, box-shadow;
+}
+
+.floating-panel:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 16px 36px -4px rgba(0, 0, 0, 0.58), 0 6px 14px -2px rgba(0, 0, 0, 0.36);
+}
+
+/* 4. Core SpaceCard specific floating behavior */
+.space-card {
+  box-shadow: 0 4px 18px -2px rgba(0, 0, 0, 0.38), 0 2px 6px -1px rgba(0, 0, 0, 0.22);
+  transform: translateY(0);
+  transition: transform 250ms cubic-bezier(0.16, 1, 0.3, 1), box-shadow 250ms cubic-bezier(0.16, 1, 0.3, 1), border-color 250ms ease, background-color 250ms ease;
+  will-change: transform, box-shadow;
+}
+
+.space-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 14px 30px -4px rgba(0, 0, 0, 0.55), 0 4px 12px -2px rgba(0, 0, 0, 0.35);
+}
+
+/* =========================================================================
+   LIGHT THEME FLOATING SHADOWS & INTEGRATION
+   ========================================================================= */
+
+html.light .floating-container {
+  box-shadow: 0 4px 18px -2px rgba(15, 23, 42, 0.06), 0 2px 6px -1px rgba(15, 23, 42, 0.03);
+}
+
+html.light .floating-card,
+html.light .floating-interactive {
+  box-shadow: 0 4px 16px -2px rgba(15, 23, 42, 0.06), 0 2px 6px -1px rgba(15, 23, 42, 0.03);
+}
+
+html.light .floating-card:hover,
+html.light .floating-interactive:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 12px 26px -4px rgba(15, 23, 42, 0.1), 0 4px 10px -2px rgba(15, 23, 42, 0.05);
+}
+
+html.light .floating-panel {
+  box-shadow: 0 8px 30px -4px rgba(15, 23, 42, 0.08), 0 2px 8px -2px rgba(15, 23, 42, 0.04);
+}
+
+html.light .floating-panel:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 14px 34px -4px rgba(15, 23, 42, 0.12), 0 4px 12px -2px rgba(15, 23, 42, 0.06);
+}
+
+html.light .space-card {
+  background-color: #ffffff !important;
+  border-color: #e2e8f0 !important;
+  box-shadow: 0 4px 16px -2px rgba(15, 23, 42, 0.06), 0 2px 6px -1px rgba(15, 23, 42, 0.03);
+}
+
+html.light .space-card:hover {
+  background-color: #ffffff !important;
+  border-color: #c7d2fe !important;
+  transform: translateY(-3px);
+  box-shadow: 0 12px 28px -4px rgba(15, 23, 42, 0.1), 0 4px 10px -2px rgba(15, 23, 42, 0.05);
+}
+
+html.light .space-card h3 {
+  color: #0f172a !important;
+}
+
+html.light .space-card p {
+  color: #475569 !important;
+}
+
+html.light .space-card [class*="border-"] {
+  border-color: #e2e8f0 !important;
+}
+
+

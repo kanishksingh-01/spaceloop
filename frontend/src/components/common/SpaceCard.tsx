@@ -36,7 +36,10 @@ export const SpaceCard: React.FC<SpaceCardProps> = ({ space, onPress }) => {
   };
 
   return (
-    <div className="space-card group flex flex-col bg-[#10152B]/90 hover:bg-[#151C38] border border-[#222B52] hover:border-[#4B599E] rounded-2xl overflow-hidden transition-all duration-300 shadow-[0_8px_24px_rgba(0,0,0,0.4)] hover:shadow-[0_16px_36px_rgba(30,40,90,0.3)] hover:-translate-y-1 flex flex-col">
+    <div
+      onClick={() => onPress(space.id)}
+      className="space-card floating-card group flex flex-col bg-[#10152B]/90 hover:bg-[#151C38] border border-[#222B52] hover:border-[#4B599E] rounded-2xl overflow-hidden cursor-pointer"
+    >
       {/* Photo Container */}
       <div
         onClick={() => onPress(space.id)}

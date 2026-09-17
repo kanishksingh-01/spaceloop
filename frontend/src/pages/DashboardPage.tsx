@@ -170,13 +170,13 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => 
           <View className="flex-row items-center gap-3">
             {activeTab === 'seeker' ? (
               <>
-                <View className="p-3 bg-slate-950 rounded-xl border border-slate-800 items-center min-w-[90px]">
+                <View className="p-3.5 bg-slate-950 rounded-xl border border-slate-800 items-center min-w-[95px] floating-interactive">
                   <Text className="text-[10px] text-slate-400 font-semibold">Active Passes</Text>
                   <Text className="text-base font-black text-emerald-400">
                     {bookings.filter(b => b.status === 'confirmed').length} Active
                   </Text>
                 </View>
-                <View className="p-3 bg-slate-950 rounded-xl border border-slate-800 items-center min-w-[90px]">
+                <View className="p-3.5 bg-slate-950 rounded-xl border border-slate-800 items-center min-w-[95px] floating-interactive">
                   <Text className="text-[10px] text-slate-400 font-semibold">Micro-Escrow</Text>
                   <Text className="text-base font-black text-indigo-400">
                     ₹{bookings.filter(b => b.status === 'confirmed').reduce((acc, b) => acc + (b.deposit_held || 100), 0)} Held
@@ -185,13 +185,13 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => 
               </>
             ) : (
               <>
-                <View className="p-3 bg-slate-950 rounded-xl border border-slate-800 items-center min-w-[90px]">
+                <View className="p-3.5 bg-slate-950 rounded-xl border border-slate-800 items-center min-w-[95px] floating-interactive">
                   <Text className="text-[10px] text-slate-400 font-semibold">Net Earnings</Text>
                   <Text className="text-base font-black text-emerald-400">
                     ₹{metrics?.net_earnings ?? 0}
                   </Text>
                 </View>
-                <View className="p-3 bg-slate-950 rounded-xl border border-slate-800 items-center min-w-[90px]">
+                <View className="p-3.5 bg-slate-950 rounded-xl border border-slate-800 items-center min-w-[95px] floating-interactive">
                   <Text className="text-[10px] text-slate-400 font-semibold">Active Spaces</Text>
                   <Text className="text-base font-black text-indigo-400">
                     {hostSpaces.filter(s => s.is_active).length} Listed
@@ -247,7 +247,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => 
             </View>
 
             {bookings.length === 0 ? (
-              <View className="p-8 bg-slate-900 rounded-2xl border border-slate-800 text-center items-center">
+              <View className="p-8 bg-slate-900 rounded-2xl border border-slate-800 text-center items-center floating-container">
                 <Text className="text-3xl mb-2">🎟️</Text>
                 <Text className="text-sm font-bold text-white mb-1">No active bookings</Text>
                 <Text className="text-xs text-slate-400 mb-4">
@@ -264,7 +264,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => 
               bookings.map((b) => (
                 <View
                   key={b.id}
-                  className="p-5 bg-slate-900 border border-slate-800 rounded-2xl flex-col md:flex-row items-start md:items-center justify-between gap-4"
+                  className="p-5 bg-slate-900 border border-slate-800 rounded-2xl flex-col md:flex-row items-start md:items-center justify-between gap-4 floating-interactive"
                 >
                   <View className="flex-row items-center gap-4 flex-1">
                     <Image
@@ -367,7 +367,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => 
                   {hostBookings.map((hb) => (
                     <View
                       key={hb.id}
-                      className="p-4 bg-slate-900 border border-slate-800 rounded-2xl flex-col sm:flex-row items-start sm:items-center justify-between gap-3"
+                      className="p-4 bg-slate-900 border border-slate-800 rounded-2xl flex-col sm:flex-row items-start sm:items-center justify-between gap-3 floating-interactive"
                     >
                       <View className="flex-row items-center gap-3">
                         <View className="w-10 h-10 rounded-xl bg-indigo-600/20 border border-indigo-500/30 items-center justify-center">
@@ -419,15 +419,6 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => 
                 </View>
                 <View className="flex-row items-center gap-2">
                   <Pressable
-                    onPress={handleSeedSampleSpace}
-                    disabled={seedingSpace}
-                    className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-xl transition"
-                  >
-                    <Text className="text-xs font-bold text-indigo-300">
-                      {seedingSpace ? 'Provisioning...' : '⚡ Seed Turnkey Pod'}
-                    </Text>
-                  </Pressable>
-                  <Pressable
                     onPress={() => navigate('/list-space')}
                     className="px-3.5 py-1.5 bg-indigo-600 hover:bg-indigo-500 rounded-xl shadow-md transition"
                   >
@@ -437,7 +428,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => 
               </View>
 
               {hostSpaces.length === 0 ? (
-                <View className="p-8 bg-slate-900 border border-slate-800 rounded-2xl items-center text-center">
+                <View className="p-8 bg-slate-900 border border-slate-800 rounded-2xl items-center text-center floating-container">
                   <Text className="text-3xl mb-2">🏠</Text>
                   <Text className="text-sm font-bold text-white mb-1">No Listed Spaces Found</Text>
                   <Text className="text-xs text-slate-400 mb-4 max-w-sm">
@@ -466,7 +457,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => 
                   {hostSpaces.map((space) => (
                     <View
                       key={space.id}
-                      className="p-4 bg-slate-900 border border-slate-800 rounded-2xl flex-row items-center justify-between gap-4"
+                      className="p-4 bg-slate-900 border border-slate-800 rounded-2xl flex-row items-center justify-between gap-4 floating-interactive"
                     >
                       <View className="flex-row items-center gap-3 flex-1">
                         <Image

@@ -53,7 +53,7 @@ export const LoopBot: React.FC = () => {
         <button
           type="button"
           onClick={() => setIsOpen(true)}
-          className="flex items-center gap-2.5 bg-gradient-to-r from-indigo-600 via-violet-600 to-indigo-700 text-white px-3.5 py-2.5 sm:px-4 sm:py-3 rounded-full shadow-2xl shadow-indigo-500/30 hover:scale-105 transition-all duration-200 border border-indigo-400/30"
+          className="flex items-center gap-2.5 bg-gradient-to-r from-indigo-600 via-violet-600 to-indigo-700 text-white px-3.5 py-2.5 sm:px-4 sm:py-3 rounded-full floating-panel hover:-translate-y-1 transition-all duration-200 border border-indigo-400/30 cursor-pointer"
         >
           <div className="relative">
             <i className="fa-solid fa-robot text-sm sm:text-base" />
@@ -66,7 +66,7 @@ export const LoopBot: React.FC = () => {
       {/* AI Concierge Modal */}
       {isOpen && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
-          <div className="bg-slate-900 border border-slate-800 w-full sm:max-w-lg rounded-t-2xl sm:rounded-2xl shadow-2xl flex flex-col h-[560px] max-h-[90vh] overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+          <div className="bg-slate-900 border border-slate-800 w-full sm:max-w-lg rounded-t-2xl sm:rounded-2xl floating-panel flex flex-col h-[560px] max-h-[90vh] overflow-hidden animate-in fade-in zoom-in-95 duration-200">
             {/* Modal Header */}
             <div className="p-4 bg-slate-950/80 border-b border-slate-800 flex items-center justify-between">
               <div className="flex items-center gap-3">

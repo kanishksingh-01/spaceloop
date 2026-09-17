@@ -125,7 +125,7 @@ export const HostDashboardPage: React.FC<HostDashboardPageProps> = ({
           </div>
 
           {/* Authentication Gate Card */}
-          <div className="bg-slate-900/90 border border-amber-500/30 rounded-3xl p-6 sm:p-10 shadow-2xl space-y-8 relative overflow-hidden">
+          <div className="bg-slate-900/90 border border-amber-500/30 rounded-3xl p-6 sm:p-10 floating-container space-y-8 relative overflow-hidden">
             <div className="absolute top-0 right-0 w-80 h-80 bg-amber-500/10 rounded-full blur-3xl pointer-events-none" />
 
             <div className="flex items-start gap-4">
@@ -144,7 +144,7 @@ export const HostDashboardPage: React.FC<HostDashboardPageProps> = ({
 
             {/* Two Pillars of Host Verification */}
             <div className="grid sm:grid-cols-2 gap-4">
-              <div className="p-5 rounded-2xl bg-slate-950/60 border border-slate-800 space-y-2">
+              <div className="p-5 rounded-2xl bg-slate-950/60 border border-slate-800 space-y-2 floating-interactive">
                 <div className="flex items-center gap-2 text-amber-400 font-bold text-sm">
                   <span>⚡ 1. State Discom Electricity Verification</span>
                 </div>
@@ -153,7 +153,7 @@ export const HostDashboardPage: React.FC<HostDashboardPageProps> = ({
                 </p>
               </div>
 
-              <div className="p-5 rounded-2xl bg-slate-950/60 border border-slate-800 space-y-2">
+              <div className="p-5 rounded-2xl bg-slate-950/60 border border-slate-800 space-y-2 floating-interactive">
                 <div className="flex items-center gap-2 text-emerald-400 font-bold text-sm">
                   <span>🏦 2. NPCI ₹1 Penny Drop Bank Validation</span>
                 </div>
@@ -196,17 +196,17 @@ export const HostDashboardPage: React.FC<HostDashboardPageProps> = ({
 
           {/* Host Benefits Overview */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-center">
-            <div className="p-4 rounded-2xl bg-slate-900/40 border border-slate-800">
+            <div className="p-4 rounded-2xl bg-slate-900/40 border border-slate-800 floating-interactive">
               <div className="text-2xl font-black text-amber-400">88%</div>
               <div className="text-xs font-bold text-slate-200 mt-1">Host Payout Retention</div>
               <div className="text-[11px] text-slate-500 mt-0.5">Lowest platform take-rate in India</div>
             </div>
-            <div className="p-4 rounded-2xl bg-slate-900/40 border border-slate-800">
+            <div className="p-4 rounded-2xl bg-slate-900/40 border border-slate-800 floating-interactive">
               <div className="text-2xl font-black text-emerald-400">T+0</div>
               <div className="text-xs font-bold text-slate-200 mt-1">Instant Daily UPI Payouts</div>
               <div className="text-[11px] text-slate-500 mt-0.5">Direct into your verified bank account</div>
             </div>
-            <div className="p-4 rounded-2xl bg-slate-900/40 border border-slate-800">
+            <div className="p-4 rounded-2xl bg-slate-900/40 border border-slate-800 floating-interactive">
               <div className="text-2xl font-black text-indigo-400">Sec 52</div>
               <div className="text-xs font-bold text-slate-200 mt-1">Indian Easements License</div>
               <div className="text-[11px] text-slate-500 mt-0.5">Strict tenancy & eviction exclusion</div>
@@ -275,25 +275,25 @@ export const HostDashboardPage: React.FC<HostDashboardPageProps> = ({
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
         {/* Host Financial & Performance Metrics Grid */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-          <div className="bg-slate-900/80 border border-slate-800 p-5 rounded-2xl">
+          <div className="bg-slate-900/80 border border-slate-800 p-5 rounded-2xl floating-interactive">
             <div className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Gross Bookings</div>
             <div className="text-2xl font-black text-white mt-1">₹{metrics.gross_revenue.toLocaleString()}</div>
             <div className="text-[11px] text-emerald-400 mt-1">14 completed reservations</div>
           </div>
 
-          <div className="bg-slate-900/80 border border-slate-800 p-5 rounded-2xl">
+          <div className="bg-slate-900/80 border border-slate-800 p-5 rounded-2xl floating-interactive">
             <div className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Net Payouts (88%)</div>
             <div className="text-2xl font-black text-emerald-400 mt-1">₹{metrics.net_earnings.toLocaleString()}</div>
             <div className="text-[11px] text-slate-400 mt-1">Direct to {metrics.payout_vpa}</div>
           </div>
 
-          <div className="bg-slate-900/80 border border-slate-800 p-5 rounded-2xl">
+          <div className="bg-slate-900/80 border border-slate-800 p-5 rounded-2xl floating-interactive">
             <div className="text-xs font-semibold text-slate-400 uppercase tracking-wider">SpaceLoop Fee (12%)</div>
             <div className="text-2xl font-black text-indigo-400 mt-1">₹{metrics.platform_fee.toLocaleString()}</div>
             <div className="text-[11px] text-slate-400 mt-1">Includes AI & Escrow cover</div>
           </div>
 
-          <div className="bg-slate-900/80 border border-slate-800 p-5 rounded-2xl">
+          <div className="bg-slate-900/80 border border-slate-800 p-5 rounded-2xl floating-interactive">
             <div className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Active Listings</div>
             <div className="text-2xl font-black text-amber-400 mt-1">
               {hostSpaces.filter((s) => s.is_active).length} / {hostSpaces.length}
@@ -347,41 +347,43 @@ export const HostDashboardPage: React.FC<HostDashboardPageProps> = ({
                 return (
                   <div
                     key={space.id}
-                    className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden hover:border-slate-700 transition flex flex-col"
+                    className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden hover:border-slate-700 floating-interactive flex flex-col"
                   >
-                    <div className="relative h-44 bg-slate-950">
-                      <img src={photo} alt={space.title} className="w-full h-full object-cover" />
-                      <div className="absolute top-3 right-3">
-                        <span
-                          className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${
-                            space.is_active
-                              ? 'bg-emerald-500 text-slate-950'
-                              : 'bg-rose-500 text-white'
-                          }`}
-                        >
-                          {space.is_active ? '● Active' : '○ Paused'}
-                        </span>
+                    <div className="relative h-44 w-full bg-slate-950">
+                      <img
+                        src={photo}
+                        alt={space.title}
+                        className="w-full h-full object-cover"
+                      />
+                      <div className="absolute top-3 left-3 bg-slate-950/80 backdrop-blur-md px-2.5 py-1 rounded-xl text-[11px] font-bold text-white border border-slate-700/60">
+                        {space.category || 'Study Pod'}
                       </div>
-                      <div className="absolute bottom-3 left-3 bg-slate-950/80 backdrop-blur-md px-2.5 py-1 rounded-lg border border-slate-800 text-xs font-bold text-white">
-                        ₹{space.hourly_rate || space.price_hourly}/hr
+                      <div className="absolute top-3 right-3 bg-amber-500/90 backdrop-blur-md px-2.5 py-1 rounded-xl text-[11px] font-black text-slate-950 shadow-md">
+                        ₹{Math.round(space.hourly_rate ?? space.price_hourly ?? 50)}/hr
                       </div>
                     </div>
 
-                    <div className="p-4 space-y-2.5 flex-1 flex flex-col justify-between">
-                      <div>
-                        <div className="flex items-center justify-between text-[11px] text-slate-400">
-                          <span>{space.category || 'Workspace'}</span>
-                          <span>{space.city || 'India'}</span>
+                    <div className="p-5 flex-1 flex flex-col justify-between space-y-4">
+                      <div className="space-y-1">
+                        <div className="flex items-center justify-between">
+                          <h3 className="text-base font-bold text-white line-clamp-1">{space.title}</h3>
+                          <span
+                            className={`w-2.5 h-2.5 rounded-full ${
+                              space.is_active ? 'bg-emerald-400 animate-pulse' : 'bg-slate-600'
+                            }`}
+                            title={space.is_active ? 'Active & Bookable' : 'Paused'}
+                          />
                         </div>
-                        <h3 className="font-bold text-white text-sm line-clamp-1 mt-0.5">{space.title}</h3>
-                        <p className="text-xs text-slate-400 line-clamp-2 mt-1">{space.description || space.location}</p>
+                        <p className="text-xs text-slate-400 line-clamp-1">
+                          {space.location || `${space.neighborhood || 'Wagholi'}, ${space.city || 'Pune'}`}
+                        </p>
                       </div>
 
-                      <div className="pt-3 border-t border-slate-800 flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-2 pt-2 border-t border-slate-800/80">
                         <button
                           type="button"
                           onClick={() => navigate(`/space/${space.id}`)}
-                          className="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-medium transition"
+                          className="flex-1 py-2 px-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold transition text-center"
                         >
                           View Listing
                         </button>
@@ -389,10 +391,10 @@ export const HostDashboardPage: React.FC<HostDashboardPageProps> = ({
                           type="button"
                           onClick={() => handleToggleSpace(space.id)}
                           disabled={togglingSpaceId === space.id}
-                          className={`px-3 py-1.5 rounded-lg text-xs font-bold transition ${
+                          className={`flex-1 py-2 px-3 rounded-xl text-xs font-bold transition text-center ${
                             space.is_active
-                              ? 'bg-rose-500/10 text-rose-300 hover:bg-rose-500/20 border border-rose-500/30'
-                              : 'bg-emerald-500/10 text-emerald-300 hover:bg-emerald-500/20 border border-emerald-500/30'
+                              ? 'bg-amber-500/10 text-amber-300 border border-amber-500/30 hover:bg-amber-500/20'
+                              : 'bg-emerald-500/10 text-emerald-300 border border-emerald-500/30 hover:bg-emerald-500/20'
                           }`}
                         >
                           {togglingSpaceId === space.id
@@ -411,7 +413,7 @@ export const HostDashboardPage: React.FC<HostDashboardPageProps> = ({
         </div>
 
         {/* Incoming Seeker Reservations */}
-        <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 space-y-4">
+        <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 space-y-4 floating-container">
           <div className="flex items-center justify-between">
             <div>
               <h2 className="text-xl font-bold text-white">Incoming Reservations & Check-Ins</h2>
@@ -473,7 +475,7 @@ export const HostDashboardPage: React.FC<HostDashboardPageProps> = ({
         </div>
 
         {/* Indian Easements Act Section 52 Legal Compliance Badge */}
-        <div className="p-5 rounded-2xl bg-slate-900/60 border border-slate-800 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <div className="p-5 rounded-2xl bg-slate-900/60 border border-slate-800 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 floating-interactive">
           <div className="space-y-1">
             <div className="flex items-center gap-2">
               <span className="text-base">📜</span>
