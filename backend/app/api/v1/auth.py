@@ -31,6 +31,7 @@ def get_me():
     """
     return jsonify({
         "success": True,
+        "authenticated": True,
         "user": safe_user_profile(current_user)
     }), 200
 

@@ -64,8 +64,15 @@ def run_comprehensive_check():
     top = match_data["results"][0]
     print(f"✓ AI Matchmaker ranked '{top['space']['title']}' as top match with score {top['match_score']}%.")
 
-    # 6. Listing a Space End-to-End
+    # 6. Listing a Space End-to-End (Authenticated Host)
     print("\n[6/14] Testing Create Space Listing (POST /api/spaces)...")
+    # Authenticate as host
+    login_host = client.post("/api/v1/auth/login", json={
+        "email": "sunita@spaceloop.in",
+        "password": "password123"
+    })
+    assert login_host.status_code == 200, f"Host login failed: {login_host.get_json()}"
+
     res = client.post("/api/spaces", json={
         "title": "Koramangala 4th Block Student Den",
         "category": "Studio",
@@ -80,10 +87,17 @@ def run_comprehensive_check():
         "description": "High-speed optical fiber, comfortable desks, ergonomic chairs for coding sprints.",
         "photos": ["https://images.unsplash.com/photo-1527192491265-7e15c55b1ed2?auto=format&fit=crop&w=800&q=80"]
     })
-    assert res.status_code == 201
+    assert res.status_code == 201, f"Create space failed: {res.status_code} {res.data}"
     created_space = res.get_json()
     assert created_space["id"] is not None
     print(f"✓ New space created successfully (ID: {created_space['id']}).")
+
+    # Clean up test fixture space to keep demo marketplace pristine
+    with app.app_context():
+        test_fixture = Space.query.get(created_space["id"])
+        if test_fixture:
+            db.session.delete(test_fixture)
+            db.session.commit()
 
     # 7. Passive Income Calculator
     print("\n[7/14] Testing Earnings Calculator API (POST /api/calculator/estimate)...")
@@ -141,15 +155,22 @@ def run_comprehensive_check():
     assert host_kyc["upi"]["bank_beneficiary_name"] == "Vikram Malhotra"
     print(f"✓ Host KYC verified: BESCOM CA confirmed, UPI penny drop matched {host_kyc['upi']['bank_beneficiary_name']}.")
 
-    # 11. Instant Booking & AI Micro-Lease Generation
+    # 11. Instant Booking & AI Micro-Lease Generation (Authenticated Seeker)
     print("\n[11/14] Testing Instant Booking & Micro-Lease (POST /api/bookings)...")
+    # Authenticate as seeker Aarav
+    login_seeker = client.post("/api/v1/auth/login", json={
+        "email": "aarav@iitd.ac.in",
+        "password": "password123"
+    })
+    assert login_seeker.status_code == 200, f"Seeker login failed: {login_seeker.get_json()}"
+
     res = client.post("/api/bookings", json={
         "space_id": space_id,
         "hours": 3.0,
         "purpose": "Hackathon pitch practice and architecture sprint",
-        "attendees_count": 3
+        "attendees_count": 1
     })
-    assert res.status_code == 201
+    assert res.status_code == 201, f"Create booking failed: {res.status_code} {res.data}"
     booking_data = res.get_json()
     assert booking_data["success"] is True
     new_booking_id = booking_data["booking"]["id"]
@@ -164,7 +185,7 @@ def run_comprehensive_check():
         "lat": target_space["latitude"],
         "lng": target_space["longitude"]
     })
-    assert res.status_code == 200
+    assert res.status_code == 200, f"Check-in failed: {res.status_code} {res.data}"
     checkin_data = res.get_json()
     assert checkin_data["success"] is True
     assert checkin_data["distance_meters"] <= 50
@@ -177,7 +198,7 @@ def run_comprehensive_check():
         "lat": target_space["latitude"],
         "lng": target_space["longitude"]
     })
-    assert res.status_code == 200
+    assert res.status_code == 200, f"Check-out failed: {res.status_code} {res.data}"
     checkout_data = res.get_json()
     assert checkout_data["success"] is True
     assert checkout_data["escrow_refund_status"] == "INSTANT_RELEASE_COMPLETE"
@@ -186,8 +207,9 @@ def run_comprehensive_check():
 
     # 14. All HTML Views & Subsystems
     print("\n[14/14] Testing All Template Views...")
-    pages = [
-        ("/", 200, "Home"),
+    authenticated_pages = [
+        ("/", 200, "Home Landing Page"),
+        ("/explore", 200, "Explore & Discovery"),
         (f"/space/{space_id}", 200, "Space Detail"),
         ("/list-space", 200, "List Space"),
         ("/calculator", 200, "Calculator"),
@@ -196,10 +218,16 @@ def run_comprehensive_check():
         ("/verify", 200, "KYC Hub"),
         (f"/booking/{new_booking_id}/session", 200, "In-Room Live Console"),
         (f"/space/{space_id}/printable-qr", 200, "Printable Door Pass"),
-        ("/login", 200, "User Switcher & Login")
     ]
-    for url, expected_code, name in pages:
+    for url, expected_code, name in authenticated_pages:
         res = client.get(url)
+        assert res.status_code == expected_code, f"{name} ({url}) returned {res.status_code}"
+        print(f"  • {name} [{url}] -> HTTP {res.status_code} OK")
+
+    # Anonymous visitor views
+    anon_client = app.test_client()
+    for url, expected_code, name in [("/auth/login", 200, "Sign In"), ("/auth/register", 200, "Register")]:
+        res = anon_client.get(url)
         assert res.status_code == expected_code, f"{name} ({url}) returned {res.status_code}"
         print(f"  • {name} [{url}] -> HTTP {res.status_code} OK")
 

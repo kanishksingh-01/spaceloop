@@ -172,6 +172,8 @@ def seed_database(force=False):
         },
         {
             "name": "Kabir Mehta",
+            "first_name": "Kabir",
+            "last_name": "Mehta",
             "email": "kabir@du.ac.in",
             "role": "seeker",
             "bio": "Economics student at Delhi University. Organizer for debating societies and mock parliament conferences.",
@@ -189,15 +191,82 @@ def seed_database(force=False):
             "cleanliness_match_rate": 96.5,
             "total_completed_hours": 12.0,
             "dispute_count": 0
+        },
+        # Explicit Dev Fixtures for Testing & Local Development
+        {
+            "name": "Dev Host",
+            "first_name": "Dev",
+            "last_name": "Host",
+            "email": "dev-host@spaceloop.local",
+            "role": "owner",
+            "bio": "Local development host test account for automated test suites and role switching.",
+            "phone": "+91 98000 00001",
+            "avatar_url": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80",
+            "is_host_verified": True,
+            "discom_provider": "TPDDL (Tata Power Delhi)",
+            "discom_ca_masked": "***9999",
+            "upi_verified": True,
+            "upi_vpa_masked": "devhost@upi",
+            "bank_beneficiary_name": "Dev Host",
+            "objective_trust_score": 99.0,
+            "is_admin": False
+        },
+        {
+            "name": "Dev Seeker",
+            "first_name": "Dev",
+            "last_name": "Seeker",
+            "email": "dev-seeker@spaceloop.local",
+            "role": "seeker",
+            "bio": "Local development student seeker account for automated test suites.",
+            "phone": "+91 98000 00002",
+            "avatar_url": "https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?auto=format&fit=crop&w=200&q=80",
+            "is_student_verified": True,
+            "college_name": "SpaceLoop University",
+            "college_email": "dev-seeker@spaceloop.local",
+            "student_id_masked": "STU-DEV-001",
+            "is_aadhaar_verified": True,
+            "aadhaar_masked": "XXXX-XXXX-9999",
+            "objective_trust_score": 99.0,
+            "is_admin": False
+        },
+        {
+            "name": "Dev Admin",
+            "first_name": "Dev",
+            "last_name": "Admin",
+            "email": "dev-admin@spaceloop.local",
+            "role": "owner",
+            "bio": "Platform Super Administrator account for moderation, disputes, and governance.",
+            "phone": "+91 98000 00003",
+            "avatar_url": "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=200&q=80",
+            "is_host_verified": True,
+            "upi_verified": True,
+            "objective_trust_score": 100.0,
+            "is_admin": True
         }
     ]
 
     for u_data in demo_users:
         existing = User.query.filter_by(email=u_data["email"]).first()
         if not existing:
+            name_parts = u_data.get("name", "").split(" ", 1)
+            u_data.setdefault("first_name", name_parts[0] if name_parts else "")
+            u_data.setdefault("last_name", name_parts[1] if len(name_parts) > 1 else "")
+            u_data["is_active"] = True
+            u_data["is_email_verified"] = True
             u = User(**u_data)
             u.set_password("password123")
             db.session.add(u)
+        else:
+            if not existing.password_hash:
+                existing.set_password("password123")
+            existing.is_active = True
+            existing.is_email_verified = True
+            if "is_admin" in u_data:
+                existing.is_admin = u_data["is_admin"]
+            if not existing.first_name and existing.name:
+                parts = existing.name.split(" ", 1)
+                existing.first_name = parts[0]
+                existing.last_name = parts[1] if len(parts) > 1 else ""
     db.session.commit()
 
     # Retrieve committed user references
@@ -219,7 +288,7 @@ def seed_database(force=False):
         {
             "owner_id": host_sunita.id,
             "title": "Quiet AC Study Room & Project Studio (Near IIT Gate 1)",
-            "category": "Studio",
+            "category": "Study",
             "description": "Clean, air-conditioned private study suite 400 meters from IIT Delhi Gate 1. Features 4 ergonomic study desks, 600 Mbps dual-band Wi-Fi, dry-erase whiteboard, multi-port power strips, and natural daylight. Ideal for hackathon teams, code sprints, and exam preparation.",
             "address": "B-4/22 Hauz Khas Enclave",
             "neighborhood": "Hauz Khas",
@@ -241,9 +310,8 @@ def seed_database(force=False):
             "amenities": ["Dual-Band Wi-Fi (600 Mbps)", "Air Conditioning", "Magnetic Whiteboard & Markers", "Power Outlets at Each Desk", "Drinking Water (RO Filtered)", "Private Washroom"],
             "rules": ["No smoking inside", "Shoes off at entrance door", "Keep conversation volume moderate", "Switch off AC and fans before checkout"],
             "photos": [
-                "https://images.unsplash.com/photo-1513694203232-719a280e022f?auto=format&fit=crop&w=1200&q=80",
-                "https://images.unsplash.com/photo-1524758631624-e2822e304c36?auto=format&fit=crop&w=800&q=80",
-                "https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&w=800&q=80"
+                "https://images.unsplash.com/photo-1523240795612-9a054b0db644?auto=format&fit=crop&w=1200&q=80",
+                "https://images.unsplash.com/photo-1524758631624-e2822e304c36?auto=format&fit=crop&w=800&q=80"
             ],
             "ai_tags": ["AC Room", "High-Speed WiFi", "Whiteboard", "Quiet Zone", "Near IIT"],
             "ai_dimensions_summary": "15ft x 16ft (240 sqft) well-ventilated room",
@@ -295,8 +363,8 @@ def seed_database(force=False):
         {
             "owner_id": host_rajesh.id,
             "title": "Clean Whiteboard Discussion Room (FC Road College Hub)",
-            "category": "Studio",
-            "description": "Quiet study nook right behind Ferguson College Road. Perfect for Pune university students preparing for engineering, medical, or UPSC exams.",
+            "category": "Meeting",
+            "description": "Quiet discussion and collaborative room right behind Ferguson College Road. Perfect for Pune university students preparing for engineering, medical, or UPSC exams.",
             "address": "12 Shivajinagar, Off FC Road",
             "neighborhood": "Shivajinagar",
             "city": "Pune",
@@ -331,7 +399,7 @@ def seed_database(force=False):
         {
             "owner_id": host_vikram.id,
             "title": "Secure Hardware Prototyping & Soldering Bench",
-            "category": "Workspace",
+            "category": "Creative",
             "description": "Dedicated electronics workbench with ESD mat, soldering stations, oscilloscope, and fume extractor. Ideal for IoT and robotics student teams.",
             "address": "Industrial Area, Phase 2",
             "neighborhood": "Sector 62",
@@ -368,7 +436,7 @@ def seed_database(force=False):
         {
             "owner_id": host_sunita.id,
             "title": "North Campus Quiet Study Pod (Delhi University)",
-            "category": "Studio",
+            "category": "Study",
             "description": "Silent reading and study suite located 2 minutes from Vishwavidyalaya Metro and Hansraj College. Ideal for semester exams, paper writing, and group discussions.",
             "address": "14 Chhatra Marg, North Campus",
             "neighborhood": "North Campus",
@@ -441,7 +509,7 @@ def seed_database(force=False):
         {
             "owner_id": host_rajesh.id,
             "title": "Quiet Study Pod & Hackathon Workstation (Near JSPM Wagholi)",
-            "category": "Studio",
+            "category": "Study",
             "description": "Acoustically damped project studio and study suite situated 300 meters from JSPM Imperial College campus in Wagholi, Pune. Equipped with 300 Mbps fiber internet, ergonomic study desks, dual monitor setup, whiteboard, and 24/7 power backup.",
             "address": "Bakori Road, Near JSPM Campus",
             "neighborhood": "Wagholi",
@@ -463,7 +531,7 @@ def seed_database(force=False):
             "amenities": ["High-Speed Wi-Fi (300 Mbps)", "Whiteboard & Markers", "Air Cooler", "Drinking Water", "Dual Display Monitor"],
             "rules": ["No loud conversation", "Switch off appliances after use", "Clean desk before leaving"],
             "photos": [
-                "https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&w=1200&q=80",
+                "https://images.unsplash.com/photo-1513694203232-719a280e022f?auto=format&fit=crop&w=1200&q=80",
                 "https://images.unsplash.com/photo-1524758631624-e2822e304c36?auto=format&fit=crop&w=800&q=80"
             ],
             "ai_tags": ["Wagholi", "Near JSPM", "Study Pod", "Dual Monitor"],
@@ -548,12 +616,245 @@ def seed_database(force=False):
             "ai_safety_notes": "Studio emergency lighting and soundproof acoustic door escape release.",
             "ai_recommended_uses": "Podcast production, voiceovers, remote mentor interview broadcasts",
             "ai_suitability_score": 99
+        },
+        {
+            "owner_id": host_rajesh.id,
+            "title": "Secure Ground Floor Dry Storage & Gear Unit",
+            "category": "Storage",
+            "description": "Clean, moisture-controlled ground floor storage unit located off Nagar Road, Wagholi. Includes keypad access, perimeter CCTV, dry shelving, and easy vehicle drive-in access for college project kits and luggage.",
+            "address": "Gate 3, Ivy Estate Road",
+            "neighborhood": "Wagholi",
+            "city": "Pune",
+            "state": "Maharashtra",
+            "zip_code": "412207",
+            "latitude": 18.5830,
+            "longitude": 73.9910,
+            "geofence_radius_meters": 35,
+            "physical_access_type": "mechanical_keybox",
+            "keybox_code": "6241",
+            "discom_ca_number": "4920883190",
+            "discom_consumer_name": "Rajesh Kulkarni",
+            "room_qr_token": "SPACELOOP_QR_PUNE_STORAGE",
+            "sqft": 160,
+            "max_capacity": 2,
+            "price_hourly": 40.0,
+            "price_daily": 220.0,
+            "minimum_hours": 2,
+            "amenities": ["24/7 Keybox Access", "Moisture Protection", "Heavy Duty Steel Shelving", "CCTV Surveillance", "Drive-in Loading Bay"],
+            "rules": ["No flammable materials or perishable food items", "Ensure deadbolt is engaged when leaving"],
+            "photos": [
+                "https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?auto=format&fit=crop&w=1200&q=80"
+            ],
+            "ai_tags": ["Storage Unit", "Wagholi", "Ground Floor", "Luggage Storage"],
+            "ai_dimensions_summary": "10ft x 16ft (160 sqft) secure dry bay",
+            "ai_lighting": "Overhead LED motion-activated tubelights",
+            "ai_noise_level": "Silent secure storage corridor",
+            "ai_power_access": "2x 5A utility charging sockets",
+            "ai_safety_notes": "Smoke detectors and dry powder fire extinguisher installed.",
+            "ai_recommended_uses": "Luggage between semesters, college club equipment, prototype storage",
+            "ai_suitability_score": 96
+        },
+        {
+            "owner_id": host_rajesh.id,
+            "title": "Architectural Drafting & Design Prototyping Studio",
+            "category": "Creative",
+            "description": "Sunlit creative studio designed for architecture and product design students in Aundh, Pune. Equipped with large tilting drafting tables, cutting mats, A1 plot review wall, and natural northern light.",
+            "address": "DP Road, Harmony Heights",
+            "neighborhood": "Aundh",
+            "city": "Pune",
+            "state": "Maharashtra",
+            "zip_code": "411007",
+            "latitude": 18.5601,
+            "longitude": 73.8031,
+            "geofence_radius_meters": 30,
+            "physical_access_type": "caretaker_handshake",
+            "discom_ca_number": "3920194451",
+            "discom_consumer_name": "Rajesh Kulkarni",
+            "room_qr_token": "SPACELOOP_QR_PUNE_DESIGN",
+            "sqft": 280,
+            "max_capacity": 5,
+            "price_hourly": 70.0,
+            "price_daily": 440.0,
+            "minimum_hours": 1,
+            "amenities": ["Tilting Drafting Tables", "A1 Pin-Up Review Wall", "High-Speed Wi-Fi", "Cutting Mats & Rulers", "Tea/Coffee Station"],
+            "rules": ["Use cutting mats for all hobby knives and cutters", "Clean up drafting trimmings before checkout"],
+            "photos": [
+                "https://images.unsplash.com/photo-1503387762-592deb58ef4e?auto=format&fit=crop&w=1200&q=80"
+            ],
+            "ai_tags": ["Design Studio", "Architecture Drafting", "Aundh", "Natural Light"],
+            "ai_dimensions_summary": "14ft x 20ft (280 sqft) studio",
+            "ai_lighting": "Northern daylight glazing + 5000K daylight balanced track lamps",
+            "ai_noise_level": "Serene creative work environment (<35 dB)",
+            "ai_power_access": "Tabletop power towers with surge protection",
+            "ai_safety_notes": "First aid box, MCB panel, corridor security cameras.",
+            "ai_recommended_uses": "Architecture model making, design jury prep, UI/UX prototyping",
+            "ai_suitability_score": 98
+        },
+        {
+            "owner_id": host_sunita.id,
+            "title": "Executive Glass Whiteboard & Meeting Suite",
+            "category": "Meeting",
+            "description": "High-end corporate meeting suite in Cyber City, Gurgaon. Features a 10-seater conference table, magnetic glass whiteboard, 65-inch 4K presentation display with HDMI/AirPlay, and conference call speakerphone.",
+            "address": "DLF Cyber City, Tower B",
+            "neighborhood": "Cyber City",
+            "city": "New Delhi",
+            "state": "Haryana",
+            "zip_code": "122002",
+            "latitude": 28.4900,
+            "longitude": 77.0900,
+            "geofence_radius_meters": 40,
+            "physical_access_type": "mechanical_keybox",
+            "keybox_code": "8812",
+            "discom_ca_number": "1009988211",
+            "discom_consumer_name": "Sunita Sharma",
+            "room_qr_token": "SPACELOOP_QR_GURGAON_MEETING",
+            "sqft": 320,
+            "max_capacity": 10,
+            "price_hourly": 110.0,
+            "price_daily": 700.0,
+            "minimum_hours": 1,
+            "amenities": ["65-inch 4K Display", "Glass Whiteboard", "Jabra Speakerphone", "Enterprise Gigabit Wi-Fi", "Espresso Coffee Machine"],
+            "rules": ["Erase whiteboard after meeting", "Turn off AV screen and AV switch box on exit"],
+            "photos": [
+                "https://images.unsplash.com/photo-1517048676732-d65bc937f952?auto=format&fit=crop&w=1200&q=80"
+            ],
+            "ai_tags": ["Meeting Room", "Cyber City", "Presentation Display", "Corporate Hub"],
+            "ai_dimensions_summary": "16ft x 20ft (320 sqft)",
+            "ai_lighting": "Dimmable conference perimeter lighting",
+            "ai_noise_level": "Acoustically isolated glass conference suite (<28 dB)",
+            "ai_power_access": "In-table pop-up HDMI, USB-C, and AC sockets",
+            "ai_safety_notes": "Commercial building standard fire sprinklers and emergency exits.",
+            "ai_recommended_uses": "Client pitch meetings, hackathon judging presentations, team sprints",
+            "ai_suitability_score": 99
+        },
+        {
+            "owner_id": host_rajesh.id,
+            "title": "Private Coding & Dual-Monitor Pod (Viman Nagar)",
+            "category": "Workspace",
+            "description": "Quiet personal coding workstation in Viman Nagar, Pune. Includes dual 27-inch monitors, mechanical keyboard friendly desk, Herman Miller style mesh chair, and 300 Mbps low-latency fiber.",
+            "address": "Near Symbiosis Campus, Viman Nagar",
+            "neighborhood": "Viman Nagar",
+            "city": "Pune",
+            "state": "Maharashtra",
+            "zip_code": "411014",
+            "latitude": 18.5679,
+            "longitude": 73.9143,
+            "geofence_radius_meters": 30,
+            "physical_access_type": "caretaker_handshake",
+            "discom_ca_number": "4920198822",
+            "discom_consumer_name": "Rajesh Kulkarni",
+            "room_qr_token": "SPACELOOP_QR_PUNE_VIMANNAGAR",
+            "sqft": 140,
+            "max_capacity": 2,
+            "price_hourly": 65.0,
+            "price_daily": 390.0,
+            "minimum_hours": 1,
+            "amenities": ["Dual 27-inch Displays", "Ergonomic Mesh Chair", "Low Latency 300 Mbps Fiber", "Air Conditioning", "Cold Water Dispenser"],
+            "rules": ["Keep monitors on native resolution", "No open beverages near keyboards"],
+            "photos": [
+                "https://images.unsplash.com/photo-1593642632823-8f785ba67e45?auto=format&fit=crop&w=1200&q=80"
+            ],
+            "ai_tags": ["Dual Monitor", "Viman Nagar", "Near Symbiosis", "Developer Pod"],
+            "ai_dimensions_summary": "10ft x 14ft (140 sqft)",
+            "ai_lighting": "Backlit screen ambient bias lighting + warm LED desk lamp",
+            "ai_noise_level": "Quiet residential coding nook (<32 dB)",
+            "ai_power_access": "4x 5A desktop surge sockets with USB-C PD",
+            "ai_safety_notes": "UPS battery backup ensures zero disconnection during power dips.",
+            "ai_recommended_uses": "Competitive programming sprints, open source contributions, remote interviews",
+            "ai_suitability_score": 98
+        },
+        {
+            "owner_id": host_rajesh.id,
+            "title": "Collaborative Team Sprint & Workshop Room (Kothrud)",
+            "category": "Meeting",
+            "description": "Flexible workshop room with movable tables and high-density seating near MIT World Peace University, Kothrud. Equipped with high-speed internet, projector, and wall-to-wall whiteboard paint.",
+            "address": "Paud Road, Ideal Colony",
+            "neighborhood": "Kothrud",
+            "city": "Pune",
+            "state": "Maharashtra",
+            "zip_code": "411038",
+            "latitude": 18.5074,
+            "longitude": 73.8077,
+            "geofence_radius_meters": 35,
+            "physical_access_type": "caretaker_handshake",
+            "discom_ca_number": "3920197711",
+            "discom_consumer_name": "Rajesh Kulkarni",
+            "room_qr_token": "SPACELOOP_QR_PUNE_KOTHRUD",
+            "sqft": 260,
+            "max_capacity": 6,
+            "price_hourly": 80.0,
+            "price_daily": 480.0,
+            "minimum_hours": 2,
+            "amenities": ["1080p Projector & Screen", "Wall-to-Wall Whiteboard", "Modular Desks", "Wi-Fi (300 Mbps)", "Air Conditioning"],
+            "rules": ["Reset modular desks to perimeter layout when leaving", "Wipe projector lens gently"],
+            "photos": [
+                "https://images.unsplash.com/photo-1497215728101-856f4ea42174?auto=format&fit=crop&w=1200&q=80"
+            ],
+            "ai_tags": ["Kothrud", "Projector", "Team Sprint", "Modular Tables"],
+            "ai_dimensions_summary": "14ft x 18ft (260 sqft)",
+            "ai_lighting": "Adjustable warm/cool LED dimmable panel lights",
+            "ai_noise_level": "Sound-isolated meeting room (<34 dB)",
+            "ai_power_access": "Multiple floor boxes with AC sockets",
+            "ai_safety_notes": "Fire alarm, two emergency exits, CCTV in lobby.",
+            "ai_recommended_uses": "Design sprint workshops, team standups, product demo rehearsals",
+            "ai_suitability_score": 97
+        },
+        {
+            "owner_id": host_ananya.id,
+            "title": "Photography & Creator Content Studio (Bandra West)",
+            "category": "Studio",
+            "description": "Boutique photo and video creator studio near Carter Road, Bandra West. Includes 3-color seamless backdrop roll (white, chroma green, black), 2x Godox softbox continuous video lights, and makeup vanity mirror.",
+            "address": "Pali Hill Road, Bandra West",
+            "neighborhood": "Bandra",
+            "city": "Mumbai",
+            "state": "Maharashtra",
+            "zip_code": "400050",
+            "latitude": 19.0596,
+            "longitude": 72.8295,
+            "geofence_radius_meters": 30,
+            "physical_access_type": "mechanical_keybox",
+            "keybox_code": "3341",
+            "discom_ca_number": "2910488812",
+            "discom_consumer_name": "Ananya Sengupta",
+            "room_qr_token": "SPACELOOP_QR_MUMBAI_BANDRA",
+            "sqft": 250,
+            "max_capacity": 4,
+            "price_hourly": 120.0,
+            "price_daily": 750.0,
+            "minimum_hours": 2,
+            "amenities": ["Godox Softbox Lighting Kit", "3-Color Seamless Paper Rolls", "Chroma Key Green Screen", "Vanity Mirror", "High-Speed Wi-Fi", "Air Conditioning"],
+            "rules": ["Do not walk on backdrops with outdoor shoes", "Turn off high-output studio lights after shoot"],
+            "photos": [
+                "https://images.unsplash.com/photo-1598488035139-bdbb2231ce04?auto=format&fit=crop&w=1200&q=80"
+            ],
+            "ai_tags": ["Photo Studio", "Bandra West", "Green Screen", "Creator Friendly"],
+            "ai_dimensions_summary": "14ft x 18ft (250 sqft) studio with 10ft ceiling",
+            "ai_lighting": "Studio flash/continuous lighting + black-out blinds",
+            "ai_noise_level": "Quiet indoor creator studio (<30 dB)",
+            "ai_power_access": "Dedicated 16A heavy lighting power circuits",
+            "ai_safety_notes": "Sandbags on light stands, fire extinguisher on wall.",
+            "ai_recommended_uses": "Product photo shoots, YouTube video recording, creator reels, headshots",
+            "ai_suitability_score": 99
         }
     ]
 
+    # 1. Clean up duplicate spaces from previous test runs
+    all_current_spaces = Space.query.all()
+    seen_titles = {}
+    for sp in all_current_spaces:
+        if sp.title in seen_titles:
+            db.session.delete(sp)
+        else:
+            seen_titles[sp.title] = sp
+    db.session.commit()
+
+    # 2. Insert or update all verified spaces
     for s_data in spaces_data:
         existing = Space.query.filter_by(title=s_data["title"]).first()
-        if not existing:
+        if existing:
+            for k, v in s_data.items():
+                setattr(existing, k, v)
+        else:
             s = Space(**s_data)
             db.session.add(s)
     db.session.commit()
