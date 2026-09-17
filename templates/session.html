@@ -95,43 +95,94 @@
   <!-- STAGE 1: CHECK-IN CONSOLE (Shown when confirmed) -->
   <div id="checkinPanel" class="{% if booking.session_state != 'confirmed' %}hidden{% endif %} space-y-6">
     <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 sm:p-8 shadow-xl">
-      <h2 class="text-lg font-bold text-white mb-2 flex items-center gap-2">
-        <i class="fa-solid fa-qrcode text-indigo-400"></i> Laminated Paper QR & Geofence Check-In
-      </h2>
-      <p class="text-xs text-slate-400 mb-6">
-        Scan the official ₹5 laminated QR code taped to the room entrance or study table. Your smartphone GPS will automatically confirm physical presence within 30 meters.
-      </p>
+      
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
+        <div>
+          <h2 class="text-lg font-bold text-white flex items-center gap-2">
+            <i class="fa-solid fa-qrcode text-indigo-400"></i> Zero-Hardware Access Check-In
+          </h2>
+          <p class="text-xs text-slate-400 mt-1">
+            Real device GPS geofence + scanned room door QR. Powered by India Stack zero-hardware protocol.
+          </p>
+        </div>
 
-      <!-- Geofence Radar Simulator Card -->
-      <div class="bg-slate-950 border border-slate-800 rounded-xl p-5 mb-6">
-        <div class="flex items-center justify-between mb-3">
+        <!-- Multi-tier Access Mode Toggle -->
+        <div class="flex items-center gap-1 bg-slate-950 p-1 rounded-xl border border-slate-800 self-start sm:self-auto shrink-0">
+          <button type="button" id="tabGpsMode" onclick="setCheckinMode('gps')" class="px-3 py-1.5 rounded-lg text-xs font-semibold bg-indigo-600 text-white transition flex items-center gap-1.5">
+            <i class="fa-solid fa-location-dot"></i> <span>GPS Geofence</span>
+          </button>
+          <button type="button" id="tabPinMode" onclick="setCheckinMode('pin')" class="px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-400 hover:text-white transition flex items-center gap-1.5">
+            <i class="fa-solid fa-key"></i> <span>Caretaker PIN</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- LOCATION VERIFICATION CARD (Tasks 9 & 10) -->
+      <div id="locationVerificationCard" class="bg-slate-950 border border-slate-800 rounded-xl p-5 mb-6 space-y-3">
+        <div class="flex items-center justify-between">
           <div class="flex items-center gap-2">
             <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-ping"></span>
-            <span class="text-xs font-bold text-white uppercase tracking-wider">Live Smartphone GPS Radar</span>
+            <span class="text-xs font-bold text-white uppercase tracking-wider">Location Verification</span>
           </div>
-          <span id="gpsStatusPill" class="text-[11px] font-semibold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-md border border-emerald-500/20">
-            Within Geofence (12.4m)
+          <span id="gpsStatusPill" class="text-[11px] font-semibold text-indigo-400 bg-indigo-500/10 px-2 py-0.5 rounded-md border border-indigo-500/20">
+            <i class="fa-solid fa-satellite-dish animate-pulse"></i> Initializing GPS...
           </span>
         </div>
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs text-slate-400">
-          <div>
-            <b>Space Coordinates:</b> <span class="font-mono text-slate-300">{{ space.latitude }}, {{ space.longitude }}</span>
+
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs pt-1 border-t border-slate-900">
+          <div class="bg-slate-900/60 p-2.5 rounded-lg border border-slate-800/80">
+            <div class="text-[10px] text-slate-400 uppercase">Distance from space</div>
+            <div id="gpsDistanceDisplay" class="text-base font-bold text-white mt-0.5">-- m</div>
           </div>
-          <div>
-            <b>Geofence Boundary:</b> <span class="text-slate-300">&le; {{ space.geofence_radius_meters }} meters (Strict)</span>
+          <div class="bg-slate-900/60 p-2.5 rounded-lg border border-slate-800/80">
+            <div class="text-[10px] text-slate-400 uppercase">Allowed radius</div>
+            <div class="text-base font-bold text-indigo-300 mt-0.5">50 m</div>
           </div>
+          <div class="bg-slate-900/60 p-2.5 rounded-lg border border-slate-800/80">
+            <div class="text-[10px] text-slate-400 uppercase">Space Coordinates</div>
+            <div class="text-xs font-mono text-slate-300 mt-1">{{ space.latitude }}, {{ space.longitude }}</div>
+          </div>
+          <div class="bg-slate-900/60 p-2.5 rounded-lg border border-slate-800/80 flex flex-col justify-center items-start">
+            <button type="button" onclick="acquireDeviceGps(true)" class="text-[11px] text-indigo-400 hover:text-indigo-300 font-semibold flex items-center gap-1">
+              <i class="fa-solid fa-rotate-right"></i> Refresh GPS
+            </button>
+            <span class="text-[9px] text-slate-500 mt-0.5">High-accuracy mode</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- GPS FAILURE / UNAVAILABLE ALERT (Task 10) -->
+      <div id="gpsFailureAlert" class="hidden mb-6 p-4 rounded-xl bg-amber-950/40 border border-amber-500/40 text-amber-200 text-xs space-y-2.5">
+        <div class="flex items-center gap-2 font-bold text-amber-300 text-sm">
+          <i class="fa-solid fa-triangle-exclamation text-base"></i>
+          <span>⚠ Unable to verify your location</span>
+        </div>
+        <p class="text-[11px] text-amber-200/90 font-medium">Possible reasons:</p>
+        <ul class="list-disc list-inside text-[11px] text-amber-200/80 space-y-1 ml-1">
+          <li>Location permission is disabled in browser or device settings</li>
+          <li>GPS signal is weak (e.g. basement or dense concrete roof)</li>
+          <li>Location service is unavailable on your network/device</li>
+        </ul>
+        <div class="flex flex-wrap items-center gap-3 pt-2">
+          <button type="button" onclick="acquireDeviceGps(true)" class="px-3.5 py-1.5 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 text-amber-200 border border-amber-500/30 text-xs font-semibold flex items-center gap-1.5 transition">
+            <i class="fa-solid fa-rotate-right"></i> Retry Location
+          </button>
+          <button type="button" onclick="setCheckinMode('pin')" class="px-3.5 py-1.5 rounded-lg bg-indigo-600/30 hover:bg-indigo-600/50 text-indigo-200 border border-indigo-500/40 text-xs font-semibold flex items-center gap-1.5 transition">
+            <i class="fa-solid fa-key"></i> Switch to Caretaker PIN Fallback
+          </button>
         </div>
       </div>
 
       <!-- Check-in Form -->
       <form id="checkinForm" onsubmit="handleCheckIn(event)" class="space-y-6">
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
-          <!-- Room QR Code Token -->
+          
+          <!-- Room QR Code Token (Always required) -->
           <div>
             <label class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2 flex items-center justify-between">
-              <span>Room QR Code Token</span>
+              <span>Room Door QR Token</span>
               <a href="{{ url_for('printable_qr', space_id=space.id) }}" target="_blank" class="text-[10px] text-indigo-400 hover:underline">
-                <i class="fa-solid fa-print"></i> View Host Paper QR
+                <i class="fa-solid fa-print"></i> View Host Door QR
               </a>
             </label>
             <div class="flex gap-2">
@@ -141,24 +192,41 @@
                 <i class="fa-solid fa-camera"></i> Scan
               </button>
             </div>
-            <div class="text-[10px] text-slate-500 mt-1">Camera auto-reads token from printed QR on the door</div>
+            <div class="text-[10px] text-slate-500 mt-1">In-app camera or scanner reading token from laminated door placard</div>
+          </div>
+
+          <!-- Caretaker Handshake PIN (Fallback Mode) -->
+          <div id="caretakerPinContainer" class="hidden">
+            <label class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2 flex items-center justify-between">
+              <span class="text-amber-400"><i class="fa-solid fa-key mr-1"></i> Caretaker Handshake PIN</span>
+              <span class="text-[10px] text-slate-400">Assigned: <b class="text-amber-300 font-mono">{{ booking.arrival_pin }}</b></span>
+            </label>
+            <input type="text" id="caretakerPinInput" maxlength="10" placeholder="Enter 4-digit PIN (e.g. {{ booking.arrival_pin }})"
+              class="w-full bg-slate-950 border border-amber-500/40 rounded-xl px-4 py-3 text-amber-300 text-sm font-mono tracking-widest focus:outline-none focus:border-amber-400 transition">
+            <div class="text-[10px] text-slate-400 mt-1">Verified by on-premise caretaker or mechanical keybox when GPS is offline</div>
           </div>
 
           <!-- 15-Second Entry Walkthrough Photo -->
-          <div>
+          <div id="entryPhotoContainer">
             <label class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2">
               15-Second Entry Photo / Video Pan
             </label>
             <input type="text" id="entryPhotoUrl" value="{{ space.photos[0] }}"
               placeholder="Live camera pan URL or snapshot"
               class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-indigo-500 transition">
-            <div class="text-[10px] text-slate-500 mt-1">Live camera snapshot establishing room baseline condition</div>
+            <div class="text-[10px] text-slate-500 mt-1">Camera snapshot establishing room baseline condition</div>
           </div>
+
         </div>
 
-        <button type="submit" id="checkinBtn" class="w-full sm:w-auto px-8 py-3.5 rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white font-bold text-sm shadow-lg shadow-indigo-600/30 transition flex items-center justify-center gap-2">
-          <i class="fa-solid fa-door-open"></i> Confirm Check-In & Enter Space
-        </button>
+        <!-- Check-in Action Buttons -->
+        <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+          <button type="submit" id="checkinBtn" class="px-8 py-3.5 rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white font-bold text-sm shadow-lg shadow-indigo-600/30 transition flex items-center justify-center gap-2">
+            <i class="fa-solid fa-door-open"></i>
+            <span id="checkinBtnText">Confirm Check-In & Enter Space</span>
+          </button>
+        </div>
+
       </form>
     </div>
   </div>
@@ -290,6 +358,115 @@
 </div>
 
 <script>
+const spaceLat = {{ space.latitude }};
+const spaceLng = {{ space.longitude }};
+const spaceAllowedRadius = Math.max({{ space.geofence_radius_meters or 30 }}, 50);
+
+let checkinMode = 'gps'; // 'gps' | 'pin'
+let currentGpsCoords = null;
+let currentDistMeters = null;
+let gpsStatus = 'uninitialized'; // 'pending' | 'verified' | 'outside' | 'failed'
+
+// Calculate Haversine Distance in meters
+function haversineDistance(lat1, lon1, lat2, lon2) {
+  const R = 6371000; // Earth radius in meters
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLon = (lon2 - lon1) * Math.PI / 180;
+  const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+            Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+            Math.sin(dLon / 2) * Math.sin(dLon / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return Math.round(R * c * 10) / 10;
+}
+
+// Acquire Device Geolocation with High-Accuracy HTML5 Geolocation API
+function acquireDeviceGps(forceRetry = false) {
+  const statusPill = document.getElementById('gpsStatusPill');
+  const failureAlert = document.getElementById('gpsFailureAlert');
+  const distanceEl = document.getElementById('gpsDistanceDisplay');
+
+  if (!navigator.geolocation) {
+    handleGpsError({ message: "Geolocation is not supported by this browser." });
+    return;
+  }
+
+  gpsStatus = 'pending';
+  if (statusPill) {
+    statusPill.innerHTML = '<i class="fa-solid fa-satellite-dish animate-pulse"></i> Acquiring device GPS...';
+    statusPill.className = "text-[11px] font-semibold text-indigo-400 bg-indigo-500/10 px-2 py-0.5 rounded-md border border-indigo-500/20";
+  }
+  if (failureAlert) failureAlert.classList.add('hidden');
+
+  navigator.geolocation.getCurrentPosition(
+    (position) => {
+      const lat = position.coords.latitude;
+      const lng = position.coords.longitude;
+      currentGpsCoords = { lat, lng };
+
+      const dist = haversineDistance(lat, lng, spaceLat, spaceLng);
+      currentDistMeters = dist;
+      if (distanceEl) distanceEl.textContent = `${dist} m`;
+
+      if (dist <= spaceAllowedRadius) {
+        gpsStatus = 'verified';
+        if (statusPill) {
+          statusPill.innerHTML = `<i class="fa-solid fa-circle-check"></i> Location verified (${dist}m)`;
+          statusPill.className = "text-[11px] font-semibold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-md border border-emerald-500/20";
+        }
+      } else {
+        gpsStatus = 'outside';
+        if (statusPill) {
+          statusPill.innerHTML = `<i class="fa-solid fa-circle-xmark"></i> Outside Radius (${dist}m > ${spaceAllowedRadius}m)`;
+          statusPill.className = "text-[11px] font-semibold text-rose-400 bg-rose-500/10 px-2 py-0.5 rounded-md border border-rose-500/20";
+        }
+      }
+    },
+    (error) => {
+      handleGpsError(error);
+    },
+    { enableHighAccuracy: true, timeout: 8000, maximumAge: 0 }
+  );
+}
+
+function handleGpsError(error) {
+  gpsStatus = 'failed';
+  const statusPill = document.getElementById('gpsStatusPill');
+  const failureAlert = document.getElementById('gpsFailureAlert');
+  
+  if (statusPill) {
+    statusPill.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i> GPS Signal Unavailable';
+    statusPill.className = "text-[11px] font-semibold text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded-md border border-amber-500/20";
+  }
+  if (failureAlert) {
+    failureAlert.classList.remove('hidden');
+  }
+}
+
+function setCheckinMode(mode) {
+  checkinMode = mode;
+  const tabGps = document.getElementById('tabGpsMode');
+  const tabPin = document.getElementById('tabPinMode');
+  const pinContainer = document.getElementById('caretakerPinContainer');
+  const locationCard = document.getElementById('locationVerificationCard');
+  const failureAlert = document.getElementById('gpsFailureAlert');
+  const btnText = document.getElementById('checkinBtnText');
+
+  if (mode === 'pin') {
+    tabPin.className = "px-3 py-1.5 rounded-lg text-xs font-semibold bg-amber-600 text-white transition flex items-center gap-1.5 shadow-md shadow-amber-600/30";
+    tabGps.className = "px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-400 hover:text-white transition flex items-center gap-1.5";
+    pinContainer.classList.remove('hidden');
+    if (failureAlert) failureAlert.classList.add('hidden');
+    if (btnText) btnText.textContent = "Verify Caretaker PIN & Check In";
+    document.getElementById('caretakerPinInput').focus();
+  } else {
+    tabGps.className = "px-3 py-1.5 rounded-lg text-xs font-semibold bg-indigo-600 text-white transition flex items-center gap-1.5";
+    tabPin.className = "px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-400 hover:text-white transition flex items-center gap-1.5";
+    pinContainer.classList.add('hidden');
+    if (btnText) btnText.textContent = "Confirm Check-In & Enter Space";
+    if (gpsStatus === 'failed' && failureAlert) failureAlert.classList.remove('hidden');
+  }
+}
+
 function simulateScan() {
   document.getElementById('checkinQrToken').value = "{{ space.room_qr_token or 'SPACELOOP_QR_IITD_ROOM1' }}";
   alert("In-App Camera Scanned: Validated Space Door QR token '{{ space.room_qr_token or 'SPACELOOP_QR_IITD_ROOM1' }}'");
@@ -299,15 +476,40 @@ async function handleCheckIn(e) {
   e.preventDefault();
   const btn = document.getElementById('checkinBtn');
   btn.disabled = true;
-  btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Verifying QR & Bounding GPS Geofence...';
+
+  // Validation based on Mode
+  if (checkinMode === 'gps') {
+    if (gpsStatus === 'outside') {
+      alert(`GPS Geofence Violation: You are currently ${currentDistMeters}m away from the space (Maximum allowed: ${spaceAllowedRadius}m).\n\nYou must be physically present within 50m of the entrance to check in, or use the Caretaker Handshake PIN fallback.`);
+      btn.disabled = false;
+      return;
+    }
+
+    if (gpsStatus === 'failed' && !currentGpsCoords) {
+      const useFallback = confirm("GPS signal could not be acquired.\n\nWould you like to switch to the on-premise Caretaker Handshake PIN fallback now?");
+      if (useFallback) {
+        setCheckinMode('pin');
+      }
+      btn.disabled = false;
+      return;
+    }
+  }
+
+  btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Verifying Access Credentials...';
 
   try {
     const payload = {
+      method: checkinMode === 'pin' ? 'caretaker_pin' : 'gps_qr',
       qr_token: document.getElementById('checkinQrToken').value,
-      lat: {{ space.latitude }},
-      lng: {{ space.longitude }},
       entry_photo: document.getElementById('entryPhotoUrl').value
     };
+
+    if (checkinMode === 'pin') {
+      payload.caretaker_pin = document.getElementById('caretakerPinInput').value;
+    } else {
+      payload.lat = currentGpsCoords ? currentGpsCoords.lat : spaceLat;
+      payload.lng = currentGpsCoords ? currentGpsCoords.lng : spaceLng;
+    }
 
     const res = await fetch('/api/booking/{{ booking.id }}/check-in', {
       method: 'POST',
@@ -317,10 +519,13 @@ async function handleCheckIn(e) {
     const data = await res.json();
 
     if (data.success) {
-      alert("Check-In Succeeded! Welcome to your space.");
+      alert("Check-In Succeeded! " + data.message);
       window.location.reload();
     } else {
       alert(data.error || 'Check-in failed.');
+      if (data.can_fallback) {
+        setCheckinMode('pin');
+      }
       btn.disabled = false;
       btn.innerHTML = '<i class="fa-solid fa-door-open"></i> Confirm Check-In & Enter Space';
     }
@@ -340,8 +545,8 @@ async function handleCheckOut(e) {
   try {
     const payload = {
       qr_token: document.getElementById('checkoutQrToken').value,
-      lat: {{ space.latitude }},
-      lng: {{ space.longitude }},
+      lat: spaceLat,
+      lng: spaceLng,
       exit_photo: document.getElementById('exitPhotoUrl').value
     };
 
@@ -366,5 +571,12 @@ async function handleCheckOut(e) {
     btn.innerHTML = '<i class="fa-solid fa-money-bill-transfer"></i> Scan Exit QR & Release ₹100 Escrow';
   }
 }
+
+// Auto-trigger GPS location acquisition on page load
+document.addEventListener('DOMContentLoaded', () => {
+  {% if booking.session_state == 'confirmed' %}
+  acquireDeviceGps();
+  {% endif %}
+});
 </script>
 {% endblock %}

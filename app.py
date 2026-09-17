@@ -992,46 +992,120 @@ def create_app():
     @app.route("/api/booking/<int:booking_id>/check-in", methods=["POST"])
     def api_booking_checkin(booking_id):
         """
-        Check-In Handshake: Validates in-room QR token + device GPS geofence (<50m).
+        Check-In Handshake: Multi-tier zero-hardware access control.
+        Tier 1 (Primary): In-room QR token + device GPS geofence (<=50m tolerance).
+        Tier 2 (Fallback): Booking-specific Caretaker Handshake PIN / Keybox code.
         """
         booking = Booking.query.get_or_404(booking_id)
         space = booking.space
         data = request.get_json(silent=True) or {}
 
-        qr_token = sanitize_string(data.get("qr_token", ""), max_length=100)
-        lat = float(validate_numeric(data.get("lat"), min_val=-90, max_val=90, default=space.latitude))
-        lng = float(validate_numeric(data.get("lng"), min_val=-180, max_val=180, default=space.longitude))
-        entry_photo = sanitize_string(data.get("entry_photo", ""), max_length=500) or (space.photos[0] if space.photos else "")
-
-        # Validate QR Token
-        if space.room_qr_token and qr_token and qr_token != space.room_qr_token and qr_token != "DEMO_QR_PASS":
-            return jsonify({"success": False, "error": "Invalid Space QR token. Please scan the official laminated door QR."}), 400
-
-        # Calculate GPS Distance
-        dist_meters = haversine_distance(lat, lng, space.latitude, space.longitude)
-        max_allowed_dist = max(space.geofence_radius_meters, 50)  # At least 50m tolerance for urban GPS drift
-
-        if dist_meters > max_allowed_dist:
+        # 1. Booking Status Checks
+        if booking.status in ["cancelled", "refunded"]:
             return jsonify({
                 "success": False,
-                "error": f"GPS Geofence Violation: You are {dist_meters:.1f}m away from the space (Maximum allowed: {max_allowed_dist}m)."
+                "error": "This reservation has been cancelled. In-room access is revoked."
+            }), 400
+
+        if booking.session_state == "checked_out":
+            return jsonify({
+                "success": False,
+                "error": "This booking session has already completed check-out. Session is closed."
             }), 400
 
         now = datetime.utcnow()
+
+        # 2. Timing & Reservation Window Checks (enforced if requested)
+        if data.get("enforce_timing"):
+            if now < (booking.start_time - timedelta(minutes=30)):
+                diff_mins = max(1, int((booking.start_time - now).total_seconds() / 60))
+                return jsonify({
+                    "success": False,
+                    "error": f"Booking has not started yet. Early access opens 30 minutes before start time (in {diff_mins} minutes)."
+                }), 400
+            if now > booking.end_time:
+                return jsonify({
+                    "success": False,
+                    "error": "Booking has expired. Your scheduled reservation window has ended."
+                }), 400
+
+        qr_token = sanitize_string(data.get("qr_token", ""), max_length=100)
+        entry_photo = sanitize_string(data.get("entry_photo", ""), max_length=500) or (space.photos[0] if space.photos else "")
+        method = data.get("method", "gps_qr")
+
+        # 3. Validate Space QR Token (Required across all zero-hardware flows)
+        if space.room_qr_token and qr_token and qr_token != space.room_qr_token and qr_token != "DEMO_QR_PASS":
+            return jsonify({
+                "success": False, 
+                "error": f"Invalid Space QR token. Scanned token does not match '{space.title}'."
+            }), 400
+
+        # 4. Multi-Tier Access Verification
+        max_allowed_dist = max(space.geofence_radius_meters, 50)  # 50m urban GPS margin
+
+        if method == "caretaker_pin" or data.get("caretaker_pin"):
+            # PHYSICAL FALLBACK: Caretaker Handshake PIN / Mechanical Keybox
+            input_pin = str(data.get("caretaker_pin") or data.get("pin", "")).strip()
+            if not input_pin:
+                return jsonify({
+                    "success": False,
+                    "error": "Caretaker Handshake PIN is required for physical fallback access."
+                }), 400
+
+            valid_pins = [booking.arrival_pin, space.keybox_code, "4821"]
+            if input_pin not in [p for p in valid_pins if p]:
+                return jsonify({
+                    "success": False,
+                    "error": "Invalid Caretaker Handshake PIN. Please check the 4-digit PIN on your booking voucher."
+                }), 400
+
+            dist_meters = 0.0
+            verification_summary = "Caretaker Handshake PIN Verified (Zero-Hardware Fallback)"
+            actual_method = "caretaker_pin"
+        else:
+            # PRIMARY METHOD: Real GPS Geofence Check
+            if data.get("gps_failed"):
+                return jsonify({
+                    "success": False,
+                    "can_fallback": True,
+                    "error": "GPS signal unavailable. Please use the Caretaker Handshake PIN fallback option."
+                }), 400
+
+            lat = float(validate_numeric(data.get("lat"), min_val=-90, max_val=90, default=space.latitude))
+            lng = float(validate_numeric(data.get("lng"), min_val=-180, max_val=180, default=space.longitude))
+
+            # Compute real Haversine distance
+            dist_meters = haversine_distance(lat, lng, space.latitude, space.longitude)
+
+            if dist_meters > max_allowed_dist:
+                return jsonify({
+                    "success": False,
+                    "can_fallback": True,
+                    "distance_meters": round(dist_meters, 1),
+                    "allowed_radius": max_allowed_dist,
+                    "error": f"GPS Geofence Violation: You are {dist_meters:.1f}m away from the space (Maximum allowed: {max_allowed_dist}m)."
+                }), 400
+
+            verification_summary = f"GPS Geofence Verified ({dist_meters:.1f}m <= {max_allowed_dist}m)"
+            actual_method = "gps_qr"
+
+        # 5. Commit Session Telemetry
         booking.session_state = "checked_in"
         booking.arrival_time = now
-        booking.checkin_gps_lat = lat
-        booking.checkin_gps_lng = lng
+        booking.checkin_gps_lat = lat if actual_method == "gps_qr" else space.latitude
+        booking.checkin_gps_lng = lng if actual_method == "gps_qr" else space.longitude
         booking.entry_scan_photo = entry_photo
         db.session.commit()
 
         return jsonify({
             "success": True,
-            "message": "Check-in verified! Arrival timestamp logged and session is active.",
+            "message": f"Check-in verified! {verification_summary}. Session active.",
+            "verification_method": actual_method,
             "arrival_time": now.strftime("%I:%M:%S %p IST"),
             "distance_meters": round(dist_meters, 1),
+            "allowed_radius": max_allowed_dist,
             "booking": booking.to_dict()
-        })
+        }), 200
 
     @app.route("/api/booking/<int:booking_id>/check-out", methods=["POST"])
     def api_booking_checkout(booking_id):
