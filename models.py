@@ -46,6 +46,8 @@ class User(db.Model):
     # Relationships
     spaces = db.relationship("Space", backref="owner", lazy=True, cascade="all, delete-orphan")
     bookings = db.relationship("Booking", backref="renter", lazy=True, cascade="all, delete-orphan")
+    reviews = db.relationship("Review", backref="user", lazy=True, cascade="all, delete-orphan")
+    inquiries = db.relationship("SpaceInquiry", backref="user", lazy=True, cascade="all, delete-orphan")
 
     def set_password(self, password: str):
         self.password_hash = generate_password_hash(password)
@@ -141,6 +143,13 @@ class Space(db.Model):
     # Relationships
     bookings = db.relationship("Booking", backref="space", lazy=True, cascade="all, delete-orphan")
     reviews = db.relationship("Review", backref="space", lazy=True, cascade="all, delete-orphan")
+    inquiries = db.relationship("SpaceInquiry", backref="space", lazy=True, cascade="all, delete-orphan")
+
+    __table_args__ = (
+        db.Index("idx_space_active_cat", "is_active", "category"),
+        db.Index("idx_space_coords", "latitude", "longitude"),
+        db.Index("idx_space_city", "city"),
+    )
 
     @property
     def amenities(self):
@@ -284,6 +293,12 @@ class Booking(db.Model):
     escrow_status = db.Column(db.String(30), default="held")  # 'held', 'released', 'claimed'
     objective_punctuality_score = db.Column(db.Float, default=100.0)
 
+    __table_args__ = (
+        db.Index("idx_booking_space_time", "space_id", "start_time", "end_time"),
+        db.Index("idx_booking_renter_status", "renter_id", "status"),
+        db.Index("idx_booking_session_state", "session_state"),
+    )
+
     def to_dict(self):
         return {
             "id": self.id,
@@ -328,6 +343,11 @@ class Review(db.Model):
     comment = db.Column(db.Text, nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
+    __table_args__ = (
+        db.Index("idx_review_space", "space_id"),
+        db.Index("idx_review_user", "user_id"),
+    )
+
     def to_dict(self):
         return {
             "id": self.id,
@@ -348,3 +368,20 @@ class SpaceInquiry(db.Model):
     question = db.Column(db.Text, nullable=False)
     ai_answer = db.Column(db.Text, default="")
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    __table_args__ = (
+        db.Index("idx_inquiry_space", "space_id"),
+        db.Index("idx_inquiry_user", "user_id"),
+    )
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "space_id": self.space_id,
+            "space_title": self.space.title if self.space else "General Inquiry",
+            "user_id": self.user_id,
+            "user_name": self.user.name if self.user else "Verified Seeker",
+            "question": self.question,
+            "ai_answer": self.ai_answer,
+            "created_at": self.created_at.strftime("%b %d, %Y at %I:%M %p") if self.created_at else "",
+        }
