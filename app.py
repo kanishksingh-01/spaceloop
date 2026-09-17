@@ -1152,23 +1152,46 @@ def create_app():
     def api_booking_checkout(booking_id):
         """
         Check-Out Handshake: Evaluates exit video/photo scan via AI, computes punctuality,
-        and instantly releases the ₹100 UPI escrow deposit.
+        and manages the ₹100 UPI escrow deposit release or review queue.
         """
         booking = Booking.query.get_or_404(booking_id)
         space = booking.space
         data = request.get_json(silent=True) or {}
 
+        # 1. Prevent duplicate checkout & duplicate refund operations
+        if booking.session_state == "checked_out" or booking.status == "completed":
+            return jsonify({
+                "error": f"This booking session has already completed check-out. Escrow deposit status is '{booking.escrow_status}'.",
+                "duplicate_prevented": True,
+                "booking": booking.to_dict()
+            }), 400
+
+        # 2. Check for missing image
+        raw_exit_photo = data.get("exit_photo")
+        exit_photo = sanitize_string(raw_exit_photo, max_length=500) if raw_exit_photo else ""
+        if not exit_photo and not booking.entry_scan_photo:
+            return jsonify({
+                "error": "Exit photo is required to perform Computer Vision condition delta inspection."
+            }), 400
+
         qr_token = sanitize_string(data.get("qr_token", ""), max_length=100)
         lat = float(validate_numeric(data.get("lat"), min_val=-90, max_val=90, default=space.latitude))
         lng = float(validate_numeric(data.get("lng"), min_val=-180, max_val=180, default=space.longitude))
-        exit_photo = sanitize_string(data.get("exit_photo", ""), max_length=500) or booking.entry_scan_photo
+        final_photo = exit_photo or booking.entry_scan_photo
 
         now = datetime.utcnow()
         
-        # 1. AI Visual Diff Inspection
-        inspection = evaluate_room_condition_delta(booking.entry_scan_photo, exit_photo)
+        # 3. AI Visual Diff Inspection (with simulation support)
+        sim_fail = bool(data.get("simulate_cv_failure"))
+        sim_damage = bool(data.get("simulate_damaged"))
+        inspection = evaluate_room_condition_delta(
+            booking.entry_scan_photo,
+            final_photo,
+            simulate_failure=sim_fail,
+            simulate_damaged=sim_damage
+        )
 
-        # 2. Tamper-Proof Punctuality Calculation
+        # 4. Tamper-Proof Punctuality Calculation
         punctuality = calculate_session_punctuality(
             booking.start_time,
             booking.end_time,
@@ -1181,17 +1204,24 @@ def create_app():
         booking.departure_time = now
         booking.checkout_gps_lat = lat
         booking.checkout_gps_lng = lng
-        booking.exit_scan_photo = exit_photo
-        booking.condition_match_score = inspection["condition_match_score"]
-        booking.fans_lights_cleared = inspection["fans_lights_cleared"]
+        booking.exit_scan_photo = final_photo
+        booking.condition_match_score = inspection.get("condition_match_score") or 0.0
+        booking.fans_lights_cleared = bool(inspection.get("fans_lights_cleared"))
         booking.objective_punctuality_score = punctuality
-        booking.escrow_status = "released"  # Programmatic instant release!
 
-        # 3. Update Renter Objective Telemetry
+        if inspection.get("escrow_decision") == "RELEASE_FULL":
+            booking.escrow_status = "released"
+            msg = "Check-out completed! Room condition cleared and ₹100 UPI escrow deposit released."
+            refund_state = "Released"
+        else:
+            booking.escrow_status = "held"
+            msg = "Check-out recorded. Condition discrepancy or CV offline; ₹100 deposit held pending host review."
+            refund_state = "Review required"
+
+        # 5. Update Renter Objective Telemetry
         renter = booking.renter
         if renter:
             renter.total_completed_hours += booking.hours_booked
-            # Recompute OTI
             renter.objective_trust_score = compute_objective_trust_index(
                 punctuality=renter.on_time_vacate_rate,
                 condition_match=renter.cleanliness_match_rate,
@@ -1203,11 +1233,12 @@ def create_app():
 
         return jsonify({
             "success": True,
-            "message": "Check-out completed! Room condition cleared and ₹100 UPI escrow deposit released.",
+            "message": msg,
             "departure_time": now.strftime("%I:%M:%S %p IST"),
             "inspection": inspection,
             "punctuality_score": punctuality,
-            "escrow_refund_status": "INSTANT_RELEASE_COMPLETE",
+            "escrow_refund_status": "INSTANT_RELEASE_COMPLETE" if refund_state == "Released" else refund_state,
+            "status": refund_state,
             "booking": booking.to_dict()
         })
 
