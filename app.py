@@ -69,31 +69,48 @@ def haversine_distance(lat1, lon1, lat2, lon2):
 
 
 KNOWN_HUBS = {
+    "wagholi, pune": (18.5793, 73.9822),
+    "wagholi pune": (18.5793, 73.9822),
+    "jspm wagholi": (18.5793, 73.9822),
+    "jspm campus": (18.5793, 73.9822),
+    "jspm": (18.5793, 73.9822),
+    "wagholi": (18.5793, 73.9822),
+    "shivajinagar, pune": (18.5204, 73.8567),
+    "shivajinagar": (18.5204, 73.8567),
+    "fc road": (18.5204, 73.8567),
+    "fergusson college": (18.5204, 73.8567),
+    "pune university": (18.5529, 73.8260),
+    "pune": (18.5204, 73.8567),
+    "hauz khas, new delhi": (28.5450, 77.1926),
+    "hauz khas, delhi": (28.5450, 77.1926),
     "hauz khas": (28.5450, 77.1926),
     "iit delhi": (28.5450, 77.1926),
-    "delhi": (28.5450, 77.1926),
-    "new delhi": (28.5450, 77.1926),
+    "north campus, new delhi": (28.6900, 77.2100),
     "north campus": (28.6900, 77.2100),
     "delhi university": (28.6900, 77.2100),
     "connaught place": (28.6315, 77.2167),
-    "noida": (28.6270, 77.3725),
+    "delhi": (28.5450, 77.1926),
+    "new delhi": (28.5450, 77.1926),
+    "sector 62, noida": (28.6270, 77.3725),
     "sector 62": (28.6270, 77.3725),
+    "noida": (28.6270, 77.3725),
+    "koramangala, bangalore": (12.9352, 77.6245),
+    "koramangala, bengaluru": (12.9352, 77.6245),
     "koramangala": (12.9352, 77.6245),
+    "indiranagar": (12.9784, 77.6408),
     "bangalore": (12.9352, 77.6245),
     "bengaluru": (12.9352, 77.6245),
-    "shivajinagar": (18.5204, 73.8567),
-    "fc road": (18.5204, 73.8567),
-    "pune": (18.5204, 73.8567),
-    "wagholi": (18.5793, 73.9822),
+    "powai, mumbai": (19.1334, 72.9133),
     "powai": (19.1334, 72.9133),
-    "mumbai": (19.1334, 72.9133),
-    "iit bombay": (19.1334, 72.9133)
+    "iit bombay": (19.1334, 72.9133),
+    "mumbai": (19.1334, 72.9133)
 }
 
 
 def resolve_location_coordinates(loc_name="", lat=None, lng=None):
     """
     Resolves human location name or GPS coordinates into (lat, lng, display_name).
+    Prioritizes specific locality names (e.g. Wagholi, Hauz Khas) over generic metro names.
     """
     if lat is not None and lng is not None:
         try:
@@ -119,9 +136,27 @@ def resolve_location_coordinates(loc_name="", lat=None, lng=None):
                     pass
 
         clean_lower = clean.lower()
-        for hub_key, coords in KNOWN_HUBS.items():
-            if hub_key in clean_lower or clean_lower in hub_key:
-                return coords[0], coords[1], hub_key.title()
+        # Sort keys descending by length so specific localities match before broad city names
+        for hub_key, coords in sorted(KNOWN_HUBS.items(), key=lambda x: len(x[0]), reverse=True):
+            if hub_key in clean_lower:
+                display_name = clean
+                if "wagholi" in hub_key:
+                    display_name = "Wagholi, Pune"
+                elif "shivajinagar" in hub_key or "fc road" in hub_key:
+                    display_name = "Shivajinagar, Pune"
+                elif "hauz khas" in hub_key or "iit delhi" in hub_key:
+                    display_name = "Hauz Khas, New Delhi"
+                elif "koramangala" in hub_key:
+                    display_name = "Koramangala, Bengaluru"
+                elif "powai" in hub_key or "iit bombay" in hub_key:
+                    display_name = "Powai, Mumbai"
+                elif "north campus" in hub_key:
+                    display_name = "North Campus, New Delhi"
+                elif "sector 62" in hub_key:
+                    display_name = "Sector 62, Noida"
+                else:
+                    display_name = hub_key.title()
+                return coords[0], coords[1], display_name
 
     return None, None, ""
 
@@ -227,10 +262,42 @@ def create_app():
         Public landing page. Accessible without authentication.
         If user explicitly searches with parameters or query, renders exploration catalog.
         """
-        if request.args.get("explore") or request.args.get("q") or request.args.get("category"):
+        if (
+            request.args.get("explore")
+            or request.args.get("q")
+            or request.args.get("category")
+            or request.args.get("loc")
+            or request.args.get("lat")
+            or request.args.get("lng")
+            or request.args.get("radius")
+            or request.args.get("max_price")
+        ):
             return explore_page()
-        featured_spaces = Space.query.filter_by(is_active=True).limit(6).all()
-        return render_template("landing.html", spaces=[s.to_dict() for s in featured_spaces])
+
+        # Represent diverse cities across India (Pune, Delhi NCR, Bengaluru, Mumbai)
+        all_active = Space.query.filter_by(is_active=True).all()
+        pune_spaces = [s for s in all_active if (s.city and "pune" in s.city.lower()) or (s.neighborhood and "wagholi" in s.neighborhood.lower())]
+        delhi_spaces = [s for s in all_active if (s.city and "delhi" in s.city.lower())]
+        blr_spaces = [s for s in all_active if (s.city and ("bangalore" in s.city.lower() or "bengaluru" in s.city.lower()))]
+        mumbai_spaces = [s for s in all_active if (s.city and "mumbai" in s.city.lower())]
+
+        featured = []
+        if pune_spaces:
+            featured.extend(pune_spaces[:2])
+        if delhi_spaces:
+            featured.extend(delhi_spaces[:2])
+        if blr_spaces:
+            featured.extend(blr_spaces[:1])
+        if mumbai_spaces:
+            featured.extend(mumbai_spaces[:1])
+
+        for s in all_active:
+            if len(featured) >= 6:
+                break
+            if s not in featured:
+                featured.append(s)
+
+        return render_template("landing.html", spaces=[s.to_dict() for s in featured])
 
     @app.route("/explore")
     def explore_page():
@@ -278,10 +345,23 @@ def create_app():
                 s_dict["distance_km"] = dist_km
                 if radius_km is not None and dist_km > radius_km:
                     continue
+            elif loc:
+                # Text fallback when coordinates are not available
+                clean_l = loc.strip().lower()
+                text_blob = f"{s.neighborhood or ''} {s.city or ''} {s.state or ''} {s.address or ''} {s.title or ''}".lower()
+                tokens = [t for t in clean_l.replace(",", " ").split() if len(t) > 2]
+                if tokens and not any(t in text_blob for t in tokens):
+                    continue
             spaces_data.append(s_dict)
 
         if lat is not None and lng is not None:
             spaces_data.sort(key=lambda x: x.get("distance_km", 999999))
+        elif loc:
+            clean_l = loc.strip().lower()
+            def text_priority(item):
+                blob = f"{item.get('neighborhood', '')} {item.get('city', '')}".lower()
+                return 0 if any(t in blob for t in clean_l.split()) else 1
+            spaces_data.sort(key=text_priority)
 
         categories = ["All", "Studio", "Storage", "Parking", "Pop-up/Retail", "Event/Workshop"]
         return render_template(
@@ -650,10 +730,22 @@ def create_app():
                 s_dict["distance_km"] = dist_km
                 if radius_km is not None and dist_km > radius_km:
                     continue
+            elif loc:
+                clean_l = loc.strip().lower()
+                text_blob = f"{s.neighborhood or ''} {s.city or ''} {s.state or ''} {s.address or ''} {s.title or ''}".lower()
+                tokens = [t for t in clean_l.replace(",", " ").split() if len(t) > 2]
+                if tokens and not any(t in text_blob for t in tokens):
+                    continue
             spaces_data.append(s_dict)
 
         if lat is not None and lng is not None:
             spaces_data.sort(key=lambda x: x.get("distance_km", 999999))
+        elif loc:
+            clean_l = loc.strip().lower()
+            def text_priority(item):
+                blob = f"{item.get('neighborhood', '')} {item.get('city', '')}".lower()
+                return 0 if any(t in blob for t in clean_l.split()) else 1
+            spaces_data.sort(key=text_priority)
 
         return jsonify(spaces_data)
 
