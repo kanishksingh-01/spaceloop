@@ -148,21 +148,57 @@ def create_app():
 
     @app.route("/dashboard")
     def dashboard_page():
-        user = User.query.filter_by(role="seeker").first() or User.query.first()
-        user_id = session.get("user_id", user.id if user else 1)
+        user_id = session.get("user_id")
+        user = User.query.get(user_id) if user_id else (User.query.filter_by(role="seeker").first() or User.query.first())
+        active_user_id = user.id if user else 1
+
+        seeker_bookings = Booking.query.filter_by(renter_id=active_user_id).order_by(Booking.created_at.desc()).all()
+        host_spaces = Space.query.filter_by(owner_id=active_user_id).order_by(Space.created_at.desc()).all()
+        host_bookings = Booking.query.join(Space).filter(Space.owner_id == active_user_id).order_by(Booking.created_at.desc()).all()
         
-        user_bookings = Booking.query.filter_by(renter_id=user_id).order_by(Booking.created_at.desc()).all()
-        user_spaces = Space.query.filter_by(owner_id=user_id).all()
-        
-        # If no spaces for this user, also show sample owner spaces for demo
+        # Financial & hosting metrics for owner persona
+        gross_revenue = sum(b.total_price for b in host_bookings if b.status in ['confirmed', 'completed'])
+        platform_fee = round(gross_revenue * 0.15)
+        net_earnings = gross_revenue - platform_fee
+        total_hours_hosted = sum(b.hours_booked for b in host_bookings if b.status in ['confirmed', 'completed'])
+        active_spaces_count = len([s for s in host_spaces if s.is_active])
+        upcoming_host_bookings = [b for b in host_bookings if b.status == 'confirmed']
+        completed_host_bookings = [b for b in host_bookings if b.status == 'completed']
+
+        host_metrics = {
+            "gross_revenue": int(round(gross_revenue)),
+            "platform_fee": int(round(platform_fee)),
+            "net_earnings": int(round(net_earnings)),
+            "total_hours": round(total_hours_hosted, 1),
+            "total_bookings": len(host_bookings),
+            "active_spaces_count": active_spaces_count,
+            "total_spaces_count": len(host_spaces),
+            "upcoming_count": len(upcoming_host_bookings),
+            "completed_count": len(completed_host_bookings),
+            "payout_vpa": user.upi_vpa_masked if user and user.upi_vpa_masked else "upi***@okbank"
+        }
+
         all_owner_spaces = Space.query.order_by(Space.created_at.desc()).limit(3).all()
 
         return render_template(
             "dashboard.html",
-            bookings=[b.to_dict() for b in user_bookings],
-            my_spaces=[s.to_dict() for s in user_spaces],
-            demo_spaces=[s.to_dict() for s in all_owner_spaces]
+            bookings=[b.to_dict() for b in seeker_bookings],
+            host_bookings=[b.to_dict() for b in host_bookings],
+            my_spaces=[s.to_dict() for s in host_spaces],
+            demo_spaces=[s.to_dict() for s in all_owner_spaces],
+            host_metrics=host_metrics,
+            user=user.to_dict() if user else None
         )
+
+    @app.route("/api/spaces/<int:space_id>/toggle-status", methods=["POST"])
+    def toggle_space_status(space_id):
+        space = Space.query.get_or_404(space_id)
+        space.is_active = not space.is_active
+        db.session.commit()
+        if request.is_json:
+            return jsonify({"success": True, "is_active": space.is_active, "space_id": space.id})
+        flash(f"Space '{space.title}' is now {'Active & Discoverable' if space.is_active else 'Paused'}.", "success")
+        return redirect(request.referrer or url_for("dashboard_page"))
 
     @app.route("/how-it-works")
     def how_it_works():
