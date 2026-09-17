@@ -393,20 +393,45 @@
 
       </div>
     {% endfor %}
+
+    {% if spaces|length == 0 %}
+      <div class="col-span-full text-center py-16 bg-slate-900/40 border border-slate-800 rounded-3xl p-8 sm:p-12">
+        <div class="w-16 h-16 rounded-2xl bg-indigo-600/20 text-indigo-400 border border-indigo-500/30 flex items-center justify-center mx-auto mb-4 text-2xl">
+          <i class="fa-solid fa-map-location-dot"></i>
+        </div>
+        <h3 class="text-xl font-bold text-white mb-2">No spaces found in this area</h3>
+        <p class="text-xs sm:text-sm text-slate-400 max-w-md mx-auto mb-6 leading-relaxed">
+          No spaces match your selected location hub, radius, or category filter. Try widening your radius or exploring other hubs.
+        </p>
+        <div class="flex flex-wrap items-center justify-center gap-3">
+          <a href="{{ url_for('index') }}" class="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold transition shadow-lg shadow-indigo-600/25 flex items-center gap-2">
+            <i class="fa-solid fa-rotate-left"></i> Reset All Filters
+          </a>
+          <a href="{{ url_for('list_space_page') }}" class="px-5 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold border border-slate-700 transition flex items-center gap-2">
+            <i class="fa-solid fa-plus"></i> List a New Space
+          </a>
+        </div>
+      </div>
+    {% endif %}
   </div>
 
-  <!-- Empty state (hidden by default) -->
-  <div id="noResultsState" class="hidden text-center py-16 bg-slate-900/40 border border-slate-800 rounded-2xl mt-6 p-8">
-    <div class="w-12 h-12 rounded-xl bg-indigo-600/20 text-indigo-400 flex items-center justify-center mx-auto mb-4 text-xl">
+  <!-- Empty state (hidden by default, displayed when AI client matching yields 0 results) -->
+  <div id="noResultsState" class="hidden text-center py-16 bg-slate-900/40 border border-slate-800 rounded-3xl mt-6 p-8 sm:p-12">
+    <div class="w-16 h-16 rounded-2xl bg-indigo-600/20 text-indigo-400 border border-indigo-500/30 flex items-center justify-center mx-auto mb-4 text-2xl">
       <i class="fa-solid fa-magnifying-glass"></i>
     </div>
-    <h3 class="text-lg font-bold text-white mb-1">No exact space matches</h3>
-    <p class="text-sm text-slate-400 max-w-md mx-auto mb-6">
-      Try broadening your search query or explore spaces across different categories.
+    <h3 class="text-xl font-bold text-white mb-2">No exact space matches</h3>
+    <p class="text-xs sm:text-sm text-slate-400 max-w-md mx-auto mb-6 leading-relaxed">
+      No micro-spaces matched your specific requirements. Try broadening your query, increasing the radius, or clearing category restrictions.
     </p>
-    <button onclick="resetSearch()" class="px-4 py-2 rounded-xl bg-indigo-600 text-white text-xs font-semibold">
-      Reset Search
-    </button>
+    <div class="flex flex-wrap items-center justify-center gap-3">
+      <button onclick="resetSearch()" class="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold transition shadow-lg shadow-indigo-600/25 flex items-center gap-2">
+        <i class="fa-solid fa-rotate-left"></i> Reset Search
+      </button>
+      <a href="{{ url_for('index') }}" class="px-5 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold border border-slate-700 transition">
+        Browse All Spaces
+      </a>
+    </div>
   </div>
 
 </section>

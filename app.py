@@ -404,7 +404,8 @@ def create_app():
                 db.session.add_all([q1, q2])
                 db.session.commit()
                 inquiries = [q1, q2]
-        return render_template("inquiries.html", inquiries=inquiries, user=user.to_dict() if user else None)
+        spaces = Space.query.filter_by(is_active=True).all()
+        return render_template("inquiries.html", inquiries=inquiries, spaces=spaces, user=user.to_dict() if user else None)
 
     @app.route("/session")
     def active_session_redirect():
@@ -1264,6 +1265,72 @@ def create_app():
             "message": f"Booking #{booking_id} cancelled successfully. ₹{int(booking.escrow_deposit_amount)} escrow deposit refunded.",
             "booking": booking.to_dict()
         }), 200
+
+    @app.route("/api/inquiries", methods=["GET", "POST"])
+    def api_inquiries():
+        """Handles listing inquiries or creating a new inquiry with instant AI pre-answers."""
+        if request.method == "POST":
+            data = request.get_json() or {}
+            question = sanitize_string(data.get("question") or "")
+            if not question:
+                return jsonify({"success": False, "error": "Question text cannot be empty."}), 400
+
+            space_id = data.get("space_id")
+            space = Space.query.get(space_id) if space_id else None
+
+            user_id = session.get("user_id")
+            user = User.query.get(user_id) if user_id else (User.query.filter_by(role="seeker").first() or User.query.first())
+
+            context_data = None
+            if space:
+                context_data = {
+                    "space_title": space.title,
+                    "category": space.category,
+                    "hourly_rate": space.price_hourly,
+                    "amenities": space.amenities,
+                    "rules": space.rules,
+                    "address": f"{space.neighborhood or space.city}, {space.state}"
+                }
+
+            ai_res = concierge_chat([{"role": "user", "content": question}], context_data=context_data)
+            answer = ai_res.get("reply") if isinstance(ai_res, dict) else "Inquiry received. The host and LoopBot concierge have recorded your question."
+
+            inquiry = SpaceInquiry(
+                space_id=space.id if space else None,
+                user_id=user.id if user else None,
+                question=question,
+                ai_answer=answer
+            )
+            db.session.add(inquiry)
+            db.session.commit()
+
+            return jsonify({
+                "success": True,
+                "message": "Inquiry logged and pre-answered by LoopBot AI Concierge.",
+                "inquiry": inquiry.to_dict()
+            }), 201
+
+        inquiries = SpaceInquiry.query.order_by(SpaceInquiry.created_at.desc()).all()
+        return jsonify({
+            "success": True,
+            "inquiries": [i.to_dict() for i in inquiries]
+        }), 200
+
+    @app.errorhandler(404)
+    def handle_404_error(error):
+        if request.path.startswith("/api/") or request.is_json:
+            return jsonify({"success": False, "error": "Resource not found (404)"}), 404
+        user_id = session.get("user_id")
+        user = User.query.get(user_id) if user_id else None
+        return render_template("404.html", user=user.to_dict() if user else None), 404
+
+    @app.errorhandler(500)
+    def handle_500_error(error):
+        if request.path.startswith("/api/") or request.is_json:
+            return jsonify({"success": False, "error": "Internal server error (500)"}), 500
+        user_id = session.get("user_id")
+        user = User.query.get(user_id) if user_id else None
+        return render_template("500.html", user=user.to_dict() if user else None), 500
 
     return app
 

@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+
+{% block title %}404 - Space Not Found | SpaceLoop{% endblock %}
+
+{% block content %}
+<div class="min-h-[65vh] flex items-center justify-center px-4 sm:px-6 lg:px-8 py-16">
+  <div class="max-w-lg w-full text-center bg-slate-900/80 border border-slate-800 rounded-3xl p-8 sm:p-12 shadow-2xl backdrop-blur-md">
+    
+    <div class="relative inline-block mb-6">
+      <div class="w-20 h-20 rounded-3xl bg-gradient-to-br from-indigo-500/20 to-violet-500/20 border border-indigo-500/30 flex items-center justify-center text-3xl font-black text-indigo-400 mx-auto shadow-inner">
+        404
+      </div>
+      <div class="absolute -bottom-1 -right-1 w-7 h-7 rounded-full bg-slate-950 border border-slate-800 flex items-center justify-center text-slate-400 text-xs">
+        <i class="fa-solid fa-map-location-dot"></i>
+      </div>
+    </div>
+
+    <h1 class="text-2xl sm:text-3xl font-extrabold text-white tracking-tight mb-2">
+      Space Not Found
+    </h1>
+    <p class="text-xs sm:text-sm text-slate-400 leading-relaxed max-w-sm mx-auto mb-8">
+      The space listing, reservation, or page you were looking for is no longer active, has moved, or does not exist.
+    </p>
+
+    <div class="flex flex-col sm:flex-row items-center justify-center gap-3">
+      <a href="{{ url_for('index') }}" class="w-full sm:w-auto px-5 py-3 rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white text-xs font-bold transition flex items-center justify-center gap-2 shadow-lg shadow-indigo-600/25">
+        <i class="fa-solid fa-compass"></i>
+        <span>Explore Verified Spaces</span>
+      </a>
+
+      <a href="{{ url_for('dashboard_page') }}" class="w-full sm:w-auto px-5 py-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold border border-slate-700 transition flex items-center justify-center gap-2">
+        <i class="fa-solid fa-grid-2"></i>
+        <span>My Dashboard</span>
+      </a>
+    </div>
+
+    <div class="mt-8 pt-6 border-t border-slate-800/80 text-xs text-slate-500 flex items-center justify-center gap-4">
+      <a href="{{ url_for('how_it_works') }}" class="hover:text-slate-300 transition">How It Works</a>
+      <span>&bull;</span>
+      <button type="button" onclick="document.getElementById('openConciergeBtn')?.click()" class="text-indigo-400 hover:underline flex items-center gap-1 font-medium">
+        <i class="fa-solid fa-robot text-[11px]"></i> Ask LoopBot AI
+      </button>
+      <span>&bull;</span>
+      <a href="{{ url_for('inquiries_page') }}" class="hover:text-slate-300 transition">Support</a>
+    </div>
+
+  </div>
+</div>
+{% endblock %}
