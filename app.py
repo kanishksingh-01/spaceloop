@@ -24,7 +24,10 @@ from space_ai import (
     verify_upi_penny_drop,
     evaluate_room_condition_delta,
     calculate_session_punctuality,
-    compute_objective_trust_index
+    compute_objective_trust_index,
+    set_simulate_ai_failure,
+    is_simulate_ai_failure,
+    get_system_connectivity_status
 )
 from seed_data import seed_database
 
@@ -62,7 +65,7 @@ def create_app():
     def security_headers(response):
         return apply_security_headers(response)
 
-    # Context processor to inject active user into templates
+    # Context processor to inject active user and system connectivity status into templates
     @app.context_processor
     def inject_user():
         user_id = session.get("user_id")
@@ -72,7 +75,10 @@ def create_app():
         if not user:
             # Default to demo seeker user for instant friction-free testing
             user = User.query.filter_by(role="seeker").first() or User.query.first()
-        return {"current_user": user}
+        
+        sim = session.get("simulate_ai_failure", False)
+        sys_status = get_system_connectivity_status(simulate_override=sim)
+        return {"current_user": user, "system_status": sys_status}
 
     # ==========================================
     # HTML View Routes
@@ -499,6 +505,27 @@ def create_app():
         context = data.get("context", {})
         reply = concierge_chat(messages, context)
         return jsonify({"reply": reply})
+
+    @app.route("/api/system/status", methods=["GET"])
+    def api_system_status():
+        """Returns the real-time AI and external connectivity status (ONLINE, LIMITED, OFFLINE/FALLBACK)."""
+        sim = session.get("simulate_ai_failure", False)
+        return jsonify(get_system_connectivity_status(simulate_override=sim))
+
+    @app.route("/api/dev/toggle-ai-simulation", methods=["POST", "GET"])
+    def toggle_ai_simulation():
+        """Developer & hackathon judge endpoint to toggle simulated AI failure safely."""
+        current = session.get("simulate_ai_failure", False)
+        new_state = not current
+        session["simulate_ai_failure"] = new_state
+        set_simulate_ai_failure(new_state)
+        status = get_system_connectivity_status(simulate_override=new_state)
+        if request.is_json or request.path.startswith("/api/"):
+            return jsonify({
+                "simulate_ai_failure": new_state,
+                "system_status": status
+            })
+        return redirect(request.referrer or url_for("index"))
 
     # ==========================================
     # ZERO-HARDWARE & DOCUMENT VERIFICATION APIs
