@@ -1113,8 +1113,10 @@ def create_app():
                     "error": "GPS signal unavailable. Please use the Caretaker Handshake PIN fallback option."
                 }), 400
 
-            lat = float(validate_numeric(data.get("lat"), min_val=-90, max_val=90, default=space.latitude))
-            lng = float(validate_numeric(data.get("lng"), min_val=-180, max_val=180, default=space.longitude))
+            lat_val = data.get("lat") if data.get("lat") is not None else data.get("user_lat")
+            lng_val = data.get("lng") if data.get("lng") is not None else data.get("user_lng")
+            lat = float(validate_numeric(lat_val, min_val=-90, max_val=90, default=space.latitude))
+            lng = float(validate_numeric(lng_val, min_val=-180, max_val=180, default=space.longitude))
 
             # Compute real Haversine distance
             dist_meters = haversine_distance(lat, lng, space.latitude, space.longitude)
