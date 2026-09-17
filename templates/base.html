@@ -369,58 +369,99 @@
     </div>
   </div>
 
-  <!-- Footer -->
+  <!-- Footer (Task 17) -->
   <footer class="bg-slate-950 border-t border-slate-800/80 mt-20 py-12">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-      <div class="grid grid-cols-1 md:grid-cols-4 gap-8 mb-8">
+      <div class="grid grid-cols-1 md:grid-cols-12 gap-8 mb-10">
         
-        <div class="md:col-span-2 space-y-3">
-          <div class="flex items-center gap-2">
-            <div class="w-7 h-7 rounded-lg bg-indigo-600 flex items-center justify-center text-white text-xs">
+        <!-- Brand (5 cols) -->
+        <div class="md:col-span-5 space-y-3">
+          <div class="flex items-center gap-2.5">
+            <div class="w-8 h-8 rounded-xl bg-indigo-600 flex items-center justify-center text-white text-sm shadow-md shadow-indigo-600/30">
               <i class="fa-solid fa-infinity"></i>
             </div>
-            <span class="text-lg font-bold text-white">SpaceLoop</span>
+            <span class="text-xl font-extrabold text-white tracking-tight">SpaceLoop</span>
           </div>
-          <p class="text-sm text-slate-400 max-w-sm">
-            The AI-powered platform transforming unused property square footage into useful, affordable, and flexible temporary spaces.
+          <p class="text-sm text-slate-200 font-semibold italic">
+            &ldquo;Turning idle spaces into opportunities.&rdquo;
           </p>
-          <div class="flex items-center gap-2 text-xs text-indigo-400 font-medium">
-            <i class="fa-solid fa-shield-halved"></i> Verified Space Inspector & Automated Micro-Leasing
+          <p class="text-xs text-slate-400 max-w-sm leading-relaxed">
+            India's premier AI-powered micro-leasing platform connecting students and creators with verified study rooms, workspaces, and creative studios.
+          </p>
+          <div class="inline-flex items-center gap-2 px-2.5 py-1 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-semibold">
+            <i class="fa-solid fa-shield-halved text-[11px]"></i>
+            <span>SpaceLoop Verified &bull; Zero-Hardware India Stack Protocol</span>
           </div>
         </div>
 
-        <div>
-          <h4 class="text-xs font-semibold uppercase tracking-wider text-slate-300 mb-3">Explore</h4>
-          <ul class="space-y-2 text-sm text-slate-400">
-            <li><a href="{{ url_for('index', category='Studio') }}" class="hover:text-white transition">Creative & Podcast Studios</a></li>
-            <li><a href="{{ url_for('index', category='Storage') }}" class="hover:text-white transition">Garage & Basement Storage</a></li>
-            <li><a href="{{ url_for('index', category='Parking') }}" class="hover:text-white transition">Driveways & EV Parking</a></li>
-            <li><a href="{{ url_for('index', category='Pop-up/Retail') }}" class="hover:text-white transition">Pop-up & Storefronts</a></li>
+        <!-- Navigation (4 cols) -->
+        <div class="md:col-span-4">
+          <h4 class="text-xs font-bold uppercase tracking-wider text-slate-300 mb-3.5">Navigation</h4>
+          <ul class="grid grid-cols-2 gap-2 text-xs font-medium text-slate-400">
+            <li><a href="{{ url_for('index') }}" class="hover:text-white hover:underline transition flex items-center gap-1.5"><i class="fa-solid fa-compass text-slate-500 text-[10px]"></i> Explore</a></li>
+            <li><a href="{{ url_for('list_space_page') }}" class="hover:text-white hover:underline transition flex items-center gap-1.5"><i class="fa-solid fa-plus text-slate-500 text-[10px]"></i> Host</a></li>
+            <li><a href="{{ url_for('how_it_works') }}" class="hover:text-white hover:underline transition flex items-center gap-1.5"><i class="fa-solid fa-circle-question text-slate-500 text-[10px]"></i> How It Works</a></li>
+            <li><a href="{{ url_for('verify_page') }}" class="hover:text-white hover:underline transition flex items-center gap-1.5"><i class="fa-solid fa-shield-check text-slate-500 text-[10px]"></i> Safety</a></li>
+            <li><a href="{{ url_for('inquiries_page') }}" class="hover:text-white hover:underline transition flex items-center gap-1.5"><i class="fa-solid fa-comments text-slate-500 text-[10px]"></i> Help</a></li>
+            <li><a href="{{ url_for('calculator_page') }}" class="hover:text-white hover:underline transition flex items-center gap-1.5"><i class="fa-solid fa-calculator text-slate-500 text-[10px]"></i> Calculator</a></li>
           </ul>
         </div>
 
-        <div>
-          <h4 class="text-xs font-semibold uppercase tracking-wider text-slate-300 mb-3">Host Tools</h4>
-          <ul class="space-y-2 text-sm text-slate-400">
-            <li><a href="{{ url_for('list_space_page') }}" class="hover:text-white transition">AI Space Scanner</a></li>
-            <li><a href="{{ url_for('calculator_page') }}" class="hover:text-white transition">Passive Revenue Calculator</a></li>
-            <li><a href="{{ url_for('how_it_works') }}" class="hover:text-white transition">Safety & Insurance Protocol</a></li>
-            <li><a href="{{ url_for('dashboard_page') }}" class="hover:text-white transition">Host Dashboard</a></li>
+        <!-- Legal (3 cols) -->
+        <div class="md:col-span-3">
+          <h4 class="text-xs font-bold uppercase tracking-wider text-slate-300 mb-3.5">Legal</h4>
+          <ul class="space-y-2 text-xs font-medium text-slate-400">
+            <li>
+              <button type="button" onclick="openLegalModal('privacy')" class="hover:text-white hover:underline transition flex items-center gap-1.5">
+                <i class="fa-solid fa-user-shield text-slate-500 text-[10px]"></i> Privacy Policy
+              </button>
+            </li>
+            <li>
+              <button type="button" onclick="openLegalModal('terms')" class="hover:text-white hover:underline transition flex items-center gap-1.5">
+                <i class="fa-solid fa-file-contract text-slate-500 text-[10px]"></i> Terms of Service
+              </button>
+            </li>
+            <li>
+              <button type="button" onclick="openLegalModal('easements')" class="hover:text-white hover:underline transition flex items-center gap-1.5">
+                <i class="fa-solid fa-scale-balanced text-slate-500 text-[10px]"></i> Indian Easements Act, 1882
+              </button>
+            </li>
           </ul>
         </div>
 
       </div>
 
+      <!-- Bottom Bar -->
       <div class="pt-8 border-t border-slate-900 flex flex-col sm:flex-row items-center justify-between text-xs text-slate-500 gap-4">
-        <p>© 2026 SpaceLoop AI Inc. Built for Hack2Ignite. All rights reserved.</p>
-        <p class="flex items-center gap-4">
-          <span>Powered by Gemini & Groq Multimodal AI</span>
-          <span>•</span>
-          <span>Instant Micro-Lease Protection</span>
-        </p>
+        <p>&copy; 2026 SpaceLoop. All rights reserved.</p>
+        <div class="flex items-center gap-3 text-slate-400">
+          <span class="flex items-center gap-1"><i class="fa-solid fa-shield-halved text-emerald-400"></i> ₹100 UPI Escrow</span>
+          <span>&bull;</span>
+          <span class="flex items-center gap-1"><i class="fa-solid fa-robot text-indigo-400"></i> AI Condition Delta</span>
+          <span>&bull;</span>
+          <span class="flex items-center gap-1"><i class="fa-solid fa-location-crosshairs text-amber-400"></i> 50m Geofence Gate</span>
+        </div>
       </div>
     </div>
   </footer>
+
+  <!-- Legal Info Modal -->
+  <div id="baseLegalModal" class="fixed inset-0 bg-black/75 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+    <div class="bg-slate-900 border border-slate-800 w-full max-w-xl rounded-2xl shadow-2xl overflow-hidden flex flex-col">
+      <div class="p-4 bg-slate-950 border-b border-slate-800 flex items-center justify-between">
+        <h3 id="legalModalTitle" class="text-sm font-bold text-white flex items-center gap-2"></h3>
+        <button onclick="closeLegalModal()" class="text-slate-400 hover:text-white p-1">
+          <i class="fa-solid fa-xmark text-lg"></i>
+        </button>
+      </div>
+      <div id="legalModalContent" class="p-6 text-xs text-slate-300 space-y-3 leading-relaxed max-h-[60vh] overflow-y-auto"></div>
+      <div class="p-4 bg-slate-950 border-t border-slate-800 flex justify-end">
+        <button onclick="closeLegalModal()" class="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-white text-xs font-semibold transition">
+          Close
+        </button>
+      </div>
+    </div>
+  </div>
 
   <!-- Core App Scripts -->
   <script src="{{ url_for('static', filename='app.js') }}"></script>
@@ -430,6 +471,39 @@
       if (drawer) {
         drawer.classList.toggle('hidden');
       }
+    }
+
+    function openLegalModal(type) {
+      const modal = document.getElementById('baseLegalModal');
+      const title = document.getElementById('legalModalTitle');
+      const content = document.getElementById('legalModalContent');
+      if (!modal) return;
+
+      if (type === 'privacy') {
+        title.innerHTML = '<i class="fa-solid fa-user-shield text-indigo-400"></i> SpaceLoop Privacy Policy (DPDP Act, 2023 Compliant)';
+        content.innerHTML = `
+          <p><b>Data Minimization & Encryption:</b> SpaceLoop adheres strictly to the Digital Personal Data Protection Act, 2023. We never store raw 12-digit Aadhaar numbers. All identity proofs are processed ephemerally via UIDAI DigiLocker OTP handshakes and stored solely as masked strings (XXXX-XXXX-XXXX) and irreversible SHA-256 token hashes.</p>
+          <p><b>Zero Hardware Privacy:</b> Device geolocation is acquired on-demand solely during the check-in verification moment and compared against stored space coordinates. No background continuous location tracking is ever conducted.</p>
+        `;
+      } else if (type === 'terms') {
+        title.innerHTML = '<i class="fa-solid fa-file-contract text-indigo-400"></i> Terms of Service';
+        content.innerHTML = `
+          <p><b>Revocable Temporary License:</b> SpaceLoop operates strictly under Section 52 of the Indian Easements Act, 1882. Every booking grants a temporary, permissive, revocable license for micro-duration occupancy. No landlord-tenant relationship, leasehold interest, or tenancy rights are created.</p>
+          <p><b>Escrow Protection:</b> The ₹100 UPI security deposit is held in automated micro-escrow and released immediately upon digital checkout QR scan and Computer Vision condition verification.</p>
+        `;
+      } else if (type === 'easements') {
+        title.innerHTML = '<i class="fa-solid fa-scale-balanced text-indigo-400"></i> Indian Easements Act, 1882 Framework';
+        content.innerHTML = `
+          <p><b>Section 52 Compliance:</b> Micro-leasing on SpaceLoop is structured under the Indian Easements Act, 1882. The host grants the seeker a pure license to enter and use the premises for the declared educational or creative purpose for the exact specified window of hours.</p>
+          <p><b>Overstay Protocol:</b> Unilateral overstay beyond the booked end-time incurs automated 1.5x penalty adjustments and temporary suspension of the student's zero-hardware door pass clearance.</p>
+        `;
+      }
+      modal.classList.remove('hidden');
+    }
+
+    function closeLegalModal() {
+      const modal = document.getElementById('baseLegalModal');
+      if (modal) modal.classList.add('hidden');
     }
   </script>
   {% block scripts %}{% endblock %}
