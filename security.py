@@ -1,150 +1,228 @@
-"""
-SpaceLoop Application Hardening, Privacy & Security Defenses
-Compliance: DPDP Act 2023 / UIDAI / OWASP Top 10
-"""
+import time
+import re
+import threading
+from urllib.parse import urlparse
+from flask import request, jsonify
+
+# ==========================================
+# Input Validation & Sanitization
+# ==========================================
+
+SAFE_IMAGE_DATA_PREFIXES = (
+    "data:image/png;base64,",
+    "data:image/jpeg;base64,",
+    "data:image/jpg;base64,",
+    "data:image/webp;base64,",
+    "data:image/gif;base64,",
+)
+
+
+def validate_image_url(url: str) -> bool:
+    """
+    Validates that a URL is safe for rendering in an <img> tag.
+    Allows only http, https, or safe raster image data URIs.
+    Explicitly blocks javascript:, vbscript:, data:text/html, etc.
+    """
+    if not url or not isinstance(url, str):
+        return False
+
+    url_clean = url.strip()
+    if not url_clean:
+        return False
+
+    # Block any script injection patterns in URL
+    lower = url_clean.lower()
+    if any(bad in lower for bad in ["javascript:", "vbscript:", "<script", "onerror=", "onload="]):
+        return False
+
+    # Allow verified base64 image data URIs
+    if lower.startswith("data:image/"):
+        return any(lower.startswith(prefix) for prefix in SAFE_IMAGE_DATA_PREFIXES)
+
+    # Allow http and https schemes only
+    try:
+        parsed = urlparse(url_clean)
+        return parsed.scheme in ("http", "https") and bool(parsed.netloc)
+    except Exception:
+        return False
+
+
+def sanitize_string(val, max_length: int = 500, default: str = "") -> str:
+    """
+    Sanitizes string input by stripping control characters and enforcing length bounds.
+    """
+    if val is None:
+        return default
+    text = str(val).strip()
+    # Remove ASCII control characters except newline and tab
+    text = re.sub(r"[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]", "", text)
+    return text[:max_length]
+
+
+def validate_numeric(val, min_val: float, max_val: float, default: float = None):
+    """
+    Validates that a numeric input falls within an allowable range.
+    """
+    try:
+        num = float(val)
+        if min_val <= num <= max_val:
+            return num
+    except (ValueError, TypeError):
+        pass
+    return default
+
+
+# ==========================================
+# In-Memory Rate Limiter (Thread-safe)
+# ==========================================
+
+class SimpleRateLimiter:
+    """
+    Sliding-window rate limiter per client IP address.
+    Protects expensive AI and booking endpoints from DoS and quota depletion.
+    """
+
+    def __init__(self, max_requests: int = 20, window_seconds: int = 60):
+        self.max_requests = max_requests
+        self.window_seconds = window_seconds
+        self._lock = threading.Lock()
+        self._records = {}  # ip -> list of timestamps
+
+    def is_allowed(self, client_ip: str) -> bool:
+        now = time.time()
+        with self._lock:
+            # Clean old records
+            timestamps = self._records.get(client_ip, [])
+            cutoff = now - self.window_seconds
+            timestamps = [t for t in timestamps if t > cutoff]
+
+            if len(timestamps) >= self.max_requests:
+                self._records[client_ip] = timestamps
+                return False
+
+            timestamps.append(now)
+            self._records[client_ip] = timestamps
+            return True
+
+
+# Global rate limiter instance for AI endpoints (25 requests / min per IP)
+ai_rate_limiter = SimpleRateLimiter(max_requests=25, window_seconds=60)
+
+
+def rate_limit_ai(func):
+    """Decorator to enforce rate limiting on AI-heavy endpoints."""
+    def wrapper(*args, **kwargs):
+        # Determine client identifier (respecting X-Forwarded-For if behind proxy)
+        client_ip = (
+            request.headers.get("X-Forwarded-For", request.remote_addr or "127.0.0.1")
+            .split(",")[0]
+            .strip()
+        )
+        if not ai_rate_limiter.is_allowed(client_ip):
+            return (
+                jsonify({
+                    "error": "Too Many Requests",
+                    "message": "Rate limit exceeded for AI services. Please wait a moment before trying again."
+                }),
+                429
+            )
+        return func(*args, **kwargs)
+
+    wrapper.__name__ = func.__name__
+    return wrapper
+
+
+# ==========================================
+# Security Headers Middleware
+# ==========================================
+
+def apply_security_headers(response):
+    """
+    Applies security headers to prevent Clickjacking, MIME-sniffing, and XSS.
+    """
+    # Prevent browser from MIME-sniffing away from declared Content-Type
+    response.headers["X-Content-Type-Options"] = "nosniff"
+
+    # Prevent clickjacking by denying framing by other origins
+    response.headers["X-Frame-Options"] = "SAMEORIGIN"
+
+    # Enable XSS filter in older browsers
+    response.headers["X-XSS-Protection"] = "1; mode=block"
+
+    # Control referrer information leak
+    response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+
+    # Content Security Policy (allows Tailwind CDN, FontAwesome, Google Fonts, Unsplash images)
+    csp_policy = (
+        "default-src 'self'; "
+        "script-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com https://cdnjs.cloudflare.com; "
+        "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com; "
+        "font-src 'self' https://fonts.gstatic.com https://cdnjs.cloudflare.com; "
+        "img-src 'self' data: https: blob:; "
+        "connect-src 'self'; "
+        "frame-ancestors 'self';"
+    )
+    response.headers["Content-Security-Policy"] = csp_policy
+
+    return response
+
+
+# ==========================================
+# India Stack Privacy & Masking Defenses (DPDP Act 2023)
+# ==========================================
 
 import hashlib
-import html
-import re
-import time
-from collections import defaultdict
-from functools import wraps
-from flask import request, jsonify, make_response
 
-
-# --- DPDP Act 2023 & UIDAI Salted Hash Tokens ---
 DPDP_GLOBAL_SALT = "spaceloop_dpdp_salt_v2_2026"
 
-
 def mask_aadhaar(aadhaar_num: str) -> str:
-    """Zero raw Aadhaar storage compliance (DPDP Act 2023 Section 8).
-    Returns masked representation preserving only the last 4 digits: XXXX-XXXX-4821.
-    """
     if not aadhaar_num:
         return "XXXX-XXXX-0000"
     cleaned = re.sub(r'[^0-9]', '', str(aadhaar_num))
     if len(cleaned) < 4:
         return "XXXX-XXXX-XXXX"
-    last4 = cleaned[-4:]
-    return f"XXXX-XXXX-{last4}"
-
+    return f"XXXX-XXXX-{cleaned[-4:]}"
 
 def hash_aadhaar(aadhaar_num: str, salt: str = DPDP_GLOBAL_SALT) -> str:
-    """One-way salted SHA-256 tokenization for collision detection.
-    Irreversible under DPDP directives.
-    """
     cleaned = re.sub(r'[^0-9]', '', str(aadhaar_num))
     token_material = f"{cleaned}:{salt}".encode('utf-8')
     return hashlib.sha256(token_material).hexdigest()
 
-
 def mask_student_id(student_id: str) -> str:
-    """Masks student ID to protect student privacy: STU-***-1044."""
     if not student_id:
         return "STU-***-0000"
-    cleaned = student_id.strip()
+    cleaned = str(student_id).strip()
     if len(cleaned) <= 4:
         return f"STU-***-{cleaned}"
     last4 = cleaned[-4:]
-    return f"STU-***-{last4}"
+    return f"STU-***-{last4}" 
 
+def mask_discom_ca(ca_num: str) -> str:
+    if not ca_num:
+        return "CA-******"
+    cleaned = re.sub(r'[^0-9A-Za-z]', '', str(ca_num))
+    if len(cleaned) <= 4:
+        return "CA-****"
+    return f"CA-****{cleaned[-4:]}"
 
-def mask_discom_ca(ca_number: str) -> str:
-    """Masks Discom Consumer Account number."""
-    if not ca_number:
-        return "CA-***-0000"
-    cleaned = str(ca_number).strip()
-    last4 = cleaned[-4:] if len(cleaned) >= 4 else cleaned
-    return f"CA-***-{last4}"
+def mask_upi_vpa(vpa: str) -> str:
+    if not vpa or '@' not in str(vpa):
+        return "***@bank"
+    parts = str(vpa).split('@')
+    user_part, handle = parts[0], parts[1]
+    if len(user_part) <= 3:
+        masked_user = "***"
+    else:
+        masked_user = f"{user_part[:2]}***{user_part[-1:]}"
+    return f"{masked_user}@{handle}"
 
-
-def mask_upi_vpa(upi_vpa: str) -> str:
-    """Masks UPI Virtual Payment Address (e.g. host***@okhdfcbank)."""
-    if not upi_vpa or '@' not in upi_vpa:
-        return "user***@upi"
-    handle, provider = upi_vpa.split('@', 1)
-    prefix = handle[:3] if len(handle) >= 3 else handle
-    return f"{prefix}***@{provider}"
-
-
-# --- Sliding-Window AI Rate Limiter (20 calls / min per IP) ---
-class SlidingWindowRateLimiter:
-    """Sliding-window in-memory rate limiter per client IP."""
-    def __init__(self, max_requests: int = 20, window_seconds: int = 60):
-        self.max_requests = max_requests
-        self.window_seconds = window_seconds
-        self.requests = defaultdict(list)
-
-    def is_allowed(self, client_ip: str) -> bool:
-        now = time.time()
-        window_start = now - self.window_seconds
-        
-        # Purge stale timestamps
-        self.requests[client_ip] = [t for t in self.requests[client_ip] if t > window_start]
-        
-        if len(self.requests[client_ip]) >= self.max_requests:
-            return False
-        
-        self.requests[client_ip].append(now)
-        return True
-
-    def reset_for_ip(self, client_ip: str):
-        self.requests.pop(client_ip, None)
-
-
-# Global AI rate limiter instance
-ai_rate_limiter = SlidingWindowRateLimiter(max_requests=20, window_seconds=60)
-
-
-def rate_limit_ai(max_requests=20, window_seconds=60):
-    """Decorator to enforce sliding-window rate limit on AI endpoints."""
-    def decorator(f):
-        @wraps(f)
-        def decorated_function(*args, **kwargs):
-            client_ip = request.headers.get('X-Forwarded-For', request.remote_addr or '127.0.0.1')
-            if ',' in client_ip:
-                client_ip = client_ip.split(',')[0].strip()
-            
-            if not ai_rate_limiter.is_allowed(client_ip):
-                return jsonify({
-                    'error': 'Rate Limit Exceeded',
-                    'message': 'Sliding-window AI rate limit reached (20 calls/min). Please wait before making more AI requests.'
-                }), 429
-            return f(*args, **kwargs)
-        return decorated_function
-    return decorator
-
-
-# --- Input Sanitization & HTML Escaping ---
-def sanitize_input(text: str, max_length: int = 500) -> str:
-    """Strips control characters, caps length, and escapes HTML entities."""
-    if text is None:
-        return ""
-    s = str(text).strip()
-    # Strip null bytes and non-printable control characters
-    s = re.sub(r'[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]', '', s)
-    s = s[:max_length]
-    return html.escape(s)
-
-
-def wrap_untrusted_notes(notes: str) -> str:
-    """Isolates untrusted user-submitted notes within XML tags to prevent prompt injection."""
-    sanitized = sanitize_input(notes, max_length=1500)
-    return f"<user_untrusted_notes>\n{sanitized}\n</user_untrusted_notes>"
-
-
-# --- Server-Side Financial Recomputation & Clamping ---
 def clamp_financial_bounds(hours: float, price_hourly: float, escrow: float = 100.0) -> dict:
-    """Guarantees server-side recomputation of booking financial figures.
-    Client-passed costs or negative rates are rejected or clamped.
-    """
-    clamped_hours = max(1.0, min(24.0, float(hours)))
+    clamped_hours = max(0.5, min(168.0, float(hours)))
     valid_rate = max(10.0, min(10000.0, float(price_hourly)))
     calculated_rental = round(clamped_hours * valid_rate, 2)
-    guaranteed_escrow = 100.0  # strictly Rs. 100 micro-escrow
-    platform_fee = round(calculated_rental * 0.15, 2)  # 15% platform take rate
+    guaranteed_escrow = 100.0
+    platform_fee = round(calculated_rental * 0.05, 2)
     host_earnings = round(calculated_rental - platform_fee, 2)
-    
     return {
         'hours': clamped_hours,
         'hourly_rate': valid_rate,
@@ -152,26 +230,5 @@ def clamp_financial_bounds(hours: float, price_hourly: float, escrow: float = 10
         'escrow_amount': guaranteed_escrow,
         'platform_fee': platform_fee,
         'host_earnings': host_earnings,
-        'total_payable': round(calculated_rental + guaranteed_escrow, 2)
+        'total_payable': round(calculated_rental + guaranteed_escrow + platform_fee, 2)
     }
-
-
-# --- Defensive Security Headers Injection ---
-def add_security_headers(response):
-    """Injects defensive HTTP security headers into every outgoing Flask response."""
-    # Content-Security-Policy
-    csp = (
-        "default-src 'self' 'unsafe-inline' 'unsafe-eval' "
-        "https://cdn.tailwindcss.com https://cdnjs.cloudflare.com "
-        "https://fonts.googleapis.com https://fonts.gstatic.com "
-        "https://images.unsplash.com https://api.qrserver.com data: blob:; "
-        "img-src 'self' data: blob: https:; "
-        "connect-src 'self' https:;"
-    )
-    response.headers['Content-Security-Policy'] = csp
-    response.headers['Strict-Transport-Security'] = 'max-age=31536000; includeSubDomains'
-    response.headers['X-Content-Type-Options'] = 'nosniff'
-    response.headers['X-Frame-Options'] = 'SAMEORIGIN'
-    response.headers['X-XSS-Protection'] = '1; mode=block'
-    response.headers['Referrer-Policy'] = 'strict-origin-when-cross-origin'
-    return response

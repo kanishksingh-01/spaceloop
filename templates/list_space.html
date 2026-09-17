@@ -1,0 +1,554 @@
+{% extends "base.html" %}
+
+{% block title %}List a Space with AI Inspector | SpaceLoop{% endblock %}
+
+{% block content %}
+
+<div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+
+  <!-- Header -->
+  <div class="text-center max-w-2xl mx-auto mb-10">
+    <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 text-xs font-semibold mb-3">
+      <i class="fa-solid fa-wand-magic-sparkles"></i> AI Space Inspector
+    </div>
+    <h1 class="text-3xl font-extrabold text-white tracking-tight sm:text-4xl">
+      {% if edit_space %}Edit Your Space Listing{% else %}List Your Unused Space{% endif %}
+    </h1>
+    <p class="mt-2 text-sm text-slate-400">
+      {% if edit_space %}
+        Update your space pricing, category, dimensions, and operational notes.
+      {% else %}
+        Upload a photo or enter rough notes. Our AI analyzes your space to auto-detect dimensions, verify lighting and acoustics, and recommend dynamic fair pricing.
+      {% endif %}
+    </p>
+  </div>
+
+  <div class="bg-slate-900/90 border border-slate-800 rounded-3xl p-6 sm:p-8 shadow-2xl backdrop-blur-md">
+    
+    <!-- Step 1: Image & Rough Details Input -->
+    <div class="mb-8 pb-8 border-b border-slate-800">
+      <div class="flex items-center justify-between mb-4">
+        <h2 class="text-base font-bold text-white flex items-center gap-2">
+          <span class="w-6 h-6 rounded-full bg-indigo-600 text-white text-xs flex items-center justify-center font-bold">1</span>
+          Provide Space Photo & Rough Notes
+        </h2>
+        <span class="text-xs text-indigo-400 font-medium flex items-center gap-1">
+          <i class="fa-solid fa-sparkles text-[11px]"></i> Ready for AI Scan
+        </span>
+      </div>
+
+      <!-- Quick Preset Picker (Optional demo helper) -->
+      <div class="mb-5 p-3 rounded-2xl bg-slate-950/60 border border-slate-800/80">
+        <div class="flex items-center justify-between mb-2 text-xs">
+          <span class="text-slate-400 font-medium flex items-center gap-1.5">
+            <i class="fa-solid fa-bolt text-amber-400"></i> Or pick a demo space to test:
+          </span>
+          <span class="text-[11px] text-slate-500">Click to autofill Step 1</span>
+        </div>
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+          <div onclick="selectPresetPhoto('https://images.unsplash.com/photo-1598488035139-bdbb2231ce04?auto=format&fit=crop&w=800&q=80', 'Studio', 'Sunlit study nook with whiteboard, air-conditioning, high-speed Wi-Fi, and power strips for laptops.', 'Hauz Khas', 'C-14 Hauz Khas Enclave, New Delhi')" class="preset-card border border-slate-800 hover:border-indigo-500 rounded-xl overflow-hidden cursor-pointer p-1 bg-slate-900 transition hover:scale-[1.02]">
+            <img src="https://images.unsplash.com/photo-1598488035139-bdbb2231ce04?auto=format&fit=crop&w=400&q=80" class="w-full h-16 object-cover rounded-lg">
+            <div class="p-1 text-[11px] text-center font-medium text-slate-300 truncate">Hauz Khas Study Nook</div>
+          </div>
+          <div onclick="selectPresetPhoto('https://images.unsplash.com/photo-1588854337236-6889d631faa8?auto=format&fit=crop&w=800&q=80', 'Storage', 'Clean dry ground floor garage with roll-up shutter, suitable for luggage or hardware inventory.', 'Koramangala', '80 Feet Road, 4th Block, Bengaluru')" class="preset-card border border-slate-800 hover:border-indigo-500 rounded-xl overflow-hidden cursor-pointer p-1 bg-slate-900 transition hover:scale-[1.02]">
+            <img src="https://images.unsplash.com/photo-1588854337236-6889d631faa8?auto=format&fit=crop&w=400&q=80" class="w-full h-16 object-cover rounded-lg">
+            <div class="p-1 text-[11px] text-center font-medium text-slate-300 truncate">Koramangala Storage</div>
+          </div>
+          <div onclick="selectPresetPhoto('https://images.unsplash.com/photo-1590674899484-d5640e854abe?auto=format&fit=crop&w=800&q=80', 'Parking', 'Paved covered porch with two-wheeler EV charging plug and gate lock.', 'FC Road', 'Shivajinagar, FC Road, Pune')" class="preset-card border border-slate-800 hover:border-indigo-500 rounded-xl overflow-hidden cursor-pointer p-1 bg-slate-900 transition hover:scale-[1.02]">
+            <img src="https://images.unsplash.com/photo-1590674899484-d5640e854abe?auto=format&fit=crop&w=400&q=80" class="w-full h-16 object-cover rounded-lg">
+            <div class="p-1 text-[11px] text-center font-medium text-slate-300 truncate">FC Road EV Spot</div>
+          </div>
+          <div onclick="selectPresetPhoto('https://images.unsplash.com/photo-1554118811-1e0d58224f24?auto=format&fit=crop&w=800&q=80', 'Event/Workshop', 'Quiet study cafe mezzanine floor available during afternoon off-peak hours for student projects.', 'Sector 62', 'Block B, Sector 62, Noida')" class="preset-card border border-slate-800 hover:border-indigo-500 rounded-xl overflow-hidden cursor-pointer p-1 bg-slate-900 transition hover:scale-[1.02]">
+            <img src="https://images.unsplash.com/photo-1554118811-1e0d58224f24?auto=format&fit=crop&w=400&q=80" class="w-full h-16 object-cover rounded-lg">
+            <div class="p-1 text-[11px] text-center font-medium text-slate-300 truncate">Noida Cafe Mezzanine</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Photo Upload & URL Area -->
+      <div class="grid grid-cols-1 sm:grid-cols-12 gap-4 mb-4">
+        
+        <!-- Photo Input (8 cols) -->
+        <div class="sm:col-span-8 space-y-3">
+          <div>
+            <label class="block text-xs font-semibold text-slate-300 mb-1.5">
+              Space Photo (Upload or Paste URL)
+            </label>
+            <div class="flex gap-2">
+              <input 
+                type="text" 
+                id="spacePhotoUrl" 
+                placeholder="Paste an image URL (e.g. https://...)" 
+                oninput="previewPhotoUrl(this.value)"
+                class="flex-grow bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500 transition"
+              >
+              <label for="localFileInput" class="px-3.5 py-2.5 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-xl text-xs font-semibold text-slate-300 hover:text-white cursor-pointer transition shrink-0 flex items-center gap-1.5">
+                <i class="fa-solid fa-upload"></i> Browse
+              </label>
+              <input type="file" id="localFileInput" accept="image/*" class="hidden" onchange="handleLocalFileUpload(event)">
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label class="block text-xs font-semibold text-slate-300 mb-1.5">Space Category</label>
+              <select id="spaceCategorySelect" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-indigo-500">
+                <option value="Studio">Creative & Podcast Studio</option>
+                <option value="Storage">Garage & Storage</option>
+                <option value="Parking">Driveway & EV Parking</option>
+                <option value="Pop-up/Retail">Pop-up & Storefront</option>
+                <option value="Event/Workshop">Off-Peak & Events</option>
+                <option value="Workspace">Desk & Workspace</option>
+              </select>
+            </div>
+
+            <div>
+              <label class="block text-xs font-semibold text-slate-300 mb-1.5">Street Address</label>
+              <input 
+                type="text" 
+                id="listingAddress" 
+                placeholder="e.g. 540 Howard St, San Francisco" 
+                class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500 transition"
+              >
+            </div>
+          </div>
+        </div>
+
+        <!-- Live Photo Preview Box (4 cols) -->
+        <div class="sm:col-span-4">
+          <label class="block text-xs font-semibold text-slate-300 mb-1.5">Image Preview</label>
+          <div id="imagePreviewBox" class="w-full h-28 sm:h-32 rounded-xl bg-slate-950 border border-dashed border-slate-800 flex flex-col items-center justify-center overflow-hidden relative">
+            <img id="previewImg" src="" alt="Space preview" class="w-full h-full object-cover hidden">
+            <div id="previewPlaceholder" class="text-center p-3 text-slate-500 text-xs">
+              <i class="fa-regular fa-image text-2xl mb-1 block text-slate-600"></i>
+              <span>No image selected</span>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Rough Notes -->
+      <div class="mb-5">
+        <label class="block text-xs font-semibold text-slate-300 mb-1.5">
+          Rough Notes / Anything You Know About the Space
+        </label>
+        <textarea 
+          id="rawNotesInput" 
+          rows="2" 
+          placeholder="e.g. Empty 2-car garage with roll-up door, clean concrete floor, 3 outlets. Want to rent for storage or car."
+          class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500 transition"
+        ></textarea>
+      </div>
+
+      <!-- Scan Action Button -->
+      <button 
+        type="button" 
+        id="triggerAiScanBtn" 
+        onclick="runAiInspection()" 
+        class="w-full bg-gradient-to-r from-indigo-600 via-violet-600 to-indigo-700 hover:from-indigo-500 hover:to-violet-500 text-white font-bold text-sm py-3.5 rounded-xl shadow-lg shadow-indigo-600/30 transition flex items-center justify-center gap-2 group"
+      >
+        <i class="fa-solid fa-wand-magic-sparkles text-indigo-200 group-hover:rotate-12 transition"></i>
+        <span>Scan & Auto-Inspect Space with AI</span>
+      </button>
+
+      <!-- Scanning Indicator (shows live step progress) -->
+      <div id="scanningStatus" class="hidden mt-4 p-4 rounded-xl bg-indigo-950/40 border border-indigo-500/30 text-xs space-y-2">
+        <div class="flex items-center justify-between text-indigo-300 font-semibold">
+          <span class="flex items-center gap-2">
+            <i class="fa-solid fa-spinner fa-spin text-indigo-400"></i>
+            <span id="scanStatusText">Analyzing photo and lighting quality...</span>
+          </span>
+          <span id="scanPercentText" class="text-indigo-400 font-mono">25%</span>
+        </div>
+        <div class="w-full bg-slate-950 rounded-full h-1.5 overflow-hidden">
+          <div id="scanProgressBar" class="bg-gradient-to-r from-indigo-500 to-violet-500 h-1.5 w-1/4 transition-all duration-300"></div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Step 2: Review & Finalize AI-Generated Listing -->
+    <form id="createListingForm" onsubmit="publishSpaceListing(event)">
+      
+      <div class="flex items-center justify-between mb-4">
+        <h2 class="text-base font-bold text-white flex items-center gap-2">
+          <span class="w-6 h-6 rounded-full bg-indigo-600 text-white text-xs flex items-center justify-center font-bold">2</span>
+          AI-Generated Listing & Inspection Details
+        </h2>
+        <span id="aiGeneratedBadge" class="hidden px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 flex items-center gap-1">
+          <i class="fa-solid fa-circle-check"></i> Auto-Populated by AI
+        </span>
+      </div>
+
+      <!-- Pre-scan guidance notice (visible before AI scan) -->
+      <div id="preScanNotice" class="mb-5 p-4 rounded-2xl bg-slate-950/50 border border-dashed border-slate-800 text-xs text-slate-400 flex items-start gap-3">
+        <i class="fa-solid fa-circle-info text-indigo-400 text-base mt-0.5"></i>
+        <div>
+          <strong class="text-slate-300 block mb-0.5">Step 2 will auto-fill after scanning:</strong>
+          Our multimodal AI will generate your listing title, calculate dynamic fair pricing ($/hr and $/day), measure dimensions, verify acoustic isolation, and write engaging copy.
+        </div>
+      </div>
+
+      <!-- Title -->
+      <div class="mb-4">
+        <div class="flex items-center justify-between mb-1">
+          <label class="text-xs font-semibold text-slate-300">Listing Title</label>
+          <span class="text-[10px] text-indigo-400 ai-tag hidden">✨ AI Generated</span>
+        </div>
+        <input 
+          type="text" 
+          id="listingTitle" 
+          required 
+          placeholder="Click 'Scan with AI' above to auto-generate title..." 
+          class="ai-target w-full bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500 transition"
+        >
+      </div>
+
+      <!-- Neighborhood -->
+      <div class="mb-4">
+        <label class="block text-xs font-semibold text-slate-300 mb-1">Neighborhood / District</label>
+        <input 
+          type="text" 
+          id="listingNeighborhood" 
+          placeholder="e.g. Mission District, SoMa, Sunset" 
+          class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500 transition"
+        >
+      </div>
+
+      <!-- Pricing & Capacity -->
+      <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-4">
+        <div>
+          <div class="flex items-center justify-between mb-1">
+            <label class="text-xs font-semibold text-indigo-400">Hourly Price (₹)</label>
+            <span class="text-[10px] text-indigo-400 ai-tag hidden">✨ AI</span>
+          </div>
+          <input 
+            type="number" 
+            id="listingHourlyPrice" 
+            required 
+            placeholder="e.g. 50" 
+            class="ai-target w-full bg-slate-950 border border-indigo-500/40 rounded-xl px-3.5 py-2 text-sm font-bold text-white placeholder-slate-500 focus:outline-none focus:border-indigo-400 transition"
+          >
+        </div>
+        <div>
+          <div class="flex items-center justify-between mb-1">
+            <label class="text-xs font-semibold text-indigo-400">Daily Price (₹)</label>
+            <span class="text-[10px] text-indigo-400 ai-tag hidden">✨ AI</span>
+          </div>
+          <input 
+            type="number" 
+            id="listingDailyPrice" 
+            required 
+            placeholder="e.g. 350" 
+            class="ai-target w-full bg-slate-950 border border-indigo-500/40 rounded-xl px-3.5 py-2 text-sm font-bold text-white placeholder-slate-500 focus:outline-none focus:border-indigo-400 transition"
+          >
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-slate-300 mb-1">Est. SqFt</label>
+          <input 
+            type="number" 
+            id="listingSqft" 
+            placeholder="e.g. 280" 
+            class="ai-target w-full bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500 transition"
+          >
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-slate-300 mb-1">Max Capacity</label>
+          <input 
+            type="number" 
+            id="listingCapacity" 
+            placeholder="e.g. 5" 
+            class="ai-target w-full bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500 transition"
+          >
+        </div>
+      </div>
+
+      <!-- AI Inspection Metadata Outputs -->
+      <div class="p-4 bg-slate-950/80 border border-slate-800 rounded-2xl mb-4 space-y-3 text-xs">
+        <div class="flex items-center justify-between">
+          <div class="font-bold text-slate-300 flex items-center gap-1.5">
+            <i class="fa-solid fa-microchip text-indigo-400"></i> AI Inspection Report
+          </div>
+          <span id="inspectionStatusText" class="text-[11px] text-slate-500">Waiting for scan</span>
+        </div>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div>
+            <span class="text-slate-500 block mb-0.5">Lighting Quality:</span>
+            <input type="text" id="aiLightingInput" placeholder="Natural / Artificial lighting" class="ai-target w-full bg-slate-900 border border-slate-800 rounded-lg px-2.5 py-1 text-xs text-slate-300 placeholder-slate-600 transition">
+          </div>
+          <div>
+            <span class="text-slate-500 block mb-0.5">Acoustic Profile:</span>
+            <input type="text" id="aiNoiseInput" placeholder="Ambient noise profile (dB)" class="ai-target w-full bg-slate-900 border border-slate-800 rounded-lg px-2.5 py-1 text-xs text-slate-300 placeholder-slate-600 transition">
+          </div>
+          <div>
+            <span class="text-slate-500 block mb-0.5">Power & Circuits:</span>
+            <input type="text" id="aiPowerInput" placeholder="Outlets & electrical capacity" class="ai-target w-full bg-slate-900 border border-slate-800 rounded-lg px-2.5 py-1 text-xs text-slate-300 placeholder-slate-600 transition">
+          </div>
+          <div>
+            <span class="text-slate-500 block mb-0.5">Safety & Access:</span>
+            <input type="text" id="aiSafetyInput" placeholder="Fire safety, clear exits, access" class="ai-target w-full bg-slate-900 border border-slate-800 rounded-lg px-2.5 py-1 text-xs text-slate-300 placeholder-slate-600 transition">
+          </div>
+        </div>
+      </div>
+
+      <!-- Description -->
+      <div class="mb-4">
+        <div class="flex items-center justify-between mb-1">
+          <label class="text-xs font-semibold text-slate-300">Listing Description</label>
+          <span class="text-[10px] text-indigo-400 ai-tag hidden">✨ AI Optimized Copy</span>
+        </div>
+        <textarea 
+          id="listingDescription" 
+          rows="3" 
+          required 
+          placeholder="AI will generate an engaging, detailed description highlighting your space's benefits and ideal use cases..." 
+          class="ai-target w-full bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500 transition"
+        ></textarea>
+      </div>
+
+      <!-- Publish Action -->
+      <div class="pt-4 flex items-center justify-end gap-3">
+        <a href="{{ url_for('index') }}" class="px-5 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold transition">
+          Cancel
+        </a>
+        <button 
+          type="submit" 
+          id="publishBtn" 
+          class="bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold text-xs sm:text-sm px-6 py-2.5 rounded-xl shadow-lg shadow-emerald-600/20 transition flex items-center gap-2"
+        >
+          <i class="fa-solid {% if edit_space %}fa-pen-to-square{% else %}fa-cloud-arrow-up{% endif %}"></i>
+          <span>{% if edit_space %}Update Space Listing{% else %}Publish Space Listing{% endif %}</span>
+        </button>
+      </div>
+
+    </form>
+
+  </div>
+
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+  function previewPhotoUrl(url) {
+    const previewImg = document.getElementById('previewImg');
+    const placeholder = document.getElementById('previewPlaceholder');
+    if (url && url.trim().length > 10) {
+      previewImg.src = url;
+      previewImg.classList.remove('hidden');
+      placeholder.classList.add('hidden');
+    } else {
+      previewImg.classList.add('hidden');
+      placeholder.classList.remove('hidden');
+    }
+  }
+
+  function handleLocalFileUpload(event) {
+    const file = event.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        const dataUrl = e.target.result;
+        document.getElementById('spacePhotoUrl').value = dataUrl;
+        previewPhotoUrl(dataUrl);
+      };
+      reader.readAsDataURL(file);
+    }
+  }
+
+  function selectPresetPhoto(url, category, notes, neighborhood, address) {
+    // Visually highlight preset card
+    document.querySelectorAll('.preset-card').forEach(c => {
+      c.classList.remove('border-indigo-500', 'bg-indigo-950/40');
+      c.classList.add('border-slate-800', 'bg-slate-900');
+    });
+    event.currentTarget.classList.add('border-indigo-500', 'bg-indigo-950/40');
+
+    document.getElementById('spacePhotoUrl').value = url;
+    previewPhotoUrl(url);
+    document.getElementById('spaceCategorySelect').value = category;
+    document.getElementById('rawNotesInput').value = notes;
+    if (neighborhood) document.getElementById('listingNeighborhood').value = neighborhood;
+    if (address) document.getElementById('listingAddress').value = address;
+  }
+
+  async function runAiInspection() {
+    const btn = document.getElementById('triggerAiScanBtn');
+    const status = document.getElementById('scanningStatus');
+    const statusText = document.getElementById('scanStatusText');
+    const percentText = document.getElementById('scanPercentText');
+    const progressBar = document.getElementById('scanProgressBar');
+
+    const photoUrl = document.getElementById('spacePhotoUrl').value.trim();
+    const rawNotes = document.getElementById('rawNotesInput').value.trim();
+    const category = document.getElementById('spaceCategorySelect').value;
+    const address = document.getElementById('listingAddress').value.trim();
+
+    if (!photoUrl && !rawNotes) {
+      alert("Please enter rough space notes, upload a photo, or choose one of the preset spaces above!");
+      return;
+    }
+
+    btn.disabled = true;
+    status.classList.remove('hidden');
+
+    statusText.textContent = "Analyzing spatial bounds & natural lighting profile...";
+    percentText.textContent = "30%";
+    progressBar.style.width = "30%";
+
+    const payload = {
+      photo_url: photoUrl,
+      category: category,
+      description: rawNotes,
+      address: address
+    };
+
+    try {
+      setTimeout(() => {
+        statusText.textContent = "Evaluating acoustics, power circuits & calculating dynamic fair pricing...";
+        percentText.textContent = "70%";
+        progressBar.style.width = "70%";
+      }, 500);
+
+      const resp = await fetch('/api/spaces/ai-scan', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(payload)
+      });
+      const data = await resp.json();
+
+      progressBar.style.width = "100%";
+      percentText.textContent = "100%";
+      statusText.textContent = "Inspection complete! Populating details...";
+
+      // Populate form with visual flash animation
+      if (data.title) document.getElementById('listingTitle').value = data.title;
+      if (data.category) document.getElementById('spaceCategorySelect').value = data.category;
+      if (data.recommended_hourly_price) document.getElementById('listingHourlyPrice').value = Math.round(data.recommended_hourly_price);
+      if (data.recommended_daily_price) document.getElementById('listingDailyPrice').value = Math.round(data.recommended_daily_price);
+      if (data.estimated_sqft) document.getElementById('listingSqft').value = data.estimated_sqft;
+      if (data.max_capacity) document.getElementById('listingCapacity').value = data.max_capacity;
+      if (data.lighting) document.getElementById('aiLightingInput').value = data.lighting;
+      if (data.noise_level) document.getElementById('aiNoiseInput').value = data.noise_level;
+      if (data.power_access) document.getElementById('aiPowerInput').value = data.power_access;
+      if (data.safety_notes) document.getElementById('aiSafetyInput').value = data.safety_notes;
+      if (data.enhanced_description) document.getElementById('listingDescription').value = data.enhanced_description;
+
+      // Show AI badges and glowing border animation
+      document.getElementById('aiGeneratedBadge').classList.remove('hidden');
+      document.getElementById('preScanNotice').classList.add('hidden');
+      document.getElementById('inspectionStatusText').textContent = "100% Verified";
+      document.getElementById('inspectionStatusText').className = "text-[11px] text-emerald-400 font-bold";
+
+      document.querySelectorAll('.ai-tag').forEach(t => t.classList.remove('hidden'));
+      document.querySelectorAll('.ai-target').forEach(el => {
+        el.classList.add('ring-2', 'ring-emerald-500/50', 'bg-emerald-950/20');
+        setTimeout(() => {
+          el.classList.remove('ring-2', 'ring-emerald-500/50', 'bg-emerald-950/20');
+        }, 2500);
+      });
+
+      setTimeout(() => {
+        status.classList.add('hidden');
+        document.getElementById('listingTitle').scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }, 1200);
+
+    } catch (err) {
+      alert("Error running AI inspection. Please try again.");
+      status.classList.add('hidden');
+    } finally {
+      btn.disabled = false;
+    }
+  }
+
+  async function publishSpaceListing(e) {
+    e.preventDefault();
+    const btn = document.getElementById('publishBtn');
+    const isEdit = {% if edit_space %}true{% else %}false{% endif %};
+    const editSpaceId = {% if edit_space %}{{ edit_space.id }}{% else %}null{% endif %};
+    
+    btn.disabled = true;
+    btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Saving...`;
+
+    const title = document.getElementById('listingTitle').value.trim();
+    const address = document.getElementById('listingAddress').value.trim() || "San Francisco, CA";
+
+    if (!title) {
+      alert("Please run the AI inspection or enter a listing title first!");
+      btn.disabled = false;
+      btn.innerHTML = isEdit ? `<i class="fa-solid fa-pen-to-square"></i> <span>Update Space Listing</span>` : `<i class="fa-solid fa-cloud-arrow-up"></i> <span>Publish Space Listing</span>`;
+      return;
+    }
+
+    const payload = {
+      title: title,
+      category: document.getElementById('spaceCategorySelect').value,
+      address: address,
+      neighborhood: document.getElementById('listingNeighborhood').value || "San Francisco",
+      price_hourly: parseFloat(document.getElementById('listingHourlyPrice').value || 30),
+      price_daily: parseFloat(document.getElementById('listingDailyPrice').value || 150),
+      sqft: parseInt(document.getElementById('listingSqft').value || 200),
+      max_capacity: parseInt(document.getElementById('listingCapacity').value || 4),
+      description: document.getElementById('listingDescription').value || "A verified temporary space on SpaceLoop.",
+      photos: [document.getElementById('spacePhotoUrl').value || "https://images.unsplash.com/photo-1513694203232-719a280e022f?auto=format&fit=crop&w=1200&q=80"],
+      ai_lighting: document.getElementById('aiLightingInput').value || "Natural Light",
+      ai_noise_level: document.getElementById('aiNoiseInput').value || "Quiet",
+      ai_power_access: document.getElementById('aiPowerInput').value || "Standard Outlets",
+      ai_safety_notes: document.getElementById('aiSafetyInput').value || "Inspected for basic safety.",
+    };
+
+    const targetUrl = isEdit ? `/api/spaces/${editSpaceId}/edit` : '/api/spaces';
+
+    try {
+      const resp = await fetch(targetUrl, {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(payload)
+      });
+      const data = await resp.json();
+      if (resp.ok && (data.id || data.success)) {
+        window.location.href = isEdit ? '/dashboard' : `/space/${data.id}`;
+      } else {
+        alert(data.error || "Failed to save space");
+      }
+    } catch (err) {
+      alert("Error saving space. Please try again.");
+    } finally {
+      btn.disabled = false;
+      btn.innerHTML = isEdit ? `<i class="fa-solid fa-pen-to-square"></i> <span>Update Space Listing</span>` : `<i class="fa-solid fa-cloud-arrow-up"></i> <span>Publish Space Listing</span>`;
+    }
+  }
+
+  {% if edit_space %}
+  document.addEventListener('DOMContentLoaded', () => {
+    document.getElementById('listingTitle').value = {{ edit_space.title|tojson }};
+    document.getElementById('spaceCategorySelect').value = {{ edit_space.category|tojson }};
+    document.getElementById('listingAddress').value = {{ edit_space.address|tojson }};
+    document.getElementById('listingNeighborhood').value = {{ (edit_space.neighborhood or '')|tojson }};
+    document.getElementById('listingHourlyPrice').value = {{ edit_space.price_hourly|int }};
+    document.getElementById('listingDailyPrice').value = {{ edit_space.price_daily|int }};
+    document.getElementById('listingSqft').value = {{ edit_space.sqft or 200 }};
+    document.getElementById('listingCapacity').value = {{ edit_space.max_capacity or 4 }};
+    document.getElementById('listingDescription').value = {{ edit_space.description|tojson }};
+    {% if edit_space.photos and edit_space.photos|length > 0 %}
+      document.getElementById('spacePhotoUrl').value = {{ edit_space.photos[0]|tojson }};
+      previewPhotoUrl({{ edit_space.photos[0]|tojson }});
+    {% endif %}
+    {% if edit_space.ai_lighting %}
+      document.getElementById('aiLightingInput').value = {{ edit_space.ai_lighting|tojson }};
+    {% endif %}
+    {% if edit_space.ai_noise_level %}
+      document.getElementById('aiNoiseInput').value = {{ edit_space.ai_noise_level|tojson }};
+    {% endif %}
+    {% if edit_space.ai_power_access %}
+      document.getElementById('aiPowerInput').value = {{ edit_space.ai_power_access|tojson }};
+    {% endif %}
+    {% if edit_space.ai_safety_notes %}
+      document.getElementById('aiSafetyInput').value = {{ edit_space.ai_safety_notes|tojson }};
+    {% endif %}
+  });
+  {% endif %}
+</script>
+{% endblock %}

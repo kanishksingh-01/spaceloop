@@ -1,0 +1,749 @@
+{% extends "base.html" %}
+
+{% block title %}In-Room Live Session Console | {{ space.title }}{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+
+  <!-- Breadcrumb & Status -->
+  <div class="flex items-center justify-between gap-4 mb-6">
+    <a href="{{ url_for('dashboard_page') }}" class="text-xs font-semibold text-slate-400 hover:text-white flex items-center gap-1.5 transition">
+      <i class="fa-solid fa-arrow-left"></i> Back to Dashboard
+    </a>
+    <div class="flex items-center gap-2">
+      <span class="text-xs text-slate-400">Booking #{{ booking.id }}</span>
+      <span id="sessionStateBadge" class="px-2.5 py-1 rounded-full text-xs font-bold uppercase tracking-wider
+        {% if booking.session_state == 'checked_in' %}bg-emerald-500/20 text-emerald-400 border border-emerald-500/40
+        {% elif booking.session_state == 'checked_out' %}bg-blue-500/20 text-blue-400 border border-blue-500/40
+        {% else %}bg-amber-500/20 text-amber-400 border border-amber-500/40{% endif %}">
+        {% if booking.session_state == 'checked_in' %}Active Session In Progress
+        {% elif booking.session_state == 'checked_out' %}Session Completed & Released
+        {% else %}Ready for Check-In{% endif %}
+      </span>
+    </div>
+  </div>
+
+  <!-- Space Header Banner -->
+  <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 mb-8 flex flex-col md:flex-row md:items-center justify-between gap-6 shadow-xl">
+    <div class="flex items-start gap-4">
+      <img src="{{ space.photos[0] }}" alt="{{ space.title }}" class="w-20 h-20 rounded-xl object-cover border border-slate-800 shrink-0">
+      <div>
+        <div class="flex items-center gap-2 text-xs font-medium text-indigo-400 mb-1">
+          <span>{{ space.category }}</span> &bull; <span>{{ space.neighborhood }}, {{ space.city }}</span>
+        </div>
+        <h1 class="text-xl sm:text-2xl font-black text-white tracking-tight">{{ space.title }}</h1>
+        <p class="text-xs text-slate-400 mt-1 flex items-center gap-2">
+          <i class="fa-solid fa-location-dot text-slate-500"></i> {{ space.address }}
+        </p>
+      </div>
+    </div>
+
+    <!-- Handshake PIN & Escrow Card -->
+    <div class="flex items-center gap-3 shrink-0">
+      <div class="bg-slate-950 border border-slate-800 rounded-xl p-3 text-center min-w-[110px]">
+        <div class="text-[10px] text-slate-400 uppercase font-semibold">Arrival PIN</div>
+        <div class="text-xl font-mono font-bold text-amber-400 tracking-wider mt-0.5">{{ booking.arrival_pin }}</div>
+        <div class="text-[9px] text-slate-500">Show to Host</div>
+      </div>
+      <div class="bg-slate-950 border border-slate-800 rounded-xl p-3 text-center min-w-[120px]">
+        <div class="text-[10px] text-slate-400 uppercase font-semibold">UPI Escrow</div>
+        <div class="text-xl font-bold text-emerald-400 mt-0.5">₹{{ booking.escrow_deposit_amount | int }}</div>
+        <div id="escrowStatusLabel" class="text-[9px] text-slate-400">
+          {% if booking.escrow_status == 'released' %}Released to UPI{% else %}Held in Escrow{% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Three-Stage Interactive Stepper -->
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-3 mb-8">
+    <div class="p-3.5 rounded-xl border text-xs font-semibold flex items-center gap-2.5 transition
+      {% if booking.session_state == 'confirmed' %}bg-indigo-600/10 border-indigo-500 text-indigo-300
+      {% else %}bg-slate-900 border-slate-800 text-emerald-400{% endif %}">
+      <span class="w-6 h-6 rounded-full flex items-center justify-center font-bold text-xs
+        {% if booking.session_state == 'confirmed' %}bg-indigo-600 text-white{% else %}bg-emerald-500/20 text-emerald-400{% endif %}">
+        {% if booking.session_state == 'confirmed' %}1{% else %}&#10003;{% endif %}
+      </span>
+      <span>1. QR & Geofence Check-In</span>
+    </div>
+
+    <div class="p-3.5 rounded-xl border text-xs font-semibold flex items-center gap-2.5 transition
+      {% if booking.session_state == 'checked_in' %}bg-indigo-600/10 border-indigo-500 text-indigo-300
+      {% elif booking.session_state == 'checked_out' %}bg-slate-900 border-slate-800 text-emerald-400
+      {% else %}bg-slate-900/50 border-slate-800/60 text-slate-500{% endif %}">
+      <span class="w-6 h-6 rounded-full flex items-center justify-center font-bold text-xs
+        {% if booking.session_state == 'checked_in' %}bg-indigo-600 text-white
+        {% elif booking.session_state == 'checked_out' %}bg-emerald-500/20 text-emerald-400
+        {% else %}bg-slate-800 text-slate-500{% endif %}">
+        {% if booking.session_state == 'checked_out' %}&#10003;{% else %}2{% endif %}
+      </span>
+      <span>2. Active Study Session</span>
+    </div>
+
+    <div class="p-3.5 rounded-xl border text-xs font-semibold flex items-center gap-2.5 transition
+      {% if booking.session_state == 'checked_out' %}bg-emerald-500/10 border-emerald-500 text-emerald-300
+      {% else %}bg-slate-900/50 border-slate-800/60 text-slate-500{% endif %}">
+      <span class="w-6 h-6 rounded-full flex items-center justify-center font-bold text-xs
+        {% if booking.session_state == 'checked_out' %}bg-emerald-500 text-slate-950 font-black
+        {% else %}bg-slate-800 text-slate-500{% endif %}">
+        3
+      </span>
+      <span>3. Exit Scan & Escrow Release</span>
+    </div>
+  </div>
+
+  <!-- STAGE 1: CHECK-IN CONSOLE (Shown when confirmed) -->
+  <div id="checkinPanel" class="{% if booking.session_state != 'confirmed' %}hidden{% endif %} space-y-6">
+    <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 sm:p-8 shadow-xl">
+      
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
+        <div>
+          <h2 class="text-lg font-bold text-white flex items-center gap-2">
+            <i class="fa-solid fa-qrcode text-indigo-400"></i> Zero-Hardware Access Check-In
+          </h2>
+          <p class="text-xs text-slate-400 mt-1">
+            Real device GPS geofence + scanned room door QR. Powered by India Stack zero-hardware protocol.
+          </p>
+        </div>
+
+        <!-- Multi-tier Access Mode Toggle -->
+        <div class="flex items-center gap-1 bg-slate-950 p-1 rounded-xl border border-slate-800 self-start sm:self-auto shrink-0">
+          <button type="button" id="tabGpsMode" onclick="setCheckinMode('gps')" class="px-3 py-1.5 rounded-lg text-xs font-semibold bg-indigo-600 text-white transition flex items-center gap-1.5">
+            <i class="fa-solid fa-location-dot"></i> <span>GPS Geofence</span>
+          </button>
+          <button type="button" id="tabPinMode" onclick="setCheckinMode('pin')" class="px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-400 hover:text-white transition flex items-center gap-1.5">
+            <i class="fa-solid fa-key"></i> <span>Caretaker PIN</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- LOCATION VERIFICATION CARD (Tasks 9 & 10) -->
+      <div id="locationVerificationCard" class="bg-slate-950 border border-slate-800 rounded-xl p-5 mb-6 space-y-3">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-2">
+            <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-ping"></span>
+            <span class="text-xs font-bold text-white uppercase tracking-wider">Location Verification</span>
+          </div>
+          <span id="gpsStatusPill" class="text-[11px] font-semibold text-indigo-400 bg-indigo-500/10 px-2 py-0.5 rounded-md border border-indigo-500/20">
+            <i class="fa-solid fa-satellite-dish animate-pulse"></i> Initializing GPS...
+          </span>
+        </div>
+
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs pt-1 border-t border-slate-900">
+          <div class="bg-slate-900/60 p-2.5 rounded-lg border border-slate-800/80">
+            <div class="text-[10px] text-slate-400 uppercase">Distance from space</div>
+            <div id="gpsDistanceDisplay" class="text-base font-bold text-white mt-0.5">-- m</div>
+          </div>
+          <div class="bg-slate-900/60 p-2.5 rounded-lg border border-slate-800/80">
+            <div class="text-[10px] text-slate-400 uppercase">Allowed radius</div>
+            <div class="text-base font-bold text-indigo-300 mt-0.5">50 m</div>
+          </div>
+          <div class="bg-slate-900/60 p-2.5 rounded-lg border border-slate-800/80">
+            <div class="text-[10px] text-slate-400 uppercase">Space Coordinates</div>
+            <div class="text-xs font-mono text-slate-300 mt-1">{{ space.latitude }}, {{ space.longitude }}</div>
+          </div>
+          <div class="bg-slate-900/60 p-2.5 rounded-lg border border-slate-800/80 flex flex-col justify-center items-start">
+            <button type="button" onclick="acquireDeviceGps(true)" class="text-[11px] text-indigo-400 hover:text-indigo-300 font-semibold flex items-center gap-1">
+              <i class="fa-solid fa-rotate-right"></i> Refresh GPS
+            </button>
+            <span class="text-[9px] text-slate-500 mt-0.5">High-accuracy mode</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- GPS FAILURE / UNAVAILABLE ALERT (Task 10) -->
+      <div id="gpsFailureAlert" class="hidden mb-6 p-4 rounded-xl bg-amber-950/40 border border-amber-500/40 text-amber-200 text-xs space-y-2.5">
+        <div class="flex items-center gap-2 font-bold text-amber-300 text-sm">
+          <i class="fa-solid fa-triangle-exclamation text-base"></i>
+          <span>⚠ Unable to verify your location</span>
+        </div>
+        <p class="text-[11px] text-amber-200/90 font-medium">Possible reasons:</p>
+        <ul class="list-disc list-inside text-[11px] text-amber-200/80 space-y-1 ml-1">
+          <li>Location permission is disabled in browser or device settings</li>
+          <li>GPS signal is weak (e.g. basement or dense concrete roof)</li>
+          <li>Location service is unavailable on your network/device</li>
+        </ul>
+        <div class="flex flex-wrap items-center gap-3 pt-2">
+          <button type="button" onclick="acquireDeviceGps(true)" class="px-3.5 py-1.5 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 text-amber-200 border border-amber-500/30 text-xs font-semibold flex items-center gap-1.5 transition">
+            <i class="fa-solid fa-rotate-right"></i> Retry Location
+          </button>
+          <button type="button" onclick="setCheckinMode('pin')" class="px-3.5 py-1.5 rounded-lg bg-indigo-600/30 hover:bg-indigo-600/50 text-indigo-200 border border-indigo-500/40 text-xs font-semibold flex items-center gap-1.5 transition">
+            <i class="fa-solid fa-key"></i> Switch to Caretaker PIN Fallback
+          </button>
+        </div>
+      </div>
+
+      <!-- Check-in Form -->
+      <form id="checkinForm" onsubmit="handleCheckIn(event)" class="space-y-6">
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
+          
+          <!-- Room QR Code Token (Always required) -->
+          <div>
+            <label class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2 flex items-center justify-between">
+              <span>Room Door QR Token</span>
+              <a href="{{ url_for('printable_qr', space_id=space.id) }}" target="_blank" class="text-[10px] text-indigo-400 hover:underline">
+                <i class="fa-solid fa-print"></i> View Host Door QR
+              </a>
+            </label>
+            <div class="flex gap-2">
+              <input type="text" id="checkinQrToken" required value="{{ space.room_qr_token or 'SPACELOOP_QR_IITD_ROOM1' }}"
+                class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-white text-sm font-mono focus:outline-none focus:border-indigo-500 transition">
+              <button type="button" onclick="simulateScan()" class="px-4 py-3 rounded-xl bg-indigo-600/20 hover:bg-indigo-600/30 text-indigo-300 text-xs font-semibold shrink-0 border border-indigo-500/30 transition">
+                <i class="fa-solid fa-camera"></i> Scan
+              </button>
+            </div>
+            <div class="text-[10px] text-slate-500 mt-1">In-app camera or scanner reading token from laminated door placard</div>
+          </div>
+
+          <!-- Caretaker Handshake PIN (Fallback Mode) -->
+          <div id="caretakerPinContainer" class="hidden">
+            <label class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2 flex items-center justify-between">
+              <span class="text-amber-400"><i class="fa-solid fa-key mr-1"></i> Caretaker Handshake PIN</span>
+              <span class="text-[10px] text-slate-400">Assigned: <b class="text-amber-300 font-mono">{{ booking.arrival_pin }}</b></span>
+            </label>
+            <input type="text" id="caretakerPinInput" maxlength="10" placeholder="Enter 4-digit PIN (e.g. {{ booking.arrival_pin }})"
+              class="w-full bg-slate-950 border border-amber-500/40 rounded-xl px-4 py-3 text-amber-300 text-sm font-mono tracking-widest focus:outline-none focus:border-amber-400 transition">
+            <div class="text-[10px] text-slate-400 mt-1">Verified by on-premise caretaker or mechanical keybox when GPS is offline</div>
+          </div>
+
+          <!-- 15-Second Entry Walkthrough Photo -->
+          <div id="entryPhotoContainer">
+            <label class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2">
+              15-Second Entry Photo / Video Pan
+            </label>
+            <input type="text" id="entryPhotoUrl" value="{{ space.photos[0] }}"
+              placeholder="Live camera pan URL or snapshot"
+              class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-indigo-500 transition">
+            <div class="text-[10px] text-slate-500 mt-1">Camera snapshot establishing room baseline condition</div>
+          </div>
+
+        </div>
+
+        <!-- Check-in Action Buttons -->
+        <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+          <button type="submit" id="checkinBtn" class="px-8 py-3.5 rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white font-bold text-sm shadow-lg shadow-indigo-600/30 transition flex items-center justify-center gap-2">
+            <i class="fa-solid fa-door-open"></i>
+            <span id="checkinBtnText">Confirm Check-In & Enter Space</span>
+          </button>
+        </div>
+
+      </form>
+    </div>
+  </div>
+
+  <!-- STAGE 2: ACTIVE SESSION DASHBOARD (Shown when checked_in) -->
+  <div id="activeSessionPanel" class="{% if booking.session_state != 'checked_in' %}hidden{% endif %} space-y-6">
+    <div class="bg-gradient-to-br from-slate-900 via-slate-900 to-indigo-950/40 border border-indigo-500/30 rounded-2xl p-6 sm:p-8 shadow-xl">
+      
+      <!-- SPACELOOP SESSION ACTIVE CONSOLE (Task 15) -->
+      <div class="bg-slate-950/90 border border-indigo-500/40 rounded-2xl p-6 mb-6 shadow-2xl relative overflow-hidden">
+        <div class="absolute top-0 right-0 w-64 h-64 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none"></div>
+
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-5 border-b border-slate-800">
+          <div>
+            <div class="flex items-center gap-2 mb-1.5">
+              <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-ping"></span>
+              <span class="text-xs font-extrabold uppercase tracking-widest text-emerald-400">
+                SPACELOOP SESSION ACTIVE
+              </span>
+            </div>
+            <h2 class="text-xl sm:text-2xl font-black text-white flex items-center gap-2">
+              <span>{{ space.title }}</span>
+            </h2>
+            <p class="text-xs text-slate-400 mt-1">
+              Booking #{{ booking.id }} &bull; {{ space.neighborhood }}, {{ space.city }} &bull; Arrival logged: <span class="text-indigo-300 font-semibold">{{ booking.arrival_time or "Just now" }}</span>
+            </p>
+          </div>
+
+          <!-- Time Remaining Live Countdown Display -->
+          <div class="bg-slate-900/90 border border-indigo-500/30 rounded-2xl p-4 text-center shrink-0 min-w-[210px] shadow-lg shadow-indigo-500/10">
+            <div class="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Time Remaining</div>
+            <div id="sessionCountdownDisplay" class="text-3xl font-mono font-black text-emerald-400 tracking-widest my-1">
+              --:--:--
+            </div>
+            <div id="sessionTimeSubtext" class="text-[10px] text-slate-400">
+              Valid until {{ booking.end_time }}
+            </div>
+          </div>
+        </div>
+
+        <!-- Verification Checklist Matrix (Task 15) -->
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 py-5 border-b border-slate-800 text-xs">
+          <div class="bg-slate-900/60 border border-slate-800/80 rounded-xl p-3">
+            <div class="text-[10px] uppercase font-semibold text-slate-400 mb-1">Booking</div>
+            <div class="font-bold text-white text-sm">#{{ booking.id }}</div>
+            <div class="text-[10px] text-indigo-400 mt-0.5">{{ booking.hours_booked }} hr duration</div>
+          </div>
+
+          <div class="bg-slate-900/60 border border-slate-800/80 rounded-xl p-3">
+            <div class="text-[10px] uppercase font-semibold text-slate-400 mb-1">Location</div>
+            <div class="font-bold text-emerald-400 flex items-center gap-1 text-sm">
+              <i class="fa-solid fa-circle-check text-xs"></i> Verified
+            </div>
+            <div class="text-[10px] text-slate-400 mt-0.5">&le; 50m Geofence passed</div>
+          </div>
+
+          <div class="bg-slate-900/60 border border-slate-800/80 rounded-xl p-3">
+            <div class="text-[10px] uppercase font-semibold text-slate-400 mb-1">Access</div>
+            <div class="font-bold text-emerald-400 flex items-center gap-1 text-sm">
+              <i class="fa-solid fa-circle-check text-xs"></i> Verified
+            </div>
+            <div class="text-[10px] text-slate-400 mt-0.5">PIN {{ booking.arrival_pin }} cleared</div>
+          </div>
+
+          <div class="bg-slate-900/60 border border-slate-800/80 rounded-xl p-3">
+            <div class="text-[10px] uppercase font-semibold text-slate-400 mb-1">License</div>
+            <div class="font-bold text-emerald-400 flex items-center gap-1 text-sm">
+              <i class="fa-solid fa-circle-check text-xs"></i> Active
+            </div>
+            <button type="button" onclick="viewSessionLeaseModal()" class="text-[10px] text-indigo-400 hover:text-indigo-300 font-semibold mt-0.5 underline block text-left">
+              View Micro-Lease &rarr;
+            </button>
+          </div>
+        </div>
+
+        <!-- End Session Action CTA -->
+        <div class="pt-5 flex flex-col sm:flex-row items-center justify-between gap-4">
+          <div class="text-xs text-slate-400 flex items-center gap-2">
+            <i class="fa-solid fa-shield-halved text-emerald-400"></i>
+            <span>₹{{ booking.escrow_deposit_amount | int }} UPI Escrow held safely &bull; Instant release upon checkout scan</span>
+          </div>
+          <button type="button" onclick="scrollToCheckout()" class="w-full sm:w-auto px-6 py-2.5 rounded-xl bg-gradient-to-r from-rose-600 to-amber-600 hover:from-rose-500 hover:to-amber-500 text-white text-xs font-bold transition flex items-center justify-center gap-2 shadow-lg shadow-rose-600/20">
+            <i class="fa-solid fa-door-closed"></i>
+            <span>End Session</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Quick Session Rules Card -->
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+        <div class="bg-slate-950/70 border border-slate-800 rounded-xl p-4">
+          <i class="fa-solid fa-wifi text-indigo-400 text-lg mb-2"></i>
+          <div class="text-xs font-bold text-white">High-Speed Wi-Fi</div>
+          <div class="text-[11px] text-slate-400 mt-0.5">Dual-band 600 Mbps connected</div>
+        </div>
+        <div class="bg-slate-950/70 border border-slate-800 rounded-xl p-4">
+          <i class="fa-solid fa-volume-low text-emerald-400 text-lg mb-2"></i>
+          <div class="text-xs font-bold text-white">Quiet Zone Adherence</div>
+          <div class="text-[11px] text-slate-400 mt-0.5">Please keep group voice moderate</div>
+        </div>
+        <div class="bg-slate-950/70 border border-slate-800 rounded-xl p-4">
+          <i class="fa-solid fa-bolt text-amber-400 text-lg mb-2"></i>
+          <div class="text-xs font-bold text-white">Electrical Courtesy</div>
+          <div class="text-[11px] text-slate-400 mt-0.5">Switch off fans/AC at checkout</div>
+        </div>
+      </div>
+
+      <!-- Check-out Trigger Card -->
+      <div id="checkoutSection" class="bg-slate-950 border border-slate-800 rounded-xl p-6 transition-all duration-300">
+        <h3 class="text-base font-bold text-white mb-2 flex items-center gap-2">
+          <i class="fa-solid fa-door-closed text-indigo-400"></i> Ready to leave? Check-out Handshake
+        </h3>
+        <p class="text-xs text-slate-400 mb-6">
+          Scan the exit door QR and take a quick 10-second video/photo showing fans and lights are switched off. SpaceLoop AI will clear your ₹100 deposit for <b>instant UPI refund</b>.
+        </p>
+
+        <form id="checkoutForm" onsubmit="handleCheckOut(event)" class="space-y-6">
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
+            <!-- Checkout QR -->
+            <div>
+              <label class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2">
+                Exit Door QR Token
+              </label>
+              <input type="text" id="checkoutQrToken" required value="{{ space.room_qr_token or 'SPACELOOP_QR_IITD_ROOM1' }}"
+                class="w-full bg-slate-900 border border-slate-800 rounded-xl px-4 py-3 text-white text-sm font-mono focus:outline-none focus:border-indigo-500 transition">
+            </div>
+
+            <!-- Exit Video/Photo Scan -->
+            <div>
+              <label class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2">
+                Exit Cleanliness & Switch Scan
+              </label>
+              <input type="text" id="exitPhotoUrl" value="{{ space.photos[0] }}"
+                placeholder="Exit photo verifying fans/lights off"
+                class="w-full bg-slate-900 border border-slate-800 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-indigo-500 transition">
+            </div>
+          </div>
+
+          <button type="submit" id="checkoutBtn" class="w-full sm:w-auto px-8 py-3.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold text-sm shadow-lg shadow-emerald-600/30 transition flex items-center justify-center gap-2">
+            <i class="fa-solid fa-money-bill-transfer"></i> Scan Exit QR & Release ₹100 Escrow
+          </button>
+        </form>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- STAGE 3: COMPLETED SESSION & INSTANT REFUND BANNER (Shown when checked_out) -->
+  <div id="checkoutSuccessPanel" class="{% if booking.session_state != 'checked_out' %}hidden{% endif %} space-y-6">
+    <div class="bg-gradient-to-r from-emerald-950/60 via-slate-900 to-emerald-950/60 border border-emerald-500/40 rounded-2xl p-6 sm:p-8 shadow-xl text-center">
+      <div class="w-16 h-16 rounded-full bg-emerald-500/20 border border-emerald-500/40 text-emerald-400 text-2xl flex items-center justify-center mx-auto mb-4">
+        <i class="fa-solid fa-check"></i>
+      </div>
+      <span class="px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 inline-block mb-2">
+        Instant UPI Escrow Verification
+      </span>
+      <h2 class="text-2xl font-black text-white">Session Completed & Verified!</h2>
+      <p class="text-xs text-slate-300 max-w-lg mx-auto mt-2">
+        Computer Vision condition-delta analysis compared your exit snapshot against the check-in baseline.
+      </p>
+
+      <!-- Exact Task 16 Condition & Escrow Display Box -->
+      <div class="bg-slate-950/90 border border-slate-800 rounded-2xl p-6 max-w-xl mx-auto my-6 text-left shadow-lg">
+        <div class="flex items-center justify-between pb-4 border-b border-slate-800">
+          <div>
+            <div class="text-[10px] uppercase font-bold text-slate-400">Condition Match</div>
+            <div id="conditionMatchScoreDisplay" class="text-3xl font-black text-emerald-400 mt-0.5">
+              {{ booking.condition_match_score or 96.0 }}%
+            </div>
+          </div>
+          <div class="text-right">
+            <div class="text-[10px] uppercase font-bold text-slate-400">Security Deposit</div>
+            <div class="text-2xl font-black text-white mt-0.5">₹{{ booking.escrow_deposit_amount|int }}</div>
+            <div id="checkoutStatusDisplay" class="text-xs font-bold mt-0.5 {% if booking.escrow_status == 'released' or booking.escrow_status == 'refunded' %}text-emerald-400{% elif booking.escrow_status == 'held' %}text-amber-400{% else %}text-indigo-400{% endif %}">
+              Status: {% if booking.escrow_status == 'released' or booking.escrow_status == 'refunded' %}Released{% elif booking.escrow_status == 'held' %}Review required{% else %}Refund processing{% endif %}
+            </div>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-4 text-xs font-semibold">
+          <div id="condFurnitureCheck" class="flex items-center gap-2 text-emerald-400">
+            <i class="fa-solid fa-check"></i> <span class="text-slate-200">Furniture unchanged</span>
+          </div>
+          <div id="condWasteCheck" class="flex items-center gap-2 text-emerald-400">
+            <i class="fa-solid fa-check"></i> <span class="text-slate-200">No visible waste detected</span>
+          </div>
+          <div id="condLightsCheck" class="flex items-center gap-2 {% if booking.fans_lights_cleared %}text-emerald-400{% else %}text-amber-400{% endif %}">
+            <i class="fa-solid {% if booking.fans_lights_cleared %}fa-check{% else %}fa-triangle-exclamation{% endif %}"></i> <span class="text-slate-200">Lights off</span>
+          </div>
+          <div id="condFanCheck" class="flex items-center gap-2 {% if booking.fans_lights_cleared %}text-emerald-400{% else %}text-amber-400{% endif %}">
+            <i class="fa-solid {% if booking.fans_lights_cleared %}fa-check{% else %}fa-triangle-exclamation{% endif %}"></i> <span class="text-slate-200">Fan off</span>
+          </div>
+        </div>
+
+        <div class="mt-4 pt-3 border-t border-slate-800 text-[11px] text-slate-400 flex items-center justify-between">
+          <span>Punctuality: <b class="text-emerald-400">{{ booking.objective_punctuality_score or 100.0 }}%</b></span>
+          <span>Payment Source: <b class="text-indigo-300">UPI Instant Credit</b></span>
+        </div>
+      </div>
+
+      <div class="flex items-center justify-center gap-4">
+        <a href="{{ url_for('dashboard_page') }}" class="px-6 py-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-semibold text-xs transition">
+          Back to Dashboard
+        </a>
+        <a href="{{ url_for('index') }}" class="px-6 py-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-xs transition shadow-lg shadow-indigo-600/30">
+          Book Another Space
+        </a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Micro-Lease Modal in Session Console (Task 15) -->
+<div id="sessionLeaseModal" class="fixed inset-0 bg-black/75 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+  <div class="bg-slate-900 border border-slate-800 w-full max-w-2xl rounded-2xl shadow-2xl max-h-[90vh] flex flex-col overflow-hidden">
+    <div class="p-4 bg-slate-950 border-b border-slate-800 flex items-center justify-between">
+      <div class="flex items-center gap-2">
+        <i class="fa-solid fa-file-contract text-emerald-400"></i>
+        <h3 class="text-sm font-bold text-white">Active Micro-Lease License Agreement</h3>
+      </div>
+      <button onclick="closeSessionLeaseModal()" class="text-slate-400 hover:text-white p-1">
+        <i class="fa-solid fa-xmark text-lg"></i>
+      </button>
+    </div>
+    <div class="p-6 overflow-y-auto flex-grow">
+      <pre class="font-mono text-xs whitespace-pre-wrap text-slate-300 bg-slate-950 p-4 rounded-xl border border-slate-800">{{ booking.micro_lease_agreement }}</pre>
+    </div>
+    <div class="p-4 bg-slate-950 border-t border-slate-800 flex justify-between items-center">
+      <span class="text-xs text-emerald-400 flex items-center gap-1.5 font-semibold">
+        <i class="fa-solid fa-circle-check"></i> Digitally executed & legally binding
+      </span>
+      <button onclick="closeSessionLeaseModal()" class="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-white text-xs font-semibold transition">
+        Close
+      </button>
+    </div>
+  </div>
+</div>
+
+<script>
+const spaceLat = {{ space.latitude }};
+const spaceLng = {{ space.longitude }};
+const spaceAllowedRadius = Math.max({{ space.geofence_radius_meters or 30 }}, 50);
+
+let checkinMode = 'gps'; // 'gps' | 'pin'
+let currentGpsCoords = null;
+let currentDistMeters = null;
+let gpsStatus = 'uninitialized'; // 'pending' | 'verified' | 'outside' | 'failed'
+
+// Calculate Haversine Distance in meters
+function haversineDistance(lat1, lon1, lat2, lon2) {
+  const R = 6371000; // Earth radius in meters
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLon = (lon2 - lon1) * Math.PI / 180;
+  const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+            Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+            Math.sin(dLon / 2) * Math.sin(dLon / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return Math.round(R * c * 10) / 10;
+}
+
+// Acquire Device Geolocation with High-Accuracy HTML5 Geolocation API
+function acquireDeviceGps(forceRetry = false) {
+  const statusPill = document.getElementById('gpsStatusPill');
+  const failureAlert = document.getElementById('gpsFailureAlert');
+  const distanceEl = document.getElementById('gpsDistanceDisplay');
+
+  if (!navigator.geolocation) {
+    handleGpsError({ message: "Geolocation is not supported by this browser." });
+    return;
+  }
+
+  gpsStatus = 'pending';
+  if (statusPill) {
+    statusPill.innerHTML = '<i class="fa-solid fa-satellite-dish animate-pulse"></i> Acquiring device GPS...';
+    statusPill.className = "text-[11px] font-semibold text-indigo-400 bg-indigo-500/10 px-2 py-0.5 rounded-md border border-indigo-500/20";
+  }
+  if (failureAlert) failureAlert.classList.add('hidden');
+
+  navigator.geolocation.getCurrentPosition(
+    (position) => {
+      const lat = position.coords.latitude;
+      const lng = position.coords.longitude;
+      currentGpsCoords = { lat, lng };
+
+      const dist = haversineDistance(lat, lng, spaceLat, spaceLng);
+      currentDistMeters = dist;
+      if (distanceEl) distanceEl.textContent = `${dist} m`;
+
+      if (dist <= spaceAllowedRadius) {
+        gpsStatus = 'verified';
+        if (statusPill) {
+          statusPill.innerHTML = `<i class="fa-solid fa-circle-check"></i> Location verified (${dist}m)`;
+          statusPill.className = "text-[11px] font-semibold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-md border border-emerald-500/20";
+        }
+      } else {
+        gpsStatus = 'outside';
+        if (statusPill) {
+          statusPill.innerHTML = `<i class="fa-solid fa-circle-xmark"></i> Outside Radius (${dist}m > ${spaceAllowedRadius}m)`;
+          statusPill.className = "text-[11px] font-semibold text-rose-400 bg-rose-500/10 px-2 py-0.5 rounded-md border border-rose-500/20";
+        }
+      }
+    },
+    (error) => {
+      handleGpsError(error);
+    },
+    { enableHighAccuracy: true, timeout: 8000, maximumAge: 0 }
+  );
+}
+
+function handleGpsError(error) {
+  gpsStatus = 'failed';
+  const statusPill = document.getElementById('gpsStatusPill');
+  const failureAlert = document.getElementById('gpsFailureAlert');
+  
+  if (statusPill) {
+    statusPill.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i> GPS Signal Unavailable';
+    statusPill.className = "text-[11px] font-semibold text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded-md border border-amber-500/20";
+  }
+  if (failureAlert) {
+    failureAlert.classList.remove('hidden');
+  }
+}
+
+function setCheckinMode(mode) {
+  checkinMode = mode;
+  const tabGps = document.getElementById('tabGpsMode');
+  const tabPin = document.getElementById('tabPinMode');
+  const pinContainer = document.getElementById('caretakerPinContainer');
+  const locationCard = document.getElementById('locationVerificationCard');
+  const failureAlert = document.getElementById('gpsFailureAlert');
+  const btnText = document.getElementById('checkinBtnText');
+
+  if (mode === 'pin') {
+    tabPin.className = "px-3 py-1.5 rounded-lg text-xs font-semibold bg-amber-600 text-white transition flex items-center gap-1.5 shadow-md shadow-amber-600/30";
+    tabGps.className = "px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-400 hover:text-white transition flex items-center gap-1.5";
+    pinContainer.classList.remove('hidden');
+    if (failureAlert) failureAlert.classList.add('hidden');
+    if (btnText) btnText.textContent = "Verify Caretaker PIN & Check In";
+    document.getElementById('caretakerPinInput').focus();
+  } else {
+    tabGps.className = "px-3 py-1.5 rounded-lg text-xs font-semibold bg-indigo-600 text-white transition flex items-center gap-1.5";
+    tabPin.className = "px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-400 hover:text-white transition flex items-center gap-1.5";
+    pinContainer.classList.add('hidden');
+    if (btnText) btnText.textContent = "Confirm Check-In & Enter Space";
+    if (gpsStatus === 'failed' && failureAlert) failureAlert.classList.remove('hidden');
+  }
+}
+
+function simulateScan() {
+  document.getElementById('checkinQrToken').value = "{{ space.room_qr_token or 'SPACELOOP_QR_IITD_ROOM1' }}";
+  alert("In-App Camera Scanned: Validated Space Door QR token '{{ space.room_qr_token or 'SPACELOOP_QR_IITD_ROOM1' }}'");
+}
+
+async function handleCheckIn(e) {
+  e.preventDefault();
+  const btn = document.getElementById('checkinBtn');
+  btn.disabled = true;
+
+  // Validation based on Mode
+  if (checkinMode === 'gps') {
+    if (gpsStatus === 'outside') {
+      alert(`GPS Geofence Violation: You are currently ${currentDistMeters}m away from the space (Maximum allowed: ${spaceAllowedRadius}m).\n\nYou must be physically present within 50m of the entrance to check in, or use the Caretaker Handshake PIN fallback.`);
+      btn.disabled = false;
+      return;
+    }
+
+    if (gpsStatus === 'failed' && !currentGpsCoords) {
+      const useFallback = confirm("GPS signal could not be acquired.\n\nWould you like to switch to the on-premise Caretaker Handshake PIN fallback now?");
+      if (useFallback) {
+        setCheckinMode('pin');
+      }
+      btn.disabled = false;
+      return;
+    }
+  }
+
+  btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Verifying Access Credentials...';
+
+  try {
+    const payload = {
+      method: checkinMode === 'pin' ? 'caretaker_pin' : 'gps_qr',
+      qr_token: document.getElementById('checkinQrToken').value,
+      entry_photo: document.getElementById('entryPhotoUrl').value
+    };
+
+    if (checkinMode === 'pin') {
+      payload.caretaker_pin = document.getElementById('caretakerPinInput').value;
+    } else {
+      payload.lat = currentGpsCoords ? currentGpsCoords.lat : spaceLat;
+      payload.lng = currentGpsCoords ? currentGpsCoords.lng : spaceLng;
+    }
+
+    const res = await fetch('/api/booking/{{ booking.id }}/check-in', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    const data = await res.json();
+
+    if (data.success) {
+      alert("Check-In Succeeded! " + data.message);
+      window.location.reload();
+    } else {
+      alert(data.error || 'Check-in failed.');
+      if (data.can_fallback) {
+        setCheckinMode('pin');
+      }
+      btn.disabled = false;
+      btn.innerHTML = '<i class="fa-solid fa-door-open"></i> Confirm Check-In & Enter Space';
+    }
+  } catch (err) {
+    alert('Network error communicating with session gateway.');
+    btn.disabled = false;
+    btn.innerHTML = '<i class="fa-solid fa-door-open"></i> Confirm Check-In & Enter Space';
+  }
+}
+
+async function handleCheckOut(e) {
+  e.preventDefault();
+  const btn = document.getElementById('checkoutBtn');
+  btn.disabled = true;
+  btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> AI Analyzing Room Condition & Clearing Escrow...';
+
+  try {
+    const payload = {
+      qr_token: document.getElementById('checkoutQrToken').value,
+      lat: spaceLat,
+      lng: spaceLng,
+      exit_photo: document.getElementById('exitPhotoUrl').value
+    };
+
+    const res = await fetch('/api/booking/{{ booking.id }}/check-out', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    const data = await res.json();
+
+    if (data.success) {
+      alert("Check-Out Verified! " + data.message);
+      window.location.reload();
+    } else {
+      alert(data.error || 'Check-out failed.');
+      btn.disabled = false;
+      btn.innerHTML = '<i class="fa-solid fa-money-bill-transfer"></i> Scan Exit QR & Release ₹100 Escrow';
+    }
+  } catch (err) {
+    alert('Network error communicating with check-out gateway.');
+    btn.disabled = false;
+    btn.innerHTML = '<i class="fa-solid fa-money-bill-transfer"></i> Scan Exit QR & Release ₹100 Escrow';
+  }
+}
+
+function viewSessionLeaseModal() {
+  document.getElementById('sessionLeaseModal').classList.remove('hidden');
+}
+
+function closeSessionLeaseModal() {
+  document.getElementById('sessionLeaseModal').classList.add('hidden');
+}
+
+function scrollToCheckout() {
+  const checkoutCard = document.getElementById('checkoutSection');
+  if (checkoutCard) {
+    checkoutCard.scrollIntoView({ behavior: 'smooth' });
+    checkoutCard.classList.add('ring-2', 'ring-indigo-500', 'bg-indigo-950/20');
+    setTimeout(() => {
+      checkoutCard.classList.remove('ring-2', 'ring-indigo-500', 'bg-indigo-950/20');
+    }, 2500);
+  }
+}
+
+// Live Session True-Time Countdown (Task 15)
+const endTimestampMs = {{ booking.end_timestamp_ms or 0 }};
+let countdownInterval = null;
+
+function updateCountdown() {
+  const countdownEl = document.getElementById('sessionCountdownDisplay');
+  const subtextEl = document.getElementById('sessionTimeSubtext');
+  if (!countdownEl || !endTimestampMs) return;
+
+  const now = Date.now();
+  const diffMs = endTimestampMs - now;
+
+  if (diffMs <= 0) {
+    countdownEl.textContent = "00:00:00";
+    countdownEl.className = "text-3xl font-mono font-black text-rose-400 tracking-widest my-1 animate-pulse";
+    if (subtextEl) {
+      subtextEl.innerHTML = "<span class='text-rose-400 font-bold'>Session window expired. Please complete check-out.</span>";
+    }
+    return;
+  }
+
+  const totalSec = Math.floor(diffMs / 1000);
+  const hours = Math.floor(totalSec / 3600);
+  const minutes = Math.floor((totalSec % 3600) / 60);
+  const seconds = totalSec % 60;
+
+  const hh = String(hours).padStart(2, '0');
+  const mm = String(minutes).padStart(2, '0');
+  const ss = String(seconds).padStart(2, '0');
+
+  countdownEl.textContent = `${hh}:${mm}:${ss}`;
+  countdownEl.className = diffMs < 15 * 60 * 1000 
+    ? "text-3xl font-mono font-black text-amber-400 tracking-widest my-1" 
+    : "text-3xl font-mono font-black text-emerald-400 tracking-widest my-1";
+}
+
+// Auto-trigger GPS location acquisition & timer on page load
+document.addEventListener('DOMContentLoaded', () => {
+  {% if booking.session_state == 'confirmed' %}
+  acquireDeviceGps();
+  {% endif %}
+  {% if booking.session_state == 'checked_in' %}
+  updateCountdown();
+  countdownInterval = setInterval(updateCountdown, 1000);
+  {% endif %}
+});
+</script>
+{% endblock %}

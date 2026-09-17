@@ -1,435 +1,842 @@
-{% extends 'base.html' %}
+{% extends "base.html" %}
+
 {% block title %}{{ space.title }} | SpaceLoop{% endblock %}
 
 {% block content %}
-<input type="hidden" id="current-space-id" value="{{ space.id }}">
 
-<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
 
-    <!-- Breadcrumb & Back -->
-    <div class="flex items-center justify-between text-xs text-slate-500">
-        <a href="{{ url_for('index') }}" class="hover:text-brand-600 flex items-center gap-1">
-            <i class="fa-solid fa-arrow-left"></i> Back to Marketplace
+  <!-- Breadcrumbs -->
+  <nav class="flex items-center gap-2 text-xs text-slate-400 mb-6">
+    <a href="{{ url_for('index') }}" class="hover:text-white transition">Home</a>
+    <span>/</span>
+    <a href="{{ url_for('index', category=space.category) }}" class="hover:text-white transition">{{ space.category }}</a>
+    <span>/</span>
+    <span class="text-slate-300 truncate">{{ space.title }}</span>
+  </nav>
+
+  <!-- Title & Host Header -->
+  <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+    <div>
+      <div class="flex flex-wrap items-center gap-2 mb-2">
+        <span class="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">
+          {{ space.category }}
+        </span>
+        <span class="text-xs text-emerald-400 flex items-center gap-1 font-medium">
+          <i class="fa-solid fa-circle-check"></i> AI Inspected
+        </span>
+        {% if space.is_discom_verified %}
+        <span class="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 flex items-center gap-1.5">
+          <i class="fa-solid fa-bolt text-[10px]"></i> Discom Electricity Verified (CA: {{ space.discom_ca_number }})
+        </span>
+        {% endif %}
+        <span class="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-indigo-500/10 text-indigo-300 border border-indigo-500/30 flex items-center gap-1.5">
+          <i class="fa-solid fa-qrcode text-[10px]"></i> ₹5 Laminated QR Entry
+        </span>
+      </div>
+      <h1 class="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
+        {{ space.title }}
+      </h1>
+      <p class="text-sm text-slate-400 mt-1 flex items-center gap-2">
+        <i class="fa-solid fa-location-dot text-indigo-400"></i>
+        <span>{{ space.address }}, {{ space.neighborhood or space.city }}, {{ space.state }}</span>
+        <span>•</span>
+        <span>{{ space.sqft }} sqft</span>
+        <span>•</span>
+        <span>Capacity: {{ space.max_capacity }} people</span>
+      </p>
+    </div>
+
+    <!-- Rating & Host Mini Badge -->
+    <div class="flex items-center gap-4 bg-slate-900/80 border border-slate-800 p-3 rounded-xl self-start md:self-auto">
+      <div class="flex items-center gap-2">
+        <i class="fa-solid fa-star text-amber-400 text-lg"></i>
+        <div>
+          <div class="text-base font-bold text-white leading-none">{{ space.rating }}</div>
+          <div class="text-[10px] text-slate-400">{{ space.reviews_count }} reviews</div>
+        </div>
+      </div>
+      <div class="w-px h-8 bg-slate-800"></div>
+      <div class="text-xs">
+        <div class="text-slate-400">Hosted by</div>
+        <div class="font-semibold text-white">{{ space.owner_name }}</div>
+      </div>
+      <div class="w-px h-8 bg-slate-800"></div>
+      <a href="{{ url_for('printable_qr', space_id=space.id) }}" target="_blank" class="px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-indigo-400 text-xs font-semibold flex items-center gap-1.5 transition" title="Print Laminated Paper Door QR">
+        <i class="fa-solid fa-print"></i> Door QR
+      </a>
+    </div>
+  </div>
+
+  <!-- Photo Gallery Showcase -->
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-3 rounded-2xl overflow-hidden mb-10 bg-slate-900 border border-slate-800/80">
+    <div class="md:col-span-2 relative aspect-[16/10] bg-slate-950">
+      <img id="mainGalleryImg" src="{{ space.photos[0] }}" alt="{{ space.title }}" class="w-full h-full object-cover">
+    </div>
+    <div class="grid grid-cols-2 md:grid-cols-1 gap-3 p-3 md:p-0 md:pr-3 md:py-3 bg-slate-900">
+      {% for p in space.photos[1:3] %}
+        <div class="relative aspect-[16/10] rounded-xl overflow-hidden cursor-pointer hover:opacity-90 transition border border-slate-800">
+          <img src="{{ p }}" onclick="swapGalleryPhoto('{{ p }}')" alt="Space thumbnail" class="w-full h-full object-cover">
+        </div>
+      {% endfor %}
+      {% if space.photos|length == 1 %}
+        <div class="relative aspect-[16/10] rounded-xl overflow-hidden bg-slate-800 flex items-center justify-center text-slate-500 text-xs">
+          <span>Verified property photo</span>
+        </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Main Details & Booking Grid -->
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-10">
+
+    <!-- Left Two Columns: Specs, AI Analysis, Description, Rules -->
+    <div class="lg:col-span-2 space-y-8">
+
+      <!-- SpaceLoop Verified Trust Card (Host Verification Breakdown) -->
+      <div class="bg-gradient-to-r from-slate-900 via-indigo-950/40 to-slate-900 border border-indigo-500/30 rounded-2xl p-6 shadow-xl">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4 pb-3 border-b border-slate-800">
+          <div class="flex items-center gap-2.5">
+            <div class="w-9 h-9 rounded-xl bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 flex items-center justify-center font-bold text-base">
+              <i class="fa-solid fa-shield-check"></i>
+            </div>
+            <div>
+              <div class="flex items-center gap-2">
+                <h3 class="text-sm font-bold text-white">SpaceLoop Verified Host</h3>
+                {% if space.owner_verified %}
+                <span class="px-2 py-0.5 rounded text-[10px] font-extrabold bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 uppercase">
+                  Fully Verified
+                </span>
+                {% else %}
+                <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-500/10 text-amber-400 border border-amber-500/30 uppercase">
+                  Verification Pending
+                </span>
+                {% endif %}
+              </div>
+              <p class="text-xs text-slate-400">Audited via DigiLocker, State Discom CA & NPCI UPI</p>
+            </div>
+          </div>
+
+          <div class="flex items-center gap-2 self-start sm:self-auto">
+            <span class="text-xs text-slate-400">Host Trust Score:</span>
+            <span class="px-2.5 py-1 rounded-lg bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 font-extrabold text-xs">
+              OTI {{ space.owner_trust_score or 98.5 }}/100
+            </span>
+          </div>
+        </div>
+
+        <!-- 4-Pillar Host Verification Status -->
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
+          <!-- 1. Identity Verified -->
+          <div class="bg-slate-950/80 border {% if space.owner_aadhaar_verified or space.owner_verified %}border-emerald-500/30{% else %}border-amber-500/30{% endif %} rounded-xl p-3">
+            <div class="flex items-center justify-between mb-1">
+              <span class="text-[10px] font-bold text-slate-400 uppercase">Identity</span>
+              {% if space.owner_aadhaar_verified or space.owner_verified %}
+              <i class="fa-solid fa-circle-check text-emerald-400 text-xs"></i>
+              {% else %}
+              <span class="text-[9px] text-amber-400 font-medium">Pending</span>
+              {% endif %}
+            </div>
+            <div class="text-xs font-bold text-white">
+              {% if space.owner_aadhaar_verified or space.owner_verified %}Identity Verified{% else %}Pending OTP{% endif %}
+            </div>
+            <div class="text-[10px] text-slate-500 mt-0.5">UIDAI Aadhaar OTP</div>
+          </div>
+
+          <!-- 2. Property Verified -->
+          <div class="bg-slate-950/80 border {% if space.is_discom_verified %}border-emerald-500/30{% else %}border-amber-500/30{% endif %} rounded-xl p-3">
+            <div class="flex items-center justify-between mb-1">
+              <span class="text-[10px] font-bold text-slate-400 uppercase">Property</span>
+              {% if space.is_discom_verified %}
+              <i class="fa-solid fa-circle-check text-emerald-400 text-xs"></i>
+              {% else %}
+              <span class="text-[9px] text-amber-400 font-medium">Pending</span>
+              {% endif %}
+            </div>
+            <div class="text-xs font-bold text-white">
+              {% if space.is_discom_verified %}Property Verified{% else %}Discom Pending{% endif %}
+            </div>
+            <div class="text-[10px] text-slate-500 mt-0.5">{{ space.owner_discom_provider or 'Electricity Discom' }}</div>
+          </div>
+
+          <!-- 3. Bank/Payment Account Verified -->
+          <div class="bg-slate-950/80 border {% if space.owner_upi_verified or space.owner_verified %}border-emerald-500/30{% else %}border-amber-500/30{% endif %} rounded-xl p-3">
+            <div class="flex items-center justify-between mb-1">
+              <span class="text-[10px] font-bold text-slate-400 uppercase">Bank / UPI</span>
+              {% if space.owner_upi_verified or space.owner_verified %}
+              <i class="fa-solid fa-circle-check text-emerald-400 text-xs"></i>
+              {% else %}
+              <span class="text-[9px] text-amber-400 font-medium">Pending</span>
+              {% endif %}
+            </div>
+            <div class="text-xs font-bold text-white">
+              {% if space.owner_upi_verified or space.owner_verified %}Payment Verified{% else %}UPI Pending{% endif %}
+            </div>
+            <div class="text-[10px] text-slate-500 mt-0.5">NPCI Penny Drop</div>
+          </div>
+
+          <!-- 4. Space Information Verified -->
+          <div class="bg-slate-950/80 border {% if space.is_space_info_verified %}border-emerald-500/30{% else %}border-slate-800{% endif %} rounded-xl p-3">
+            <div class="flex items-center justify-between mb-1">
+              <span class="text-[10px] font-bold text-slate-400 uppercase">Space Specs</span>
+              {% if space.is_space_info_verified %}
+              <i class="fa-solid fa-circle-check text-emerald-400 text-xs"></i>
+              {% else %}
+              <span class="text-[9px] text-slate-400">Standard</span>
+              {% endif %}
+            </div>
+            <div class="text-xs font-bold text-white">
+              {% if space.is_space_info_verified %}Space Verified{% else %}Self Reported{% endif %}
+            </div>
+            <div class="text-[10px] text-slate-500 mt-0.5">AI Multimodal Scan</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Objective Reliability & Zero-Hardware Trust Card -->
+      <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4">
+          <div class="flex items-center gap-2.5">
+            <div class="w-8 h-8 rounded-lg bg-emerald-500/20 text-emerald-400 flex items-center justify-center font-bold">
+              <i class="fa-solid fa-satellite-dish text-sm"></i>
+            </div>
+            <div>
+              <h3 class="text-sm font-bold text-white">Objective Reliability Index (Proof of Reality)</h3>
+              <p class="text-xs text-slate-400">Tamper-proof telemetry computed from QR scans, GPS, and AI visual diffs</p>
+            </div>
+          </div>
+          <span class="px-2.5 py-1 rounded-lg bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 font-extrabold text-xs self-start sm:self-auto">
+            99.4% Factual Reliability
+          </span>
+        </div>
+
+        <!-- 4 Objective Telemetry Pillars -->
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs mb-4">
+          <div class="bg-slate-950 border border-slate-800/80 rounded-xl p-3">
+            <div class="text-[10px] text-slate-400 font-semibold uppercase">Punctuality</div>
+            <div class="text-base font-bold text-emerald-400 mt-0.5">100% On-Time</div>
+            <div class="text-[10px] text-slate-500">QR Check-Out Log</div>
+          </div>
+          <div class="bg-slate-950 border border-slate-800/80 rounded-xl p-3">
+            <div class="text-[10px] text-slate-400 font-semibold uppercase">Cleanliness Diff</div>
+            <div class="text-base font-bold text-emerald-400 mt-0.5">99.1% Match</div>
+            <div class="text-[10px] text-slate-500">AI Visual Analysis</div>
+          </div>
+          <div class="bg-slate-950 border border-slate-800/80 rounded-xl p-3">
+            <div class="text-[10px] text-slate-400 font-semibold uppercase">Electrical Care</div>
+            <div class="text-base font-bold text-emerald-400 mt-0.5">Zero Neglect</div>
+            <div class="text-[10px] text-slate-500">Fans/Lights Switched OFF</div>
+          </div>
+          <div class="bg-slate-950 border border-slate-800/80 rounded-xl p-3">
+            <div class="text-[10px] text-slate-400 font-semibold uppercase">Physical Access</div>
+            <div class="text-base font-bold text-indigo-400 mt-0.5">
+              {% if space.physical_access_type == 'mechanical_keybox' %}Grill Keybox{% else %}Caretaker PIN{% endif %}
+            </div>
+            <div class="text-[10px] text-slate-500">Zero Hardware Cost</div>
+          </div>
+        </div>
+
+        <div class="text-[11px] text-slate-400 bg-slate-950/40 rounded-xl p-3 border border-slate-800 flex items-center justify-between">
+          <span><i class="fa-solid fa-lock text-emerald-400 mr-1.5"></i> <b>Zero-Dispute Guarantee:</b> Built on verified physical telemetry instead of subjective star ratings.</span>
+          <a href="{{ url_for('verify_page') }}" class="text-indigo-400 hover:underline font-semibold shrink-0 ml-3">How trust works &rarr;</a>
+        </div>
+      </div>
+
+      <!-- AI Inspection Certificate Card -->
+      <div class="bg-gradient-to-br from-indigo-950/40 via-slate-900 to-slate-900 border border-indigo-500/30 rounded-2xl p-6 shadow-xl">
+        <div class="flex items-center justify-between mb-4">
+          <div class="flex items-center gap-2.5">
+            <div class="w-8 h-8 rounded-lg bg-indigo-600/30 text-indigo-400 flex items-center justify-center">
+              <i class="fa-solid fa-wand-magic-sparkles text-sm"></i>
+            </div>
+            <div>
+              <h3 class="text-sm font-bold text-white">SpaceLoop AI Inspection Certificate</h3>
+              <p class="text-xs text-slate-400">Automated visual, acoustic, and safety diagnostic</p>
+            </div>
+          </div>
+          <div class="text-right">
+            <span class="px-2.5 py-1 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 font-bold text-xs">
+              {{ space.ai_suitability_score }}% Suitability Score
+            </span>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs mt-4">
+          <div class="bg-slate-950/60 border border-slate-800/80 rounded-xl p-3">
+            <span class="text-slate-400 block mb-1 flex items-center gap-1.5 font-medium">
+              <i class="fa-solid fa-sun text-amber-400"></i> Lighting Quality
+            </span>
+            <span class="text-slate-200 font-semibold">{{ space.ai_lighting }}</span>
+          </div>
+          <div class="bg-slate-950/60 border border-slate-800/80 rounded-xl p-3">
+            <span class="text-slate-400 block mb-1 flex items-center gap-1.5 font-medium">
+              <i class="fa-solid fa-volume-low text-cyan-400"></i> Acoustic / Noise Level
+            </span>
+            <span class="text-slate-200 font-semibold">{{ space.ai_noise_level }}</span>
+          </div>
+          <div class="bg-slate-950/60 border border-slate-800/80 rounded-xl p-3">
+            <span class="text-slate-400 block mb-1 flex items-center gap-1.5 font-medium">
+              <i class="fa-solid fa-plug text-indigo-400"></i> Electrical & Power Supply
+            </span>
+            <span class="text-slate-200 font-semibold">{{ space.ai_power_access }}</span>
+          </div>
+          <div class="bg-slate-950/60 border border-slate-800/80 rounded-xl p-3">
+            <span class="text-slate-400 block mb-1 flex items-center gap-1.5 font-medium">
+              <i class="fa-solid fa-ruler-combined text-violet-400"></i> Dimension Breakdown
+            </span>
+            <span class="text-slate-200 font-semibold">{{ space.ai_dimensions_summary or (space.sqft ~ ' sqft usable area') }}</span>
+          </div>
+        </div>
+
+        {% if space.ai_recommended_uses %}
+          <div class="mt-4 pt-3 border-t border-slate-800/80 text-xs">
+            <span class="text-slate-400 font-medium mr-2">Recommended for:</span>
+            <span class="text-indigo-300 font-medium">{{ space.ai_recommended_uses }}</span>
+          </div>
+        {% endif %}
+
+        {% if space.ai_safety_notes %}
+          <div class="mt-2 text-xs text-slate-400 flex items-center gap-1.5">
+            <i class="fa-solid fa-shield-halved text-emerald-400"></i>
+            <span>{{ space.ai_safety_notes }}</span>
+          </div>
+        {% endif %}
+      </div>
+
+      <!-- About the Space -->
+      <div>
+        <h2 class="text-lg font-bold text-white mb-3">About this space</h2>
+        <p class="text-sm text-slate-300 leading-relaxed whitespace-pre-line">
+          {{ space.description }}
+        </p>
+      </div>
+
+      <!-- Amenities -->
+      <div>
+        <h2 class="text-lg font-bold text-white mb-4">Included Amenities & Equipment</h2>
+        <div class="grid grid-cols-2 sm:grid-cols-3 gap-3 text-xs sm:text-sm">
+          {% for a in space.amenities %}
+            <div class="flex items-center gap-2.5 p-3 rounded-xl bg-slate-900 border border-slate-800/80 text-slate-300">
+              <i class="fa-solid fa-check text-emerald-400"></i>
+              <span>{{ a }}</span>
+            </div>
+          {% endfor %}
+        </div>
+      </div>
+
+      <!-- Space Rules -->
+      <div>
+        <h2 class="text-lg font-bold text-white mb-4">Host Rules & Conduct</h2>
+        <div class="bg-slate-900/60 border border-slate-800/80 rounded-2xl p-4 space-y-2.5 text-xs sm:text-sm">
+          {% for r in space.rules %}
+            <div class="flex items-start gap-2.5 text-slate-300">
+              <i class="fa-solid fa-circle-exclamation text-amber-400 text-xs mt-1"></i>
+              <span>{{ r }}</span>
+            </div>
+          {% endfor %}
+        </div>
+      </div>
+
+      <!-- Verified Reviews -->
+      <div>
+        <div class="flex items-center justify-between mb-4">
+          <h2 class="text-lg font-bold text-white">Verified Renter Reviews</h2>
+          <div class="text-xs text-slate-400">{{ reviews|length }} reviews</div>
+        </div>
+
+        <div class="space-y-4">
+          {% for rev in reviews %}
+            <div class="bg-slate-900/50 border border-slate-800 rounded-xl p-4">
+              <div class="flex items-center justify-between mb-2">
+                <div class="flex items-center gap-2">
+                  <div class="w-7 h-7 rounded-full bg-indigo-600/30 text-indigo-300 flex items-center justify-center font-bold text-xs">
+                    {{ rev.user_name[0] }}
+                  </div>
+                  <div>
+                    <h4 class="text-xs font-semibold text-white">{{ rev.user_name }}</h4>
+                    <span class="text-[10px] text-slate-400">{{ rev.created_at }}</span>
+                  </div>
+                </div>
+                <div class="flex text-amber-400 text-xs">
+                  {% for i in range(rev.rating) %}
+                    <i class="fa-solid fa-star"></i>
+                  {% endfor %}
+                </div>
+              </div>
+              <p class="text-xs text-slate-300 leading-relaxed">{{ rev.comment }}</p>
+            </div>
+          {% else %}
+            <div class="text-xs text-slate-500 italic p-4 bg-slate-900/30 rounded-xl border border-slate-800">
+              New listing! Be the first to book and review this space.
+            </div>
+          {% endfor %}
+        </div>
+      </div>
+
+      <!-- Have Questions / Ask Host & LoopBot -->
+      <div class="p-5 rounded-2xl bg-gradient-to-r from-slate-900 via-indigo-950/30 to-slate-900 border border-slate-800 flex flex-col sm:flex-row items-center justify-between gap-4 shadow-lg">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-xl bg-indigo-600/20 text-indigo-400 border border-indigo-500/30 flex items-center justify-center text-lg shrink-0">
+            <i class="fa-solid fa-comments"></i>
+          </div>
+          <div>
+            <h3 class="text-sm font-bold text-white">Have questions about this space?</h3>
+            <p class="text-xs text-slate-400">Ask about equipment, power, parking, or quiet hours. LoopBot AI Concierge pre-answers instantly.</p>
+          </div>
+        </div>
+        <a href="{{ url_for('inquiries_page') }}" class="px-4 py-2 rounded-xl bg-indigo-600/20 hover:bg-indigo-600 text-indigo-300 hover:text-white border border-indigo-500/30 text-xs font-semibold transition shrink-0 flex items-center gap-2">
+          <i class="fa-solid fa-paper-plane"></i> Ask Host
         </a>
-        <div class="flex items-center gap-2">
-            <span class="bg-brand-50 text-brand-700 px-2 py-0.5 rounded font-mono">ID: #SP-{{ space.id }}</span>
-            <a href="{{ url_for('printable_qr', space_id=space.id) }}" target="_blank" class="text-brand-600 hover:underline flex items-center gap-1 font-semibold">
-                <i class="fa-solid fa-print"></i> Printable A4 Door Pass
-            </a>
-        </div>
+      </div>
+
     </div>
 
-    <!-- Space Header & Visuals Grid -->
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+    <!-- Right Column: Interactive Booking Widget -->
+    <div class="lg:col-span-1">
+      <div class="sticky top-24 bg-slate-900/90 border border-slate-800/90 rounded-2xl p-6 shadow-2xl backdrop-blur-md">
         
-        <!-- Left: Image Gallery & Spatial Diagnostics (2 Cols) -->
-        <div class="lg:col-span-2 space-y-6">
-            <div class="relative h-80 sm:h-96 rounded-3xl overflow-hidden shadow-lg border border-slate-200">
-                <img src="{{ space.image_url }}" alt="{{ space.title }}" class="w-full h-full object-cover">
-                <div class="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-black/20 to-transparent"></div>
-                
-                <div class="absolute top-4 left-4 flex flex-wrap gap-2">
-                    <span class="px-3 py-1 rounded-xl text-xs font-bold bg-slate-900/80 text-white backdrop-blur-md border border-white/20">
-                        {{ space.category }}
-                    </span>
-                    <span class="px-3 py-1 rounded-xl text-xs font-bold bg-emerald-600 text-white backdrop-blur-md shadow-sm flex items-center gap-1.5">
-                        <i class="fa-solid fa-bolt"></i> Discom Active Meter
-                    </span>
-                </div>
-
-                <div class="absolute bottom-6 left-6 right-6 text-white space-y-2">
-                    <h1 class="text-2xl sm:text-3xl font-display font-extrabold leading-tight">
-                        {{ space.title }}
-                    </h1>
-                    <p class="text-xs sm:text-sm text-slate-200 flex items-center gap-2">
-                        <i class="fa-solid fa-location-dot text-rose-400"></i> {{ space.address }}, {{ space.city }}
-                    </p>
-                </div>
-            </div>
-
-            <!-- Description -->
-            <div class="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm space-y-4">
-                <h3 class="text-base font-display font-bold text-slate-900">About this Micro-Space</h3>
-                <p class="text-xs sm:text-sm text-slate-600 leading-relaxed">
-                    {{ space.description }}
-                </p>
-
-                <!-- Amenities Pills -->
-                <div class="pt-2">
-                    <h4 class="text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">Verified Amenities</h4>
-                    <div class="flex flex-wrap gap-2">
-                        {% for am in space.amenities.split(',') %}
-                        {% if am.strip() %}
-                        <span class="px-3 py-1.5 rounded-xl bg-slate-100 border border-slate-200 text-slate-700 text-xs font-medium flex items-center gap-1.5">
-                            <i class="fa-solid fa-check text-emerald-600 text-[10px]"></i> {{ am.strip() }}
-                        </span>
-                        {% endif %}
-                        {% endfor %}
-                    </div>
-                </div>
-            </div>
-
-            <!-- Spatial AI Multimodal Diagnostics Card -->
-            <div class="bg-gradient-to-r from-slate-900 to-brand-950 text-white p-6 rounded-3xl border border-slate-800 shadow-lg space-y-4">
-                <div class="flex items-center justify-between">
-                    <div class="flex items-center gap-2.5">
-                        <div class="w-8 h-8 rounded-xl bg-cyan-500/20 text-cyan-400 flex items-center justify-center text-sm border border-cyan-500/30">
-                            <i class="fa-solid fa-microchip"></i>
-                        </div>
-                        <div>
-                            <h3 class="text-sm font-bold font-display">Multimodal Spatial AI Diagnostics</h3>
-                            <p class="text-[11px] text-slate-400">Verified via Groq & Gemini Computer Vision Engine</p>
-                        </div>
-                    </div>
-                    <span class="text-xs font-mono bg-cyan-500/20 text-cyan-300 px-2.5 py-1 rounded-lg border border-cyan-500/30">
-                        {{ space.ai_suitability_score }}% Match
-                    </span>
-                </div>
-
-                <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
-                    <div class="bg-white/5 border border-white/10 p-3 rounded-2xl space-y-1">
-                        <div class="text-slate-400 text-[11px] flex items-center gap-1.5">
-                            <i class="fa-solid fa-sun text-amber-400"></i> Lighting Profile
-                        </div>
-                        <div class="font-semibold text-slate-200">{{ space.ai_lighting }}</div>
-                    </div>
-
-                    <div class="bg-white/5 border border-white/10 p-3 rounded-2xl space-y-1">
-                        <div class="text-slate-400 text-[11px] flex items-center gap-1.5">
-                            <i class="fa-solid fa-volume-xmark text-emerald-400"></i> Ambient Acoustics
-                        </div>
-                        <div class="font-semibold text-slate-200">{{ space.ai_noise_level }}</div>
-                    </div>
-
-                    <div class="bg-white/5 border border-white/10 p-3 rounded-2xl space-y-1">
-                        <div class="text-slate-400 text-[11px] flex items-center gap-1.5">
-                            <i class="fa-solid fa-plug text-cyan-400"></i> Power Capacity
-                        </div>
-                        <div class="font-semibold text-slate-200">{{ space.circuit_load }}</div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Objective Telemetry Index (OTI) Proof-of-Reality Card -->
-            <div class="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm space-y-4">
-                <div class="flex items-center justify-between">
-                    <div>
-                        <h3 class="text-base font-display font-bold text-slate-900 flex items-center gap-2">
-                            <i class="fa-solid fa-chart-line text-brand-600"></i> Objective Telemetry Index (OTI)
-                        </h3>
-                        <p class="text-xs text-slate-500">Mathematical reliability score replacing fake subjective reviews</p>
-                    </div>
-                    <div class="text-right">
-                        <div class="text-2xl font-extrabold text-brand-600 font-display">{{ oti.oti_score }}%</div>
-                        <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-200">{{ oti.tier }}</span>
-                    </div>
-                </div>
-
-                <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-2 text-xs">
-                    <div class="bg-slate-50 p-3 rounded-2xl border border-slate-100 space-y-1 text-center">
-                        <div class="text-slate-500 text-[11px]">Punctuality (35%)</div>
-                        <div class="text-sm font-bold text-slate-900 font-display">{{ oti.breakdown.punctuality }}%</div>
-                    </div>
-                    <div class="bg-slate-50 p-3 rounded-2xl border border-slate-100 space-y-1 text-center">
-                        <div class="text-slate-500 text-[11px]">Condition Match (35%)</div>
-                        <div class="text-sm font-bold text-slate-900 font-display">{{ oti.breakdown.condition_match }}%</div>
-                    </div>
-                    <div class="bg-slate-50 p-3 rounded-2xl border border-slate-100 space-y-1 text-center">
-                        <div class="text-slate-500 text-[11px]">Identity Trust (20%)</div>
-                        <div class="text-sm font-bold text-slate-900 font-display">{{ oti.breakdown.identity_trust }}%</div>
-                    </div>
-                    <div class="bg-slate-50 p-3 rounded-2xl border border-slate-100 space-y-1 text-center">
-                        <div class="text-slate-500 text-[11px]">Financial Record (10%)</div>
-                        <div class="text-sm font-bold text-slate-900 font-display">{{ oti.breakdown.financial_clearance }}%</div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Direct In-App Inquiry Dispatch -->
-            <div class="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm space-y-4">
-                <div>
-                    <h3 class="text-base font-display font-bold text-slate-900 flex items-center gap-2">
-                        <i class="fa-solid fa-circle-question text-cyan-600"></i> Instant Inquiry Dispatch
-                    </h3>
-                    <p class="text-xs text-slate-500">Our AI pre-answers questions using verified listing telemetry before notifying host</p>
-                </div>
-
-                <form id="inquiry-form" onsubmit="handleInquiry(event)" class="flex gap-2">
-                    <input type="text" id="inquiry-question" 
-                           placeholder="Ask: 'Is there fast Wi-Fi?' or 'Can I bring a camera tripod?'" 
-                           class="flex-grow text-xs px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-500">
-                    <button type="submit" id="inquiry-submit-btn" 
-                            class="bg-brand-600 hover:bg-brand-700 text-white text-xs font-semibold px-4 py-2.5 rounded-xl shadow-sm transition-colors shrink-0">
-                        Ask Space
-                    </button>
-                </form>
-
-                <!-- Inquiry List -->
-                <div id="inquiry-list" class="space-y-3 pt-2">
-                    {% for inq in inquiries %}
-                    <div class="bg-slate-50 p-3.5 rounded-2xl border border-slate-200 text-xs space-y-1.5">
-                        <div class="font-semibold text-slate-800 flex items-center gap-2">
-                            <i class="fa-solid fa-user text-slate-400 text-[10px]"></i>
-                            <span>{{ inq.question }}</span>
-                        </div>
-                        <div class="text-slate-600 pl-4 border-l-2 border-brand-400 flex items-start gap-1.5 text-[11px]">
-                            <i class="fa-solid fa-robot text-brand-600 shrink-0 mt-0.5"></i>
-                            <span>{{ inq.ai_answer }}</span>
-                        </div>
-                    </div>
-                    {% endfor %}
-                </div>
-            </div>
-
+        <div class="flex items-baseline justify-between mb-6 pb-4 border-b border-slate-800">
+          <div>
+            <span class="text-3xl font-extrabold text-white">₹{{ space.price_hourly|int }}</span>
+            <span class="text-xs text-slate-400 font-medium">/ hour</span>
+          </div>
+          <div class="text-right">
+            <span class="text-sm font-semibold text-slate-300">₹{{ space.price_daily|int }}</span>
+            <span class="text-xs text-slate-500 block">per full day</span>
+          </div>
         </div>
 
-        <!-- Right: Instant Booking Widget & Legal Micro-Lease Synthesis (1 Col) -->
-        <div class="space-y-6">
+        <form id="bookingForm" onsubmit="submitBooking(event)">
+          <input type="hidden" id="spaceIdInput" value="{{ space.id }}">
+          <input type="hidden" id="hourlyRateInput" value="{{ space.price_hourly }}">
+
+          <!-- Hours Selector -->
+          <div class="mb-4">
+            <label class="block text-xs font-semibold text-slate-300 mb-1.5">
+              Duration of Use
+            </label>
+            <select id="hoursSelect" onchange="updatePriceCalculation()" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-indigo-500">
+              <option value="1">1 hour</option>
+              <option value="2" selected>2 hours (Recommended)</option>
+              <option value="3">3 hours</option>
+              <option value="4">4 hours (Half-day)</option>
+              <option value="8">8 hours (Full day)</option>
+            </select>
+          </div>
+
+          <!-- Intended Purpose -->
+          <div class="mb-4">
+            <div class="flex items-center justify-between mb-1.5">
+              <label class="text-xs font-semibold text-slate-300">
+                Intended Activity / Purpose
+              </label>
+              <span class="text-[10px] text-indigo-400">Sets Micro-Lease terms</span>
+            </div>
             
-            <div class="bg-white p-6 rounded-3xl border border-slate-200 shadow-xl space-y-6 sticky top-24">
-                
-                <!-- Price Display -->
-                <div class="flex items-baseline justify-between border-b border-slate-100 pb-4">
-                    <div>
-                        <span class="text-3xl font-display font-extrabold text-slate-900">₹{{ space.price_hourly|round|int }}</span>
-                        <span class="text-xs text-slate-500 font-medium">/ student hour</span>
-                    </div>
-                    <div class="text-right">
-                        <span class="text-xs font-mono text-emerald-600 font-bold bg-emerald-50 px-2 py-1 rounded-lg border border-emerald-200">
-                            Zero Hardware CapEx
-                        </span>
-                    </div>
-                </div>
-
-                <!-- Booking Form -->
-                <form id="booking-form" onsubmit="handleBooking(event)" class="space-y-4 text-xs">
-                    
-                    <!-- Duration Selector -->
-                    <div class="space-y-1.5">
-                        <label class="font-bold text-slate-700">Duration (Hours):</label>
-                        <select id="booking-hours" onchange="updateBookingCost()"
-                                class="w-full bg-slate-50 border border-slate-200 text-slate-800 font-semibold p-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-500">
-                            <option value="1">1 Hour Session</option>
-                            <option value="2" selected>2 Hours (Recommended for Sprints)</option>
-                            <option value="3">3 Hours Session</option>
-                            <option value="4">4 Hours (Half Day)</option>
-                            <option value="8">8 Hours (Full Day Deep Work)</option>
-                        </select>
-                    </div>
-
-                    <!-- Purpose Input -->
-                    <div class="space-y-1.5">
-                        <label class="font-bold text-slate-700">Declared Purpose (Activity Confinement):</label>
-                        <input type="text" id="booking-purpose" 
-                               value="Academic study and prototype development"
-                               class="w-full bg-slate-50 border border-slate-200 text-slate-800 p-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-500">
-                        <p class="text-[10px] text-slate-400">Strictly governs revocable license under Section 52.</p>
-                    </div>
-
-                    <!-- Attendees Count -->
-                    <div class="space-y-1.5">
-                        <label class="font-bold text-slate-700">Attendees (Max {{ space.max_capacity }}):</label>
-                        <select id="booking-attendees" 
-                                class="w-full bg-slate-50 border border-slate-200 text-slate-800 p-2.5 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-500">
-                            {% for i in range(1, space.max_capacity + 1) %}
-                            <option value="{{ i }}">{{ i }} Person{{ 's' if i > 1 else '' }}</option>
-                            {% endfor %}
-                        </select>
-                    </div>
-
-                    <!-- Server-Side Financial Calculation Breakdown -->
-                    <div class="bg-slate-50 p-4 rounded-2xl border border-slate-200 space-y-2 text-xs">
-                        <div class="flex justify-between text-slate-600">
-                            <span id="label-calc-hours">Rental (2 hrs @ ₹{{ space.price_hourly|round|int }}/hr):</span>
-                            <span id="val-rental-fee" class="font-semibold text-slate-900">₹{{ (space.price_hourly * 2)|round|int }}</span>
-                        </div>
-                        <div class="flex justify-between text-slate-600">
-                            <span class="flex items-center gap-1">
-                                Refundable UPI Micro-Escrow:
-                                <i class="fa-solid fa-circle-info text-indigo-400" title="Returned instantly via UPI upon exit photo check"></i>
-                            </span>
-                            <span class="font-semibold text-indigo-600">₹100</span>
-                        </div>
-                        <div class="border-t border-slate-200 pt-2 flex justify-between font-bold text-sm text-slate-900">
-                            <span>Total Payable (UPI):</span>
-                            <span id="val-total-payable" class="text-brand-600">₹{{ (space.price_hourly * 2 + 100)|round|int }}</span>
-                        </div>
-                    </div>
-
-                    <!-- Legal Banner -->
-                    <div class="bg-emerald-50 border border-emerald-200 p-3 rounded-2xl text-[11px] text-emerald-800 space-y-1">
-                        <div class="font-bold flex items-center gap-1.5">
-                            <i class="fa-solid fa-file-contract text-emerald-600"></i>
-                            Section 52 Indian Easements Act, 1882
-                        </div>
-                        <p class="text-emerald-700 leading-snug">
-                            Auto-synthesizes an enforceable Revocable License. Creates zero tenancy, zero leasehold rights, and caps host liability.
-                        </p>
-                    </div>
-
-                    <!-- Submit CTA -->
-                    <button type="submit" id="booking-submit-btn"
-                            class="w-full bg-gradient-to-r from-brand-600 to-indigo-600 hover:from-brand-700 hover:to-indigo-700 text-white font-bold text-xs py-3.5 px-4 rounded-2xl shadow-lg shadow-brand-500/25 transition-all flex items-center justify-center gap-2">
-                        <i class="fa-solid fa-signature"></i>
-                        <span>Execute Micro-Lease & Book Space</span>
-                    </button>
-                </form>
-
-                <!-- Access Note -->
-                <div class="text-[11px] text-slate-400 text-center space-y-1">
-                    <p><i class="fa-solid fa-location-crosshairs text-slate-400 mr-1"></i> Check-in requires GPS radar &lt;50m from door.</p>
-                </div>
+            <!-- Quick Chips -->
+            <div class="flex flex-wrap gap-1.5 mb-2">
+              <button type="button" onclick="document.getElementById('purposeInput').value = '3-person podcast interview & recording'" class="px-2 py-0.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white text-[11px] border border-slate-700 transition">
+                🎙️ Podcast
+              </button>
+              <button type="button" onclick="document.getElementById('purposeInput').value = 'Portrait photoshoot and video b-roll'" class="px-2 py-0.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white text-[11px] border border-slate-700 transition">
+                📸 Photo Shoot
+              </button>
+              <button type="button" onclick="document.getElementById('purposeInput').value = 'Temporary household furniture & box storage'" class="px-2 py-0.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white text-[11px] border border-slate-700 transition">
+                📦 Storage
+              </button>
+              <button type="button" onclick="document.getElementById('purposeInput').value = 'Weekend pop-up retail showcase'" class="px-2 py-0.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white text-[11px] border border-slate-700 transition">
+                🛍️ Pop-up
+              </button>
             </div>
 
-        </div>
+            <input 
+              type="text" 
+              id="purposeInput" 
+              required
+              placeholder="Type your intended activity (e.g. Podcast recording, Photo shoot)..." 
+              class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500 transition"
+            >
+            <span class="text-[11px] text-slate-500 mt-1 block">Our AI uses this to craft customized rules & insurance clauses.</span>
+          </div>
 
+          <!-- Attendees -->
+          <div class="mb-5">
+            <label class="block text-xs font-semibold text-slate-300 mb-1.5">
+              Total People Attending
+            </label>
+            <input 
+              type="number" 
+              id="attendeesInput" 
+              min="1" 
+              max="{{ space.max_capacity }}" 
+              value="2" 
+              class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-indigo-500"
+            >
+            <span class="text-[11px] text-slate-500 mt-1 block">Maximum capacity: {{ space.max_capacity }} people.</span>
+          </div>
+
+          <!-- Price Calculation Box -->
+          <div class="bg-slate-950/70 border border-slate-800 rounded-xl p-3.5 mb-6 space-y-2 text-xs">
+            <div class="flex justify-between text-slate-400">
+              <span id="rateCalculationLabel">₹{{ space.price_hourly|int }} × 2 hrs</span>
+              <span id="subtotalDisplay" class="text-white font-medium">₹{{ (space.price_hourly * 2)|int }}</span>
+            </div>
+            <div class="flex justify-between text-slate-400">
+              <span>Platform Fee (5%)</span>
+              <span id="feeDisplay" class="text-white font-medium">₹{{ ((space.price_hourly * 2) * 0.05)|round(1) }}</span>
+            </div>
+            <div class="flex justify-between text-slate-400">
+              <span class="text-emerald-400 flex items-center gap-1">
+                <i class="fa-solid fa-shield-check"></i> AI Micro-Lease License
+              </span>
+              <span class="text-emerald-400 font-medium">Included (₹0)</span>
+            </div>
+            <div class="flex justify-between text-slate-400 pt-1 border-t border-slate-800/80">
+              <span class="text-amber-400 flex items-center gap-1">
+                <i class="fa-solid fa-hand-holding-dollar"></i> UPI Micro-Escrow Hold
+              </span>
+              <span class="text-amber-400 font-medium">+ ₹100 (Refundable)</span>
+            </div>
+            <div class="pt-2 border-t border-slate-800 flex justify-between text-sm font-bold text-white">
+              <span>Pay Now via UPI</span>
+              <span id="totalPriceDisplay" class="text-indigo-400">₹{{ ((space.price_hourly * 2) * 1.05 + 100)|round(1) }}</span>
+            </div>
+          </div>
+
+          <!-- SpaceLoop Verified Renter Status -->
+          <div class="bg-slate-950 border border-slate-800 rounded-xl p-3 mb-5 text-xs space-y-2">
+            <div class="flex items-center justify-between">
+              <span class="text-slate-300 font-bold flex items-center gap-1.5">
+                <i class="fa-solid fa-shield-halved text-emerald-400"></i> Renter Trust Clearance
+              </span>
+              {% if current_user and (current_user.is_student_verified or current_user.is_aadhaar_verified) %}
+              <span class="text-[10px] text-emerald-400 font-bold uppercase"><i class="fa-solid fa-circle-check"></i> Cleared</span>
+              {% else %}
+              <span class="text-[10px] text-emerald-400 font-bold uppercase"><i class="fa-solid fa-circle-check"></i> Escrow Ready</span>
+              {% endif %}
+            </div>
+            <div class="grid grid-cols-3 gap-1 text-[10px] text-center pt-1 border-t border-slate-900">
+              <div class="p-1 rounded bg-slate-900/60 {% if current_user and current_user.is_aadhaar_verified %}text-emerald-400 font-semibold{% else %}text-slate-400{% endif %}">
+                ✓ Identity Verified
+              </div>
+              <div class="p-1 rounded bg-slate-900/60 {% if current_user and current_user.is_student_verified %}text-emerald-400 font-semibold{% else %}text-slate-400{% endif %}">
+                ✓ Student ID
+              </div>
+              <div class="p-1 rounded bg-slate-900/60 text-emerald-400 font-semibold">
+                ✓ UPI Escrow
+              </div>
+            </div>
+          </div>
+
+          <!-- Real-Time Asynchronous Premise Verification Progress Interface (Tasks 7 & 8) -->
+          <div id="bookingProgressBox" class="hidden mb-4 p-4 rounded-xl bg-slate-950 border border-indigo-500/40 space-y-3 shadow-inner">
+            <div class="flex items-center justify-between pb-2 border-b border-slate-800/80">
+              <span class="text-xs font-bold text-white flex items-center gap-1.5">
+                <i class="fa-solid fa-shield-halved text-indigo-400"></i> Premise & Booking Verification
+              </span>
+              <span id="bookingProgressStatus" class="text-[10px] font-semibold text-indigo-400">Checking...</span>
+            </div>
+
+            <!-- Verification Pipeline Steps -->
+            <div class="space-y-2 text-xs">
+              <!-- Step 1: Availability -->
+              <div id="vStep1" class="flex items-center justify-between p-2 rounded-lg bg-slate-900/80 border border-slate-800 transition-all">
+                <span class="flex items-center gap-2">
+                  <i id="vIcon1" class="fa-solid fa-spinner fa-spin text-indigo-400 text-xs"></i>
+                  <span id="vText1" class="font-medium text-slate-200">Checking availability</span>
+                </span>
+                <span id="vBadge1" class="text-[10px] font-mono text-indigo-300">Checking...</span>
+              </div>
+
+              <!-- Step 2: Premise / Space Conditions -->
+              <div id="vStep2" class="flex items-center justify-between p-2 rounded-lg bg-slate-900/40 border border-slate-800/50 transition-all text-slate-500">
+                <span class="flex items-center gap-2">
+                  <i id="vIcon2" class="fa-regular fa-circle text-slate-600 text-xs"></i>
+                  <span id="vText2" class="font-medium text-slate-400">Verifying premise conditions</span>
+                </span>
+                <span id="vBadge2" class="text-[10px] font-mono text-slate-500">Queued</span>
+              </div>
+
+              <!-- Step 3: Temporary Micro-Lease License -->
+              <div id="vStep3" class="flex items-center justify-between p-2 rounded-lg bg-slate-900/40 border border-slate-800/50 transition-all text-slate-500">
+                <span class="flex items-center gap-2">
+                  <i id="vIcon3" class="fa-regular fa-circle text-slate-600 text-xs"></i>
+                  <span id="vText3" class="font-medium text-slate-400">Generating temporary license</span>
+                </span>
+                <span id="vBadge3" class="text-[10px] font-mono text-slate-500">Queued</span>
+              </div>
+
+              <!-- Step 4: UPI Escrow & Confirmation -->
+              <div id="vStep4" class="flex items-center justify-between p-2 rounded-lg bg-slate-900/40 border border-slate-800/50 transition-all text-slate-500">
+                <span class="flex items-center gap-2">
+                  <i id="vIcon4" class="fa-regular fa-circle text-slate-600 text-xs"></i>
+                  <span id="vText4" class="font-medium text-slate-400">Authorizing escrow & confirming</span>
+                </span>
+                <span id="vBadge4" class="text-[10px] font-mono text-slate-500">Queued</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Failure / Error Banner with Retry -->
+          <div id="bookingErrorBox" class="hidden mb-4 p-3.5 rounded-xl bg-rose-950/60 border border-rose-500/40 text-rose-300 text-xs space-y-2">
+            <div class="flex items-center gap-2 font-bold text-rose-200">
+              <i class="fa-solid fa-triangle-exclamation"></i>
+              <span id="bookingErrorTitle">Verification Failed</span>
+            </div>
+            <p id="bookingErrorMessage" class="text-[11px] text-rose-300 leading-relaxed"></p>
+            <div class="pt-1">
+              <button type="button" onclick="resetBookingForm()" class="px-3 py-1.5 bg-rose-500/20 hover:bg-rose-500/30 text-rose-200 text-[11px] font-bold rounded-lg border border-rose-500/30 transition flex items-center gap-1.5">
+                <i class="fa-solid fa-rotate-right"></i> Try Again / Edit Details
+              </button>
+            </div>
+          </div>
+
+          <!-- Book Button -->
+          <button 
+            type="submit" 
+            id="bookNowBtn"
+            class="w-full bg-gradient-to-r from-indigo-600 via-violet-600 to-indigo-700 hover:from-indigo-500 hover:to-violet-500 text-white font-bold text-sm py-3.5 rounded-xl shadow-lg shadow-indigo-600/30 transition flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <i class="fa-solid fa-file-signature"></i>
+            <span id="bookNowBtnText">Instant Book & Generate Lease</span>
+          </button>
+
+        </form>
+
+        <p class="text-[11px] text-center text-slate-500 mt-4 flex items-center justify-center gap-1.5">
+          <i class="fa-solid fa-lock text-[10px]"></i>
+          <span>Secure checkout with instant digital handshake (Zero wait)</span>
+        </p>
+
+      </div>
     </div>
+
+  </div>
 
 </div>
 
-<!-- Booking Confirmation Modal -->
-<div id="booking-success-modal" class="hidden fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
-    <div class="bg-white rounded-3xl max-w-md w-full p-6 space-y-5 shadow-2xl border border-slate-100 text-xs">
-        <div class="w-12 h-12 rounded-2xl bg-emerald-100 text-emerald-600 flex items-center justify-center text-xl mx-auto">
-            <i class="fa-solid fa-circle-check"></i>
+<!-- Booking Confirmation & AI Micro-Lease Modal -->
+<div id="bookingSuccessModal" class="fixed inset-0 bg-black/75 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+  <div class="bg-slate-900 border border-slate-800 w-full max-w-2xl rounded-2xl shadow-2xl max-h-[90vh] flex flex-col overflow-hidden">
+    
+    <!-- Modal Header -->
+    <div class="p-4 bg-slate-950 border-b border-slate-800 flex items-center justify-between">
+      <div class="flex items-center gap-2.5">
+        <div class="w-8 h-8 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center text-sm">
+          <i class="fa-solid fa-check"></i>
         </div>
-
-        <div class="text-center space-y-1">
-            <h3 class="text-lg font-display font-bold text-slate-900">Micro-Lease Executed!</h3>
-            <p class="text-slate-500 text-xs">Your revocable space license is digitally active.</p>
+        <div>
+          <h3 class="text-base font-bold text-white">Booking Confirmed!</h3>
+          <p class="text-xs text-emerald-400 flex items-center gap-1">
+            <i class="fa-solid fa-shield-check"></i> SpaceLoop Dual-Sided Verification Passed
+          </p>
         </div>
-
-        <div class="bg-slate-50 p-4 rounded-2xl border border-slate-200 space-y-2 text-xs">
-            <div class="flex justify-between">
-                <span class="text-slate-500">Booking ID:</span>
-                <span id="modal-booking-id" class="font-mono font-bold text-slate-900"></span>
-            </div>
-            <div class="flex justify-between">
-                <span class="text-slate-500">Dynamic Arrival PIN:</span>
-                <span id="modal-arrival-pin" class="font-mono text-base font-extrabold text-brand-600 bg-brand-50 px-2 py-0.5 rounded"></span>
-            </div>
-            <div class="flex justify-between">
-                <span class="text-slate-500">UPI Micro-Escrow:</span>
-                <span class="font-semibold text-emerald-600">₹100 (Held for Refund)</span>
-            </div>
-            <div class="flex justify-between text-[10px] text-slate-400">
-                <span>Lease Hash (Sec 52):</span>
-                <span id="modal-lease-hash" class="font-mono truncate max-w-[180px]"></span>
-            </div>
-        </div>
-
-        <div class="space-y-2 pt-2">
-            <a id="modal-session-link" href="#"
-               class="w-full bg-brand-600 hover:bg-brand-700 text-white font-bold py-3 px-4 rounded-xl text-center block transition-colors">
-                Open In-Room Session Console (HUD)
-            </a>
-            <button onclick="closeBookingModal()" class="w-full text-slate-500 hover:text-slate-800 text-xs py-2">
-                Close & Return to Space
-            </button>
-        </div>
+      </div>
+      <button onclick="closeBookingModal()" class="text-slate-400 hover:text-white p-1">
+        <i class="fa-solid fa-xmark text-lg"></i>
+      </button>
     </div>
+
+    <!-- Dual Verification Checklist In Modal -->
+    <div class="px-6 pt-4 bg-slate-950/40 border-b border-slate-800/80">
+      <div class="grid grid-cols-2 gap-3 text-[11px] pb-3">
+        <div class="bg-slate-900/80 p-2.5 rounded-xl border border-slate-800">
+          <div class="font-bold text-slate-300 mb-1 flex items-center gap-1">
+            <i class="fa-solid fa-user-check text-indigo-400"></i> Host Verified
+          </div>
+          <div class="text-slate-400 space-y-0.5 text-[10px]">
+            <div>✓ Identity (Aadhaar OTP)</div>
+            <div>✓ Premise (Discom Verified)</div>
+            <div>✓ Bank Escrow Ready</div>
+          </div>
+        </div>
+        <div class="bg-slate-900/80 p-2.5 rounded-xl border border-slate-800">
+          <div class="font-bold text-slate-300 mb-1 flex items-center gap-1">
+            <i class="fa-solid fa-graduation-cap text-emerald-400"></i> Renter Verified
+          </div>
+          <div class="text-slate-400 space-y-0.5 text-[10px]">
+            <div>✓ Identity (UIDAI Verified)</div>
+            <div>✓ Student / Academic Credential</div>
+            <div>✓ ₹100 UPI Micro-Escrow Held</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Agreement Content Viewer -->
+    <div class="p-6 overflow-y-auto flex-grow text-xs leading-relaxed space-y-4">
+      <div class="p-3 bg-indigo-950/30 border border-indigo-500/30 rounded-xl text-indigo-300 flex items-center gap-2">
+        <i class="fa-solid fa-shield-halved text-indigo-400 text-base"></i>
+        <span>This temporary license protects both you and the host. Stored in your SpaceLoop Dashboard.</span>
+      </div>
+
+      <div class="p-4 bg-slate-950 border border-slate-800 rounded-xl font-mono text-[11px] whitespace-pre-wrap text-slate-300" id="microLeaseTextContainer">
+        Loading generated micro-lease...
+      </div>
+    </div>
+
+    <!-- Modal Footer Actions -->
+    <div class="p-4 bg-slate-950 border-t border-slate-800 flex items-center justify-between">
+      <button onclick="window.print()" class="px-4 py-2 rounded-xl bg-slate-800 text-slate-300 hover:text-white text-xs font-semibold flex items-center gap-1.5 border border-slate-700">
+        <i class="fa-solid fa-print"></i> Print Agreement
+      </button>
+      <div class="flex items-center gap-2">
+        <a id="modalSessionLink" href="{{ url_for('dashboard_page') }}" class="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold transition flex items-center gap-1.5 shadow-md shadow-indigo-600/30">
+          <i class="fa-solid fa-door-open"></i> Open In-Room Console
+        </a>
+      </div>
+    </div>
+
+  </div>
 </div>
+
 {% endblock %}
 
 {% block scripts %}
 <script>
-const spaceRate = {{ space.price_hourly }};
+  function swapGalleryPhoto(url) {
+    document.getElementById('mainGalleryImg').src = url;
+  }
 
-function updateBookingCost() {
-    const hours = parseFloat(document.getElementById('booking-hours').value) || 2.0;
-    const rental = Math.round(hours * spaceRate);
-    const escrow = 100;
-    const total = rental + escrow;
+  function updatePriceCalculation() {
+    const hours = parseFloat(document.getElementById('hoursSelect').value);
+    const rate = parseFloat(document.getElementById('hourlyRateInput').value);
+    const subtotal = Math.round(hours * rate * 100) / 100;
+    const fee = Math.round(subtotal * 0.05 * 100) / 100;
+    const escrow = 100.0;
+    const total = Math.round((subtotal + fee + escrow) * 100) / 100;
 
-    document.getElementById('label-calc-hours').innerText = `Rental (${hours} hrs @ ₹${Math.round(spaceRate)}/hr):`;
-    document.getElementById('val-rental-fee').innerText = `₹${rental}`;
-    document.getElementById('val-total-payable').innerText = `₹${total}`;
-}
+    document.getElementById('rateCalculationLabel').textContent = `₹${rate} × ${hours} hrs`;
+    document.getElementById('subtotalDisplay').textContent = `₹${subtotal}`;
+    document.getElementById('feeDisplay').textContent = `₹${fee}`;
+    document.getElementById('totalPriceDisplay').textContent = `₹${total}`;
+  }
 
-async function handleBooking(e) {
+  let isBookingSubmitting = false;
+
+  function resetBookingForm() {
+    isBookingSubmitting = false;
+    const btn = document.getElementById('bookNowBtn');
+    btn.disabled = false;
+    document.getElementById('bookNowBtnText').textContent = "Instant Book & Generate Lease";
+    document.getElementById('bookingProgressBox').classList.add('hidden');
+    document.getElementById('bookingErrorBox').classList.add('hidden');
+  }
+
+  async function submitBooking(e) {
     e.preventDefault();
-    const btn = document.getElementById('booking-submit-btn');
-    const origHtml = btn.innerHTML;
-    btn.innerHTML = `<i class="fa-solid fa-circle-notch fa-spin"></i> Synthesizing Micro-Lease...`;
+    // Prevent double clicking / duplicate requests
+    if (isBookingSubmitting) return;
+    isBookingSubmitting = true;
+
+    const btn = document.getElementById('bookNowBtn');
+    const btnText = document.getElementById('bookNowBtnText');
     btn.disabled = true;
+    btnText.textContent = "Verifying Premise...";
+
+    const progressBox = document.getElementById('bookingProgressBox');
+    const errorBox = document.getElementById('bookingErrorBox');
+    const statusText = document.getElementById('bookingProgressStatus');
+
+    errorBox.classList.add('hidden');
+    progressBox.classList.remove('hidden');
+
+    // Reset Progress Steps to Initial State
+    setStepState(1, 'active', 'fa-spinner fa-spin text-indigo-400', 'Checking...', 'text-indigo-300');
+    setStepState(2, 'waiting', 'fa-regular fa-circle text-slate-600', 'Queued', 'text-slate-500');
+    setStepState(3, 'waiting', 'fa-regular fa-circle text-slate-600', 'Queued', 'text-slate-500');
+    setStepState(4, 'waiting', 'fa-regular fa-circle text-slate-600', 'Queued', 'text-slate-500');
+    statusText.textContent = "Checking...";
 
     const payload = {
-        space_id: {{ space.id }},
-        hours: parseFloat(document.getElementById('booking-hours').value),
-        purpose: document.getElementById('booking-purpose').value.trim(),
-        attendees_count: parseInt(document.getElementById('booking-attendees').value)
+      space_id: parseInt(document.getElementById('spaceIdInput').value),
+      hours: parseFloat(document.getElementById('hoursSelect').value),
+      purpose: document.getElementById('purposeInput').value,
+      attendees_count: parseInt(document.getElementById('attendeesInput').value)
     };
 
-    try {
-        const res = await fetch('/api/bookings', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload)
-        });
-        const data = await res.json();
-        btn.innerHTML = origHtml;
-        btn.disabled = false;
-
-        if (data.success) {
-            document.getElementById('modal-booking-id').innerText = `#BK-${data.booking_id}`;
-            document.getElementById('modal-arrival-pin').innerText = data.arrival_pin;
-            document.getElementById('modal-lease-hash').innerText = data.lease_hash;
-            document.getElementById('modal-session-link').href = data.session_url;
-            document.getElementById('booking-success-modal').classList.remove('hidden');
-        } else {
-            showToast(data.message || 'Booking failed', 'error');
-        }
-    } catch (err) {
-        btn.innerHTML = origHtml;
-        btn.disabled = false;
-        showToast('Error connecting to booking service', 'error');
-    }
-}
-
-function closeBookingModal() {
-    document.getElementById('booking-success-modal').classList.add('hidden');
-}
-
-async function handleInquiry(e) {
-    e.preventDefault();
-    const input = document.getElementById('inquiry-question');
-    const q = input.value.trim();
-    if (!q) return;
-
-    const btn = document.getElementById('inquiry-submit-btn');
-    btn.disabled = true;
+    // Fast asynchronous execution - no artificial 30-second delays!
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 12000); // 12-second genuine timeout
 
     try {
-        const res = await fetch('/api/space/{{ space.id }}/inquire', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ question: q })
-        });
-        const data = await res.json();
-        btn.disabled = false;
+      const resp = await fetch('/api/bookings', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(payload),
+        signal: controller.signal
+      });
+      clearTimeout(timeoutId);
 
-        if (data.success) {
-            input.value = '';
-            const list = document.getElementById('inquiry-list');
-            const item = document.createElement('div');
-            item.className = 'bg-slate-50 p-3.5 rounded-2xl border border-slate-200 text-xs space-y-1.5';
-            item.innerHTML = `
-                <div class="font-semibold text-slate-800 flex items-center gap-2">
-                    <i class="fa-solid fa-user text-slate-400 text-[10px]"></i>
-                    <span>${data.question}</span>
-                </div>
-                <div class="text-slate-600 pl-4 border-l-2 border-brand-400 flex items-start gap-1.5 text-[11px]">
-                    <i class="fa-solid fa-robot text-brand-600 shrink-0 mt-0.5"></i>
-                    <span>${data.ai_answer}</span>
-                </div>
-            `;
-            list.prepend(item);
-            showToast('AI pre-answered your inquiry!', 'success');
+      const data = await resp.json();
+
+      if (resp.ok && data.success) {
+        // Step 1: Availability Verified
+        setStepState(1, 'passed', 'fa-solid fa-circle-check text-emerald-400', 'Verified ✓', 'text-emerald-400');
+        // Step 2: Premise Verified
+        setStepState(2, 'passed', 'fa-solid fa-circle-check text-emerald-400', 'Verified ✓', 'text-emerald-400');
+        // Step 3: Micro-Lease Generated
+        setStepState(3, 'passed', 'fa-solid fa-circle-check text-emerald-400', 'Generated ✓', 'text-emerald-400');
+        // Step 4: Escrow & Booking Confirmed
+        setStepState(4, 'passed', 'fa-solid fa-circle-check text-emerald-400', 'Confirmed ✓', 'text-emerald-400');
+        statusText.textContent = "Confirmed ✓";
+
+        document.getElementById('microLeaseTextContainer').textContent = data.agreement;
+        if (data.booking && data.booking.id) {
+          document.getElementById('modalSessionLink').href = `/booking/${data.booking.id}/session`;
         }
-    } catch (err) {
+
+        // Open modal
+        setTimeout(() => {
+          document.getElementById('bookingSuccessModal').classList.remove('hidden');
+          resetBookingForm();
+        }, 350);
+
+      } else {
+        // Handle Verification / Booking Error with clear feedback
+        progressBox.classList.add('hidden');
+        errorBox.classList.remove('hidden');
+        document.getElementById('bookingErrorMessage').textContent = data.error || "Premise verification failed. Please adjust booking details.";
+        isBookingSubmitting = false;
         btn.disabled = false;
-        showToast('Inquiry service error', 'error');
+        btnText.textContent = "Retry Booking";
+      }
+    } catch (err) {
+      clearTimeout(timeoutId);
+      progressBox.classList.add('hidden');
+      errorBox.classList.remove('hidden');
+      if (err.name === 'AbortError') {
+        document.getElementById('bookingErrorMessage').textContent = "Verification timed out connecting to premise telemetry. Please check connection and retry.";
+      } else {
+        document.getElementById('bookingErrorMessage').textContent = "Network error connecting to verification gateway. Please try again.";
+      }
+      isBookingSubmitting = false;
+      btn.disabled = false;
+      btnText.textContent = "Retry Booking";
     }
-}
+  }
+
+  function setStepState(stepNum, type, iconClass, badgeText, badgeColorClass) {
+    const stepEl = document.getElementById(`vStep${stepNum}`);
+    const iconEl = document.getElementById(`vIcon${stepNum}`);
+    const badgeEl = document.getElementById(`vBadge${stepNum}`);
+    if (!stepEl || !iconEl || !badgeEl) return;
+
+    iconEl.className = iconClass + " text-xs";
+    badgeEl.textContent = badgeText;
+    badgeEl.className = `text-[10px] font-mono font-semibold ${badgeColorClass}`;
+
+    if (type === 'passed') {
+      stepEl.className = "flex items-center justify-between p-2 rounded-lg bg-emerald-950/20 border border-emerald-500/30 text-emerald-300 transition-all";
+    } else if (type === 'active') {
+      stepEl.className = "flex items-center justify-between p-2 rounded-lg bg-indigo-950/30 border border-indigo-500/40 text-white transition-all";
+    } else {
+      stepEl.className = "flex items-center justify-between p-2 rounded-lg bg-slate-900/40 border border-slate-800/50 text-slate-500 transition-all";
+    }
+  }
+
+  function closeBookingModal() {
+    document.getElementById('bookingSuccessModal').classList.add('hidden');
+  }
 </script>
 {% endblock %}

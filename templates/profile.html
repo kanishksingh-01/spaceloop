@@ -1,0 +1,212 @@
+{% extends "base.html" %}
+
+{% block title %}My Profile & Trust Credentials | SpaceLoop{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+
+  <!-- Breadcrumb -->
+  <div class="flex items-center justify-between gap-4 mb-6">
+    <a href="{{ url_for('dashboard_page') }}" class="text-xs font-semibold text-slate-400 hover:text-white flex items-center gap-1.5 transition">
+      <i class="fa-solid fa-arrow-left"></i> Back to Dashboard
+    </a>
+    <div class="flex items-center gap-2">
+      <span class="text-xs text-slate-400">Account ID: #{{ user.id if user else 1 }}</span>
+      <span class="px-2.5 py-0.5 rounded-full text-xs font-bold uppercase tracking-wider bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">
+        {{ user.role if user else 'seeker' }}
+      </span>
+    </div>
+  </div>
+
+  <!-- Main Profile Card -->
+  <div class="bg-slate-900/90 border border-slate-800 rounded-3xl p-6 sm:p-8 mb-8 shadow-xl backdrop-blur-md">
+    <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6 pb-6 border-b border-slate-800">
+      <div class="flex items-center gap-5">
+        <div class="relative">
+          <img src="{{ user.avatar_url or 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80' }}" 
+               alt="{{ user.name if user else 'User' }}" 
+               class="w-20 h-20 rounded-2xl object-cover border-2 border-indigo-500/50 shadow-lg">
+          {% if user and (user.is_student_verified or user.is_host_verified) %}
+          <span class="absolute -bottom-1 -right-1 w-6 h-6 bg-emerald-500 text-white rounded-full flex items-center justify-center text-xs shadow" title="Verified Identity">
+            <i class="fa-solid fa-check"></i>
+          </span>
+          {% endif %}
+        </div>
+        <div>
+          <h1 class="text-2xl font-black text-white flex items-center gap-2">
+            {{ user.name if user else 'SpaceLoop User' }}
+          </h1>
+          <p class="text-xs text-slate-400 mt-1 flex items-center gap-3">
+            <span><i class="fa-regular fa-envelope mr-1 text-slate-500"></i>{{ user.email if user else 'user@spaceloop.in' }}</span>
+            {% if user and user.phone %}
+            <span><i class="fa-solid fa-phone mr-1 text-slate-500"></i>{{ user.phone }}</span>
+            {% endif %}
+          </p>
+          {% if user and user.bio %}
+          <p class="text-xs text-slate-300 mt-2 max-w-xl italic">"{{ user.bio }}"</p>
+          {% endif %}
+        </div>
+      </div>
+
+      <!-- Quick Role Toggle Button -->
+      <div class="shrink-0 flex sm:flex-col items-end gap-2 w-full sm:w-auto">
+        <form method="POST" action="{{ url_for('switch_role') }}" class="w-full sm:w-auto">
+          <input type="hidden" name="role" value="{% if user and user.role == 'owner' %}seeker{% else %}owner{% endif %}">
+          <button type="submit" class="w-full sm:w-auto px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-indigo-300 hover:text-white border border-slate-700 text-xs font-semibold transition flex items-center justify-center gap-2">
+            <i class="fa-solid fa-repeat"></i>
+            <span>Switch to {% if user and user.role == 'owner' %}Seeker Mode{% else %}Host Mode{% endif %}</span>
+          </button>
+        </form>
+        <a href="{{ url_for('verify_page') }}" class="w-full sm:w-auto px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold transition flex items-center justify-center gap-2 shadow-md shadow-indigo-600/20">
+          <i class="fa-solid fa-shield-halved"></i>
+          <span>Manage KYC Center</span>
+        </a>
+      </div>
+    </div>
+
+    <!-- Objective Trust Index & Telemetry Metrics -->
+    <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 pt-6 text-center">
+      <div class="bg-slate-950/60 border border-slate-800/80 rounded-2xl p-4">
+        <div class="text-2xl font-black text-emerald-400">{{ user.objective_trust_score or 98.5 }}</div>
+        <div class="text-[11px] font-semibold text-slate-400 mt-1 uppercase tracking-wider">Objective Trust Score</div>
+        <div class="text-[10px] text-emerald-400 mt-0.5"><i class="fa-solid fa-shield-check"></i> High Reliability</div>
+      </div>
+      <div class="bg-slate-950/60 border border-slate-800/80 rounded-2xl p-4">
+        <div class="text-2xl font-black text-indigo-400">{{ user.on_time_vacate_rate|round(1) if user else 100.0 }}%</div>
+        <div class="text-[11px] font-semibold text-slate-400 mt-1 uppercase tracking-wider">On-Time Vacate Rate</div>
+        <div class="text-[10px] text-slate-500 mt-0.5">GPS Handshake Proof</div>
+      </div>
+      <div class="bg-slate-950/60 border border-slate-800/80 rounded-2xl p-4">
+        <div class="text-2xl font-black text-indigo-400">{{ user.cleanliness_match_rate|round(1) if user else 99.0 }}%</div>
+        <div class="text-[11px] font-semibold text-slate-400 mt-1 uppercase tracking-wider">Cleanliness Score</div>
+        <div class="text-[10px] text-slate-500 mt-0.5">AI CV Delta Verified</div>
+      </div>
+      <div class="bg-slate-950/60 border border-slate-800/80 rounded-2xl p-4">
+        <div class="text-2xl font-black text-white">{{ user.dispute_count if user else 0 }}</div>
+        <div class="text-[11px] font-semibold text-slate-400 mt-1 uppercase tracking-wider">Disputes Logged</div>
+        <div class="text-[10px] text-emerald-400 mt-0.5">Zero Infractions</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Verified Credentials (India Stack) -->
+  <div class="bg-slate-900/80 border border-slate-800 rounded-3xl p-6 sm:p-8 mb-8 shadow-xl">
+    <div class="flex items-center justify-between mb-6">
+      <div>
+        <h2 class="text-lg font-bold text-white flex items-center gap-2">
+          <i class="fa-solid fa-fingerprint text-indigo-400"></i>
+          India Stack Verified Credentials
+        </h2>
+        <p class="text-xs text-slate-400 mt-0.5">Cryptographically masked credentials verified via DigiLocker, UIDAI & State Discoms</p>
+      </div>
+      <a href="{{ url_for('verify_page') }}" class="text-xs text-indigo-400 hover:text-indigo-300 font-semibold flex items-center gap-1">
+        Update KYC &rarr;
+      </a>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <!-- Aadhaar Verification -->
+      <div class="bg-slate-950/60 border border-slate-800 rounded-2xl p-4 flex items-center justify-between">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-xl bg-indigo-600/20 text-indigo-400 flex items-center justify-center text-base">
+            <i class="fa-solid fa-id-card"></i>
+          </div>
+          <div>
+            <div class="text-xs font-bold text-white">UIDAI Aadhaar OTP</div>
+            <div class="text-[11px] text-slate-400 font-mono">{{ user.aadhaar_masked or 'XXXX-XXXX-4821' }}</div>
+          </div>
+        </div>
+        <span class="px-2.5 py-1 rounded-full text-[11px] font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 flex items-center gap-1">
+          <i class="fa-solid fa-circle-check"></i> Verified
+        </span>
+      </div>
+
+      <!-- Student / Academic Credential -->
+      <div class="bg-slate-950/60 border border-slate-800 rounded-2xl p-4 flex items-center justify-between">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-xl bg-emerald-600/20 text-emerald-400 flex items-center justify-center text-base">
+            <i class="fa-solid fa-graduation-cap"></i>
+          </div>
+          <div>
+            <div class="text-xs font-bold text-white">DigiLocker Student ID</div>
+            <div class="text-[11px] text-slate-400">{{ user.college_name or 'IIT Delhi (Academic Domain)' }}</div>
+          </div>
+        </div>
+        {% if user and user.is_student_verified %}
+        <span class="px-2.5 py-1 rounded-full text-[11px] font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 flex items-center gap-1">
+          <i class="fa-solid fa-circle-check"></i> Verified
+        </span>
+        {% else %}
+        <a href="{{ url_for('verify_page') }}" class="px-2.5 py-1 rounded-full text-[11px] font-bold bg-amber-500/10 text-amber-400 border border-amber-500/20 hover:bg-amber-500/20 transition">
+          Verify Now
+        </a>
+        {% endif %}
+      </div>
+
+      <!-- Discom Electricity Bill (Host Only) -->
+      <div class="bg-slate-950/60 border border-slate-800 rounded-2xl p-4 flex items-center justify-between">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-xl bg-amber-600/20 text-amber-400 flex items-center justify-center text-base">
+            <i class="fa-solid fa-bolt"></i>
+          </div>
+          <div>
+            <div class="text-xs font-bold text-white">Premise Ownership (Discom)</div>
+            <div class="text-[11px] text-slate-400">{{ user.discom_provider or 'TPDDL / BESCOM Electricity CA' }}</div>
+          </div>
+        </div>
+        {% if user and user.is_host_verified %}
+        <span class="px-2.5 py-1 rounded-full text-[11px] font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 flex items-center gap-1">
+          <i class="fa-solid fa-circle-check"></i> Verified
+        </span>
+        {% else %}
+        <a href="{{ url_for('verify_page') }}" class="px-2.5 py-1 rounded-full text-[11px] font-bold bg-slate-800 text-slate-400 hover:text-white transition">
+          {% if user and user.role == 'owner' %}Verify Bill{% else %}Host Feature{% endif %}
+        </a>
+        {% endif %}
+      </div>
+
+      <!-- Bank UPI Account -->
+      <div class="bg-slate-950/60 border border-slate-800 rounded-2xl p-4 flex items-center justify-between">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-xl bg-violet-600/20 text-violet-400 flex items-center justify-center text-base">
+            <i class="fa-solid fa-money-bill-transfer"></i>
+          </div>
+          <div>
+            <div class="text-xs font-bold text-white">NPCI UPI VPA & Escrow</div>
+            <div class="text-[11px] text-slate-400 font-mono">{{ user.upi_vpa_masked or 'user***@okhdfcbank' }}</div>
+          </div>
+        </div>
+        {% if user and user.upi_verified %}
+        <span class="px-2.5 py-1 rounded-full text-[11px] font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 flex items-center gap-1">
+          <i class="fa-solid fa-circle-check"></i> Verified
+        </span>
+        {% else %}
+        <span class="px-2.5 py-1 rounded-full text-[11px] font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 flex items-center gap-1">
+          <i class="fa-solid fa-circle-check"></i> Escrow Ready
+        </span>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <!-- Quick Navigation Hub -->
+  <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+    <a href="{{ url_for('dashboard_page') }}" class="bg-slate-900/60 border border-slate-800 hover:border-indigo-500/40 rounded-2xl p-5 transition group">
+      <div class="text-indigo-400 text-xl mb-2 group-hover:scale-110 transition"><i class="fa-solid fa-layer-group"></i></div>
+      <div class="text-sm font-bold text-white">My Dashboard</div>
+      <div class="text-xs text-slate-400 mt-1">View reservations, agreements, and live sessions</div>
+    </a>
+    <a href="{{ url_for('inquiries_page') }}" class="bg-slate-900/60 border border-slate-800 hover:border-indigo-500/40 rounded-2xl p-5 transition group">
+      <div class="text-emerald-400 text-xl mb-2 group-hover:scale-110 transition"><i class="fa-solid fa-comments"></i></div>
+      <div class="text-sm font-bold text-white">Messages & Inquiries</div>
+      <div class="text-xs text-slate-400 mt-1">Host communications & LoopBot concierge chats</div>
+    </a>
+    <a href="{{ url_for('calculator_page') }}" class="bg-slate-900/60 border border-slate-800 hover:border-indigo-500/40 rounded-2xl p-5 transition group">
+      <div class="text-amber-400 text-xl mb-2 group-hover:scale-110 transition"><i class="fa-solid fa-calculator"></i></div>
+      <div class="text-sm font-bold text-white">Earnings Calculator</div>
+      <div class="text-xs text-slate-400 mt-1">Estimate monthly yield from unused square footage</div>
+    </a>
+  </div>
+
+</div>
+{% endblock %}
