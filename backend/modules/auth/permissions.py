@@ -76,32 +76,36 @@ def authorize(user, permission: Permission, resource=None) -> bool:
 
     # 5. Object ownership checks
     if permission in (Permission.SPACE_UPDATE, Permission.SPACE_DELETE):
-        if resource is not None:
-            owner_id = getattr(resource, "owner_id", None)
-            if owner_id != user.id:
-                raise ForbiddenError("You do not have permission to modify or delete this space listing.")
+        if resource is None:
+            raise ForbiddenError("Target space resource is required for ownership verification.")
+        owner_id = getattr(resource, "owner_id", None)
+        if owner_id != user.id:
+            raise ForbiddenError("You do not have permission to modify or delete this space listing.")
 
     if permission == Permission.BOOKING_VIEW:
-        if resource is not None:
-            renter_id = getattr(resource, "renter_id", None)
-            space = getattr(resource, "space", None)
-            space_owner_id = getattr(space, "owner_id", None) if space else None
-            if renter_id != user.id and space_owner_id != user.id:
-                raise ForbiddenError("You do not have permission to view this booking.")
+        if resource is None:
+            raise ForbiddenError("Target booking resource is required for authorization.")
+        renter_id = getattr(resource, "renter_id", None)
+        space = getattr(resource, "space", None)
+        space_owner_id = getattr(space, "owner_id", None) if space else None
+        if renter_id != user.id and space_owner_id != user.id:
+            raise ForbiddenError("You do not have permission to view this booking.")
 
     if permission in (Permission.BOOKING_CHECKIN, Permission.BOOKING_CHECKOUT):
-        if resource is not None:
-            renter_id = getattr(resource, "renter_id", None)
-            if renter_id != user.id:
-                raise ForbiddenError("Only the verified renter of this booking may perform check-in or check-out.")
+        if resource is None:
+            raise ForbiddenError("Target booking resource is required for check-in/check-out authorization.")
+        renter_id = getattr(resource, "renter_id", None)
+        if renter_id != user.id:
+            raise ForbiddenError("Only the verified renter of this booking may perform check-in or check-out.")
 
     if permission == Permission.BOOKING_CANCEL:
-        if resource is not None:
-            renter_id = getattr(resource, "renter_id", None)
-            space = getattr(resource, "space", None)
-            space_owner_id = getattr(space, "owner_id", None) if space else None
-            if renter_id != user.id and space_owner_id != user.id:
-                raise ForbiddenError("You do not have permission to cancel this booking.")
+        if resource is None:
+            raise ForbiddenError("Target booking resource is required for cancellation authorization.")
+        renter_id = getattr(resource, "renter_id", None)
+        space = getattr(resource, "space", None)
+        space_owner_id = getattr(space, "owner_id", None) if space else None
+        if renter_id != user.id and space_owner_id != user.id:
+            raise ForbiddenError("You do not have permission to cancel this booking.")
 
     return True
 

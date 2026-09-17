@@ -701,8 +701,9 @@ def create_app(test_config=None):
             Booking.renter_id == current_user.id,
             Booking.status != "cancelled"
         ).first()
-        is_demo = app.config.get("TESTING") or os.environ.get("FLASK_ENV") != "production" or current_user.is_admin
-        if current_user.id != space.owner_id and not has_booking and not is_demo:
+        is_owner = (current_user.id == space.owner_id)
+        is_admin = getattr(current_user, "is_admin", False)
+        if not is_owner and not has_booking and not is_admin:
             flash("You do not have permission to view this printable door pass.", "danger")
             return redirect(url_for("auth_access_denied"))
         return render_template("printable_qr.html", space=space.to_dict())
@@ -842,10 +843,62 @@ def create_app(test_config=None):
 
         return jsonify(spaces_data)
 
-    @app.route("/api/spaces/<int:space_id>", methods=["GET"])
-    def get_space(space_id):
+    @app.route("/api/spaces/<int:space_id>", methods=["GET", "PUT", "PATCH", "DELETE"])
+    def api_space_detail_or_manage(space_id):
         space = Space.query.get_or_404(space_id)
-        return jsonify(space.to_dict())
+
+        if request.method in ["PUT", "PATCH"]:
+            if not current_user.is_authenticated:
+                return jsonify({"error": "Authentication required", "authenticated": False}), 401
+            try:
+                authorize(current_user, Permission.SPACE_UPDATE, resource=space)
+            except ForbiddenError as e:
+                return jsonify({"error": str(e)}), 403
+
+            data = request.get_json(silent=True) or request.form or {}
+            if data.get("title"):
+                space.title = sanitize_string(data.get("title"), max_length=150)
+            if data.get("category"):
+                space.category = sanitize_string(data.get("category"), max_length=50)
+            if data.get("address"):
+                space.address = sanitize_string(data.get("address"), max_length=200)
+            if data.get("description"):
+                space.description = sanitize_string(data.get("description"), max_length=3000)
+            if data.get("price_hourly") is not None and str(data.get("price_hourly")).strip() != "":
+                space.price_hourly = float(validate_numeric(data.get("price_hourly"), min_val=5.0, max_val=5000.0, default=space.price_hourly))
+            if data.get("price_daily") is not None and str(data.get("price_daily")).strip() != "":
+                space.price_daily = float(validate_numeric(data.get("price_daily"), min_val=20.0, max_val=25000.0, default=space.price_daily))
+            if data.get("sqft") is not None and str(data.get("sqft")).strip() != "":
+                space.sqft = int(validate_numeric(data.get("sqft"), min_val=20, max_val=50000, default=space.sqft))
+            if data.get("max_capacity") is not None and str(data.get("max_capacity")).strip() != "":
+                space.max_capacity = int(validate_numeric(data.get("max_capacity"), min_val=1, max_val=500, default=space.max_capacity))
+            if data.get("amenities") and isinstance(data.get("amenities"), list):
+                space.amenities = [sanitize_string(a, max_length=80) for a in data.get("amenities") if isinstance(a, str)][:15]
+            if data.get("rules") and isinstance(data.get("rules"), list):
+                space.rules = [sanitize_string(r, max_length=150) for r in data.get("rules") if isinstance(r, str)][:10]
+
+            db.session.commit()
+            return jsonify({"success": True, "message": f"Space '{space.title}' updated successfully!", "space": space.to_dict()}), 200
+
+        if request.method == "DELETE":
+            if not current_user.is_authenticated:
+                return jsonify({"error": "Authentication required", "authenticated": False}), 401
+            try:
+                authorize(current_user, Permission.SPACE_DELETE, resource=space)
+            except ForbiddenError as e:
+                return jsonify({"error": str(e)}), 403
+
+            db.session.delete(space)
+            db.session.commit()
+            return jsonify({"success": True, "message": f"Space #{space_id} deleted successfully."}), 200
+
+        # GET method
+        if not space.is_active:
+            is_authorized_viewer = current_user.is_authenticated and (current_user.id == space.owner_id or getattr(current_user, "is_admin", False))
+            if not is_authorized_viewer:
+                return jsonify({"error": "Space listing is unavailable or has been paused by the host."}), 404
+
+        return jsonify(space.to_dict(include_access_secrets=False))
 
     @app.route("/api/spaces/ai-scan", methods=["POST"])
     @rate_limit_ai
@@ -1721,9 +1774,53 @@ def create_app(test_config=None):
             "booking": booking.to_dict()
         }), 200
 
+    @app.route("/api/booking/<int:booking_id>", methods=["GET", "DELETE"])
+    @app.route("/api/bookings/<int:booking_id>", methods=["GET", "DELETE"])
+    @login_required
+    def api_booking_detail_or_manage(booking_id):
+        booking = Booking.query.get_or_404(booking_id)
+
+        if request.method == "DELETE":
+            try:
+                authorize(current_user, Permission.BOOKING_CANCEL, resource=booking)
+            except ForbiddenError as e:
+                return jsonify({"error": str(e)}), 403
+
+            if booking.status == "cancelled":
+                return jsonify({"success": False, "error": "This booking is already cancelled."}), 400
+            if booking.status == "completed" or booking.session_state == "checked_out":
+                return jsonify({"success": False, "error": "Cannot cancel an already completed reservation."}), 400
+            if booking.session_state == "checked_in":
+                return jsonify({"success": False, "error": "Active session in progress cannot be cancelled directly. Please complete checkout."}), 400
+
+            booking.status = "cancelled"
+            booking.session_state = "cancelled"
+            if booking.escrow_status in ["held", "held_simulated"]:
+                booking.escrow_status = "refunded_simulated"
+            db.session.commit()
+            return jsonify({
+                "success": True,
+                "message": f"Booking #{booking_id} cancelled successfully.",
+                "booking": booking.to_dict()
+            }), 200
+
+        try:
+            authorize(current_user, Permission.BOOKING_VIEW, resource=booking)
+        except ForbiddenError as e:
+            return jsonify({"error": str(e)}), 403
+
+        return jsonify({
+            "success": True,
+            "booking": booking.to_dict()
+        }), 200
+
     @app.route("/api/space/<int:space_id>/inquire", methods=["POST"])
     def api_space_direct_inquire(space_id):
         space = Space.query.get_or_404(space_id)
+        if not space.is_active:
+            is_authorized = current_user.is_authenticated and (current_user.id == space.owner_id or getattr(current_user, "is_admin", False))
+            if not is_authorized:
+                return jsonify({"success": False, "error": "Cannot inquire on a paused or inactive space listing."}), 400
         data = request.get_json(silent=True) or {}
         question = sanitize_string(data.get("question") or "", max_length=500)
         if not question:
