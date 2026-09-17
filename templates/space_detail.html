@@ -690,6 +690,70 @@
   </div>
 </div>
 
+<!-- Guest Sign-in Prompt Modal for Frictionless Booking -->
+<div id="guestLoginModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+  <div class="bg-slate-900 border border-indigo-500/40 w-full max-w-md rounded-3xl shadow-2xl overflow-hidden">
+    <div class="p-6 text-center border-b border-slate-800 bg-slate-950/60">
+      <div class="w-14 h-14 rounded-2xl bg-gradient-to-tr from-indigo-600 to-violet-600 text-white flex items-center justify-center mx-auto mb-3 text-2xl shadow-lg shadow-indigo-600/30">
+        <i class="fa-solid fa-lock"></i>
+      </div>
+      <h3 class="text-xl font-black text-white">Sign In to Complete Booking</h3>
+      <p class="text-xs text-slate-400 mt-1">An active user session is required to issue your legal Micro-Lease.</p>
+    </div>
+
+    <div class="p-6 space-y-4">
+      <div class="text-[11px] font-bold text-indigo-300 uppercase tracking-wider mb-1 flex items-center gap-1.5">
+        <i class="fa-solid fa-bolt text-amber-400"></i> Instant 1-Click Demo Logins:
+      </div>
+      
+      <button 
+        type="button" 
+        onclick="signInAndResumeBooking('seeker')"
+        id="demoLoginSeekerBtn"
+        class="w-full p-3.5 rounded-2xl bg-emerald-950/40 hover:bg-emerald-900/60 border border-emerald-500/40 text-left transition flex items-center justify-between group cursor-pointer"
+      >
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-xl bg-emerald-600/20 text-emerald-400 border border-emerald-500/30 flex items-center justify-center text-lg">
+            <i class="fa-solid fa-graduation-cap"></i>
+          </div>
+          <div>
+            <div class="text-xs font-bold text-white group-hover:text-emerald-200">Continue as Student Seeker</div>
+            <div class="text-[10px] text-emerald-400">Aarav Sharma (Verified Student)</div>
+          </div>
+        </div>
+        <i class="fa-solid fa-arrow-right text-emerald-400 text-xs group-hover:translate-x-1 transition"></i>
+      </button>
+
+      <button 
+        type="button" 
+        onclick="signInAndResumeBooking('host')"
+        id="demoLoginHostBtn"
+        class="w-full p-3.5 rounded-2xl bg-indigo-950/40 hover:bg-indigo-900/60 border border-indigo-500/40 text-left transition flex items-center justify-between group cursor-pointer"
+      >
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-xl bg-indigo-600/20 text-indigo-400 border border-indigo-500/30 flex items-center justify-center text-lg">
+            <i class="fa-solid fa-house-chimney-user"></i>
+          </div>
+          <div>
+            <div class="text-xs font-bold text-white group-hover:text-indigo-200">Continue as Verified Host</div>
+            <div class="text-[10px] text-indigo-400">Sunita Deshmukh (Host)</div>
+          </div>
+        </div>
+        <i class="fa-solid fa-arrow-right text-indigo-400 text-xs group-hover:translate-x-1 transition"></i>
+      </button>
+
+      <div class="pt-2 flex items-center justify-between text-xs border-t border-slate-800">
+        <a href="{{ url_for('auth_login', next=request.path) }}" class="text-indigo-400 hover:text-indigo-300 font-medium">
+          Standard Sign In
+        </a>
+        <button type="button" onclick="closeGuestLoginModal()" class="text-slate-400 hover:text-white cursor-pointer">
+          Cancel
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
 {% endblock %}
 
 {% block scripts %}
@@ -795,6 +859,14 @@
       } else {
         // Handle Verification / Booking Error with clear feedback
         progressBox.classList.add('hidden');
+        if (resp.status === 401 || (data && data.authenticated === false)) {
+          // Unauthenticated guest user - prompt with seamless sign in modal!
+          document.getElementById('guestLoginModal').classList.remove('hidden');
+          isBookingSubmitting = false;
+          btn.disabled = false;
+          btnText.textContent = "Sign in to Book";
+          return;
+        }
         errorBox.classList.remove('hidden');
         document.getElementById('bookingErrorMessage').textContent = data.error || "Premise verification failed. Please adjust booking details.";
         isBookingSubmitting = false;
@@ -837,6 +909,38 @@
 
   function closeBookingModal() {
     document.getElementById('bookingSuccessModal').classList.add('hidden');
+  }
+
+  function closeGuestLoginModal() {
+    document.getElementById('guestLoginModal').classList.add('hidden');
+    isBookingSubmitting = false;
+    const btn = document.getElementById('bookNowBtn');
+    const btnText = document.getElementById('bookNowBtnText');
+    if (btn) btn.disabled = false;
+    if (btnText) btnText.textContent = "Instant Book & Generate Lease";
+  }
+
+  async function signInAndResumeBooking(role) {
+    const btn = document.getElementById(role === 'seeker' ? 'demoLoginSeekerBtn' : 'demoLoginHostBtn');
+    if (btn) btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin text-indigo-400"></i> Authenticating...`;
+
+    try {
+      const res = await fetch(`/auth/demo-switch/${role}`);
+      if (res.ok) {
+        document.getElementById('guestLoginModal').classList.add('hidden');
+        isBookingSubmitting = false;
+        const mainBtn = document.getElementById('bookNowBtn');
+        const mainBtnText = document.getElementById('bookNowBtnText');
+        if (mainBtn) mainBtn.disabled = false;
+        if (mainBtnText) mainBtnText.textContent = "Instant Book & Generate Lease";
+        // Re-trigger form submit
+        document.getElementById('bookingForm').dispatchEvent(new Event('submit', { cancelable: true }));
+      } else {
+        window.location.href = `/auth/login?next=${encodeURIComponent(window.location.pathname)}`;
+      }
+    } catch (e) {
+      window.location.href = `/auth/login?next=${encodeURIComponent(window.location.pathname)}`;
+    }
   }
 </script>
 {% endblock %}

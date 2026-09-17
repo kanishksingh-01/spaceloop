@@ -45,7 +45,7 @@
               type="text" 
               id="aiQueryInput"
               value="{{ search_query }}"
-              placeholder="Describe your ideal space (e.g. 'Quiet studio with power outlets for a 3-person podcast under $40/hr')..."
+              placeholder="Describe your ideal space (e.g. 'Quiet study pod near Wagholi JSPM under ₹50/hr')..."
               class="w-full bg-slate-950/80 border border-slate-700/80 rounded-xl pl-11 pr-4 py-3.5 text-sm sm:text-base text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition"
             >
           </div>
@@ -65,17 +65,17 @@
           <span class="text-slate-400 font-medium shrink-0 flex items-center gap-1">
             <i class="fa-regular fa-compass text-indigo-400"></i> Try prompts:
           </span>
-          <button type="button" onclick="applySearchPrompt('Quiet, sunlit space for a 3-person podcast recording under $40/hr')" class="px-2.5 py-1 rounded-lg bg-slate-800/80 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700/60 transition">
-            🎙️ Sunlit Podcast Studio under $40
+          <button type="button" onclick="applySearchPrompt('Quiet study pod with power outlets near Wagholi JSPM under ₹50/hr')" class="px-2.5 py-1 rounded-lg bg-slate-800/80 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700/60 transition">
+            🎙️ Study Pod in Wagholi under ₹50
           </button>
-          <button type="button" onclick="applySearchPrompt('Dry secure garage storage for 15 boxes for 1 month')" class="px-2.5 py-1 rounded-lg bg-slate-800/80 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700/60 transition">
-            📦 Dry Garage Storage for Boxes
+          <button type="button" onclick="applySearchPrompt('Dry secure garage storage for 15 boxes in Koramangala')" class="px-2.5 py-1 rounded-lg bg-slate-800/80 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700/60 transition">
+            📦 Dry Garage in Koramangala
           </button>
-          <button type="button" onclick="applySearchPrompt('Gated off-street parking with EV charger near SoMa')" class="px-2.5 py-1 rounded-lg bg-slate-800/80 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700/60 transition">
-            ⚡ EV Charger Parking
+          <button type="button" onclick="applySearchPrompt('Covered porch with EV charger near FC Road Pune')" class="px-2.5 py-1 rounded-lg bg-slate-800/80 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700/60 transition">
+            ⚡ EV Charger in Pune
           </button>
-          <button type="button" onclick="applySearchPrompt('Evening cafe space for a 20-person book club meetup')" class="px-2.5 py-1 rounded-lg bg-slate-800/80 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700/60 transition">
-            ☕ Evening Cafe for Book Club
+          <button type="button" onclick="applySearchPrompt('Off-peak cafe mezzanine for a 20-person meetup in Noida')" class="px-2.5 py-1 rounded-lg bg-slate-800/80 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700/60 transition">
+            ☕ Off-Peak Cafe in Noida
           </button>
         </div>
 
@@ -136,13 +136,26 @@
       {% endfor %}
     </div>
 
-    <!-- Active Indicator / Reset -->
+    <!-- Active Indicator & View Mode Controls -->
     <div class="flex items-center gap-3 text-xs text-slate-400">
-      <span id="spacesCountDisplay">{{ spaces|length }} spaces available</span>
-      <span class="w-1 h-1 rounded-full bg-slate-700"></span>
-      <span class="flex items-center gap-1 text-emerald-400">
-        <i class="fa-solid fa-shield-check"></i> 100% Host Verified
-      </span>
+      <div class="flex items-center gap-2">
+        <span id="spacesCountDisplay" class="font-medium text-slate-300">{{ spaces|length }} spaces</span>
+        <span class="w-1 h-1 rounded-full bg-slate-700"></span>
+        <span class="hidden sm:inline text-emerald-400 font-semibold"><i class="fa-solid fa-shield-check"></i> Verified</span>
+      </div>
+
+      <!-- View Switcher -->
+      <div class="flex items-center p-0.5 rounded-xl bg-slate-900 border border-slate-800">
+        <button type="button" id="btnViewGrid" onclick="setExploreView('grid')" class="px-2.5 py-1 rounded-lg text-xs font-bold transition flex items-center gap-1.5 bg-indigo-600 text-white shadow-sm" title="Grid Layout">
+          <i class="fa-solid fa-table-cells-large text-[11px]"></i> <span class="hidden sm:inline">Grid</span>
+        </button>
+        <button type="button" id="btnViewSplit" onclick="setExploreView('split')" class="px-2.5 py-1 rounded-lg text-xs font-bold transition flex items-center gap-1.5 text-slate-400 hover:text-white" title="Map & Grid Split">
+          <i class="fa-solid fa-table-columns text-[11px]"></i> <span class="hidden sm:inline">Split</span>
+        </button>
+        <button type="button" id="btnViewMap" onclick="setExploreView('map')" class="px-2.5 py-1 rounded-lg text-xs font-bold transition flex items-center gap-1.5 text-slate-400 hover:text-white" title="Map Focus">
+          <i class="fa-solid fa-map-location-dot text-indigo-400 text-[11px]"></i> <span>Map</span>
+        </button>
+      </div>
     </div>
 
   </div>
@@ -321,6 +334,18 @@
     <button onclick="resetSearch()" class="text-xs text-indigo-400 hover:text-indigo-300 font-medium px-3 py-1.5 rounded-lg bg-indigo-950 border border-indigo-800/60">
       Clear AI Filter
     </button>
+  </div>
+
+  <!-- Interactive Leaflet Map View Container -->
+  <div id="exploreMapWrapper" class="hidden mb-8 rounded-3xl overflow-hidden border border-slate-800 shadow-2xl bg-slate-950 relative">
+    <div class="h-10 px-4 bg-slate-900/90 border-b border-slate-800 flex items-center justify-between text-xs">
+      <span class="font-bold text-slate-300 flex items-center gap-2">
+        <i class="fa-solid fa-map-location-dot text-indigo-400"></i> Interactive Space Map
+        <span class="text-[10px] text-slate-500 font-normal">({{ spaces|length }} spaces pinned)</span>
+      </span>
+      <span class="text-[11px] text-slate-400 hidden sm:inline">Click any price pin to preview space details & photos</span>
+    </div>
+    <div id="exploreMap" class="w-full h-[460px] bg-slate-950 relative z-10"></div>
   </div>
 
   <!-- Spaces Grid Container -->
@@ -550,6 +575,123 @@
 
 {% block scripts %}
 <script>
+  let exploreMap = null;
+  let mapMarkers = [];
+
+  const spaceGeoData = [
+    {% for space in spaces %}
+      {% if space.latitude and space.longitude %}
+      {
+        id: {{ space.id }},
+        title: {{ space.title|tojson }},
+        category: {{ space.category|tojson }},
+        price_hourly: {{ space.price_hourly }},
+        lat: {{ space.latitude }},
+        lng: {{ space.longitude }},
+        location: {{ (space.neighborhood or space.city or space.location or 'India')|tojson }},
+        photo: {{ (space.photos[0] if space.photos else 'https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&w=600&q=80')|tojson }},
+        url: "{{ url_for('space_detail', space_id=space.id) }}"
+      },
+      {% endif %}
+    {% endfor %}
+  ];
+
+  function initExploreMap() {
+    if (exploreMap) {
+      setTimeout(() => exploreMap.invalidateSize(), 150);
+      return;
+    }
+
+    const mapEl = document.getElementById('exploreMap');
+    if (!mapEl || spaceGeoData.length === 0) return;
+
+    // Center on Wagholi or first coordinate
+    const initialLat = spaceGeoData[0] ? spaceGeoData[0].lat : 18.5793;
+    const initialLng = spaceGeoData[0] ? spaceGeoData[0].lng : 73.9822;
+
+    exploreMap = L.map('exploreMap').setView([initialLat, initialLng], 12);
+
+    // High performance standard OSM tile layer
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '&copy; OpenStreetMap contributors',
+      maxZoom: 19
+    }).addTo(exploreMap);
+
+    const bounds = [];
+
+    spaceGeoData.forEach(s => {
+      const pinHtml = `
+        <div style="background: linear-gradient(135deg, #4f46e5, #7c3aed); color: white; padding: 4px 8px; border-radius: 9999px; font-weight: 800; font-size: 11px; box-shadow: 0 4px 12px rgba(0,0,0,0.5); border: 2px solid #818cf8; white-space: nowrap; cursor: pointer; text-align: center;">
+          ₹${Math.round(s.price_hourly)}/hr
+        </div>
+      `;
+
+      const customIcon = L.divIcon({
+        html: pinHtml,
+        className: 'custom-map-icon',
+        iconSize: [64, 28],
+        iconAnchor: [32, 14]
+      });
+
+      const popupHtml = `
+        <div style="width: 200px; font-family: system-ui, sans-serif; padding: 2px;">
+          <div style="height: 100px; border-radius: 8px; overflow: hidden; background: #0f172a; margin-bottom: 6px;">
+            <img src="${s.photo}" style="width: 100%; height: 100%; object-fit: cover;">
+          </div>
+          <div style="font-weight: 700; font-size: 12px; color: #0f172a; line-height: 1.2; margin-bottom: 4px;">${s.title}</div>
+          <div style="font-size: 10px; color: #64748b; margin-bottom: 8px;">📍 ${s.location}</div>
+          <div style="display: flex; align-items: center; justify-content: space-between; border-top: 1px solid #e2e8f0; padding-top: 6px;">
+            <span style="font-weight: 800; font-size: 12px; color: #4f46e5;">₹${Math.round(s.price_hourly)}/hr</span>
+            <a href="${s.url}" style="background: #4f46e5; color: white; padding: 3px 8px; border-radius: 6px; font-size: 10px; font-weight: 700; text-decoration: none;">Inspect</a>
+          </div>
+        </div>
+      `;
+
+      const marker = L.marker([s.lat, s.lng], { icon: customIcon }).addTo(exploreMap);
+      marker.bindPopup(popupHtml);
+      mapMarkers.push(marker);
+      bounds.push([s.lat, s.lng]);
+    });
+
+    if (bounds.length > 0) {
+      exploreMap.fitBounds(bounds, { padding: [40, 40], maxZoom: 14 });
+    }
+  }
+
+  function setExploreView(mode) {
+    const gridBtn = document.getElementById('btnViewGrid');
+    const splitBtn = document.getElementById('btnViewSplit');
+    const mapBtn = document.getElementById('btnViewMap');
+    const mapWrapper = document.getElementById('exploreMapWrapper');
+    const spacesGrid = document.getElementById('spacesGrid');
+
+    [gridBtn, splitBtn, mapBtn].forEach(b => {
+      if (b) b.className = "px-2.5 py-1 rounded-lg text-xs font-bold transition flex items-center gap-1.5 text-slate-400 hover:text-white";
+    });
+
+    if (mode === 'grid') {
+      if (gridBtn) gridBtn.className = "px-2.5 py-1 rounded-lg text-xs font-bold transition flex items-center gap-1.5 bg-indigo-600 text-white shadow-sm";
+      if (mapWrapper) mapWrapper.classList.add('hidden');
+      if (spacesGrid) spacesGrid.className = "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6";
+    } else if (mode === 'split') {
+      if (splitBtn) splitBtn.className = "px-2.5 py-1 rounded-lg text-xs font-bold transition flex items-center gap-1.5 bg-indigo-600 text-white shadow-sm";
+      if (mapWrapper) {
+        mapWrapper.classList.remove('hidden');
+        mapWrapper.className = "mb-8 rounded-3xl overflow-hidden border border-slate-800 shadow-2xl bg-slate-950 relative";
+      }
+      if (spacesGrid) spacesGrid.className = "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6";
+      initExploreMap();
+    } else if (mode === 'map') {
+      if (mapBtn) mapBtn.className = "px-2.5 py-1 rounded-lg text-xs font-bold transition flex items-center gap-1.5 bg-indigo-600 text-white shadow-sm";
+      if (mapWrapper) {
+        mapWrapper.classList.remove('hidden');
+        mapWrapper.className = "mb-8 rounded-3xl overflow-hidden border border-indigo-500/50 shadow-2xl bg-slate-950 relative ring-2 ring-indigo-500/20";
+      }
+      initExploreMap();
+      if (mapWrapper) mapWrapper.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+  }
+
   function setFilterLocation(locName) {
     const input = document.getElementById('locationInput');
     const latInput = document.getElementById('filterLat');
@@ -602,4 +744,5 @@
     );
   }
 </script>
+
 {% endblock %}
