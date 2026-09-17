@@ -211,6 +211,9 @@ async function executeAiSearch(queryText) {
     }
   } catch (err) {
     console.error("AI Search failed:", err);
+    if (typeof showToast === "function") {
+      showToast("AI Match search failed. Please check connectivity or try a different keyword.", "error");
+    }
   } finally {
     if (btn) {
       btn.disabled = false;
@@ -374,3 +377,57 @@ function formatMarkdown(text) {
   out = out.replace(/\n/g, "<br>");
   return out;
 }
+
+/* ==========================================
+   Global Toast Notification System
+   ========================================== */
+function showToast(message, type = "info", duration = 3500) {
+  let container = document.getElementById("toastContainer");
+  if (!container) {
+    container = document.createElement("div");
+    container.id = "toastContainer";
+    container.className = "fixed bottom-5 right-5 z-50 flex flex-col gap-2 pointer-events-none max-w-sm w-full px-4";
+    document.body.appendChild(container);
+  }
+
+  const toast = document.createElement("div");
+  toast.className = "pointer-events-auto flex items-center gap-3 p-4 rounded-2xl shadow-2xl border text-xs font-medium transition-all duration-300 transform translate-y-3 opacity-0 backdrop-blur-md";
+
+  let icon = '<i class="fa-solid fa-circle-info text-indigo-400 text-sm"></i>';
+  let colorClasses = "bg-slate-900/95 border-slate-700 text-slate-100 shadow-indigo-950/40";
+
+  if (type === "success") {
+    icon = '<i class="fa-solid fa-circle-check text-emerald-400 text-sm"></i>';
+    colorClasses = "bg-slate-900/95 border-emerald-500/40 text-emerald-100 shadow-emerald-950/40";
+  } else if (type === "error") {
+    icon = '<i class="fa-solid fa-triangle-exclamation text-rose-400 text-sm"></i>';
+    colorClasses = "bg-slate-900/95 border-rose-500/40 text-rose-100 shadow-rose-950/40";
+  } else if (type === "warning") {
+    icon = '<i class="fa-solid fa-circle-exclamation text-amber-400 text-sm"></i>';
+    colorClasses = "bg-slate-900/95 border-amber-500/40 text-amber-100 shadow-amber-950/40";
+  }
+
+  toast.className += " " + colorClasses;
+  toast.innerHTML = `
+    ${icon}
+    <div class="flex-grow leading-relaxed">${escapeHtml(message)}</div>
+    <button type="button" class="text-slate-400 hover:text-white transition p-1 shrink-0" onclick="this.parentElement.remove()">
+      <i class="fa-solid fa-xmark text-xs"></i>
+    </button>
+  `;
+
+  container.appendChild(toast);
+
+  requestAnimationFrame(() => {
+    toast.classList.remove("translate-y-3", "opacity-0");
+  });
+
+  setTimeout(() => {
+    toast.classList.add("translate-y-3", "opacity-0");
+    setTimeout(() => {
+      toast.remove();
+    }, 300);
+  }, duration);
+}
+
+window.showToast = showToast;
