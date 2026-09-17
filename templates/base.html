@@ -105,6 +105,25 @@
 
       <!-- Right Action Controls -->
       <div class="flex items-center gap-2 sm:gap-3 shrink-0">
+        <!-- Live System Connectivity Status Indicator & Resilience Mode Toggle -->
+        <form method="POST" action="{{ url_for('toggle_ai_simulation') }}" class="hidden sm:inline-block m-0 p-0" title="SpaceLoop Failover Engine: Click to toggle simulated offline AI mode">
+          <button type="submit" class="cursor-pointer transition hover:opacity-80 focus:outline-none">
+            {% if system_status and system_status.status == 'ONLINE' %}
+              <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 flex items-center gap-1.5">
+                <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span> ONLINE
+              </span>
+            {% elif system_status and system_status.status == 'LIMITED CONNECTIVITY' %}
+              <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-400 border border-amber-500/30 flex items-center gap-1.5">
+                <span class="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse"></span> LIMITED
+              </span>
+            {% else %}
+              <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-rose-500/10 text-rose-400 border border-rose-500/30 flex items-center gap-1.5">
+                <span class="w-1.5 h-1.5 rounded-full bg-rose-400 animate-ping"></span> FALLBACK MODE
+              </span>
+            {% endif %}
+          </button>
+        </form>
+
         <!-- Prominent Persona Switch Action -->
         {% if current_user and current_user.role == 'owner' %}
           <form method="POST" action="{{ url_for('switch_role') }}" class="hidden sm:inline-block">
@@ -210,6 +229,19 @@
             <i class="fa-solid fa-user text-slate-400"></i> Profile
           </a>
         {% endif %}
+      </div>
+
+      <!-- System Connectivity & AI Fallback Toggle for Mobile -->
+      <div class="pt-2 border-t border-slate-800 flex items-center justify-between text-xs text-slate-400">
+        <span class="flex items-center gap-2">
+          <span class="w-2 h-2 rounded-full {% if system_status and system_status.status == 'ONLINE' %}bg-emerald-400{% elif system_status and system_status.status == 'LIMITED CONNECTIVITY' %}bg-amber-400 animate-pulse{% else %}bg-rose-400 animate-ping{% endif %}"></span>
+          <span>AI Engine: <strong class="text-slate-200">{{ system_status.status if system_status else 'ONLINE' }}</strong></span>
+        </span>
+        <form method="POST" action="{{ url_for('toggle_ai_simulation') }}" class="inline">
+          <button type="submit" class="text-[10px] font-semibold px-2 py-1 rounded bg-slate-900 border border-slate-700 text-slate-300 hover:text-white transition">
+            {% if system_status and system_status.simulated %}Disable Sim{% else %}Simulate Fallback{% endif %}
+          </button>
+        </form>
       </div>
     </div>
   </header>

@@ -11,10 +11,66 @@ from security import sanitize_string, validate_numeric
 GROQ_API_KEY = Config.GROQ_API_KEY
 GEMINI_API_KEY = Config.GEMINI_API_KEY
 
+# Simulation switch for testing resilience & external API failure
+_DEV_SIMULATE_AI_FAILURE = False
+
+def set_simulate_ai_failure(enabled: bool):
+    global _DEV_SIMULATE_AI_FAILURE
+    _DEV_SIMULATE_AI_FAILURE = bool(enabled)
+
+def is_simulate_ai_failure() -> bool:
+    return _DEV_SIMULATE_AI_FAILURE
+
+def get_system_connectivity_status(simulate_override=None) -> dict:
+    """
+    Returns system connectivity and AI status:
+    - ONLINE: Primary and fallback external providers available
+    - LIMITED CONNECTIVITY: Partial external API connectivity
+    - OFFLINE / FALLBACK MODE: Zero external connectivity or simulated failure; deterministic rule engine active
+    """
+    is_sim = _DEV_SIMULATE_AI_FAILURE if simulate_override is None else simulate_override
+    if is_sim:
+        return {
+            "status": "OFFLINE / FALLBACK MODE",
+            "code": "offline_fallback",
+            "provider": "deterministic_rule_engine",
+            "simulated": True,
+            "description": "Simulated AI failure active. Running on deterministic offline rule engines."
+        }
+
+    has_groq = bool(GROQ_API_KEY and len(GROQ_API_KEY) > 5)
+    has_gemini = bool(GEMINI_API_KEY and len(GEMINI_API_KEY) > 5)
+
+    if has_groq and has_gemini:
+        return {
+            "status": "ONLINE",
+            "code": "online",
+            "provider": "groq_primary_gemini_fallback",
+            "simulated": False,
+            "description": "All AI systems operational with multi-tier failover."
+        }
+    elif has_groq or has_gemini:
+        active = "Groq" if has_groq else "Gemini"
+        return {
+            "status": "LIMITED CONNECTIVITY",
+            "code": "limited",
+            "provider": f"{active.lower()}_only",
+            "simulated": False,
+            "description": f"Running with single provider ({active}) + deterministic fallback."
+        }
+    else:
+        return {
+            "status": "OFFLINE / FALLBACK MODE",
+            "code": "offline_fallback",
+            "provider": "deterministic_rule_engine",
+            "simulated": False,
+            "description": "Operating in zero-connectivity mode using rule-based algorithms."
+        }
+
 
 def _call_groq(messages, json_mode=False, temperature=0.3):
     """Calls Groq API using requests with low latency."""
-    if not GROQ_API_KEY:
+    if _DEV_SIMULATE_AI_FAILURE or not GROQ_API_KEY:
         return None
     url = "https://api.groq.com/openai/v1/chat/completions"
     headers = {
@@ -46,7 +102,7 @@ def _call_groq(messages, json_mode=False, temperature=0.3):
 
 def _call_gemini(prompt_text):
     """Calls Google Gemini API using REST endpoint."""
-    if not GEMINI_API_KEY:
+    if _DEV_SIMULATE_AI_FAILURE or not GEMINI_API_KEY:
         return None
     url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={GEMINI_API_KEY}"
     headers = {"Content-Type": "application/json"}
@@ -98,6 +154,11 @@ def analyze_space_features(space_meta, photo_url=""):
     Multimodal & feature inspector for newly listed spaces.
     Sanitizes user input and validates outputs against prompt injection.
     """
+    if isinstance(space_meta, str):
+        space_meta = {"description": space_meta}
+    elif not isinstance(space_meta, dict):
+        space_meta = {}
+
     raw_desc = sanitize_string(space_meta.get("description", ""), max_length=800)
     user_category = sanitize_string(space_meta.get("category", ""), max_length=50)
     address = sanitize_string(space_meta.get("address", ""), max_length=150)
@@ -142,7 +203,10 @@ Respond ONLY with valid JSON conforming to this schema:
 
     if groq_res:
         try:
-            return _clean_ai_output(json.loads(groq_res))
+            output = _clean_ai_output(json.loads(groq_res))
+            output["_provider"] = "primary_groq"
+            output["_is_fallback"] = False
+            return output
         except Exception:
             pass
 
@@ -152,7 +216,10 @@ Respond ONLY with valid JSON conforming to this schema:
         try:
             match = re.search(r'\{.*\}', gemini_res, re.DOTALL)
             if match:
-                return _clean_ai_output(json.loads(match.group(0)))
+                output = _clean_ai_output(json.loads(match.group(0)))
+                output["_provider"] = "fallback_gemini"
+                output["_is_fallback"] = True
+                return output
         except Exception:
             pass
 
@@ -192,19 +259,30 @@ Respond ONLY with valid JSON conforming to this schema:
         noise = "Vibrant commercial district"
         power = "Commercial 50A capacity + multiple floor outlets"
         amenities = ["Street-level Entrance", "Display Counters", "Sound System", "High-Footfall Zone", "Wi-Fi"]
-        uses = "Apparel pop-up, weekend artisan showcase, book launch, evening networking"
-        title = "Prime Street-Front Boutique & Pop-up Space"
+        uses = "Pop-up retail boutique, product launch showcase, private acoustic set, gallery display"
+        title = "Charming Storefront & Pop-Up Retail Space"
+    elif "event" in desc_lower or "workshop" in desc_lower:
+        cat = "Event/Workshop"
+        hourly = 45.0
+        daily = 260.0
+        capacity = 15
+        lighting = "Adjustable track spotlights"
+        noise = "Acoustically damped interior"
+        power = "Multiple 15A wall circuits"
+        amenities = ["Folding Tables & Chairs", "Projector & Screen", "High-Speed Wi-Fi", "Restroom Access"]
+        uses = "Team hackathons, design workshops, tutoring cohorts, community meetups"
+        title = "Flexible Workshop & Creative Gathering Hall"
     else:
         cat = "Studio"
         hourly = 35.0
         daily = 190.0
-        capacity = 5
-        lighting = "Abundant Natural Light with Sheer Diffusers"
-        noise = "Acoustically Treated / Low Ambient Noise (<38 dB)"
-        power = "Multiple dedicated wall outlets & surge protectors"
-        amenities = ["High-Speed Wi-Fi 500Mbps", "Color Backdrop Hooks", "Air Conditioned", "Restroom Access"]
-        uses = "Portrait photography, podcast interviews, remote working, product staging"
-        title = "Sunlit Creative Studio & Media Nook"
+        capacity = 4
+        lighting = "Abundant natural north-facing window light"
+        noise = "Very quiet study profile (<38 dB)"
+        power = "6x Surge-protected workstation outlets"
+        amenities = ["High-Speed Wi-Fi (300 Mbps)", "Whiteboard", "Ergonomic Desk & Chairs", "Air Conditioning"]
+        uses = "Deep coding sessions, exam prep study groups, podcast recording, video editing"
+        title = "Bright Studio Workstation with Natural Light"
 
     return {
         "title": title,
@@ -220,6 +298,8 @@ Respond ONLY with valid JSON conforming to this schema:
         "safety_notes": "Inspected for trip hazards, smoke alarm verified, private secure entry point.",
         "recommended_uses": uses,
         "suitability_score": 94,
+        "_provider": "rule_based_fallback",
+        "_is_fallback": True,
         "enhanced_description": (
             f"{raw_desc or 'An intelligently converted temporary property space ready for on-demand use.'} "
             f"Equipped with {power} and {lighting}. Perfectly situated with flexible hours and verified host support."
