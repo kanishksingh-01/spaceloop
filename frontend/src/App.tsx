@@ -18,6 +18,7 @@ import { SessionPage } from './pages/SessionPage';
 import { CalculatorPage } from './pages/CalculatorPage';
 import { VerifyPage } from './pages/VerifyPage';
 import { HowItWorksPage } from './pages/HowItWorksPage';
+import SpaceLoopApp from './SpaceLoopApp';
 
 export const App: React.FC = () => {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
@@ -61,6 +62,7 @@ export const App: React.FC = () => {
           <Routes>
             <Route path="/" element={<LandingPage currentUser={currentUser} />} />
             <Route path="/explore" element={<ExplorePage />} />
+            <Route path="/boutique" element={<SpaceLoopApp />} />
             <Route path="/space/:id" element={<SpaceDetailPage currentUser={currentUser} />} />
             <Route path="/list-space" element={<ListSpacePage currentUser={currentUser} />} />
             <Route path="/session/:id" element={<SessionPage />} />
