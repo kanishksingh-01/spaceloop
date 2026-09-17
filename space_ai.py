@@ -475,9 +475,10 @@ The Licensee assumes full responsibility for any bodily injury or personal prope
 """
 
 
-def calculate_earnings_estimate(category, sqft, days_per_month=12):
+def calculate_earnings_estimate(category, sqft=250, days_per_month=12, hourly_rate=None, hours_per_day=None, platform_fee_percent=15.0):
     """
-    Dynamic pricing & passive revenue calculator for owners.
+    Dynamic pricing & passive revenue calculator for owners and hosts.
+    Calculates estimated bookings, gross monthly income, platform fee, host net earnings, and yearly projections.
     """
     rates = {
         "Storage": {"hourly": 35.0, "daily": 200.0, "sqft_multiplier": 0.04},
@@ -489,26 +490,68 @@ def calculate_earnings_estimate(category, sqft, days_per_month=12):
     }
     spec = rates.get(category, rates["Studio"])
     
-    sqft_adj = max(0.8, min(2.5, sqft / 250.0))
-    hourly_rate = round(spec["hourly"] * (0.6 + 0.4 * sqft_adj), 1)
-    daily_rate = round(spec["daily"] * (0.6 + 0.4 * sqft_adj), 1)
+    sqft_num = float(sqft) if sqft else 250.0
+    sqft_adj = max(0.8, min(2.5, sqft_num / 250.0))
+    suggested_hourly = round(spec["hourly"] * (0.6 + 0.4 * sqft_adj), 1)
+    suggested_daily = round(spec["daily"] * (0.6 + 0.4 * sqft_adj), 1)
 
-    # Average 4 hours per booked day
-    monthly_earnings = round(daily_rate * days_per_month * 0.85)  # accounting for platform service fee
-    annual_earnings = monthly_earnings * 12
+    # Hourly rate fallback or override
+    try:
+        rate = float(hourly_rate) if hourly_rate is not None and float(hourly_rate) > 0 else suggested_hourly
+    except (ValueError, TypeError):
+        rate = suggested_hourly
 
-    commercial_comp = round(monthly_earnings * 1.65)
+    try:
+        h_per_day = float(hours_per_day) if hours_per_day is not None and float(hours_per_day) > 0 else (suggested_daily / max(1.0, suggested_hourly))
+    except (ValueError, TypeError):
+        h_per_day = 4.0
+
+    try:
+        d_per_month = int(days_per_month) if days_per_month is not None and int(days_per_month) > 0 else 12
+    except (ValueError, TypeError):
+        d_per_month = 12
+
+    try:
+        fee_pct = float(platform_fee_percent) if platform_fee_percent is not None and float(platform_fee_percent) >= 0 else 15.0
+    except (ValueError, TypeError):
+        fee_pct = 15.0
+
+    # Bounds validation
+    rate = max(10.0, min(10000.0, rate))
+    h_per_day = max(1.0, min(24.0, h_per_day))
+    d_per_month = max(1, min(31, d_per_month))
+    fee_pct = max(0.0, min(50.0, fee_pct))
+
+    # Calculate financial projections
+    gross_monthly = round(rate * h_per_day * d_per_month)
+    platform_fee_amount = round(gross_monthly * (fee_pct / 100.0))
+    net_monthly_earnings = round(gross_monthly - platform_fee_amount)
+    annual_earnings = net_monthly_earnings * 12
+    annual_gross = gross_monthly * 12
+
+    # Estimated booking sessions
+    estimated_bookings = int(round(d_per_month * max(1.0, h_per_day / 3.0)))
+
+    commercial_comp = round(gross_monthly * 1.65) if gross_monthly > 0 else 5000
 
     return {
         "category": category,
         "sqft": sqft,
-        "days_per_month": days_per_month,
-        "suggested_hourly": hourly_rate,
-        "suggested_daily": daily_rate,
-        "estimated_monthly": monthly_earnings,
+        "hourly_rate": rate,
+        "hours_per_day": h_per_day,
+        "days_per_month": d_per_month,
+        "platform_fee_percent": fee_pct,
+        "platform_fee_amount": platform_fee_amount,
+        "estimated_bookings": estimated_bookings,
+        "gross_monthly": gross_monthly,
+        "annual_gross": annual_gross,
+        "suggested_hourly": suggested_hourly,
+        "suggested_daily": suggested_daily,
+        "estimated_monthly": net_monthly_earnings,
         "estimated_annual": annual_earnings,
         "commercial_comparison": commercial_comp,
-        "savings_delivered": f"{(1 - (monthly_earnings / commercial_comp)) * 100:.0f}% more accessible than commercial real estate"
+        "savings_delivered": f"{(1 - (net_monthly_earnings / commercial_comp)) * 100:.0f}% more accessible than commercial real estate" if commercial_comp > 0 else "N/A",
+        "disclaimer": "This is an estimate based on local occupancy rates, micro-space demand, and current platform fees. Actual earnings may vary."
     }
 
 

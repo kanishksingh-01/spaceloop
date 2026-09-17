@@ -109,8 +109,36 @@ def create_app():
 
     @app.route("/calculator")
     def calculator_page():
-        default_calc = calculate_earnings_estimate("Studio", 300, 12)
-        return render_template("calculator.html", initial_data=default_calc)
+        user_id = session.get("user_id")
+        user = User.query.get(user_id) if user_id else None
+        
+        category = sanitize_string(request.args.get("category", "Studio"), max_length=50)
+        rate = request.args.get("rate")
+        days = request.args.get("days", 12)
+        hours = request.args.get("hours", 4)
+        fee = request.args.get("fee", 15)
+
+        try:
+            rate_val = float(rate) if rate else None
+        except (ValueError, TypeError):
+            rate_val = None
+
+        default_calc = calculate_earnings_estimate(
+            category=category,
+            sqft=300,
+            days_per_month=days,
+            hourly_rate=rate_val,
+            hours_per_day=hours,
+            platform_fee_percent=fee
+        )
+
+        user_spaces = []
+        if user:
+            user_spaces = [s.to_dict() for s in Space.query.filter_by(owner_id=user.id).all()]
+        if not user_spaces:
+            user_spaces = [s.to_dict() for s in Space.query.limit(4).all()]
+
+        return render_template("calculator.html", initial_data=default_calc, host_spaces=user_spaces)
 
     @app.route("/dashboard")
     def dashboard_page():
@@ -428,13 +456,38 @@ def create_app():
 
     @app.route("/api/calculator/estimate", methods=["POST"])
     def api_estimate():
-        """Calculates dynamic earnings estimate with validated numeric bounds."""
+        """Calculates dynamic host earnings estimate with validated numeric bounds."""
         data = request.get_json(silent=True) or {}
         category = sanitize_string(data.get("category", "Studio"), max_length=50)
         sqft = int(validate_numeric(data.get("sqft"), min_val=20, max_val=50000, default=250))
         days = int(validate_numeric(data.get("days_per_month"), min_val=1, max_val=31, default=12))
 
-        estimate = calculate_earnings_estimate(category, sqft, days)
+        hourly_rate = data.get("hourly_rate")
+        if hourly_rate is not None and str(hourly_rate).strip() != "":
+            hourly_rate = float(validate_numeric(hourly_rate, min_val=10, max_val=10000, default=65.0))
+        else:
+            hourly_rate = None
+
+        hours_per_day = data.get("hours_per_day")
+        if hours_per_day is not None and str(hours_per_day).strip() != "":
+            hours_per_day = float(validate_numeric(hours_per_day, min_val=1, max_val=24, default=4.0))
+        else:
+            hours_per_day = None
+
+        platform_fee = data.get("platform_fee_percent")
+        if platform_fee is not None and str(platform_fee).strip() != "":
+            platform_fee = float(validate_numeric(platform_fee, min_val=0, max_val=50, default=15.0))
+        else:
+            platform_fee = 15.0
+
+        estimate = calculate_earnings_estimate(
+            category=category,
+            sqft=sqft,
+            days_per_month=days,
+            hourly_rate=hourly_rate,
+            hours_per_day=hours_per_day,
+            platform_fee_percent=platform_fee
+        )
         return jsonify(estimate)
 
     @app.route("/api/ai/chat", methods=["POST"])
