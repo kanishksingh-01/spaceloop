@@ -6,7 +6,7 @@ from datetime import datetime
 import requests
 from config import Config
 
-from security import sanitize_string, validate_numeric
+from security import sanitize_string, validate_numeric, validate_image_url
 
 GROQ_API_KEY = Config.GROQ_API_KEY
 GEMINI_API_KEY = Config.GEMINI_API_KEY
@@ -806,20 +806,20 @@ def verify_upi_penny_drop(upi_vpa: str, pan_name: str = ""):
     }
 
 
-def evaluate_room_condition_delta(entry_photo_url: str = "", exit_photo_url: str = "", simulate_failure: bool = False, simulate_damaged: bool = False):
+def evaluate_room_condition_delta(entry_photo_url: str = "", exit_photo_url: str = "", is_test_failure: bool = False):
     """
-    AI Visual Diff Inspection (Computer Vision Condition-Delta):
-    Compares before and after session images/videos to verify:
+    Condition Self-Attestation & Visual Audit Log:
+    Validates uploaded exit photo evidence and records condition self-attestation:
     1. Furniture unchanged
-    2. No visible waste detected
+    2. No visible waste reported
     3. Lights off
     4. Fan off
-    5. Overall condition match score (%)
+    5. Exit photo URL validity & format check
     """
     now_iso = datetime.utcnow().isoformat()
 
-    # Handle CV unavailable / service failure
-    if simulate_failure or is_simulate_ai_failure():
+    # Handle service offline or internal test failure
+    if is_test_failure or is_simulate_ai_failure():
         return {
             "condition_match_score": None,
             "furniture_unchanged": None,
@@ -830,61 +830,27 @@ def evaluate_room_condition_delta(entry_photo_url: str = "", exit_photo_url: str
             "trash_detected": False,
             "damage_detected": False,
             "escrow_decision": "REVIEW_REQUIRED",
-            "escrow_status": "held",
+            "escrow_status": "held_for_review",
             "status": "Review required",
             "deposit_refund_amount": 0.0,
-            "inspection_summary": "Computer Vision inspection unavailable. Reservation queued for manual host review; ₹100 deposit held in escrow.",
+            "inspection_summary": "Visual audit log queued for host review; ₹100 deposit held in simulated escrow.",
+            "verification_method": "Condition Self-Attestation & Visual Audit Log",
+            "is_simulated_ledger": True,
             "inspected_at": now_iso
         }
 
-    # Handle damaged or messy condition simulation
-    if simulate_damaged:
-        return {
-            "condition_match_score": 64.0,
-            "furniture_unchanged": False,
-            "no_waste_detected": False,
-            "lights_off": False,
-            "fan_off": False,
-            "fans_lights_cleared": False,
-            "trash_detected": True,
-            "damage_detected": True,
-            "escrow_decision": "REVIEW_REQUIRED",
-            "escrow_status": "held",
-            "status": "Review required",
-            "deposit_refund_amount": 0.0,
-            "inspection_summary": "Condition delta discrepancy detected: Fans/lights left powered and surface waste observed. Security deposit retained for host claim.",
-            "inspected_at": now_iso
-        }
+    # Validate exit photo if provided
+    has_photo = bool(exit_photo_url and exit_photo_url.strip())
+    photo_valid = validate_image_url(exit_photo_url) if has_photo else False
 
-    # Standard successful inspection: 96% - 99% match
-    condition_score = 96.0
+    condition_score = 96.0 if (photo_valid or not has_photo) else 75.0
     furniture_unchanged = True
     no_waste_detected = True
     lights_off = True
     fan_off = True
     fans_lights_cleared = True
 
-    ai_summary = ""
-    prompt = """
-You are an expert AI property inspector for SpaceLoop India.
-Analyze a micro-lease study session exit condition photo.
-Criteria:
-1. Furniture unchanged
-2. No visible waste detected
-3. Lights off
-4. Fan off
-Respond in 2 concise sentences confirming condition and recommending 100% security deposit release.
-"""
-    try:
-        if GROQ_API_KEY:
-            res = _call_groq([{"role": "user", "content": prompt}], temperature=0.3)
-            if res:
-                ai_summary = res.strip()
-    except Exception:
-        pass
-
-    if not ai_summary:
-        ai_summary = "AI Visual Analysis: Furniture unchanged, no visible waste detected. Lights and fan confirmed off. Condition Match 96%. ₹100 security deposit cleared for instant release."
+    audit_summary = "Condition Self-Attestation: Guest attested furniture in place, lights and fan switched off, and premise cleared. Visual audit record archived."
 
     return {
         "condition_match_score": condition_score,
@@ -895,11 +861,15 @@ Respond in 2 concise sentences confirming condition and recommending 100% securi
         "fans_lights_cleared": fans_lights_cleared,
         "trash_detected": False,
         "damage_detected": False,
+        "photo_attached": has_photo,
+        "photo_url_valid": photo_valid,
         "escrow_decision": "RELEASE_FULL",
-        "escrow_status": "released",
+        "escrow_status": "refund_recorded_simulated",
         "status": "Released",
         "deposit_refund_amount": 100.0,
-        "inspection_summary": ai_summary,
+        "inspection_summary": audit_summary,
+        "verification_method": "Condition Self-Attestation & Visual Audit Log",
+        "is_simulated_ledger": True,
         "inspected_at": now_iso
     }
 

@@ -1,15 +1,16 @@
 import os
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 import math
 import sqlite3
 import uuid
+import secrets
 
 from flask import Flask, request, jsonify, render_template, redirect, url_for, session, flash
 from flask_login import login_user, logout_user, login_required, current_user
 from flask_wtf.csrf import generate_csrf
 
 from config import Config
-from models import db, User, Space, Booking, Review, SpaceInquiry
+from models import db, User, Space, Booking, Review, SpaceInquiry, AuditLog
 from backend.app.extensions import login_manager, csrf, limiter
 from backend.app.api.v1.auth import api_v1_auth
 from backend.modules.auth import (
@@ -940,30 +941,63 @@ def create_app():
                 "error": f"Requested attendees count ({attendees_count}) exceeds maximum capacity of {max_cap} for this space."
             }), 400
 
-        if data.get("simulate_premise_failure"):
-            return jsonify({
-                "error": "Premise Verification Failed: Discom electricity meter flagged a temporary utility outage at this premise."
-            }), 422
-
-        if data.get("simulate_payment_failure"):
-            return jsonify({
-                "error": "UPI Payment Failed: Authorization declined by payer UPI PSP."
-            }), 402
-
         renter = current_user
         purpose = sanitize_string(data.get("purpose", "Creative work & study session"), max_length=200)
         special_requests = sanitize_string(data.get("special_requests", ""), max_length=500)
 
         now = datetime.utcnow()
-        start_time = now + timedelta(minutes=15)
+        raw_start = data.get("start_time")
+        if raw_start:
+            try:
+                clean_start = str(raw_start).replace("Z", "+00:00")
+                parsed_start = datetime.fromisoformat(clean_start)
+                if parsed_start.tzinfo is not None:
+                    parsed_start = parsed_start.astimezone(timezone.utc).replace(tzinfo=None)
+                start_time = parsed_start
+            except Exception:
+                start_time = now + timedelta(minutes=15)
+        else:
+            start_time = now + timedelta(minutes=15)
+
         end_time = start_time + timedelta(hours=float(hours))
+
+        # P1-4 / Task 17: Short-window idempotency de-dupe on (renter_id, space_id, start_time)
+        recent_duplicate = Booking.query.filter(
+            Booking.renter_id == renter.id,
+            Booking.space_id == space.id,
+            Booking.start_time == start_time,
+            Booking.created_at >= now - timedelta(seconds=5)
+        ).first()
+        if recent_duplicate:
+            return jsonify({
+                "error": "Duplicate booking request detected. Please wait before retrying.",
+                "duplicate_prevented": True,
+                "booking": recent_duplicate.to_dict()
+            }), 409
+
+        # P0-1: Prevent overlapping bookings
+        # Condition: existing.start_time < requested_end AND existing.end_time > requested_start
+        conflicting = Booking.query.filter(
+            Booking.space_id == space.id,
+            Booking.status != "cancelled",
+            Booking.start_time < end_time,
+            Booking.end_time > start_time
+        ).first()
+        if conflicting:
+            c_start = conflicting.start_time.strftime('%b %d, %I:%M %p')
+            c_end = conflicting.end_time.strftime('%I:%M %p')
+            return jsonify({
+                "error": f"This space is already reserved between {c_start} and {c_end} UTC. Please choose another time slot.",
+                "conflicting_booking_id": conflicting.id
+            }), 409
 
         subtotal = round(float(hours) * space.price_hourly, 2)
         platform_fee = round(subtotal * 0.05, 2)
         escrow_deposit = 100.0
         total_price = round(subtotal + platform_fee + escrow_deposit, 2)
 
-        arrival_pin = str(1000 + (space.id * 7 + int(now.timestamp()) % 8999))[:4]
+        # P1-2: Cryptographically random 4-digit arrival PIN
+        arrival_pin = f"{secrets.randbelow(9000) + 1000}"
 
         new_booking = Booking(
             space_id=space.id,
@@ -979,12 +1013,24 @@ def create_app():
             special_requests=special_requests,
             session_state="confirmed",
             arrival_pin=arrival_pin,
-            escrow_status="held",
+            escrow_status="held_simulated",
             entry_scan_photo="",
             exit_scan_photo=""
         )
 
         db.session.add(new_booking)
+        db.session.flush()
+
+        # P1-5: Access and transaction audit trail
+        audit = AuditLog(
+            user_id=renter.id,
+            action="BOOKING_CREATED",
+            ip_address=request.remote_addr or "",
+            user_agent=request.user_agent.string[:250] if request.user_agent else "",
+            details=f"Booking #{new_booking.id} created for Space #{space.id} ({hours} hrs)"
+        )
+        db.session.add(audit)
+
         lease_agreement = generate_micro_lease(space.to_dict(), new_booking.to_dict())
         new_booking.micro_lease_agreement = lease_agreement
         db.session.commit()
@@ -1040,12 +1086,19 @@ def create_app():
         sim = session.get("simulate_ai_failure", False)
         return jsonify(get_system_connectivity_status(simulate_override=sim))
 
-    @app.route("/api/dev/toggle-ai-simulation", methods=["POST", "GET"])
+    @app.route("/api/dev/toggle-ai-simulation", methods=["POST"])
+    @login_required
     def toggle_ai_simulation():
+        if not current_user.is_admin:
+            return jsonify({"error": "Unauthorized: Administrator privileges required to toggle simulation."}), 403
+        if app.config.get("FLASK_ENV") == "production":
+            return jsonify({"error": "Development simulation controls are disabled in production environment."}), 403
         current_val = session.get("simulate_ai_failure", False)
         new_val = not current_val
         session["simulate_ai_failure"] = new_val
         set_simulate_ai_failure(new_val)
+        if request.is_json:
+            return jsonify({"success": True, "simulate_ai_failure": new_val}), 200
         return redirect(request.referrer or url_for("index"))
 
     @app.route("/api/verify/student", methods=["POST"])
@@ -1168,20 +1221,29 @@ def create_app():
         client_pin = sanitize_string(data.get("pin", ""), max_length=10)
 
         now = datetime.utcnow()
+
+        # P1-3: Enforce check-in time window (not >30m early, not after end_time)
+        if booking.start_time and now < booking.start_time - timedelta(minutes=30):
+            return jsonify({
+                "success": False,
+                "error": f"Early check-in not permitted. Your booking window begins at {booking.start_time.strftime('%I:%M %p')} UTC (check-in opens 30 minutes prior)."
+            }), 400
+        if booking.end_time and now > booking.end_time:
+            return jsonify({
+                "success": False,
+                "error": f"Booking window expired at {booking.end_time.strftime('%I:%M %p')} UTC."
+            }), 400
+
         actual_distance = 0.0
         max_allowed_dist = 50.0
 
         if device_lat is not None and device_lng is not None and space.latitude and space.longitude:
             actual_distance = haversine_distance(device_lat, device_lng, space.latitude, space.longitude)
 
+        # P0-2: Check QR against genuine space token only (no DEMO_QR_PASS universal bypass)
         qr_matches = False
-        if client_qr:
-            valid_qr_tokens = [
-                space.room_qr_token or "",
-                "DEMO_QR_PASS"
-            ]
-            if any(tok and client_qr == tok for tok in valid_qr_tokens):
-                qr_matches = True
+        if client_qr and space.room_qr_token and client_qr == space.room_qr_token:
+            qr_matches = True
 
         pin_matches = False
         if client_pin and booking.arrival_pin and client_pin == booking.arrival_pin:
@@ -1190,27 +1252,34 @@ def create_app():
         access_granted = False
         handshake_method = ""
 
+        # P0-4: GPS is corroboration, never a standalone access credential
         if qr_matches and actual_distance <= max_allowed_dist:
             access_granted = True
             handshake_method = "QR_GEOFENCE_VERIFIED"
-        elif qr_matches and (device_lat is None or device_lng is None):
+        elif qr_matches:
             access_granted = True
             handshake_method = "QR_SCAN_STANDALONE"
         elif pin_matches:
             access_granted = True
             handshake_method = "PIN_FALLBACK_VERIFIED"
-        elif actual_distance <= max_allowed_dist and not client_qr:
-            access_granted = True
-            handshake_method = "GPS_PROXIMITY_OVERRIDE"
 
         if not access_granted:
             dist_desc = f"{int(actual_distance)}m away (max {int(max_allowed_dist)}m)" if actual_distance > 0 else "Location unavailable"
+            audit_fail = AuditLog(
+                user_id=current_user.id,
+                action="CHECKIN_REJECTED",
+                ip_address=request.remote_addr or "",
+                user_agent=request.user_agent.string[:250] if request.user_agent else "",
+                details=f"Booking #{booking.id} check-in rejected - distance: {int(actual_distance)}m, QR supplied: {bool(client_qr)}"
+            )
+            db.session.add(audit_fail)
+            db.session.commit()
             return jsonify({
                 "success": False,
-                "error": f"Handshake failed: Device is {dist_desc}. Please stand within 50m of premise or provide the 4-digit caretaker PIN.",
+                "error": f"Handshake failed: Physical access proof required via room QR scan or 4-digit arrival PIN. (Device is {dist_desc}).",
                 "distance_meters": int(actual_distance),
                 "required_distance": int(max_allowed_dist),
-                "arrival_pin_hint": "Check your booking confirmation email for 4-digit door PIN."
+                "arrival_pin_hint": "Check your booking confirmation for the 4-digit door PIN."
             }), 403
 
         raw_entry_photo = data.get("entry_photo")
@@ -1221,6 +1290,15 @@ def create_app():
         booking.arrival_time = now
         booking.checkin_gps_lat = float(device_lat) if device_lat is not None else space.latitude
         booking.checkin_gps_lng = float(device_lng) if device_lng is not None else space.longitude
+
+        audit_ok = AuditLog(
+            user_id=current_user.id,
+            action="CHECKIN_SUCCESS",
+            ip_address=request.remote_addr or "",
+            user_agent=request.user_agent.string[:250] if request.user_agent else "",
+            details=f"Booking #{booking.id} check-in success via {handshake_method}"
+        )
+        db.session.add(audit_ok)
         db.session.commit()
 
         return jsonify({
@@ -1245,9 +1323,16 @@ def create_app():
         space = booking.space
         data = request.get_json(silent=True) or {}
 
-        if booking.session_state == "checked_out" or booking.status == "completed":
+        # P0-3: Require check-in before checkout
+        if booking.session_state != "checked_in":
             return jsonify({
-                "error": f"This booking session has already completed check-out.",
+                "error": "You must check in before checking out.",
+                "current_session_state": booking.session_state
+            }), 400
+
+        if booking.status == "completed":
+            return jsonify({
+                "error": "This booking session has already completed check-out.",
                 "duplicate_prevented": True,
                 "booking": booking.to_dict()
             }), 400
@@ -1262,13 +1347,11 @@ def create_app():
         final_photo = exit_photo or booking.entry_scan_photo
 
         now = datetime.utcnow()
-        sim_fail = bool(data.get("simulate_cv_failure"))
-        sim_damage = bool(data.get("simulate_damaged"))
+
+        # P0-5: Evaluate condition delta without client-controlled failure/damage simulation flags
         inspection = evaluate_room_condition_delta(
             booking.entry_scan_photo,
-            final_photo,
-            simulate_failure=sim_fail,
-            simulate_damaged=sim_damage
+            final_photo
         )
 
         punctuality = calculate_session_punctuality(
@@ -1288,12 +1371,13 @@ def create_app():
         booking.fans_lights_cleared = bool(inspection.get("fans_lights_cleared"))
         booking.objective_punctuality_score = punctuality
 
+        # P0-6: Honest simulated escrow ledger state
         if inspection.get("escrow_decision") == "RELEASE_FULL":
-            booking.escrow_status = "released"
-            msg = "Check-out completed! Room condition cleared and ₹100 UPI escrow deposit released."
-            refund_state = "Released"
+            booking.escrow_status = "refund_recorded_simulated"
+            msg = "Check-out completed! Room condition cleared and ₹100 simulated escrow deposit refund recorded."
+            refund_state = "Refund recorded (Simulated Ledger)"
         else:
-            booking.escrow_status = "held"
+            booking.escrow_status = "held_for_review"
             msg = "Check-out recorded. Condition discrepancy flagged; ₹100 deposit held pending host review."
             refund_state = "Review required"
 
@@ -1307,6 +1391,14 @@ def create_app():
                 dispute_count=renter.dispute_count
             )
 
+        audit_co = AuditLog(
+            user_id=current_user.id,
+            action="CHECKOUT_COMPLETED",
+            ip_address=request.remote_addr or "",
+            user_agent=request.user_agent.string[:250] if request.user_agent else "",
+            details=f"Booking #{booking.id} check-out completed - refund status: {booking.escrow_status}"
+        )
+        db.session.add(audit_co)
         db.session.commit()
 
         return jsonify({
@@ -1452,4 +1544,5 @@ app = create_app()
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
-    app.run(host="0.0.0.0", port=port, debug=True)
+    is_dev = os.environ.get("FLASK_ENV", "development") == "development"
+    app.run(host="0.0.0.0", port=port, debug=is_dev)

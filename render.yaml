@@ -5,6 +5,10 @@ services:
     buildCommand: pip install -r requirements.txt
     startCommand: gunicorn app:app
     plan: free
+    disk:
+      name: spaceloop-data
+      mountPath: /var/data
+      sizeGB: 1
     envVars:
       - key: PYTHON_VERSION
         value: 3.11.9
@@ -12,3 +16,5 @@ services:
         value: production
       - key: SECRET_KEY
         generateValue: true
+      - key: DATABASE_URL
+        value: sqlite:////var/data/spaceloop.db
