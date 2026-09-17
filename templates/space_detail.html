@@ -512,21 +512,84 @@
             </div>
           </div>
 
+          <!-- Real-Time Asynchronous Premise Verification Progress Interface (Tasks 7 & 8) -->
+          <div id="bookingProgressBox" class="hidden mb-4 p-4 rounded-xl bg-slate-950 border border-indigo-500/40 space-y-3 shadow-inner">
+            <div class="flex items-center justify-between pb-2 border-b border-slate-800/80">
+              <span class="text-xs font-bold text-white flex items-center gap-1.5">
+                <i class="fa-solid fa-shield-halved text-indigo-400"></i> Premise & Booking Verification
+              </span>
+              <span id="bookingProgressStatus" class="text-[10px] font-semibold text-indigo-400">Checking...</span>
+            </div>
+
+            <!-- Verification Pipeline Steps -->
+            <div class="space-y-2 text-xs">
+              <!-- Step 1: Availability -->
+              <div id="vStep1" class="flex items-center justify-between p-2 rounded-lg bg-slate-900/80 border border-slate-800 transition-all">
+                <span class="flex items-center gap-2">
+                  <i id="vIcon1" class="fa-solid fa-spinner fa-spin text-indigo-400 text-xs"></i>
+                  <span id="vText1" class="font-medium text-slate-200">Checking availability</span>
+                </span>
+                <span id="vBadge1" class="text-[10px] font-mono text-indigo-300">Checking...</span>
+              </div>
+
+              <!-- Step 2: Premise / Space Conditions -->
+              <div id="vStep2" class="flex items-center justify-between p-2 rounded-lg bg-slate-900/40 border border-slate-800/50 transition-all text-slate-500">
+                <span class="flex items-center gap-2">
+                  <i id="vIcon2" class="fa-regular fa-circle text-slate-600 text-xs"></i>
+                  <span id="vText2" class="font-medium text-slate-400">Verifying premise conditions</span>
+                </span>
+                <span id="vBadge2" class="text-[10px] font-mono text-slate-500">Queued</span>
+              </div>
+
+              <!-- Step 3: Temporary Micro-Lease License -->
+              <div id="vStep3" class="flex items-center justify-between p-2 rounded-lg bg-slate-900/40 border border-slate-800/50 transition-all text-slate-500">
+                <span class="flex items-center gap-2">
+                  <i id="vIcon3" class="fa-regular fa-circle text-slate-600 text-xs"></i>
+                  <span id="vText3" class="font-medium text-slate-400">Generating temporary license</span>
+                </span>
+                <span id="vBadge3" class="text-[10px] font-mono text-slate-500">Queued</span>
+              </div>
+
+              <!-- Step 4: UPI Escrow & Confirmation -->
+              <div id="vStep4" class="flex items-center justify-between p-2 rounded-lg bg-slate-900/40 border border-slate-800/50 transition-all text-slate-500">
+                <span class="flex items-center gap-2">
+                  <i id="vIcon4" class="fa-regular fa-circle text-slate-600 text-xs"></i>
+                  <span id="vText4" class="font-medium text-slate-400">Authorizing escrow & confirming</span>
+                </span>
+                <span id="vBadge4" class="text-[10px] font-mono text-slate-500">Queued</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Failure / Error Banner with Retry -->
+          <div id="bookingErrorBox" class="hidden mb-4 p-3.5 rounded-xl bg-rose-950/60 border border-rose-500/40 text-rose-300 text-xs space-y-2">
+            <div class="flex items-center gap-2 font-bold text-rose-200">
+              <i class="fa-solid fa-triangle-exclamation"></i>
+              <span id="bookingErrorTitle">Verification Failed</span>
+            </div>
+            <p id="bookingErrorMessage" class="text-[11px] text-rose-300 leading-relaxed"></p>
+            <div class="pt-1">
+              <button type="button" onclick="resetBookingForm()" class="px-3 py-1.5 bg-rose-500/20 hover:bg-rose-500/30 text-rose-200 text-[11px] font-bold rounded-lg border border-rose-500/30 transition flex items-center gap-1.5">
+                <i class="fa-solid fa-rotate-right"></i> Try Again / Edit Details
+              </button>
+            </div>
+          </div>
+
           <!-- Book Button -->
           <button 
             type="submit" 
             id="bookNowBtn"
-            class="w-full bg-gradient-to-r from-indigo-600 via-violet-600 to-indigo-700 hover:from-indigo-500 hover:to-violet-500 text-white font-bold text-sm py-3.5 rounded-xl shadow-lg shadow-indigo-600/30 transition flex items-center justify-center gap-2"
+            class="w-full bg-gradient-to-r from-indigo-600 via-violet-600 to-indigo-700 hover:from-indigo-500 hover:to-violet-500 text-white font-bold text-sm py-3.5 rounded-xl shadow-lg shadow-indigo-600/30 transition flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <i class="fa-solid fa-file-signature"></i>
-            <span>Instant Book & Generate Lease</span>
+            <span id="bookNowBtnText">Instant Book & Generate Lease</span>
           </button>
 
         </form>
 
         <p class="text-[11px] text-center text-slate-500 mt-4 flex items-center justify-center gap-1.5">
           <i class="fa-solid fa-lock text-[10px]"></i>
-          <span>Secure checkout with instant digital handshake</span>
+          <span>Secure checkout with instant digital handshake (Zero wait)</span>
         </p>
 
       </div>
@@ -633,11 +696,41 @@
     document.getElementById('totalPriceDisplay').textContent = `₹${total}`;
   }
 
+  let isBookingSubmitting = false;
+
+  function resetBookingForm() {
+    isBookingSubmitting = false;
+    const btn = document.getElementById('bookNowBtn');
+    btn.disabled = false;
+    document.getElementById('bookNowBtnText').textContent = "Instant Book & Generate Lease";
+    document.getElementById('bookingProgressBox').classList.add('hidden');
+    document.getElementById('bookingErrorBox').classList.add('hidden');
+  }
+
   async function submitBooking(e) {
     e.preventDefault();
+    // Prevent double clicking / duplicate requests
+    if (isBookingSubmitting) return;
+    isBookingSubmitting = true;
+
     const btn = document.getElementById('bookNowBtn');
+    const btnText = document.getElementById('bookNowBtnText');
     btn.disabled = true;
-    btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Generating AI Micro-Lease...`;
+    btnText.textContent = "Verifying Premise...";
+
+    const progressBox = document.getElementById('bookingProgressBox');
+    const errorBox = document.getElementById('bookingErrorBox');
+    const statusText = document.getElementById('bookingProgressStatus');
+
+    errorBox.classList.add('hidden');
+    progressBox.classList.remove('hidden');
+
+    // Reset Progress Steps to Initial State
+    setStepState(1, 'active', 'fa-spinner fa-spin text-indigo-400', 'Checking...', 'text-indigo-300');
+    setStepState(2, 'waiting', 'fa-regular fa-circle text-slate-600', 'Queued', 'text-slate-500');
+    setStepState(3, 'waiting', 'fa-regular fa-circle text-slate-600', 'Queued', 'text-slate-500');
+    setStepState(4, 'waiting', 'fa-regular fa-circle text-slate-600', 'Queued', 'text-slate-500');
+    statusText.textContent = "Checking...";
 
     const payload = {
       space_id: parseInt(document.getElementById('spaceIdInput').value),
@@ -646,27 +739,83 @@
       attendees_count: parseInt(document.getElementById('attendeesInput').value)
     };
 
+    // Fast asynchronous execution - no artificial 30-second delays!
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 12000); // 12-second genuine timeout
+
     try {
       const resp = await fetch('/api/bookings', {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify(payload)
+        body: JSON.stringify(payload),
+        signal: controller.signal
       });
+      clearTimeout(timeoutId);
+
       const data = await resp.json();
-      if (resp.ok) {
+
+      if (resp.ok && data.success) {
+        // Step 1: Availability Verified
+        setStepState(1, 'passed', 'fa-solid fa-circle-check text-emerald-400', 'Verified ✓', 'text-emerald-400');
+        // Step 2: Premise Verified
+        setStepState(2, 'passed', 'fa-solid fa-circle-check text-emerald-400', 'Verified ✓', 'text-emerald-400');
+        // Step 3: Micro-Lease Generated
+        setStepState(3, 'passed', 'fa-solid fa-circle-check text-emerald-400', 'Generated ✓', 'text-emerald-400');
+        // Step 4: Escrow & Booking Confirmed
+        setStepState(4, 'passed', 'fa-solid fa-circle-check text-emerald-400', 'Confirmed ✓', 'text-emerald-400');
+        statusText.textContent = "Confirmed ✓";
+
         document.getElementById('microLeaseTextContainer').textContent = data.agreement;
         if (data.booking && data.booking.id) {
           document.getElementById('modalSessionLink').href = `/booking/${data.booking.id}/session`;
         }
-        document.getElementById('bookingSuccessModal').classList.remove('hidden');
+
+        // Open modal
+        setTimeout(() => {
+          document.getElementById('bookingSuccessModal').classList.remove('hidden');
+          resetBookingForm();
+        }, 350);
+
       } else {
-        alert(data.error || "Booking failed");
+        // Handle Verification / Booking Error with clear feedback
+        progressBox.classList.add('hidden');
+        errorBox.classList.remove('hidden');
+        document.getElementById('bookingErrorMessage').textContent = data.error || "Premise verification failed. Please adjust booking details.";
+        isBookingSubmitting = false;
+        btn.disabled = false;
+        btnText.textContent = "Retry Booking";
       }
     } catch (err) {
-      alert("Error creating booking. Please try again.");
-    } finally {
+      clearTimeout(timeoutId);
+      progressBox.classList.add('hidden');
+      errorBox.classList.remove('hidden');
+      if (err.name === 'AbortError') {
+        document.getElementById('bookingErrorMessage').textContent = "Verification timed out connecting to premise telemetry. Please check connection and retry.";
+      } else {
+        document.getElementById('bookingErrorMessage').textContent = "Network error connecting to verification gateway. Please try again.";
+      }
+      isBookingSubmitting = false;
       btn.disabled = false;
-      btn.innerHTML = `<i class="fa-solid fa-file-signature"></i> <span>Instant Book & Generate Lease</span>`;
+      btnText.textContent = "Retry Booking";
+    }
+  }
+
+  function setStepState(stepNum, type, iconClass, badgeText, badgeColorClass) {
+    const stepEl = document.getElementById(`vStep${stepNum}`);
+    const iconEl = document.getElementById(`vIcon${stepNum}`);
+    const badgeEl = document.getElementById(`vBadge${stepNum}`);
+    if (!stepEl || !iconEl || !badgeEl) return;
+
+    iconEl.className = iconClass + " text-xs";
+    badgeEl.textContent = badgeText;
+    badgeEl.className = `text-[10px] font-mono font-semibold ${badgeColorClass}`;
+
+    if (type === 'passed') {
+      stepEl.className = "flex items-center justify-between p-2 rounded-lg bg-emerald-950/20 border border-emerald-500/30 text-emerald-300 transition-all";
+    } else if (type === 'active') {
+      stepEl.className = "flex items-center justify-between p-2 rounded-lg bg-indigo-950/30 border border-indigo-500/40 text-white transition-all";
+    } else {
+      stepEl.className = "flex items-center justify-between p-2 rounded-lg bg-slate-900/40 border border-slate-800/50 text-slate-500 transition-all";
     }
   }
 
