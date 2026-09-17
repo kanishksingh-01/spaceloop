@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { View, Text, Pressable } from 'react-native';
 import { useNavigate } from 'react-router-dom';
-import { ThemeToggle } from './ThemeToggle';
 
 export const Footer: React.FC = () => {
   const navigate = useNavigate();
@@ -147,7 +146,6 @@ export const Footer: React.FC = () => {
           <div className="pt-8 border-t border-slate-900 flex flex-col sm:flex-row items-center justify-between text-xs text-slate-500 gap-4">
             <div className="flex items-center gap-3">
               <p>&copy; 2026 SpaceLoop. All rights reserved.</p>
-              <ThemeToggle variant="compact" />
             </div>
             <div className="flex items-center gap-3 text-slate-400 flex-wrap justify-center">
               <span className="flex items-center gap-1">

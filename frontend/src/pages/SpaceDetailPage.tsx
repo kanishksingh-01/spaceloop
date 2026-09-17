@@ -48,6 +48,10 @@ export const SpaceDetailPage: React.FC<SpaceDetailPageProps> = ({ currentUser })
 
   const [bookingLoading, setBookingLoading] = useState(false);
   const [bookingError, setBookingError] = useState<string | null>(null);
+  const [availabilityStatus, setAvailabilityStatus] = useState<'idle' | 'checking' | 'available' | 'conflict'>('idle');
+  const [availabilityMessage, setAvailabilityMessage] = useState<string | null>(null);
+  const precheckRequestId = React.useRef(0);
+
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [selectedPhotoIndex, setSelectedPhotoIndex] = useState(0);
 
@@ -85,13 +89,64 @@ export const SpaceDetailPage: React.FC<SpaceDetailPageProps> = ({ currentUser })
     return formatTimeWindow(computedStart, pricing.hours);
   }, [computedStart, pricing.hours]);
 
+  // Debounced dynamic availability precheck with stale request protection
+  useEffect(() => {
+    setBookingError(null);
+    setAvailabilityMessage(null);
+
+    if (!space?.id || !pricing.isValidDuration) {
+      setAvailabilityStatus('idle');
+      return;
+    }
+
+    const reqId = ++precheckRequestId.current;
+    setAvailabilityStatus('checking');
+
+    const timer = setTimeout(async () => {
+      try {
+        const startIso = computedStart.toISOString();
+        const endObj = new Date(computedStart.getTime() + pricing.hours * 3600 * 1000);
+        const endIso = endObj.toISOString();
+
+        const res = await precheckBooking(space.id, startIso, endIso, pricing.hours);
+        if (reqId !== precheckRequestId.current) return;
+
+        if (res && res.available === false) {
+          setAvailabilityStatus('conflict');
+          setAvailabilityMessage(
+            res.message || 'This space is already booked for the selected time slot. Please choose another time or adjust duration.'
+          );
+        } else {
+          setAvailabilityStatus('available');
+          setAvailabilityMessage('Selected Time Slot Available');
+        }
+      } catch (err: any) {
+        if (reqId !== precheckRequestId.current) return;
+        if (
+          err?.status === 409 ||
+          err?.message?.toLowerCase().includes('conflict') ||
+          err?.message?.toLowerCase().includes('already booked')
+        ) {
+          setAvailabilityStatus('conflict');
+          setAvailabilityMessage('This space is already booked for the selected time slot. Please choose another time or adjust duration.');
+        } else {
+          setAvailabilityStatus('idle');
+        }
+      }
+    }, 350);
+
+    return () => clearTimeout(timer);
+  }, [space?.id, computedStart, pricing.hours, pricing.isValidDuration]);
+
   const handleHoursChange = (newVal: number) => {
+    setBookingError(null);
     const clamped = Math.max(MIN_BOOKING_HOURS, Math.min(MAX_BOOKING_HOURS, Math.round(newVal * 10) / 10));
     setHours(clamped);
     setCustomHoursInput(String(clamped));
   };
 
   const handleCustomInput = (val: string) => {
+    setBookingError(null);
     setCustomHoursInput(val);
     const parsed = parseFloat(val);
     if (!isNaN(parsed) && parsed >= MIN_BOOKING_HOURS && parsed <= MAX_BOOKING_HOURS) {
@@ -100,6 +155,7 @@ export const SpaceDetailPage: React.FC<SpaceDetailPageProps> = ({ currentUser })
   };
 
   const setQuickDate = (offsetDays: number) => {
+    setBookingError(null);
     const d = new Date();
     d.setDate(d.getDate() + offsetDays);
     const y = d.getFullYear();
@@ -109,6 +165,7 @@ export const SpaceDetailPage: React.FC<SpaceDetailPageProps> = ({ currentUser })
   };
 
   const setQuickTime = (timeStr: string) => {
+    setBookingError(null);
     setSelectedTime(timeStr);
   };
 
@@ -168,6 +225,16 @@ export const SpaceDetailPage: React.FC<SpaceDetailPageProps> = ({ currentUser })
       return;
     }
 
+    if (bookingMode === 'schedule' && computedStart.getTime() < Date.now() - 5 * 60 * 1000) {
+      setBookingError('Selected booking time is in the past. Please select a future time slot.');
+      return;
+    }
+
+    if (availabilityStatus === 'conflict') {
+      setBookingError(availabilityMessage || 'This space is already booked for the selected time slot. Please choose another time or adjust duration.');
+      return;
+    }
+
     setBookingLoading(true);
     setBookingError(null);
     try {
@@ -190,7 +257,16 @@ export const SpaceDetailPage: React.FC<SpaceDetailPageProps> = ({ currentUser })
         navigate('/dashboard');
       }
     } catch (err: any) {
-      setBookingError(err.message || 'Failed to complete booking. Please try again.');
+      if (
+        err?.status === 409 ||
+        err?.message?.toLowerCase().includes('conflict') ||
+        err?.message?.toLowerCase().includes('already booked')
+      ) {
+        setAvailabilityStatus('conflict');
+        setBookingError('This space is already booked for the selected time slot. Please choose another time or adjust duration.');
+      } else {
+        setBookingError(err.message || 'Failed to complete booking. Please try again.');
+      }
     } finally {
       setBookingLoading(false);
     }
@@ -423,9 +499,25 @@ export const SpaceDetailPage: React.FC<SpaceDetailPageProps> = ({ currentUser })
                 </View>
               </View>
 
-              {bookingError && (
+              {(bookingError || (availabilityStatus === 'conflict' && availabilityMessage)) && (
                 <View className="mb-4 p-3 bg-rose-500/10 border border-rose-500/30 rounded-xl">
-                  <Text className="text-xs text-rose-300 font-medium">{bookingError}</Text>
+                  <Text className="text-xs text-rose-300 font-medium">
+                    ⚠️ {bookingError || availabilityMessage}
+                  </Text>
+                </View>
+              )}
+
+              {availabilityStatus === 'available' && !bookingError && (
+                <View className="mb-4 px-3 py-2 bg-emerald-500/10 border border-emerald-500/20 rounded-xl flex-row items-center gap-2">
+                  <View className="w-2 h-2 rounded-full bg-emerald-400" />
+                  <Text className="text-xs text-emerald-300 font-medium">Time Slot Available • Ready to Reserve</Text>
+                </View>
+              )}
+
+              {availabilityStatus === 'checking' && (
+                <View className="mb-4 px-3 py-2 bg-indigo-500/10 border border-indigo-500/20 rounded-xl flex-row items-center gap-2">
+                  <View className="w-2 h-2 rounded-full bg-indigo-400 animate-ping" />
+                  <Text className="text-xs text-indigo-300 font-medium">Checking slot availability...</Text>
                 </View>
               )}
 
@@ -716,9 +808,9 @@ export const SpaceDetailPage: React.FC<SpaceDetailPageProps> = ({ currentUser })
                 {/* 7. BOOK BUTTON */}
                 <Pressable
                   onPress={handleBookNow}
-                  disabled={bookingLoading || !pricing.isValidDuration}
+                  disabled={bookingLoading || !pricing.isValidDuration || availabilityStatus === 'conflict' || availabilityStatus === 'checking'}
                   className={`w-full py-3.5 rounded-xl items-center justify-center transition shadow-lg ${
-                    bookingLoading || !pricing.isValidDuration
+                    bookingLoading || !pricing.isValidDuration || availabilityStatus === 'conflict' || availabilityStatus === 'checking'
                       ? 'bg-indigo-600/50 cursor-not-allowed shadow-none'
                       : 'bg-indigo-600 hover:bg-indigo-500 shadow-indigo-600/40'
                   }`}
@@ -728,6 +820,10 @@ export const SpaceDetailPage: React.FC<SpaceDetailPageProps> = ({ currentUser })
                       ? 'Securing Reservation...'
                       : !pricing.isValidDuration
                       ? 'Invalid Duration'
+                      : availabilityStatus === 'conflict'
+                      ? '⚠️ Time Slot Unavailable'
+                      : availabilityStatus === 'checking'
+                      ? 'Checking Availability...'
                       : currentUser
                       ? `⚡ Instant Book & Lock Slot (₹${pricing.grandTotal})`
                       : `⚡ Sign in to Book (₹${pricing.grandTotal})`}

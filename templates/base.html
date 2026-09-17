@@ -132,12 +132,6 @@
 
       <!-- Right Action Controls -->
       <div class="flex items-center gap-2 sm:gap-3 shrink-0">
-        <!-- Theme Toggle (Light / Dark) -->
-        <button type="button" onclick="toggleGlobalTheme()" id="theme-toggle-btn" class="p-2 rounded-xl bg-slate-900/80 hover:bg-slate-800 text-slate-300 hover:text-white border border-slate-800 transition flex items-center gap-1.5 text-xs font-semibold" title="Toggle White/Dark Theme" aria-label="Toggle Theme">
-          <i id="theme-toggle-icon" class="fa-solid fa-sun text-amber-400 text-sm"></i>
-          <span id="theme-toggle-label" class="hidden xl:inline text-[11px]">Light Mode</span>
-        </button>
-
         <!-- Live System Connectivity Status Indicator -->
         <form method="POST" action="{{ url_for('toggle_ai_simulation') }}" class="hidden sm:inline-block m-0 p-0" title="SpaceLoop Failover Engine: Click to toggle simulated offline AI mode">
           <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
@@ -586,34 +580,14 @@
     }
 
     /* Global Theme Management */
-    function applyGlobalTheme(theme) {
-      const root = document.documentElement;
-      const icon = document.getElementById('theme-toggle-icon');
-      const label = document.getElementById('theme-toggle-label');
-      if (theme === 'light') {
-        root.classList.remove('dark');
-        root.classList.add('light');
-        root.style.colorScheme = 'light';
-        if (icon) { icon.className = 'fa-solid fa-moon text-indigo-500 text-sm'; }
-        if (label) { label.textContent = 'Dark Mode'; }
-      } else {
-        root.classList.remove('light');
-        root.classList.add('dark');
-        root.style.colorScheme = 'dark';
-        if (icon) { icon.className = 'fa-solid fa-sun text-amber-400 text-sm'; }
-        if (label) { label.textContent = 'Light Mode'; }
-      }
-      localStorage.setItem('spaceloop-theme', theme);
-    }
-
-    function toggleGlobalTheme() {
-      const current = localStorage.getItem('spaceloop-theme') || 'dark';
-      applyGlobalTheme(current === 'dark' ? 'light' : 'dark');
-    }
-
     (function() {
-      const saved = localStorage.getItem('spaceloop-theme') || (window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark');
-      applyGlobalTheme(saved);
+      try {
+        localStorage.removeItem('spaceloop-theme');
+      } catch (e) {}
+      const root = document.documentElement;
+      root.classList.remove('light');
+      root.classList.add('dark');
+      root.style.colorScheme = 'dark';
     })();
   </script>
   {% block scripts %}{% endblock %}

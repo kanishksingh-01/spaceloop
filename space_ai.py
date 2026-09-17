@@ -758,6 +758,71 @@ def calculate_earnings_estimate(category, sqft=250, days_per_month=12, hourly_ra
     }
 
 
+def _clean_loopbot_output(text: str) -> str:
+    """
+    Cleans and normalizes LoopBot output:
+    1. Replaces literal <br> tags with newlines.
+    2. Strips raw HTML tags safely.
+    3. Transforms any markdown tables (| col1 | col2 |) into clean conversational bullet points.
+    4. Normalizes whitespace and line breaks for mobile readability.
+    """
+    if not text or not isinstance(text, str):
+        return ""
+
+    lines = text.split("\n")
+    processed_lines = []
+    for line in lines:
+        stripped = line.strip()
+        # If line contains table pipes, replace <br> with " - " so it stays on one line
+        if stripped.startswith("|") or (stripped.count("|") >= 2):
+            line = re.sub(r"<br\s*/?>", " - ", line, flags=re.IGNORECASE)
+        processed_lines.append(line)
+
+    cleaned = "\n".join(processed_lines)
+    cleaned = re.sub(r"<br\s*/?>", "\n", cleaned, flags=re.IGNORECASE)
+
+    lines = cleaned.split('\n')
+    new_lines = []
+    in_table = False
+    table_headers = []
+
+    for line in lines:
+        stripped = line.strip()
+        # Check if line is a markdown table row e.g. | a | b | c |
+        if stripped.startswith('|') and stripped.endswith('|'):
+            # Check if this is a table header separator line e.g. |---|---|
+            if re.match(r'^\|[\s\-:|]+\|$', stripped):
+                continue
+            cells = [c.strip() for c in stripped.strip('|').split('|')]
+            if not in_table:
+                in_table = True
+                table_headers = cells
+                continue
+            else:
+                # Format row cells into conversational bullet points
+                if table_headers and len(table_headers) == len(cells):
+                    parts = [f"{h}: {c}" for h, c in zip(table_headers, cells) if c]
+                    new_lines.append(f"• " + " • ".join(parts))
+                else:
+                    parts = [c for c in cells if c]
+                    new_lines.append(f"• " + " • ".join(parts))
+                continue
+        else:
+            in_table = False
+            table_headers = []
+            new_lines.append(line)
+
+    cleaned = '\n'.join(new_lines)
+
+    # 3. Strip any remaining raw HTML tags
+    cleaned = re.sub(r'<[^>]+>', '', cleaned)
+
+    # 4. Collapse excessive consecutive blank lines
+    cleaned = re.sub(r'\n{3,}', '\n\n', cleaned)
+
+    return cleaned.strip()
+
+
 def concierge_chat(messages, context_data=None):
     """
     AI Concierge (LoopBot) for conversational assistance, recommendations, and space guidelines.
@@ -795,12 +860,22 @@ def concierge_chat(messages, context_data=None):
 You are LoopBot, the friendly, hyper-knowledgeable AI Concierge for SpaceLoop.
 SpaceLoop is an India Stack AI platform that converts unused property square footage (study pods, studios, garages, spare rooms, off-peak cafes) into useful, affordable temporary spaces under Section 52 of the Indian Easements Act, 1882.
 
+CRITICAL FORMATTING INSTRUCTIONS:
+- NEVER generate Markdown tables (do NOT use '|' column pipes or '---|---' separators).
+- NEVER output raw HTML tags (do NOT use '<br>', '<div>', '<p>', etc.).
+- ALWAYS format multiple spaces, comparisons, or recommendations as clean, mobile-friendly numbered cards or bulleted lists.
+- When listing spaces, present each item like this:
+  1. [Title]
+     • Location: [Location, City]
+     • Rate: ₹[Price]/hour
+     • Features: [Feature 1], [Feature 2]
+- Always follow up with a polite closing prompt.
+
 Guidelines:
 - Recommend actual spaces listed below where relevant.
 - Duration bounds: 0.5 hours (30 min) to 168 hours (7 days maximum).
 - Pricing: Hourly rate × hours + 5% platform fee + ₹100 refundable UPI escrow deposit.
 - Access: Zero-hardware geofenced digital door pass (50m GPS radius + QR scan + 4-digit arrival PIN fallback).
-- Keep answers concise, helpful, and formatted with clean bullet points.
 {active_spaces_text}
 {context_str}
 """
@@ -816,12 +891,14 @@ Guidelines:
     # 1. Primary: Google Gemini API with multi-turn grounding
     gemini_res = _call_gemini(formatted_msgs, temperature=0.5)
     if gemini_res:
-        return sanitize_string(gemini_res, max_length=2500)
+        cleaned_gemini = _clean_loopbot_output(gemini_res)
+        return sanitize_string(cleaned_gemini, max_length=2500)
 
     # 2. Secondary: Groq API with GPT-OSS 120B / 20B
     res = _call_groq(formatted_msgs, temperature=0.6)
     if res:
-        return sanitize_string(res, max_length=2000)
+        cleaned_groq = _clean_loopbot_output(res)
+        return sanitize_string(cleaned_groq, max_length=2000)
 
     # =========================================================================
     # 3. SEMANTIC CONVERSATIONAL ENGINE (Grounding in Database & Platform Context)
@@ -955,17 +1032,19 @@ Guidelines:
 
         results = matched if matched else (db_spaces[:4] if db_spaces else [])
         if results:
-            items_str = "\n".join([
-                f"• **{s['title']}**\n"
-                f"  📍 {s['location']}, {s['city']} • Category: *{s['category']}*\n"
-                f"  💰 **₹{s['hourly_rate']}/hr** (Ref #{s['id']})\n"
-                f"  ✨ Amenities: {', '.join(s.get('amenities', [])[:3])}"
-                for s in results[:4]
+            items_str = "\n\n".join([
+                f"{idx + 1}. **{s['title']}**\n"
+                f"   • Location: {s['location']}, {s['city']}\n"
+                f"   • Category: {s['category'].title()}\n"
+                f"   • Rate: ₹{s['hourly_rate']}/hour\n"
+                f"   • Features: {', '.join(s.get('amenities', [])[:3]) if s.get('amenities') else 'High-speed Wi-Fi, Quiet work environment'}"
+                for idx, s in enumerate(results[:3])
             ])
-            return (
-                f"📍 **Verified Spaces Matching Your Request:**\n\n"
+            loc_label = detected_cities[0].title() if detected_cities else "your search"
+            return _clean_loopbot_output(
+                f"📍 **Found {len(results[:3])} spaces matching {loc_label}:**\n\n"
                 f"{items_str}\n\n"
-                f"👉 **Ready to reserve?** Tap on any space from the **Explore** page (`/explore`) or curated showcase (`/curated`) to pick your start time and duration!"
+                f"Would you like me to check availability or help you reserve one of these?"
             )
 
     # H. DigiLocker & Identity Safety
