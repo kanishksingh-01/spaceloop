@@ -1332,9 +1332,35 @@ def create_app():
         user = User.query.get(user_id) if user_id else None
         return render_template("500.html", user=user.to_dict() if user else None), 500
 
+    @app.route("/health")
+    @app.route("/api/health")
+    def health_check():
+        """Production health check probe for Render, Fly.io, Docker, and Kubernetes."""
+        try:
+            db.session.execute(db.text("SELECT 1"))
+            db_status = "healthy"
+        except Exception as e:
+            db_status = f"unhealthy: {str(e)}"
+
+        ai_status = get_system_connectivity_status()
+        is_healthy = (db_status == "healthy")
+        status_code = 200 if is_healthy else 503
+
+        return jsonify({
+            "status": "ok" if is_healthy else "degraded",
+            "timestamp": datetime.utcnow().isoformat() + "Z",
+            "database": db_status,
+            "ai_connectivity": ai_status,
+            "version": "1.0.0-india-edition"
+        }), status_code
+
     return app
 
 
+# Expose WSGI application object for Gunicorn and production deployment
+app = create_app()
+
 if __name__ == "__main__":
-    app = create_app()
-    app.run(host="0.0.0.0", port=5000, debug=True)
+    port = int(os.environ.get("PORT", 5000))
+    debug_mode = os.environ.get("FLASK_ENV") != "production"
+    app.run(host="0.0.0.0", port=port, debug=debug_mode)
