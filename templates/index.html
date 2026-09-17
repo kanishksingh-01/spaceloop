@@ -178,11 +178,16 @@
           >
           <div class="absolute inset-0 bg-gradient-to-t from-slate-950/90 via-transparent to-black/30"></div>
 
-          <!-- Category Badge -->
-          <div class="absolute top-3 left-3">
+          <!-- Category & Verified Badges -->
+          <div class="absolute top-3 left-3 flex items-center gap-1.5">
             <span class="px-2.5 py-1 rounded-lg text-xs font-semibold backdrop-blur-md bg-slate-900/80 text-white border border-white/10 shadow-sm">
               {{ space.category }}
             </span>
+            {% if space.owner_verified or space.is_discom_verified %}
+            <span class="px-2 py-1 rounded-lg text-[10px] font-bold backdrop-blur-md bg-emerald-600/90 text-white shadow-sm flex items-center gap-1" title="SpaceLoop Verified Host">
+              <i class="fa-solid fa-shield-check"></i> Verified
+            </span>
+            {% endif %}
           </div>
 
           <!-- Match Score Pill (Rendered dynamically if matched, or high default) -->
@@ -246,10 +251,18 @@
             <i class="fa-solid fa-check text-emerald-400 mr-1"></i> <span class="reason-text">Fits requirement</span>
           </div>
 
-          <!-- Action Footer -->
+          <!-- Action Footer with Verification Indicator -->
           <div class="pt-3 border-t border-slate-800/80 flex items-center justify-between gap-3">
-            <span class="text-[11px] text-slate-500 flex items-center gap-1">
-              <i class="fa-solid fa-file-signature text-slate-400"></i> AI Micro-Lease
+            <span class="text-[11px] text-slate-400 flex items-center gap-1">
+              {% if space.owner_verified or space.is_discom_verified %}
+              <i class="fa-solid fa-circle-check text-emerald-400 text-xs"></i>
+              <span class="text-slate-300 font-medium">Verified</span>
+              {% else %}
+              <i class="fa-solid fa-clock text-amber-400 text-xs"></i>
+              <span class="text-slate-400">KYC Pending</span>
+              {% endif %}
+              <span class="text-slate-600">•</span>
+              <span class="text-slate-500 font-mono">OTI {{ space.owner_trust_score or 98.5 }}</span>
             </span>
             <a 
               href="{{ url_for('space_detail', space_id=space.id) }}"

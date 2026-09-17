@@ -52,6 +52,106 @@
     </div>
   </div>
 
+  <!-- SpaceLoop Verified Trust Interface (Host / Renter Verification Card) -->
+  <div class="bg-slate-900/80 border border-slate-800 rounded-3xl p-6 sm:p-7 mb-8 shadow-xl">
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-5 pb-4 border-b border-slate-800">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 flex items-center justify-center font-bold text-lg">
+          <i class="fa-solid fa-shield-check"></i>
+        </div>
+        <div>
+          <div class="flex items-center gap-2">
+            <h2 class="text-base font-bold text-white">SpaceLoop Verified Trust Status</h2>
+            {% if (current_user and current_user.role == 'owner' and current_user.is_host_verified) or (current_user and current_user.role == 'seeker' and (current_user.is_student_verified or current_user.is_aadhaar_verified)) %}
+            <span class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">
+              Active Trust Tier
+            </span>
+            {% else %}
+            <span class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-amber-500/10 text-amber-400 border border-amber-500/30">
+              Verification Pending
+            </span>
+            {% endif %}
+          </div>
+          <p class="text-xs text-slate-400 mt-0.5">Dual-sided India Stack compliance powered by DigiLocker, UIDAI & State Electricity Discoms</p>
+        </div>
+      </div>
+      <a href="{{ url_for('verify_page') }}" class="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold transition flex items-center gap-1.5 self-start sm:self-auto shadow-md shadow-indigo-600/20">
+        <i class="fa-solid fa-id-card-clip"></i> Open KYC Hub
+      </a>
+    </div>
+
+    {% if current_user and current_user.role == 'owner' %}
+      <!-- Host Verification 4 Pillars -->
+      <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
+        <div class="p-3 bg-slate-950/80 rounded-2xl border {% if current_user.is_aadhaar_verified %}border-emerald-500/30{% else %}border-amber-500/30{% endif %}">
+          <div class="flex items-center justify-between mb-1">
+            <span class="text-[10px] uppercase font-bold text-slate-400">1. Identity</span>
+            {% if current_user.is_aadhaar_verified %}<i class="fa-solid fa-circle-check text-emerald-400"></i>{% else %}<span class="text-[9px] text-amber-400">Pending</span>{% endif %}
+          </div>
+          <div class="font-bold text-white text-xs">{% if current_user.is_aadhaar_verified %}Identity Verified{% else %}Aadhaar Pending{% endif %}</div>
+          <div class="text-[10px] text-slate-500 mt-0.5 font-mono">{{ current_user.aadhaar_masked or 'XXXX-XXXX-4821' }}</div>
+        </div>
+
+        <div class="p-3 bg-slate-950/80 rounded-2xl border {% if current_user.is_host_verified %}border-emerald-500/30{% else %}border-amber-500/30{% endif %}">
+          <div class="flex items-center justify-between mb-1">
+            <span class="text-[10px] uppercase font-bold text-slate-400">2. Property</span>
+            {% if current_user.is_host_verified %}<i class="fa-solid fa-circle-check text-emerald-400"></i>{% else %}<span class="text-[9px] text-amber-400">Pending</span>{% endif %}
+          </div>
+          <div class="font-bold text-white text-xs">{% if current_user.is_host_verified %}Property Verified{% else %}Discom Pending{% endif %}</div>
+          <div class="text-[10px] text-slate-500 mt-0.5">{{ current_user.discom_provider or 'Electricity Discom CA' }}</div>
+        </div>
+
+        <div class="p-3 bg-slate-950/80 rounded-2xl border {% if current_user.upi_verified %}border-emerald-500/30{% else %}border-amber-500/30{% endif %}">
+          <div class="flex items-center justify-between mb-1">
+            <span class="text-[10px] uppercase font-bold text-slate-400">3. Bank / Escrow</span>
+            {% if current_user.upi_verified %}<i class="fa-solid fa-circle-check text-emerald-400"></i>{% else %}<span class="text-[9px] text-amber-400">Pending</span>{% endif %}
+          </div>
+          <div class="font-bold text-white text-xs">{% if current_user.upi_verified %}Payment Verified{% else %}Penny Drop Pending{% endif %}</div>
+          <div class="text-[10px] text-slate-500 mt-0.5 font-mono">{{ current_user.upi_vpa_masked or 'upi***@okbank' }}</div>
+        </div>
+
+        <div class="p-3 bg-slate-950/80 rounded-2xl border border-emerald-500/30">
+          <div class="flex items-center justify-between mb-1">
+            <span class="text-[10px] uppercase font-bold text-slate-400">4. Space Info</span>
+            <i class="fa-solid fa-circle-check text-emerald-400"></i>
+          </div>
+          <div class="font-bold text-white text-xs">AI Vision Inspected</div>
+          <div class="text-[10px] text-slate-500 mt-0.5">Door Pass QR Enabled</div>
+        </div>
+      </div>
+    {% else %}
+      <!-- Seeker Verification 3 Pillars -->
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
+        <div class="p-3 bg-slate-950/80 rounded-2xl border {% if current_user and current_user.is_aadhaar_verified %}border-emerald-500/30{% else %}border-amber-500/30{% endif %}">
+          <div class="flex items-center justify-between mb-1">
+            <span class="text-[10px] uppercase font-bold text-slate-400">1. Identity</span>
+            {% if current_user and current_user.is_aadhaar_verified %}<i class="fa-solid fa-circle-check text-emerald-400"></i>{% else %}<span class="text-[9px] text-amber-400">Pending</span>{% endif %}
+          </div>
+          <div class="font-bold text-white text-xs">{% if current_user and current_user.is_aadhaar_verified %}Identity Verified{% else %}Aadhaar OTP Pending{% endif %}</div>
+          <div class="text-[10px] text-slate-500 mt-0.5 font-mono">{{ current_user.aadhaar_masked if current_user else 'XXXX-XXXX-4821' }}</div>
+        </div>
+
+        <div class="p-3 bg-slate-950/80 rounded-2xl border {% if current_user and current_user.is_student_verified %}border-emerald-500/30{% else %}border-amber-500/30{% endif %}">
+          <div class="flex items-center justify-between mb-1">
+            <span class="text-[10px] uppercase font-bold text-slate-400">2. Student Credential</span>
+            {% if current_user and current_user.is_student_verified %}<i class="fa-solid fa-circle-check text-emerald-400"></i>{% else %}<span class="text-[9px] text-amber-400">Pending</span>{% endif %}
+          </div>
+          <div class="font-bold text-white text-xs">{% if current_user and current_user.is_student_verified %}Student Verified{% else %}Academic Verification Pending{% endif %}</div>
+          <div class="text-[10px] text-slate-500 mt-0.5">{{ current_user.college_name if current_user and current_user.college_name else 'IIT Delhi Academic Domain' }}</div>
+        </div>
+
+        <div class="p-3 bg-slate-950/80 rounded-2xl border border-emerald-500/30">
+          <div class="flex items-center justify-between mb-1">
+            <span class="text-[10px] uppercase font-bold text-slate-400">3. Payment & Escrow</span>
+            <i class="fa-solid fa-circle-check text-emerald-400"></i>
+          </div>
+          <div class="font-bold text-white text-xs">UPI Escrow Active</div>
+          <div class="text-[10px] text-slate-500 mt-0.5">₹100 Automatic Refund Guarantee</div>
+        </div>
+      </div>
+    {% endif %}
+  </div>
+
   <!-- Dashboard Tabs -->
   <div class="space-y-8">
     
