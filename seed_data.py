@@ -304,6 +304,43 @@ def seed_database():
             "ai_safety_notes": "Commercial building fire safety certified.",
             "ai_recommended_uses": "Hackathon building, investor pitch practice, startup sprints",
             "ai_suitability_score": 99
+        },
+        {
+            "owner_id": host2.id,
+            "title": "Quiet Study Pod & Hackathon Workstation (Near JSPM Wagholi)",
+            "category": "Studio",
+            "description": "Acoustically damped project studio and study suite situated 300 meters from JSPM Imperial College campus in Wagholi, Pune. Equipped with 300 Mbps fiber internet, ergonomic study desks, dual monitor setup, whiteboard, and 24/7 power backup.",
+            "address": "Bakori Road, Near JSPM Campus",
+            "neighborhood": "Wagholi",
+            "city": "Pune",
+            "state": "Maharashtra",
+            "zip_code": "412207",
+            "latitude": 18.5793,
+            "longitude": 73.9822,
+            "geofence_radius_meters": 30,
+            "physical_access_type": "caretaker_handshake",
+            "discom_ca_number": "4920194821",
+            "discom_consumer_name": "Vikram Mehra",
+            "room_qr_token": "SPACELOOP_QR_PUNE_WAGHOLI",
+            "sqft": 220,
+            "max_capacity": 4,
+            "price_hourly": 55.0,
+            "price_daily": 320.0,
+            "minimum_hours": 1,
+            "amenities": ["High-Speed Wi-Fi (300 Mbps)", "Whiteboard & Markers", "Air Cooler", "Drinking Water", "Dual Display Monitor"],
+            "rules": ["No loud conversation", "Switch off appliances after use", "Clean desk before leaving"],
+            "photos": [
+                "https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&w=1200&q=80",
+                "https://images.unsplash.com/photo-1524758631624-e2822e304c36?auto=format&fit=crop&w=800&q=80"
+            ],
+            "ai_tags": ["Wagholi", "Near JSPM", "Study Pod", "Dual Monitor"],
+            "ai_dimensions_summary": "14ft x 16ft (220 sqft)",
+            "ai_lighting": "Abundant natural daylight window + warm 4000K LED task lights",
+            "ai_noise_level": "Quiet study environment (<35 dB)",
+            "ai_power_access": "Surge-protected multi-plug power strip at every desk",
+            "ai_safety_notes": "MCB breaker, CCTV in building reception, first-aid box.",
+            "ai_recommended_uses": "College group study, coding sprints, exam preparation",
+            "ai_suitability_score": 97
         }
     ]
 

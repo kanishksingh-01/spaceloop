@@ -147,6 +147,115 @@
 
   </div>
 
+  <!-- Location & Radius Dynamic Discovery Filter Bar -->
+  <div class="bg-slate-900/80 border border-slate-800/90 rounded-2xl p-4 mb-8 shadow-xl">
+    <form id="locationFilterForm" method="GET" action="{{ url_for('index') }}" class="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-3">
+      <input type="hidden" name="category" value="{{ active_category if active_category != 'All' else '' }}">
+      <input type="hidden" id="filterLat" name="lat" value="{{ active_lat or '' }}">
+      <input type="hidden" id="filterLng" name="lng" value="{{ active_lng or '' }}">
+
+      <!-- Location Input with Geolocation Action -->
+      <div class="flex-grow flex items-center gap-2 bg-slate-950/80 border border-slate-700/70 rounded-xl px-3 py-2">
+        <i class="fa-solid fa-location-dot text-indigo-400 shrink-0"></i>
+        <input 
+          type="text" 
+          id="locationInput" 
+          name="loc" 
+          value="{{ active_location or '' }}" 
+          placeholder="Enter location or college (e.g. Wagholi, Hauz Khas, Koramangala)..."
+          class="bg-transparent border-none text-xs sm:text-sm text-white placeholder-slate-500 focus:outline-none w-full"
+        >
+        <button 
+          type="button" 
+          id="btnDetectLocation"
+          onclick="detectCurrentLocation()"
+          class="shrink-0 text-[11px] font-semibold text-indigo-300 hover:text-white bg-indigo-950/80 hover:bg-indigo-900/80 border border-indigo-500/30 px-2.5 py-1 rounded-lg flex items-center gap-1 transition"
+          title="Use my current GPS coordinates"
+        >
+          <i class="fa-solid fa-crosshairs text-indigo-400"></i>
+          <span class="hidden sm:inline">Use GPS</span>
+        </button>
+      </div>
+
+      <!-- Radius Selector -->
+      <div class="flex items-center gap-2 shrink-0">
+        <label for="radiusSelect" class="text-xs text-slate-400 font-medium shrink-0 flex items-center gap-1">
+          <i class="fa-solid fa-ruler-combined text-slate-500"></i> Radius:
+        </label>
+        <select 
+          id="radiusSelect" 
+          name="radius" 
+          class="bg-slate-950 border border-slate-700/70 rounded-xl px-3 py-2 text-xs sm:text-sm text-white focus:outline-none focus:border-indigo-500 transition"
+        >
+          <option value="" {% if not active_radius %}selected{% endif %}>Any Distance</option>
+          <option value="1" {% if active_radius == 1.0 %}selected{% endif %}>Within 1 km</option>
+          <option value="3" {% if active_radius == 3.0 %}selected{% endif %}>Within 3 km</option>
+          <option value="5" {% if active_radius == 5.0 %}selected{% endif %}>Within 5 km</option>
+          <option value="10" {% if active_radius == 10.0 %}selected{% endif %}>Within 10 km</option>
+        </select>
+      </div>
+
+      <!-- Max Budget Filter -->
+      <div class="flex items-center gap-2 shrink-0">
+        <label for="priceSelect" class="text-xs text-slate-400 font-medium shrink-0 flex items-center gap-1">
+          <i class="fa-solid fa-indian-rupee-sign text-slate-500"></i> Max Price:
+        </label>
+        <select 
+          id="priceSelect" 
+          name="max_price" 
+          class="bg-slate-950 border border-slate-700/70 rounded-xl px-3 py-2 text-xs sm:text-sm text-white focus:outline-none focus:border-indigo-500 transition"
+        >
+          <option value="" {% if not active_max_price %}selected{% endif %}>Any Budget</option>
+          <option value="60" {% if active_max_price == 60.0 %}selected{% endif %}>Under ₹60/hr</option>
+          <option value="80" {% if active_max_price == 80.0 %}selected{% endif %}>Under ₹80/hr</option>
+          <option value="100" {% if active_max_price == 100.0 %}selected{% endif %}>Under ₹100/hr</option>
+        </select>
+      </div>
+
+      <!-- Submit & Reset Actions -->
+      <div class="flex items-center gap-2 shrink-0">
+        <button 
+          type="submit" 
+          class="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs sm:text-sm font-semibold transition flex items-center justify-center gap-1.5 shadow-md shadow-indigo-600/20"
+        >
+          <i class="fa-solid fa-filter text-xs"></i> Apply Filter
+        </button>
+        {% if active_location or active_radius or active_max_price or (active_category and active_category != 'All') %}
+          <a 
+            href="{{ url_for('index') }}" 
+            class="px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs sm:text-sm font-semibold transition border border-slate-700 flex items-center justify-center"
+            title="Clear all filters"
+          >
+            <i class="fa-solid fa-rotate-left"></i>
+          </a>
+        {% endif %}
+      </div>
+    </form>
+
+    <!-- Location Hub Quick Suggestion Chips -->
+    <div class="mt-3 pt-2.5 border-t border-slate-800/60 flex items-center gap-2 text-xs overflow-x-auto whitespace-nowrap scrollbar-none">
+      <span class="text-slate-500 text-[11px] font-medium shrink-0">Quick Hubs:</span>
+      <button type="button" onclick="setFilterLocation('Wagholi, Pune')" class="px-2 py-0.5 rounded-lg bg-slate-950/70 hover:bg-slate-800 text-slate-400 hover:text-white border border-slate-800 text-[11px] transition">
+        📍 Wagholi, Pune
+      </button>
+      <button type="button" onclick="setFilterLocation('Hauz Khas, New Delhi')" class="px-2 py-0.5 rounded-lg bg-slate-950/70 hover:bg-slate-800 text-slate-400 hover:text-white border border-slate-800 text-[11px] transition">
+        📍 IIT Delhi / Hauz Khas
+      </button>
+      <button type="button" onclick="setFilterLocation('Koramangala, Bangalore')" class="px-2 py-0.5 rounded-lg bg-slate-950/70 hover:bg-slate-800 text-slate-400 hover:text-white border border-slate-800 text-[11px] transition">
+        📍 Koramangala, Bangalore
+      </button>
+      <button type="button" onclick="setFilterLocation('Shivajinagar, Pune')" class="px-2 py-0.5 rounded-lg bg-slate-950/70 hover:bg-slate-800 text-slate-400 hover:text-white border border-slate-800 text-[11px] transition">
+        📍 Shivajinagar / FC Road
+      </button>
+      <button type="button" onclick="setFilterLocation('North Campus, New Delhi')" class="px-2 py-0.5 rounded-lg bg-slate-950/70 hover:bg-slate-800 text-slate-400 hover:text-white border border-slate-800 text-[11px] transition">
+        📍 DU North Campus
+      </button>
+      <button type="button" onclick="setFilterLocation('Sector 62, Noida')" class="px-2 py-0.5 rounded-lg bg-slate-950/70 hover:bg-slate-800 text-slate-400 hover:text-white border border-slate-800 text-[11px] transition">
+        📍 Sector 62, Noida
+      </button>
+    </div>
+  </div>
+
   <!-- AI Matching Banner (Shows when AI search query is executed) -->
   <div id="aiMatchHeader" class="hidden mb-6 p-4 rounded-xl bg-gradient-to-r from-indigo-950/60 via-slate-900 to-indigo-950/60 border border-indigo-500/30 flex items-center justify-between">
     <div class="flex items-center gap-3">
@@ -215,9 +324,17 @@
         <!-- Space Content Body -->
         <div class="p-5 flex flex-col flex-grow">
           
-          <div class="flex items-center gap-2 text-xs text-slate-400 mb-1.5">
-            <i class="fa-solid fa-location-dot text-indigo-400"></i>
-            <span>{{ space.neighborhood or space.city }}, {{ space.state }}</span>
+          <div class="flex items-center gap-2 text-xs text-slate-400 mb-1.5 flex-wrap">
+            <span class="flex items-center gap-1">
+              <i class="fa-solid fa-location-dot text-indigo-400"></i>
+              <span>{{ space.neighborhood or space.city }}, {{ space.state }}</span>
+            </span>
+            {% if space.distance_km is not none %}
+              <span>•</span>
+              <span class="px-2 py-0.5 rounded-full text-[11px] font-bold bg-indigo-500/15 text-indigo-300 border border-indigo-500/30 flex items-center gap-1">
+                <i class="fa-solid fa-location-arrow text-[10px] text-indigo-400"></i> {{ space.distance_km }} km
+              </span>
+            {% endif %}
             <span>•</span>
             <span>{{ space.sqft }} sqft</span>
             <span>•</span>
@@ -353,4 +470,63 @@
 
 </section>
 
+{% endblock %}
+
+{% block scripts %}
+<script>
+  function setFilterLocation(locName) {
+    const input = document.getElementById('locationInput');
+    const latInput = document.getElementById('filterLat');
+    const lngInput = document.getElementById('filterLng');
+    if (input) input.value = locName;
+    if (latInput) latInput.value = '';
+    if (lngInput) lngInput.value = '';
+    const form = document.getElementById('locationFilterForm');
+    if (form) form.submit();
+  }
+
+  function detectCurrentLocation() {
+    const btn = document.getElementById('btnDetectLocation');
+    const input = document.getElementById('locationInput');
+    const latInput = document.getElementById('filterLat');
+    const lngInput = document.getElementById('filterLng');
+    const form = document.getElementById('locationFilterForm');
+
+    if (!navigator.geolocation) {
+      alert("Geolocation is not supported by your browser. Please select or type a location hub manually.");
+      return;
+    }
+
+    if (btn) {
+      btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin text-indigo-400"></i> Locating...`;
+      btn.disabled = true;
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        const lat = pos.coords.latitude.toFixed(4);
+        const lng = pos.coords.longitude.toFixed(4);
+        if (latInput) latInput.value = lat;
+        if (lngInput) lngInput.value = lng;
+        if (input) input.value = `📍 GPS (${lat}, ${lng})`;
+        if (btn) {
+          btn.innerHTML = `<i class="fa-solid fa-check text-emerald-400"></i> Detected`;
+        }
+        if (form) form.submit();
+      },
+      (err) => {
+        if (btn) {
+          btn.innerHTML = `<i class="fa-solid fa-crosshairs text-indigo-400"></i> <span class="hidden sm:inline">Use GPS</span>`;
+          btn.disabled = false;
+        }
+        console.warn("Geolocation denied or unavailable:", err.message);
+        if (input && !input.value) {
+          input.value = "Hauz Khas, New Delhi";
+        }
+        alert("Location access was not granted. Switched to manual location hub selection (e.g. Hauz Khas, Wagholi, Koramangala).");
+      },
+      { timeout: 8000, enableHighAccuracy: true }
+    );
+  }
+</script>
 {% endblock %}

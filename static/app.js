@@ -164,18 +164,30 @@ async function executeAiSearch(queryText) {
     btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin text-xs"></i> <span>Matching...</span>`;
   }
 
+  const locInput = document.getElementById("locationInput");
+  const latInput = document.getElementById("filterLat");
+  const lngInput = document.getElementById("filterLng");
+  const radiusSelect = document.getElementById("radiusSelect");
+
+  const loc = locInput ? locInput.value.trim() : "";
+  const lat = latInput ? latInput.value.trim() : "";
+  const lng = lngInput ? lngInput.value.trim() : "";
+  const radius = radiusSelect ? radiusSelect.value.trim() : "";
+
   try {
     const resp = await fetch("/api/spaces/ai-match", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ query: queryText }),
+      body: JSON.stringify({ query: queryText, loc, lat, lng, radius }),
     });
     const data = await resp.json();
     const results = data.results || [];
 
     if (matchHeader && queryLabel) {
       matchHeader.classList.remove("hidden");
-      queryLabel.textContent = `Scored & sorted for: "${queryText}"`;
+      const locSubtitle = data.location ? ` near ${data.location}` : "";
+      const radSubtitle = data.radius_km ? ` (within ${data.radius_km} km)` : "";
+      queryLabel.textContent = `Scored & sorted for: "${queryText}"${locSubtitle}${radSubtitle}`;
     }
 
     if (results.length === 0) {
@@ -237,6 +249,14 @@ function renderSpaceCard(space, matchMeta) {
          </div>`
       : "";
 
+  const distVal = matchMeta?.distance_km ?? space.distance_km;
+  const distHtml = (distVal !== undefined && distVal !== null)
+    ? `<span>•</span>
+       <span class="px-2 py-0.5 rounded-full text-[11px] font-bold bg-indigo-500/15 text-indigo-300 border border-indigo-500/30 flex items-center gap-1">
+         <i class="fa-solid fa-location-arrow text-[10px] text-indigo-400"></i> ${distVal} km
+       </span>`
+    : "";
+
   const photoUrl = sanitizePhotoUrl(space.photos && space.photos[0]);
 
   return `
@@ -251,10 +271,11 @@ function renderSpaceCard(space, matchMeta) {
         >
         <div class="absolute inset-0 bg-gradient-to-t from-slate-950/90 via-transparent to-black/30"></div>
 
-        <div class="absolute top-3 left-3">
+        <div class="absolute top-3 left-3 flex items-center gap-1.5">
           <span class="px-2.5 py-1 rounded-lg text-xs font-semibold backdrop-blur-md bg-slate-900/80 text-white border border-white/10 shadow-sm">
             ${escapeHtml(space.category)}
           </span>
+          ${(space.owner_verified || space.is_discom_verified) ? '<span class="px-2 py-1 rounded-lg text-[10px] font-bold backdrop-blur-md bg-emerald-600/90 text-white shadow-sm flex items-center gap-1" title="SpaceLoop Verified Host"><i class="fa-solid fa-shield-check"></i> Verified</span>' : ''}
         </div>
 
         <div class="absolute top-3 right-3">
@@ -277,9 +298,12 @@ function renderSpaceCard(space, matchMeta) {
       </div>
 
       <div class="p-5 flex flex-col flex-grow">
-        <div class="flex items-center gap-2 text-xs text-slate-400 mb-1.5">
-          <i class="fa-solid fa-location-dot text-indigo-400"></i>
-          <span>${escapeHtml(space.neighborhood || space.city)}, ${escapeHtml(space.state)}</span>
+        <div class="flex items-center gap-2 text-xs text-slate-400 mb-1.5 flex-wrap">
+          <span class="flex items-center gap-1">
+            <i class="fa-solid fa-location-dot text-indigo-400"></i>
+            <span>${escapeHtml(space.neighborhood || space.city)}, ${escapeHtml(space.state)}</span>
+          </span>
+          ${distHtml}
           <span>•</span>
           <span>${space.sqft} sqft</span>
           <span>•</span>
@@ -310,8 +334,10 @@ function renderSpaceCard(space, matchMeta) {
         ${reasonHtml}
 
         <div class="pt-3 border-t border-slate-800/80 flex items-center justify-between gap-3">
-          <span class="text-[11px] text-slate-500 flex items-center gap-1">
-            <i class="fa-solid fa-file-signature text-slate-400"></i> AI Micro-Lease
+          <span class="text-[11px] text-slate-400 flex items-center gap-1">
+            ${(space.owner_verified || space.is_discom_verified) ? '<i class="fa-solid fa-circle-check text-emerald-400 text-xs"></i> <span class="text-slate-300 font-medium">Verified</span>' : '<i class="fa-solid fa-clock text-amber-400 text-xs"></i> <span class="text-slate-400">KYC Pending</span>'}
+            <span class="text-slate-600">•</span>
+            <span class="text-slate-500 font-mono">OTI ${space.owner_trust_score || 98.5}</span>
           </span>
           <a 
             href="/space/${space.id}"
