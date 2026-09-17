@@ -184,7 +184,7 @@ export const ListSpacePage: React.FC<ListSpacePageProps> = ({ currentUser }) => 
         )}
 
         {/* 1-Click Demo Presets */}
-        <View className="bg-slate-900 border border-slate-800 rounded-2xl p-6">
+        <View className="bg-slate-900 border border-slate-800 rounded-2xl p-6 floating-container">
           <Text className="text-sm font-bold text-white mb-3">
             Quick Start: Select a Sample Listing Preset
           </Text>
@@ -193,7 +193,7 @@ export const ListSpacePage: React.FC<ListSpacePageProps> = ({ currentUser }) => 
               <Pressable
                 key={idx}
                 onPress={() => handleApplyPreset(p)}
-                className="bg-slate-950 border border-slate-800 hover:border-indigo-500 rounded-xl overflow-hidden p-2 transition text-left group"
+                className="bg-slate-950 border border-slate-800 hover:border-indigo-500 rounded-xl overflow-hidden p-2.5 transition text-left group floating-interactive"
               >
                 <Image source={{ uri: p.photo }} className="w-full h-24 rounded-lg object-cover mb-2" />
                 <Text className="text-xs font-bold text-white mb-0.5">{p.label}</Text>
@@ -204,7 +204,7 @@ export const ListSpacePage: React.FC<ListSpacePageProps> = ({ currentUser }) => 
         </View>
 
         {/* Main Listing Form */}
-        <View className="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-5">
+        <View className="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-5 floating-panel">
           <Text className="text-base font-bold text-white pb-3 border-b border-slate-800">
             Space Parameters & AI Scan
           </Text>

@@ -64,7 +64,7 @@ export const VerifyPage: React.FC = () => {
       <View className="max-w-4xl mx-auto px-4 sm:px-6 mt-8 space-y-8">
         <View className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {/* Student Verification Card */}
-          <View className="bg-slate-900 border border-slate-800 rounded-2xl p-6 flex-col justify-between">
+          <View className="bg-slate-900 border border-slate-800 rounded-2xl p-6 flex-col justify-between floating-card">
             <View>
               <View className="flex-row items-center gap-2 mb-3">
                 <Text className="text-2xl">🎓</Text>
@@ -123,7 +123,7 @@ export const VerifyPage: React.FC = () => {
           </View>
 
           {/* Host Verification Card */}
-          <View className="bg-slate-900 border border-slate-800 rounded-2xl p-6 flex-col justify-between">
+          <View className="bg-slate-900 border border-slate-800 rounded-2xl p-6 flex-col justify-between floating-card">
             <View>
               <View className="flex-row items-center gap-2 mb-3">
                 <Text className="text-2xl">🏠</Text>

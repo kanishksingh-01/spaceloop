@@ -98,22 +98,22 @@ export const LandingPage: React.FC<LandingPageProps> = ({ currentUser }) => {
           </div>
 
           {/* Quick Stats Metric Ribbon */}
-          <div className="mt-16 pt-10 border-t border-slate-800/80 grid grid-cols-2 md:grid-cols-4 gap-6 max-w-4xl mx-auto">
-            <div className="p-3">
+          <div className="mt-16 pt-10 border-t border-slate-800/80 grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6 max-w-4xl mx-auto">
+            <div className="p-4 rounded-2xl bg-slate-900/50 border border-slate-800/80 floating-interactive text-center">
               <div className="text-2xl sm:text-3xl font-black text-white">
                 ₹45<span className="text-indigo-400 text-lg">/hr</span>
               </div>
               <div className="text-xs text-slate-400 mt-1 font-medium">Starting Hourly Rates</div>
             </div>
-            <div className="p-3">
+            <div className="p-4 rounded-2xl bg-slate-900/50 border border-slate-800/80 floating-interactive text-center">
               <div className="text-2xl sm:text-3xl font-black text-white">100%</div>
               <div className="text-xs text-slate-400 mt-1 font-medium">Discom Meter Verified</div>
             </div>
-            <div className="p-3">
+            <div className="p-4 rounded-2xl bg-slate-900/50 border border-slate-800/80 floating-interactive text-center">
               <div className="text-2xl sm:text-3xl font-black text-white">30s</div>
               <div className="text-xs text-slate-400 mt-1 font-medium">Instant AI Micro-Lease</div>
             </div>
-            <div className="p-3">
+            <div className="p-4 rounded-2xl bg-slate-900/50 border border-slate-800/80 floating-interactive text-center">
               <div className="text-2xl sm:text-3xl font-black text-white">₹100</div>
               <div className="text-xs text-slate-400 mt-1 font-medium">UPI Escrow Auto-Release</div>
             </div>
@@ -136,7 +136,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ currentUser }) => {
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {/* Step 1 */}
-            <div className="bg-slate-900/60 border border-slate-800 rounded-3xl p-6 hover:border-indigo-500/40 transition relative group">
+            <div className="bg-slate-900/60 border border-slate-800 rounded-3xl p-6 hover:border-indigo-500/40 floating-interactive relative group">
               <div className="w-12 h-12 rounded-2xl bg-indigo-600/20 text-indigo-400 flex items-center justify-center text-xl font-black mb-4 group-hover:bg-indigo-600 group-hover:text-white transition">
                 1
               </div>
@@ -147,7 +147,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ currentUser }) => {
             </div>
 
             {/* Step 2 */}
-            <div className="bg-slate-900/60 border border-slate-800 rounded-3xl p-6 hover:border-indigo-500/40 transition relative group">
+            <div className="bg-slate-900/60 border border-slate-800 rounded-3xl p-6 hover:border-indigo-500/40 floating-interactive relative group">
               <div className="w-12 h-12 rounded-2xl bg-indigo-600/20 text-indigo-400 flex items-center justify-center text-xl font-black mb-4 group-hover:bg-indigo-600 group-hover:text-white transition">
                 2
               </div>
@@ -158,7 +158,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ currentUser }) => {
             </div>
 
             {/* Step 3 */}
-            <div className="bg-slate-900/60 border border-slate-800 rounded-3xl p-6 hover:border-indigo-500/40 transition relative group">
+            <div className="bg-slate-900/60 border border-slate-800 rounded-3xl p-6 hover:border-indigo-500/40 floating-interactive relative group">
               <div className="w-12 h-12 rounded-2xl bg-indigo-600/20 text-indigo-400 flex items-center justify-center text-xl font-black mb-4 group-hover:bg-indigo-600 group-hover:text-white transition">
                 3
               </div>
@@ -169,7 +169,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ currentUser }) => {
             </div>
 
             {/* Step 4 */}
-            <div className="bg-slate-900/60 border border-slate-800 rounded-3xl p-6 hover:border-indigo-500/40 transition relative group">
+            <div className="bg-slate-900/60 border border-slate-800 rounded-3xl p-6 hover:border-indigo-500/40 floating-interactive relative group">
               <div className="w-12 h-12 rounded-2xl bg-indigo-600/20 text-indigo-400 flex items-center justify-center text-xl font-black mb-4 group-hover:bg-indigo-600 group-hover:text-white transition">
                 4
               </div>
@@ -180,7 +180,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ currentUser }) => {
             </div>
 
             {/* Step 5 */}
-            <div className="bg-slate-900/60 border border-slate-800 rounded-3xl p-6 hover:border-indigo-500/40 transition relative group">
+            <div className="bg-slate-900/60 border border-slate-800 rounded-3xl p-6 hover:border-indigo-500/40 floating-interactive relative group">
               <div className="w-12 h-12 rounded-2xl bg-indigo-600/20 text-indigo-400 flex items-center justify-center text-xl font-black mb-4 group-hover:bg-indigo-600 group-hover:text-white transition">
                 5
               </div>
@@ -191,7 +191,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ currentUser }) => {
             </div>
 
             {/* Step 6 */}
-            <div className="bg-slate-900/60 border border-slate-800 rounded-3xl p-6 hover:border-indigo-500/40 transition relative group">
+            <div className="bg-slate-900/60 border border-slate-800 rounded-3xl p-6 hover:border-indigo-500/40 floating-interactive relative group">
               <div className="w-12 h-12 rounded-2xl bg-indigo-600/20 text-indigo-400 flex items-center justify-center text-xl font-black mb-4 group-hover:bg-indigo-600 group-hover:text-white transition">
                 6
               </div>
@@ -209,7 +209,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ currentUser }) => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
             {/* For Seekers */}
-            <div id="for-seekers" className="bg-slate-950/80 border border-slate-800 rounded-3xl p-8 lg:p-10 shadow-2xl relative overflow-hidden">
+            <div id="for-seekers" className="bg-slate-950/80 border border-slate-800 rounded-3xl p-8 lg:p-10 floating-container relative overflow-hidden">
               <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-500/10 text-indigo-300 text-xs font-bold mb-4">
                 <i className="fa-solid fa-graduation-cap" /> For Students & Creators
               </div>
@@ -248,7 +248,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ currentUser }) => {
             </div>
 
             {/* For Hosts */}
-            <div id="for-hosts" className="bg-slate-950/80 border border-slate-800 rounded-3xl p-8 lg:p-10 shadow-2xl relative overflow-hidden">
+            <div id="for-hosts" className="bg-slate-950/80 border border-slate-800 rounded-3xl p-8 lg:p-10 floating-container relative overflow-hidden">
               <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500/10 text-amber-300 text-xs font-bold mb-4">
                 <i className="fa-solid fa-house-chimney-user" /> For Property Owners
               </div>
@@ -303,7 +303,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ currentUser }) => {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="bg-slate-900/60 border border-slate-800 rounded-3xl p-6">
+            <div className="bg-slate-900/60 border border-slate-800 rounded-3xl p-6 floating-interactive">
               <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 text-emerald-400 flex items-center justify-center text-xl mb-4">
                 <i className="fa-solid fa-id-card" />
               </div>
@@ -313,7 +313,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ currentUser }) => {
               </p>
             </div>
 
-            <div className="bg-slate-900/60 border border-slate-800 rounded-3xl p-6">
+            <div className="bg-slate-900/60 border border-slate-800 rounded-3xl p-6 floating-interactive">
               <div className="w-12 h-12 rounded-2xl bg-indigo-500/10 text-indigo-400 flex items-center justify-center text-xl mb-4">
                 <i className="fa-solid fa-bolt" />
               </div>
@@ -323,7 +323,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ currentUser }) => {
               </p>
             </div>
 
-            <div className="bg-slate-900/60 border border-slate-800 rounded-3xl p-6">
+            <div className="bg-slate-900/60 border border-slate-800 rounded-3xl p-6 floating-interactive">
               <div className="w-12 h-12 rounded-2xl bg-violet-500/10 text-violet-400 flex items-center justify-center text-xl mb-4">
                 <i className="fa-solid fa-scale-balanced" />
               </div>
@@ -369,7 +369,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ currentUser }) => {
                 <div
                   key={space.id}
                   onClick={() => navigate(`/space/${space.id}`)}
-                  className="bg-slate-950/90 border border-slate-800/80 hover:border-indigo-500/50 rounded-3xl overflow-hidden group transition flex flex-col shadow-xl cursor-pointer"
+                  className="bg-slate-950/90 border border-slate-800/80 hover:border-indigo-500/50 rounded-3xl overflow-hidden group floating-interactive flex flex-col cursor-pointer"
                 >
                   <div className="relative aspect-[16/10] overflow-hidden bg-slate-900">
                     <img
@@ -420,7 +420,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ currentUser }) => {
       {/* 6. FINAL CTA BANNER */}
       <section className="py-20 bg-gradient-to-b from-slate-950 to-slate-900">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <div className="bg-gradient-to-tr from-indigo-950/80 via-slate-900/90 to-violet-950/80 border border-indigo-500/30 rounded-3xl p-10 sm:p-14 shadow-2xl">
+          <div className="bg-gradient-to-tr from-indigo-950/80 via-slate-900/90 to-violet-950/80 border border-indigo-500/30 rounded-3xl p-10 sm:p-14 floating-container">
             <h2 className="text-3xl sm:text-4xl font-black text-white leading-tight">
               Ready to optimize urban space?
             </h2>

@@ -234,7 +234,7 @@ export const SpaceDetailPage: React.FC<SpaceDetailPageProps> = ({ currentUser })
               </Text>
 
               {/* Host Trust Badge */}
-              <View className="flex-row items-center justify-between p-3.5 bg-slate-950/80 rounded-xl border border-slate-800">
+              <View className="flex-row items-center justify-between p-3.5 bg-slate-950/80 rounded-xl border border-slate-800 floating-interactive">
                 <View className="flex-row items-center gap-3">
                   <View className="w-10 h-10 rounded-full bg-indigo-600/30 items-center justify-center border border-indigo-500/40">
                     <Text className="text-sm font-bold text-indigo-300">
@@ -258,14 +258,14 @@ export const SpaceDetailPage: React.FC<SpaceDetailPageProps> = ({ currentUser })
             </View>
 
             {/* AI Multimodal Sensor Analysis */}
-            <View className="bg-slate-900/90 border border-slate-800 rounded-2xl p-6">
+            <View className="bg-slate-900/90 border border-slate-800 rounded-2xl p-6 floating-container">
               <View className="flex-row items-center gap-2 mb-4">
                 <Text className="text-xl">🤖</Text>
                 <Text className="text-base font-bold text-white">AI Space Inspector Metrics</Text>
               </View>
 
               <View className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                <View className="p-3 bg-slate-950 rounded-xl border border-slate-800">
+                <View className="p-3.5 bg-slate-950 rounded-xl border border-slate-800 floating-interactive">
                   <Text className="text-[11px] font-semibold text-slate-400">Usable Area</Text>
                   <Text className="text-lg font-black text-white mt-1">
                     {space.specs?.usable_sqft || 140} <Text className="text-xs font-normal text-slate-500">sq.ft</Text>
@@ -273,7 +273,7 @@ export const SpaceDetailPage: React.FC<SpaceDetailPageProps> = ({ currentUser })
                   <Text className="text-[10px] text-emerald-400 mt-1">✓ Measured by Vision AI</Text>
                 </View>
 
-                <View className="p-3 bg-slate-950 rounded-xl border border-slate-800">
+                <View className="p-3.5 bg-slate-950 rounded-xl border border-slate-800 floating-interactive">
                   <Text className="text-[11px] font-semibold text-slate-400">Noise Level</Text>
                   <Text className="text-lg font-black text-white mt-1">
                     {space.specs?.acoustic_db || 34} <Text className="text-xs font-normal text-slate-500">dB</Text>
@@ -281,7 +281,7 @@ export const SpaceDetailPage: React.FC<SpaceDetailPageProps> = ({ currentUser })
                   <Text className="text-[10px] text-indigo-300 mt-1">✓ Quiet study grade</Text>
                 </View>
 
-                <View className="p-3 bg-slate-950 rounded-xl border border-slate-800">
+                <View className="p-3.5 bg-slate-950 rounded-xl border border-slate-800 floating-interactive">
                   <Text className="text-[11px] font-semibold text-slate-400">Natural Lighting</Text>
                   <Text className="text-lg font-black text-white mt-1">
                     {space.specs?.lighting_lux || 480} <Text className="text-xs font-normal text-slate-500">lux</Text>
@@ -289,7 +289,7 @@ export const SpaceDetailPage: React.FC<SpaceDetailPageProps> = ({ currentUser })
                   <Text className="text-[10px] text-amber-400 mt-1">✓ Optimal for reading</Text>
                 </View>
 
-                <View className="p-3 bg-slate-950 rounded-xl border border-slate-800">
+                <View className="p-3.5 bg-slate-950 rounded-xl border border-slate-800 floating-interactive">
                   <Text className="text-[11px] font-semibold text-slate-400">Power Circuit</Text>
                   <Text className="text-lg font-black text-white mt-1">
                     {space.specs?.power_circuits || '20A'}
@@ -300,7 +300,7 @@ export const SpaceDetailPage: React.FC<SpaceDetailPageProps> = ({ currentUser })
             </View>
 
             {/* Amenities Checklist */}
-            <View className="bg-slate-900/90 border border-slate-800 rounded-2xl p-6">
+            <View className="bg-slate-900/90 border border-slate-800 rounded-2xl p-6 floating-container">
               <Text className="text-base font-bold text-white mb-4">Included Amenities</Text>
               <View className="flex-row flex-wrap gap-2">
                 {space.amenities?.map((amenity, idx) => (
@@ -323,7 +323,7 @@ export const SpaceDetailPage: React.FC<SpaceDetailPageProps> = ({ currentUser })
 
           {/* Right Column: Dynamic Booking Widget */}
           <View className="w-full lg:w-96">
-            <View className="sticky top-20 bg-slate-900 border border-indigo-500/30 rounded-2xl p-6 shadow-2xl shadow-indigo-950/50">
+            <View className="sticky top-20 bg-slate-900 border border-indigo-500/30 rounded-2xl p-6 floating-panel">
               <View className="flex-row items-baseline justify-between pb-4 mb-5 border-b border-slate-800">
                 <View>
                   <Text className="text-3xl font-black text-white">
