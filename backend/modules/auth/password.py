@@ -14,6 +14,8 @@ def validate_password_complexity(password: str) -> tuple[bool, str]:
     """
     if not password or len(password) < 8:
         return False, "Password must be at least 8 characters in length."
+    if len(password) > 128:
+        return False, "Password must not exceed 128 characters."
     if not re.search(r"[A-Za-z]", password):
         return False, "Password must contain at least one letter."
     if not re.search(r"[0-9]", password):

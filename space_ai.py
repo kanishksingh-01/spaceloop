@@ -139,6 +139,8 @@ def _clean_ai_output(data: dict) -> dict:
     cleaned["recommended_uses"] = sanitize_string(data.get("recommended_uses", ""), max_length=200)
     cleaned["suitability_score"] = int(validate_numeric(data.get("suitability_score"), 50, 100, 95))
     cleaned["enhanced_description"] = sanitize_string(data.get("enhanced_description", ""), max_length=1500)
+    cleaned["noise"] = cleaned["noise_level"]
+    cleaned["sqft"] = cleaned["estimated_sqft"]
 
     raw_amenities = data.get("detected_amenities", [])
     if isinstance(raw_amenities, list):
@@ -288,11 +290,13 @@ Respond ONLY with valid JSON conforming to this schema:
         "title": title,
         "category": cat,
         "estimated_sqft": sqft,
+        "sqft": sqft,
         "max_capacity": capacity,
         "recommended_hourly_price": hourly,
         "recommended_daily_price": daily,
         "lighting": lighting,
         "noise_level": noise,
+        "noise": noise,
         "power_access": power,
         "detected_amenities": amenities,
         "safety_notes": "Inspected for trip hazards, smoke alarm verified, private secure entry point.",
@@ -320,6 +324,7 @@ def match_spaces_with_ai(query_text, spaces):
                 "space": s,
                 "match_score": 88 + (s.get("id", 0) % 10),
                 "match_badge": "Available Now",
+                "badge": "Available Now",
                 "match_reasons": ["Matches general space availability", "Verified host and instant check-in"],
                 "considerations": "Check operating hours with host."
             }
@@ -430,10 +435,12 @@ Return ONLY valid JSON with this format:
                 elif not is_local_match and (dist_km is None or dist_km > 30):
                     base_score = min(base_score, 60)
 
+            badge_label = "Top Pick" if base_score >= 88 else score_map[s_id].get("match_badge", "Great Match")
             ranked_results.append({
                 "space": s,
                 "match_score": base_score,
-                "match_badge": "Top Pick" if base_score >= 88 else score_map[s_id].get("match_badge", "Great Match"),
+                "match_badge": badge_label,
+                "badge": badge_label,
                 "match_reasons": score_map[s_id].get("match_reasons", ["Matches query criteria"]),
                 "considerations": score_map[s_id].get("considerations", "Meets standard criteria."),
                 "distance_km": dist_km
@@ -514,6 +521,7 @@ Return ONLY valid JSON with this format:
                 "space": s,
                 "match_score": score,
                 "match_badge": badge,
+                "badge": badge,
                 "match_reasons": reasons[:2],
                 "considerations": cons,
                 "distance_km": dist_km
@@ -744,6 +752,15 @@ Keep responses helpful, structured, concise, and enthusiastic. Use bullet points
         return "With SpaceLoop, owners typically earn between ₹3,500 and ₹25,000/month by renting out unused garages, studios, or storefronts just 10-15 days a month! Check out our interactive **Earnings Calculator** in the top navigation to see custom projections for your square footage."
     elif "agreement" in last_msg or "lease" in last_msg or "safe" in last_msg or "insurance" in last_msg:
         return "Every booking on SpaceLoop automatically includes an AI-generated **Temporary Space License Agreement (Micro-Lease)**. It defines exact access hours, liability waivers, clean-up checklists, and activity guidelines tailored to the renter's specific activity."
+    elif "qr" in last_msg or "check-in" in last_msg or "checkin" in last_msg or "pass" in last_msg:
+        return "SpaceLoop operates on a **Zero-Hardware** model: a ₹5 laminated door QR code paired with mobile GPS radar allows instant verification without expensive IoT locks."
+    elif "wifi" in last_msg or "wi-fi" in last_msg or "internet" in last_msg or "fiber" in last_msg:
+        if context_data and context_data.get("amenities"):
+            amenities = context_data.get("amenities", [])
+            has_wifi = any(w in str(amenities).lower() for w in ["wi-fi", "wifi", "internet", "fiber"])
+            if has_wifi:
+                return f"Yes! {context_data.get('space_title', 'This space')} offers high-speed Wi-Fi and optical fiber connectivity."
+        return "Yes, verified study rooms and workspaces on SpaceLoop include high-speed Wi-Fi (up to 600 Mbps fiber) and uninterrupted power backup."
     elif "storage" in last_msg:
         return "We have dry, secure garage and basement spaces available starting at $15/hr or $65/day. They include drive-up access and verified padlock security."
     elif "photo" in last_msg or "studio" in last_msg or "podcast" in last_msg:

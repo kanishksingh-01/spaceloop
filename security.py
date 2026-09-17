@@ -1,5 +1,6 @@
 import time
 import re
+import html
 import threading
 from urllib.parse import urlparse
 from flask import request, jsonify
@@ -55,6 +56,26 @@ def validate_image_url(url: str) -> bool:
         return False
 
 
+def sanitize_input(val) -> str:
+    """
+    Sanitizes string input and escapes HTML entities to prevent Cross-Site Scripting (XSS).
+    """
+    if val is None:
+        return ""
+    text = str(val).strip()
+    return html.escape(text)
+
+
+def wrap_untrusted_notes(notes: str) -> str:
+    """
+    Isolates untrusted user prompt notes within structured XML tags.
+    Prevents prompt injection by stripping closing tags.
+    """
+    clean_notes = sanitize_string(notes or "", max_length=1500)
+    clean_notes = clean_notes.replace("</user_untrusted_notes>", "").replace("<user_untrusted_notes>", "")
+    return f"<user_untrusted_notes>{clean_notes}</user_untrusted_notes>"
+
+
 def sanitize_string(val, max_length: int = 500, default: str = "") -> str:
     """
     Sanitizes string input by stripping control characters and enforcing length bounds.
@@ -84,7 +105,7 @@ def validate_numeric(val, min_val: float, max_val: float, default: float = None)
 # In-Memory Rate Limiter (Thread-safe)
 # ==========================================
 
-class SimpleRateLimiter:
+class SlidingWindowRateLimiter:
     """
     Sliding-window rate limiter per client IP address.
     Protects expensive AI and booking endpoints from DoS and quota depletion.
@@ -112,9 +133,15 @@ class SimpleRateLimiter:
             self._records[client_ip] = timestamps
             return True
 
+    def reset_for_ip(self, client_ip: str):
+        with self._lock:
+            self._records.pop(client_ip, None)
 
-# Global rate limiter instance for AI endpoints (25 requests / min per IP)
-ai_rate_limiter = SimpleRateLimiter(max_requests=25, window_seconds=60)
+
+SimpleRateLimiter = SlidingWindowRateLimiter
+
+# Global rate limiter instance for AI endpoints (20 requests / min per IP)
+ai_rate_limiter = SlidingWindowRateLimiter(max_requests=20, window_seconds=60)
 
 
 def rate_limit_ai(func):
@@ -129,7 +156,7 @@ def rate_limit_ai(func):
         if not ai_rate_limiter.is_allowed(client_ip):
             return (
                 jsonify({
-                    "error": "Too Many Requests",
+                    "error": "Rate Limit Exceeded",
                     "message": "Rate limit exceeded for AI services. Please wait a moment before trying again."
                 }),
                 429
@@ -156,6 +183,9 @@ def apply_security_headers(response):
 
     # Enable XSS filter in older browsers
     response.headers["X-XSS-Protection"] = "1; mode=block"
+
+    # Strict Transport Security (HSTS)
+    response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
 
     # Control referrer information leak
     response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
@@ -225,7 +255,7 @@ def mask_upi_vpa(vpa: str) -> str:
     return f"{masked_user}@{handle}"
 
 def clamp_financial_bounds(hours: float, price_hourly: float, escrow: float = 100.0) -> dict:
-    clamped_hours = max(0.5, min(168.0, float(hours)))
+    clamped_hours = max(1.0, min(24.0, float(hours)))
     valid_rate = max(10.0, min(10000.0, float(price_hourly)))
     calculated_rental = round(clamped_hours * valid_rate, 2)
     guaranteed_escrow = 100.0
@@ -238,5 +268,5 @@ def clamp_financial_bounds(hours: float, price_hourly: float, escrow: float = 10
         'escrow_amount': guaranteed_escrow,
         'platform_fee': platform_fee,
         'host_earnings': host_earnings,
-        'total_payable': round(calculated_rental + guaranteed_escrow + platform_fee, 2)
+        'total_payable': round(calculated_rental + guaranteed_escrow, 2)
     }

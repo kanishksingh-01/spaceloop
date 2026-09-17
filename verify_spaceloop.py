@@ -31,8 +31,8 @@ class TestSpaceLoopCoreMarketplace(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
         data = response.get_json()
         self.assertIsInstance(data, list)
-        self.assertGreaterEqual(len(data), 1)
-        self.assertIn('room_qr_token', data[0])
+        self.assertIn('geofence_radius_meters', data[0])
+        self.assertNotIn('room_qr_token', data[0])  # P0-7: Secret token masked from public view
         self.assertIn('ai_suitability_score', data[0])
         self.assertIn('price_hourly', data[0])
 
@@ -69,6 +69,8 @@ class TestSpaceLoopCoreMarketplace(unittest.TestCase):
 
     def test_05_booking_creation_with_escrow_and_micro_lease(self):
         """Test 5: POST /api/bookings recomputes rate server-side, holds Rs. 100 escrow, and synthesizes Section 52 lease."""
+        # Authenticate as seeker
+        self.client.post('/api/v1/auth/login', json={'email': 'aarav@iitd.ac.in', 'password': 'password123'})
         payload = {
             'space_id': 1,
             'hours': 2.0,
