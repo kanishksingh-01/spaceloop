@@ -1,5 +1,6 @@
 from datetime import datetime, timedelta
 import re
+from sqlalchemy.exc import IntegrityError
 from email_validator import validate_email, EmailNotValidError
 from models import db, User, PasswordResetToken, EmailVerificationToken
 from backend.modules.auth.password import (
@@ -20,12 +21,15 @@ class AuthService:
         Validates and registers a new SpaceLoop user.
         Returns: (user, raw_verification_token, error_message)
         """
-        first_name = (first_name or "").strip()
-        last_name = (last_name or "").strip()
+        first_name = (first_name or "").strip()[:60]
+        last_name = (last_name or "").strip()[:60]
         email = (email or "").strip().lower()
 
         if not first_name:
             return None, "", "First name is required."
+
+        if len(email) > 254:
+            return None, "", "Email address must not exceed 254 characters."
 
         # Validate email
         try:
@@ -65,18 +69,25 @@ class AuthService:
         )
         user.set_password(password)
 
-        db.session.add(user)
-        db.session.flush()  # assign user.id
+        try:
+            db.session.add(user)
+            db.session.flush()  # assign user.id
 
-        # Generate email verification token (24h expiry)
-        raw_token, token_hash = generate_secure_token()
-        verif_token = EmailVerificationToken(
-            user_id=user.id,
-            token_hash=token_hash,
-            expires_at=datetime.utcnow() + timedelta(days=1)
-        )
-        db.session.add(verif_token)
-        db.session.commit()
+            # Generate email verification token (24h expiry)
+            raw_token, token_hash = generate_secure_token()
+            verif_token = EmailVerificationToken(
+                user_id=user.id,
+                token_hash=token_hash,
+                expires_at=datetime.utcnow() + timedelta(days=1)
+            )
+            db.session.add(verif_token)
+            db.session.commit()
+        except IntegrityError:
+            db.session.rollback()
+            return None, "", "An account with this email already exists."
+        except Exception:
+            db.session.rollback()
+            return None, "", "Registration failed due to a database error."
 
         record_audit("AUTH_REGISTER_SUCCESS", user_id=user.id, details={"email": email, "role": target_role})
         return user, raw_token, ""
@@ -92,6 +103,12 @@ class AuthService:
 
         if not clean_email or not password:
             dummy_verify_password()
+            return None, generic_error
+
+        # Mitigate DoS via excessively long password or email inputs
+        if len(password) > 128 or len(clean_email) > 254:
+            dummy_verify_password()
+            record_audit("AUTH_LOGIN_FAILED", details={"email": clean_email[:50], "reason": "credential_length_exceeded"})
             return None, generic_error
 
         user = User.query.filter(db.func.lower(User.email) == clean_email).first()

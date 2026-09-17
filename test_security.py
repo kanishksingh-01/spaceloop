@@ -36,6 +36,8 @@ class TestSecurityAndHardening(unittest.TestCase):
 
     def test_03_server_side_financial_tamper_proofing(self):
         """Test 3: Server ignores client-submitted prices and deposits, recomputing fees strictly."""
+        # Authenticate as seeker
+        self.client.post('/api/v1/auth/login', json={'email': 'aarav@iitd.ac.in', 'password': 'password123'})
         malicious_payload = {
             'space_id': 1,
             'hours': 2.0,

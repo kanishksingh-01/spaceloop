@@ -1,5 +1,7 @@
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, request, jsonify, session
 from flask_login import current_user, login_user, logout_user, login_required
+from config import Config
+from backend.app.extensions import limiter
 from backend.modules.auth.service import AuthService
 from backend.modules.auth.session import set_active_context
 from backend.modules.auth.audit import record_audit
@@ -37,6 +39,7 @@ def get_me():
 
 
 @api_v1_auth.route("/login", methods=["POST"])
+@limiter.limit(Config.AUTH_LOGIN_RATE_LIMIT)
 def api_login():
     data = request.get_json(silent=True) or {}
     email = data.get("email", "")
@@ -46,6 +49,7 @@ def api_login():
     if not user:
         return jsonify({"success": False, "error": error}), 401
 
+    session.clear()
     login_user(user, remember=bool(data.get("remember", False)))
     set_active_context(user, "host" if user.role == "owner" else "seeker")
 
@@ -57,6 +61,7 @@ def api_login():
 
 
 @api_v1_auth.route("/register", methods=["POST"])
+@limiter.limit(Config.AUTH_REGISTER_RATE_LIMIT)
 def api_register():
     data = request.get_json(silent=True) or {}
     user, raw_token, error = AuthService.register_user(
@@ -70,6 +75,7 @@ def api_register():
     if not user:
         return jsonify({"success": False, "error": error}), 400
 
+    session.clear()
     login_user(user)
     set_active_context(user, "host" if user.role == "owner" else "seeker")
 
@@ -85,5 +91,6 @@ def api_register():
 def api_logout():
     user_id = current_user.id
     logout_user()
+    session.clear()
     record_audit("AUTH_LOGOUT", user_id=user_id)
     return jsonify({"success": True, "message": "Logged out successfully"}), 200

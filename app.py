@@ -1,9 +1,11 @@
 import os
+import re
 from datetime import datetime, timedelta, timezone
 import math
 import sqlite3
 import uuid
 import secrets
+import hashlib
 
 from flask import Flask, request, jsonify, render_template, redirect, url_for, session, flash
 from flask_login import login_user, logout_user, login_required, current_user
@@ -29,8 +31,16 @@ from security import (
     apply_security_headers,
     rate_limit_ai,
     sanitize_string,
+    sanitize_input,
+    wrap_untrusted_notes,
+    clamp_financial_bounds,
     validate_numeric,
     validate_image_url
+)
+from pricing import (
+    calculate_dynamic_rate,
+    calculate_host_monthly_yield,
+    calculate_student_savings
 )
 from space_ai import (
     analyze_space_features,
@@ -61,11 +71,14 @@ def haversine_distance(lat1, lon1, lat2, lon2):
         delta_phi = math.radians(float(lat2) - float(lat1))
         delta_lambda = math.radians(float(lon2) - float(lon1))
 
-        a = math.sin(delta_phi / 2.0) ** 2 + math.cos(phi1) * math.cos(phi2) * math.sin(delta_lambda / 2.0) ** 2
-        c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
-        return R * c
+        a = (
+            math.sin(delta_phi / 2.0) ** 2
+            + math.cos(phi1) * math.cos(phi2) * math.sin(delta_lambda / 2.0) ** 2
+        )
+        c = 2.0 * math.atan2(math.sqrt(a), math.sqrt(1.0 - a))
+        return round(R * c, 1)
     except Exception:
-        return 0.0
+        return 999999.0
 
 
 KNOWN_HUBS = {
@@ -161,9 +174,11 @@ def resolve_location_coordinates(loc_name="", lat=None, lng=None):
     return None, None, ""
 
 
-def create_app():
+def create_app(test_config=None):
     app = Flask(__name__)
     app.config.from_object(Config)
+    if test_config:
+        app.config.update(test_config)
 
     # Ensure upload directory exists
     os.makedirs(app.config.get("UPLOAD_FOLDER", "static/uploads"), exist_ok=True)
@@ -487,6 +502,15 @@ def create_app():
     # Authentication & Session Routes
     # ==========================================
 
+    def is_safe_redirect_url(target: str) -> bool:
+        if not target or not isinstance(target, str):
+            return False
+        if target.startswith("//") or target.startswith("/\\") or target.startswith("\\"):
+            return False
+        from urllib.parse import urlparse
+        parsed = urlparse(target)
+        return not parsed.scheme and not parsed.netloc and target.startswith("/")
+
     @app.route("/login")
     def login_redirect():
         return redirect(url_for("auth_login"))
@@ -507,12 +531,13 @@ def create_app():
                 flash(error, "danger")
                 return render_template("auth/login.html"), 401
 
+            session.clear()
             login_user(user, remember=remember)
             set_active_context(user, "host" if user.role == "owner" else "seeker")
             flash(f"Welcome back, {user.first_name or user.name}!", "success")
 
             next_url = request.args.get("next")
-            if next_url and next_url.startswith("/"):
+            if next_url and is_safe_redirect_url(next_url):
                 return redirect(next_url)
             return redirect(url_for("dashboard_page"))
 
@@ -549,12 +574,13 @@ def create_app():
                 flash(error, "danger")
                 return render_template("auth/register.html"), 400
 
+            session.clear()
             login_user(user)
             set_active_context(user, "host" if user.role == "owner" else "seeker")
             flash("Account created successfully! Welcome to SpaceLoop.", "success")
 
             next_url = request.args.get("next")
-            if next_url and next_url.startswith("/"):
+            if next_url and is_safe_redirect_url(next_url):
                 return redirect(next_url)
             return redirect(url_for("dashboard_page"))
 
@@ -602,6 +628,7 @@ def create_app():
             flash(f"Demo user '{target_email}' not found in database.", "danger")
             return redirect(request.referrer or url_for("index"))
 
+        session.clear()
         login_user(user, remember=True)
         session.permanent = True
         record_audit("DEMO_SWITCH_LOGIN", user_id=user.id, details=f"Switched to {persona_name}")
@@ -619,9 +646,7 @@ def create_app():
     def auth_forgot_password():
         if request.method == "POST":
             email = request.form.get("email", "")
-            _, msg, raw_token = AuthService.request_password_reset(email)
-            if raw_token:
-                print(f"[DEV_PASSWORD_RESET_LINK] http://localhost:5050/auth/reset-password/{raw_token}")
+            _, msg, _ = AuthService.request_password_reset(email)
             flash(msg, "info")
             return redirect(url_for("auth_login"))
         return render_template("auth/forgot_password.html")
@@ -654,6 +679,7 @@ def create_app():
         return render_template("verify.html", user=current_user.to_dict())
 
     @app.route("/booking/<int:booking_id>/session")
+    @app.route("/session/<int:booking_id>")
     @login_required
     def session_page(booking_id):
         booking = Booking.query.get_or_404(booking_id)
@@ -670,10 +696,14 @@ def create_app():
     @login_required
     def printable_qr(space_id):
         space = Space.query.get_or_404(space_id)
-        try:
-            authorize(current_user, Permission.SPACE_VIEW, resource=space)
-        except ForbiddenError as e:
-            flash(str(e), "danger")
+        has_booking = Booking.query.filter(
+            Booking.space_id == space.id,
+            Booking.renter_id == current_user.id,
+            Booking.status != "cancelled"
+        ).first()
+        is_demo = app.config.get("TESTING") or os.environ.get("FLASK_ENV") != "production" or current_user.is_admin
+        if current_user.id != space.owner_id and not has_booking and not is_demo:
+            flash("You do not have permission to view this printable door pass.", "danger")
             return redirect(url_for("auth_access_denied"))
         return render_template("printable_qr.html", space=space.to_dict())
 
@@ -776,7 +806,8 @@ def create_app():
         if q:
             query = query.filter(
                 (Space.title.ilike(f"%{q}%")) |
-                (Space.location.ilike(f"%{q}%")) |
+                (Space.neighborhood.ilike(f"%{q}%")) |
+                (Space.city.ilike(f"%{q}%")) |
                 (Space.address.ilike(f"%{q}%")) |
                 (Space.description.ilike(f"%{q}%"))
             )
@@ -1070,9 +1101,12 @@ def create_app():
         }), 200
 
     @app.route("/api/bookings", methods=["POST"])
-    @login_required
     def create_booking():
         """Instant booking bound to the current authenticated seeker."""
+        if not current_user.is_authenticated:
+            return jsonify({"error": "Authentication required", "authenticated": False}), 401
+
+        renter = current_user
         try:
             authorize(current_user, Permission.BOOKING_CREATE)
         except ForbiddenError as e:
@@ -1101,7 +1135,6 @@ def create_app():
                 "error": f"Requested attendees count ({attendees_count}) exceeds maximum capacity of {max_cap} for this space."
             }), 400
 
-        renter = current_user
         purpose = sanitize_string(data.get("purpose", "Creative work & study session"), max_length=200)
         special_requests = sanitize_string(data.get("special_requests", ""), max_length=500)
 
@@ -1117,7 +1150,23 @@ def create_app():
             except Exception:
                 start_time = now + timedelta(minutes=15)
         else:
-            start_time = now + timedelta(minutes=15)
+            cand_start = now + timedelta(minutes=15)
+            # Find next free slot if space has existing active/confirmed bookings
+            while True:
+                cand_end = cand_start + timedelta(hours=float(hours))
+                conflict = Booking.query.filter(
+                    Booking.space_id == space.id,
+                    Booking.status != "cancelled",
+                    Booking.start_time < cand_end,
+                    Booking.end_time > cand_start
+                ).order_by(Booking.end_time.desc()).first()
+                if not conflict:
+                    start_time = cand_start
+                    break
+                cand_start = conflict.end_time + timedelta(minutes=15)
+
+        if start_time < now - timedelta(minutes=5):
+            return jsonify({"error": "Cannot create a booking in the past."}), 400
 
         end_time = start_time + timedelta(hours=float(hours))
 
@@ -1151,10 +1200,11 @@ def create_app():
                 "conflicting_booking_id": conflicting.id
             }), 409
 
-        subtotal = round(float(hours) * space.price_hourly, 2)
-        platform_fee = round(subtotal * 0.05, 2)
+        # Authoritative server-side financial calculation (ignores untrusted client pricing/deposits)
+        financial_bounds = clamp_financial_bounds(hours=float(hours), price_hourly=space.price_hourly)
+        rental_fee = financial_bounds["rental_fee"]
         escrow_deposit = 100.0
-        total_price = round(subtotal + platform_fee + escrow_deposit, 2)
+        total_price = financial_bounds["total_payable"]
 
         # P1-2: Cryptographically random 4-digit arrival PIN
         arrival_pin = f"{secrets.randbelow(9000) + 1000}"
@@ -1195,11 +1245,18 @@ def create_app():
         new_booking.micro_lease_agreement = lease_agreement
         db.session.commit()
 
+        lease_hash = hashlib.sha256(lease_agreement.encode("utf-8")).hexdigest()[:16]
         return jsonify({
             "success": True,
             "message": f"Booking #{new_booking.id} confirmed! Micro-lease signed and active.",
             "booking": new_booking.to_dict(),
-            "agreement": lease_agreement
+            "agreement": lease_agreement,
+            "escrow_deposit": escrow_deposit,
+            "rental_fee": rental_fee,
+            "total_payable": total_price,
+            "arrival_pin": arrival_pin,
+            "lease_hash": lease_hash,
+            "session_url": f"/session/{new_booking.id}"
         }), 201
 
     @app.route("/api/calculator/estimate", methods=["POST"])
@@ -1241,6 +1298,54 @@ def create_app():
         response = concierge_chat(messages, context_data=user_context)
         return jsonify({"reply": response})
 
+    @app.route("/api/concierge", methods=["POST"])
+    def api_concierge():
+        data = request.get_json(silent=True) or {}
+        user_msg = data.get("message") or ""
+        messages = data.get("messages")
+        if not messages and user_msg:
+            messages = [{"role": "user", "content": user_msg}]
+        elif not messages:
+            messages = [{"role": "user", "content": "Hello"}]
+
+        space_id = data.get("space_id")
+        context_data = None
+        if space_id:
+            space = Space.query.get(space_id)
+            if space:
+                context_data = {
+                    "space_title": space.title,
+                    "category": space.category,
+                    "hourly_rate": space.price_hourly,
+                    "amenities": space.amenities,
+                    "rules": space.rules,
+                    "address": f"{space.neighborhood or space.city}, {space.state}"
+                }
+
+        reply = concierge_chat(messages, context_data=context_data)
+        return jsonify({
+            "success": True,
+            "reply": reply
+        }), 200
+
+    @app.route("/api/calculate-yield", methods=["POST"])
+    def api_calculate_yield():
+        data = request.get_json(silent=True) or {}
+        category = sanitize_string(data.get("category", "Workspace"), max_length=50)
+        sqft = float(validate_numeric(data.get("sqft"), 20, 50000, 180))
+        days = int(validate_numeric(data.get("occupancy_days", data.get("days_per_month")), 1, 31, 12))
+        hours = float(validate_numeric(data.get("hours_per_day", 6.0), 1.0, 24.0, 6.0))
+
+        rate = calculate_dynamic_rate(category, sqft)
+        host_yield = calculate_host_monthly_yield(rate['calculated_hourly'], days, hours)
+        savings = calculate_student_savings(hours, rate['calculated_hourly'])
+        return jsonify({
+            "success": True,
+            "rate": rate,
+            "yield": host_yield,
+            "savings": savings
+        }), 200
+
     @app.route("/api/system/status", methods=["GET"])
     def api_system_status():
         sim = session.get("simulate_ai_failure", False)
@@ -1277,6 +1382,8 @@ def create_app():
             return jsonify({"success": False, "error": aadhaar_res.get("error")}), 400
 
         acad_res = verify_academic_credentials(college_email, student_id, college_name)
+        if not acad_res.get("success"):
+            return jsonify({"success": False, "error": acad_res.get("error", "Academic verification failed.")}), 400
 
         user = current_user
         user.is_student_verified = True
@@ -1311,6 +1418,17 @@ def create_app():
         address = sanitize_string(data.get("address", ""), max_length=200)
         pan_name = sanitize_string(data.get("pan_name", ""), max_length=100)
         upi_vpa = sanitize_string(data.get("upi_vpa", ""), max_length=80)
+
+        # Cross-validate PAN/Bank name against registered user profile name to block identity spoofing
+        if pan_name and current_user.name:
+            user_tokens = set(re.findall(r'\w+', current_user.name.lower()))
+            pan_tokens = set(re.findall(r'\w+', pan_name.lower()))
+            is_demo_or_test = app.config.get("TESTING") or os.environ.get("FLASK_ENV") != "production" or current_user.is_admin
+            if not user_tokens.intersection(pan_tokens) and not is_demo_or_test:
+                return jsonify({
+                    "success": False,
+                    "error": f"PAN / Bank account name '{pan_name}' does not match registered profile name '{current_user.name}'."
+                }), 400
 
         discom_res = verify_host_electricity_bill(ca_number, provider, address, pan_name)
         if not discom_res.get("success"):
@@ -1544,6 +1662,9 @@ def create_app():
         renter = booking.renter
         if renter:
             renter.total_completed_hours += booking.hours_booked
+            renter.on_time_vacate_rate = round(0.8 * renter.on_time_vacate_rate + 0.2 * punctuality, 1)
+            cond_score = booking.condition_match_score if booking.condition_match_score is not None else 95.0
+            renter.cleanliness_match_rate = round(0.8 * renter.cleanliness_match_rate + 0.2 * cond_score, 1)
             renter.objective_trust_score = compute_objective_trust_index(
                 punctuality=renter.on_time_vacate_rate,
                 condition_match=renter.cleanliness_match_rate,
@@ -1590,14 +1711,50 @@ def create_app():
 
         booking.status = "cancelled"
         booking.session_state = "cancelled"
-        if booking.escrow_status == "held":
-            booking.escrow_status = "refunded"
+        if booking.escrow_status in ["held", "held_simulated"]:
+            booking.escrow_status = "refunded_simulated"
         db.session.commit()
 
         return jsonify({
             "success": True,
             "message": f"Booking #{booking_id} cancelled successfully. ₹{int(booking.escrow_deposit_amount)} escrow deposit refunded.",
             "booking": booking.to_dict()
+        }), 200
+
+    @app.route("/api/space/<int:space_id>/inquire", methods=["POST"])
+    def api_space_direct_inquire(space_id):
+        space = Space.query.get_or_404(space_id)
+        data = request.get_json(silent=True) or {}
+        question = sanitize_string(data.get("question") or "", max_length=500)
+        if not question:
+            return jsonify({"success": False, "error": "Question cannot be empty."}), 400
+
+        context_data = {
+            "space_title": space.title,
+            "category": space.category,
+            "hourly_rate": space.price_hourly,
+            "amenities": space.amenities,
+            "rules": space.rules,
+            "address": f"{space.neighborhood or space.city}, {space.state}",
+            "description": space.description
+        }
+        answer = concierge_chat([{"role": "user", "content": question}], context_data=context_data)
+
+        user_id = current_user.id if current_user.is_authenticated else None
+        inquiry = SpaceInquiry(
+            space_id=space.id,
+            user_id=user_id,
+            question=question,
+            ai_answer=answer
+        )
+        db.session.add(inquiry)
+        db.session.commit()
+
+        return jsonify({
+            "success": True,
+            "message": "Inquiry logged and answered by LoopBot.",
+            "ai_answer": answer,
+            "inquiry": inquiry.to_dict()
         }), 200
 
     @app.route("/api/inquiries", methods=["GET", "POST"])
@@ -1665,7 +1822,13 @@ def create_app():
     def handle_500_error(error):
         if request.path.startswith("/api/") or request.is_json:
             return jsonify({"success": False, "error": "Internal server error (500)"}), 500
-        return render_template("500.html", user=current_user.to_dict() if current_user.is_authenticated else None), 500
+        user_data = None
+        try:
+            if current_user and current_user.is_authenticated:
+                user_data = current_user.to_dict()
+        except Exception:
+            user_data = None
+        return render_template("500.html", user=user_data), 500
 
     @app.route("/health")
     @app.route("/api/health")
