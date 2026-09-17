@@ -3,11 +3,7 @@ import { View, Text, Pressable } from 'react-native';
 import { useNavigate } from 'react-router-dom';
 import { ThemeToggle } from './ThemeToggle';
 
-interface FooterProps {
-  onOpenDemoModal: () => void;
-}
-
-export const Footer: React.FC<FooterProps> = ({ onOpenDemoModal }) => {
+export const Footer: React.FC = () => {
   const navigate = useNavigate();
   const [legalModalType, setLegalModalType] = useState<'privacy' | 'terms' | 'easements' | null>(null);
 
@@ -165,14 +161,6 @@ export const Footer: React.FC<FooterProps> = ({ onOpenDemoModal }) => {
               <span className="flex items-center gap-1">
                 <i className="fa-solid fa-location-crosshairs text-amber-400" /> 50m Geofence Gate
               </span>
-              <span>&bull;</span>
-              <button
-                type="button"
-                onClick={onOpenDemoModal}
-                className="text-indigo-400 hover:text-indigo-300 font-semibold underline"
-              >
-                ⚡ Judge / Demo Console
-              </button>
             </div>
           </div>
         </div>

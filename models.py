@@ -115,11 +115,34 @@ class User(db.Model, UserMixin):
             "upi_vpa_masked": self.upi_vpa_masked,
             "bank_beneficiary_name": self.bank_beneficiary_name,
             # Objective Telemetry
-            "objective_trust_score": round(self.objective_trust_score, 1),
+            "objective_trust_score": round(self.objective_trust_score if self.objective_trust_score <= 100.0 else self.objective_trust_score / 10.0, 1),
             "on_time_vacate_rate": round(self.on_time_vacate_rate, 1),
             "cleanliness_match_rate": round(self.cleanliness_match_rate, 1),
             "total_completed_hours": round(self.total_completed_hours, 1),
             "dispute_count": self.dispute_count,
+            "oti_breakdown": {
+                "total_score": round(self.objective_trust_score if self.objective_trust_score <= 100.0 else self.objective_trust_score / 10.0, 1),
+                "punctuality": {
+                    "score": round(self.on_time_vacate_rate, 1),
+                    "weight": "35%",
+                    "description": "Measures on-time departure within the booked micro-lease window."
+                },
+                "cleanliness": {
+                    "score": round(self.cleanliness_match_rate, 1),
+                    "weight": "35%",
+                    "description": "Computer Vision delta verifying furniture unchanged, lights off, and zero trash left behind."
+                },
+                "identity_trust": {
+                    "score": 100.0 if (self.is_aadhaar_verified or self.is_student_verified or self.is_host_verified) else 70.0,
+                    "weight": "20%",
+                    "description": "DigiLocker Aadhaar, student university SSO, or Discom utility meter verification."
+                },
+                "dispute_history": {
+                    "score": max(0.0, 100.0 - min(self.dispute_count * 15.0, 50.0)),
+                    "weight": "10%",
+                    "description": "Clean deposit release history with zero unresolved damages or payment disputes."
+                }
+            }
         }
 
 

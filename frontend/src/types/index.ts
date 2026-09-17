@@ -13,6 +13,14 @@ export interface User {
   upi_vpa_masked?: string;
   bank_beneficiary_name?: string;
   trust_score?: number;
+  objective_trust_score?: number;
+  oti_breakdown?: {
+    total_score: number;
+    punctuality: { score: number; weight: string; description: string };
+    cleanliness: { score: number; weight: string; description: string };
+    identity_trust: { score: number; weight: string; description: string };
+    dispute_history: { score: number; weight: string; description: string };
+  };
   avatar_url?: string;
   phone?: string;
   college_name?: string;
@@ -61,6 +69,8 @@ export interface Space {
   distance_km?: number;
   ai_match_score?: number;
   ai_match_reasoning?: string;
+  pros?: string[];
+  cons?: string[];
   created_at?: string;
 }
 

@@ -125,40 +125,37 @@ export const ExplorePage: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col antialiased">
-      {/* 1. HERO BANNER & NATURAL LANGUAGE AI SEARCH */}
-      <section className="relative overflow-hidden pt-12 pb-16 md:pt-20 md:pb-24 border-b border-slate-800/60 bg-gradient-to-b from-slate-900 via-slate-950 to-slate-950">
+      {/* 1. FOCUSED DISCOVERY HEADER & NATURAL LANGUAGE AI SEARCH */}
+      <section className="relative overflow-hidden pt-8 pb-8 md:pt-12 md:pb-12 border-b border-slate-800/60 bg-gradient-to-b from-slate-900 via-slate-950 to-slate-950">
         {/* Glowing Background Ambience */}
-        <div className="absolute -top-40 left-1/2 -translate-x-1/2 w-[700px] h-[350px] bg-indigo-600/15 blur-[120px] rounded-full pointer-events-none" />
-        <div className="absolute top-20 right-10 w-[300px] h-[300px] bg-violet-600/10 blur-[100px] rounded-full pointer-events-none" />
+        <div className="absolute -top-40 left-1/2 -translate-x-1/2 w-[600px] h-[300px] bg-indigo-600/15 blur-[120px] rounded-full pointer-events-none" />
+        <div className="absolute top-10 right-10 w-[240px] h-[240px] bg-violet-600/10 blur-[100px] rounded-full pointer-events-none" />
 
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-          <div className="text-center max-w-3xl mx-auto mb-10">
-            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-indigo-300 text-xs font-medium mb-6 shadow-sm">
+          <div className="text-center max-w-3xl mx-auto mb-6">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-indigo-300 text-xs font-medium mb-3 shadow-sm">
               <span className="flex h-2 w-2 rounded-full bg-indigo-400 animate-ping" />
-              <span className="font-semibold">AI Matchmaking 2.0</span> • Convert Dead Space into Living Value
+              <span className="font-semibold">AI Matchmaker</span> • Real-time Instant Availability
             </div>
 
-            <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight text-white leading-tight">
-              Turn Unused Property into <br />
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 via-violet-300 to-indigo-300">
-                Useful Temporary Spaces
-              </span>
+            <h1 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold tracking-tight text-white leading-tight">
+              Find Flexible Space Near You
             </h1>
 
-            <p className="mt-5 text-base sm:text-lg text-slate-400 leading-relaxed max-w-2xl mx-auto">
-              Intelligently matching homeowners, cafes, and property owners with creators, students, and businesses who need flexible space by the hour or day.
+            <p className="mt-3 text-sm sm:text-base text-slate-400 leading-relaxed max-w-2xl mx-auto">
+              Instantly discover and reserve quiet study pods, creative studios, micro-workspaces, and event spaces by the hour.
             </p>
           </div>
 
           {/* AI Intent-Based Search Engine Bar */}
-          <div className="max-w-4xl mx-auto">
-            <div className="bg-slate-900/90 backdrop-blur-xl border border-indigo-500/30 rounded-2xl p-3 sm:p-4 floating-panel transition-all hover:border-indigo-500/50">
+          <div className="max-w-3xl mx-auto">
+            <div className="bg-slate-900/90 backdrop-blur-xl border border-indigo-500/30 rounded-2xl p-3 sm:p-3.5 floating-panel transition-all hover:border-indigo-500/50 shadow-xl">
               <form
                 onSubmit={(e) => {
                   e.preventDefault();
                   handleAiSearch();
                 }}
-                className="flex flex-col sm:flex-row gap-3"
+                className="flex flex-col sm:flex-row gap-2.5"
               >
                 <div className="relative flex-grow flex items-center">
                   <div className="absolute left-4 text-indigo-400 text-base">
@@ -168,15 +165,15 @@ export const ExplorePage: React.FC = () => {
                     type="text"
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    placeholder="Describe your ideal space (e.g. 'Quiet studio with power outlets for a 3-person podcast under ₹50/hr')..."
-                    className="w-full bg-slate-950/80 border border-slate-700/80 rounded-xl pl-11 pr-4 py-3.5 text-sm sm:text-base text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition"
+                    placeholder="Describe your ideal space (e.g. 'Quiet study space for 3 people under ₹60/hr')..."
+                    className="w-full bg-slate-950/80 border border-slate-700/80 rounded-xl pl-11 pr-4 py-3 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition"
                   />
                 </div>
 
                 <button
                   type="submit"
                   disabled={isAiSearching}
-                  className="bg-gradient-to-r from-indigo-600 via-violet-600 to-indigo-700 hover:from-indigo-500 hover:to-violet-500 text-white font-semibold text-sm sm:text-base px-6 py-3.5 rounded-xl shadow-lg shadow-indigo-600/30 flex items-center justify-center gap-2 transition shrink-0 group disabled:opacity-60"
+                  className="bg-gradient-to-r from-indigo-600 via-violet-600 to-indigo-700 hover:from-indigo-500 hover:to-violet-500 text-white font-semibold text-sm px-5 py-3 rounded-xl shadow-lg shadow-indigo-600/30 flex items-center justify-center gap-2 transition shrink-0 group disabled:opacity-60"
                 >
                   {isAiSearching ? (
                     <>
@@ -193,74 +190,54 @@ export const ExplorePage: React.FC = () => {
               </form>
 
               {/* Prompt Suggestion Chips */}
-              <div className="mt-3.5 pt-3 border-t border-slate-800/70 flex items-center gap-2 text-xs overflow-x-auto whitespace-nowrap pb-1 scrollbar-none">
-                <span className="text-slate-400 font-medium shrink-0 flex items-center gap-1">
+              <div className="mt-3 pt-2.5 border-t border-slate-800/70 flex items-center gap-2 text-xs overflow-x-auto whitespace-nowrap pb-1 scrollbar-none">
+                <span className="text-slate-400 font-medium shrink-0 flex items-center gap-1 text-[11px]">
                   <i className="fa-regular fa-compass text-indigo-400" /> Try prompts:
                 </span>
                 <button
                   type="button"
                   onClick={() => {
-                    const p = 'Sunlit podcast recording studio with acoustic treatment under ₹60';
+                    const p = 'Quiet study space for 3 people';
                     setSearchQuery(p);
                     handleAiSearch(p);
                   }}
-                  className="px-2.5 py-1 rounded-lg bg-slate-800/80 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700/60 transition"
+                  className="px-2.5 py-1 rounded-lg bg-slate-800/80 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700/60 text-[11px] transition flex items-center gap-1.5"
                 >
-                  🎙️ Sunlit Podcast Studio
+                  <span>📚</span> Quiet study space for 3 people
                 </button>
                 <button
                   type="button"
                   onClick={() => {
-                    const p = 'Dry secure ground floor storage garage for boxes in Wagholi';
+                    const p = 'Studio for a 2-hour shoot';
                     setSearchQuery(p);
                     handleAiSearch(p);
                   }}
-                  className="px-2.5 py-1 rounded-lg bg-slate-800/80 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700/60 transition"
+                  className="px-2.5 py-1 rounded-lg bg-slate-800/80 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700/60 text-[11px] transition flex items-center gap-1.5"
                 >
-                  📦 Dry Garage Storage
+                  <span>📸</span> Studio for a 2-hour shoot
                 </button>
                 <button
                   type="button"
                   onClick={() => {
-                    const p = 'Gated parking with EV charger';
+                    const p = 'Affordable workspace near me';
                     setSearchQuery(p);
                     handleAiSearch(p);
                   }}
-                  className="px-2.5 py-1 rounded-lg bg-slate-800/80 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700/60 transition"
+                  className="px-2.5 py-1 rounded-lg bg-slate-800/80 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700/60 text-[11px] transition flex items-center gap-1.5"
                 >
-                  ⚡ EV Charger Parking
+                  <span>💼</span> Affordable workspace near me
                 </button>
                 <button
                   type="button"
                   onClick={() => {
-                    const p = 'Quiet study desk in Wagholi Pune under 60';
+                    const p = 'Space for a small event';
                     setSearchQuery(p);
                     handleAiSearch(p);
                   }}
-                  className="px-2.5 py-1 rounded-lg bg-slate-800/80 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700/60 transition"
+                  className="px-2.5 py-1 rounded-lg bg-slate-800/80 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700/60 text-[11px] transition flex items-center gap-1.5"
                 >
-                  📚 Quiet Study in Wagholi
+                  <span>🎉</span> Space for a small event
                 </button>
-              </div>
-            </div>
-
-            {/* Quick Platform Stats */}
-            <div className="mt-8 grid grid-cols-2 sm:grid-cols-4 gap-4 text-center">
-              <div className="bg-slate-900/50 border border-slate-800/70 rounded-xl p-3.5 floating-interactive">
-                <div className="text-xl font-bold text-white">400M+ sqft</div>
-                <div className="text-xs text-slate-400">Unused Urban Dead Space</div>
-              </div>
-              <div className="bg-slate-900/50 border border-slate-800/70 rounded-xl p-3.5 floating-interactive">
-                <div className="text-xl font-bold text-indigo-400">65% Cheaper</div>
-                <div className="text-xs text-slate-400">Vs Commercial Studios</div>
-              </div>
-              <div className="bg-slate-900/50 border border-slate-800/70 rounded-xl p-3.5 floating-interactive">
-                <div className="text-xl font-bold text-emerald-400">&lt; 30 Seconds</div>
-                <div className="text-xs text-slate-400">AI Micro-Lease Generation</div>
-              </div>
-              <div className="bg-slate-900/50 border border-slate-800/70 rounded-xl p-3.5 floating-interactive">
-                <div className="text-xl font-bold text-amber-400">₹15,000/mo</div>
-                <div className="text-xs text-slate-400">Avg Host Passive Income</div>
               </div>
             </div>
           </div>
@@ -379,16 +356,19 @@ export const ExplorePage: React.FC = () => {
               >
                 <i className="fa-solid fa-filter text-xs" /> Apply Filter
               </button>
-              {(locationInput || selectedRadius || selectedMaxPrice || activeCategory !== 'All' || searchQuery) && (
-                <button
-                  type="button"
-                  onClick={resetAllFilters}
-                  className="px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs sm:text-sm font-semibold transition border border-slate-700 flex items-center justify-center"
-                  title="Clear all filters"
-                >
-                  <i className="fa-solid fa-rotate-left" />
-                </button>
-              )}
+              <button
+                type="button"
+                onClick={resetAllFilters}
+                className={`px-3.5 py-2 rounded-xl text-xs sm:text-sm font-semibold transition flex items-center justify-center gap-1.5 border ${
+                  locationInput || selectedRadius || selectedMaxPrice || activeCategory !== 'All' || searchQuery || aiMatchActive
+                    ? 'bg-slate-800 hover:bg-slate-700 text-slate-200 border-slate-700 shadow-sm'
+                    : 'bg-slate-950/60 hover:bg-slate-850 text-slate-400 hover:text-slate-200 border-slate-800'
+                }`}
+                title="Reset all filters to default"
+              >
+                <i className="fa-solid fa-rotate-left text-xs" />
+                <span>Reset</span>
+              </button>
             </div>
           </form>
 

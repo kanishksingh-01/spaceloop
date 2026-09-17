@@ -64,6 +64,12 @@ def create_app():
         except Exception:
             return None
 
+    @login_manager.unauthorized_handler
+    def unauthorized():
+        if request.path.startswith("/api") or request.is_json or "application/json" in request.headers.get("Accept", ""):
+            return jsonify({"error": "Authentication required", "success": False}), 401
+        return redirect(url_for("auth_login", next=request.url))
+
     # 6. Global Security Headers Middleware
     @app.after_request
     def add_security_headers(response):
@@ -268,14 +274,19 @@ def create_app():
 
     @app.route("/verify", endpoint="verify_page")
     @app.route("/legacy/verify")
+    @login_required
     def verify_page():
         if request.args.get("spa") or request.args.get("react"):
             return _serve_spa_index()
         return render_template("verify.html", user=current_user.to_dict() if current_user.is_authenticated else None)
 
     @app.route("/booking/<int:booking_id>/session", endpoint="session_page")
+    @login_required
     def session_page(booking_id):
         booking = Booking.query.get_or_404(booking_id)
+        if current_user.id != booking.renter_id and current_user.id != booking.space.owner_id and not current_user.is_admin:
+            flash("Access Denied: You do not have permission to view this booking session.", "danger")
+            return redirect(url_for("auth_access_denied"))
         return render_template("session.html", booking=booking.to_dict(), space=booking.space.to_dict())
 
     @app.route("/session", endpoint="active_session_redirect")
@@ -371,7 +382,10 @@ def create_app():
                 login_user(user)
                 if request.is_json:
                     return jsonify({"success": True, "user": user.to_dict()})
-                return redirect(url_for("index"))
+                next_url = request.args.get("next")
+                if not next_url or not next_url.startswith("/"):
+                    next_url = url_for("dashboard_page")
+                return redirect(next_url)
             if request.is_json:
                 return jsonify({"success": False, "error": err}), 401
             flash(err, "danger")

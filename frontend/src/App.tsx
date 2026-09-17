@@ -8,7 +8,6 @@ import { MobileNav } from './components/common/MobileNav';
 import { LoopBot } from './components/common/LoopBot';
 import { AuthModal } from './components/common/AuthModal';
 import { HostAuthModal } from './components/common/HostAuthModal';
-import { DemoModal } from './components/common/DemoModal';
 
 import { LandingPage } from './pages/LandingPage';
 import { ExplorePage } from './pages/ExplorePage';
@@ -20,14 +19,11 @@ import { SessionPage } from './pages/SessionPage';
 import { CalculatorPage } from './pages/CalculatorPage';
 import { VerifyPage } from './pages/VerifyPage';
 import { HowItWorksPage } from './pages/HowItWorksPage';
-import SpaceLoopApp from './SpaceLoopApp';
-import ExploreView from './components/common/ExploreView';
 
 export const App: React.FC = () => {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [authModalOpen, setAuthModalOpen] = useState(false);
   const [hostAuthModalOpen, setHostAuthModalOpen] = useState(false);
-  const [demoModalOpen, setDemoModalOpen] = useState(false);
   const [initializing, setInitializing] = useState(true);
 
   useEffect(() => {
@@ -59,7 +55,6 @@ export const App: React.FC = () => {
           currentUser={currentUser}
           onOpenAuthModal={() => setAuthModalOpen(true)}
           onOpenHostAuthModal={() => setHostAuthModalOpen(true)}
-          onOpenDemoModal={() => setDemoModalOpen(true)}
         />
 
         {/* Application Routes */}
@@ -68,9 +63,9 @@ export const App: React.FC = () => {
             {/* Seeker Routes */}
             <Route path="/" element={<LandingPage currentUser={currentUser} />} />
             <Route path="/explore" element={<ExplorePage />} />
-            <Route path="/curated" element={<ExploreView />} />
-            <Route path="/explore-view" element={<ExploreView />} />
-            <Route path="/boutique" element={<SpaceLoopApp />} />
+            <Route path="/curated" element={<ExplorePage />} />
+            <Route path="/explore-view" element={<ExplorePage />} />
+            <Route path="/boutique" element={<ExplorePage />} />
             <Route path="/space/:id" element={<SpaceDetailPage currentUser={currentUser} />} />
             <Route path="/session/:id" element={<SessionPage />} />
             <Route path="/dashboard" element={<DashboardPage currentUser={currentUser} />} />
@@ -104,8 +99,8 @@ export const App: React.FC = () => {
           </Routes>
         </main>
 
-        {/* Global Footer with Legal Modals & Evaluation Console */}
-        <Footer onOpenDemoModal={() => setDemoModalOpen(true)} />
+        {/* Global Footer with Legal Modals & Trust Badges */}
+        <Footer />
 
         {/* Mobile App Bottom Navigation Bar */}
         <MobileNav
@@ -137,13 +132,6 @@ export const App: React.FC = () => {
             setHostAuthModalOpen(false);
             setAuthModalOpen(true);
           }}
-        />
-
-        {/* Judge / Demo Evaluation Console Modal */}
-        <DemoModal
-          isOpen={demoModalOpen}
-          onClose={() => setDemoModalOpen(false)}
-          currentRole={currentUser?.role}
         />
       </div>
     </BrowserRouter>

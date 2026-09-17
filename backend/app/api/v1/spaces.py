@@ -304,6 +304,8 @@ def ai_match_spaces():
         sp["ai_match_score"] = r.get("match_score")
         reasons = r.get("match_reasons", [])
         sp["ai_match_reasoning"] = reasons[0] if reasons else r.get("considerations", "")
+        sp["pros"] = r.get("pros", [])
+        sp["cons"] = r.get("cons", [])
         flattened_spaces.append(sp)
 
     return jsonify({

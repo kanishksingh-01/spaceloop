@@ -9,7 +9,8 @@ from space_ai import (
     verify_academic_credentials,
     verify_host_electricity_bill,
     verify_upi_penny_drop,
-    compute_objective_trust_index
+    compute_objective_trust_index,
+    get_oti_breakdown
 )
 from security import sanitize_string
 
@@ -17,6 +18,15 @@ api_v1_auth = Blueprint("api_v1_auth", __name__, url_prefix="/api/v1/auth")
 
 
 def safe_user_profile(user):
+    raw_oti = getattr(user, "objective_trust_score", 98.5) or 98.5
+    oti_score = round(raw_oti if raw_oti <= 100.0 else raw_oti / 10.0, 1)
+    oti_breakdown = get_oti_breakdown(
+        punctuality=getattr(user, "on_time_vacate_rate", 100.0),
+        condition_match=getattr(user, "cleanliness_match_rate", 99.0),
+        is_identity_verified=bool(getattr(user, "is_aadhaar_verified", False) or getattr(user, "is_student_verified", False) or getattr(user, "is_host_verified", False)),
+        dispute_count=getattr(user, "dispute_count", 0)
+    )
+
     return {
         "id": user.id,
         "public_id": user.public_id,
@@ -36,7 +46,9 @@ def safe_user_profile(user):
         "upi_verified": bool(getattr(user, "upi_verified", False)),
         "upi_vpa_masked": getattr(user, "upi_vpa_masked", "") or "",
         "bank_beneficiary_name": getattr(user, "bank_beneficiary_name", "") or "",
-        "trust_score": round(getattr(user, "objective_trust_score", 850.0) or 850.0, 1),
+        "trust_score": oti_score,
+        "objective_trust_score": oti_score,
+        "oti_breakdown": oti_breakdown,
         "avatar_url": user.avatar_url or f"https://api.dicebear.com/7.x/initials/svg?seed={user.name}",
         "phone": getattr(user, "phone", "") or "",
         "college_name": getattr(user, "college_name", "") or "",
@@ -285,7 +297,7 @@ def api_host_register():
     user.upi_verified = True
     user.upi_vpa_masked = upi_res["upi_vpa_masked"]
     user.bank_beneficiary_name = upi_res["bank_beneficiary_name"]
-    user.objective_trust_score = 950.0
+    user.objective_trust_score = 98.5
     db.session.commit()
 
     login_user(user)
@@ -379,7 +391,7 @@ def api_digilocker_login():
             aadhaar_token_hash=aadhaar_res["token_hash"],
             is_student_verified=(role == "seeker"),
             is_host_verified=(role in ("host", "owner")),
-            objective_trust_score=920.0
+            objective_trust_score=98.0
         )
         user.set_password("DigiLockerAuth2026!")
         db.session.add(user)
@@ -429,7 +441,7 @@ def api_student_sso_login():
             college_name=acad_res["college_name"],
             college_email=acad_res["college_email"],
             student_id_masked=acad_res["student_id_masked"],
-            objective_trust_score=890.0
+            objective_trust_score=97.5
         )
         user.set_password("StudentSSO2026!")
         db.session.add(user)
