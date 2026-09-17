@@ -4,27 +4,27 @@ import { Space, AIMatchResponse } from '../types';
 export function getCategoryFallbackImage(category?: string): string {
   const cat = (category || '').toLowerCase();
   if (cat.includes('study')) {
-    return 'https://images.unsplash.com/photo-1523240795612-9a054b0db644?auto=format&fit=crop&w=1200&q=80';
+    return 'https://images.unsplash.com/photo-1527192491265-7e15c55b1ed2?auto=format&fit=crop&w=1200&q=80';
   }
   if (cat.includes('work') || cat.includes('hack') || cat.includes('desk') || cat.includes('coding')) {
-    return 'https://images.unsplash.com/photo-1497366811353-6870744d04b2?auto=format&fit=crop&w=1200&q=80';
+    return 'https://images.unsplash.com/photo-1522071820081-009f0129c71c?auto=format&fit=crop&w=1200&q=80';
   }
   if (cat.includes('studio') || cat.includes('podcast') || cat.includes('vocal') || cat.includes('photo')) {
-    return 'https://images.unsplash.com/photo-1590602847861-f357a9332bbc?auto=format&fit=crop&w=1200&q=80';
+    return 'https://images.unsplash.com/photo-1598488035139-bdbb2231ce04?auto=format&fit=crop&w=1200&q=80';
   }
   if (cat.includes('storage') || cat.includes('gear') || cat.includes('luggage')) {
     return 'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?auto=format&fit=crop&w=1200&q=80';
   }
   if (cat.includes('meet') || cat.includes('board') || cat.includes('sprint') || cat.includes('discuss')) {
-    return 'https://images.unsplash.com/photo-1517048676732-d65bc937f952?auto=format&fit=crop&w=1200&q=80';
+    return 'https://images.unsplash.com/photo-1517502884422-41eaead166d4?auto=format&fit=crop&w=1200&q=80';
   }
   if (cat.includes('creat') || cat.includes('design') || cat.includes('maker') || cat.includes('proto')) {
-    return 'https://images.unsplash.com/photo-1503387762-592deb58ef4e?auto=format&fit=crop&w=1200&q=80';
+    return 'https://images.unsplash.com/photo-1581092160607-ee22621dd758?auto=format&fit=crop&w=1200&q=80';
   }
   if (cat.includes('park') || cat.includes('ev') || cat.includes('charg')) {
     return 'https://images.unsplash.com/photo-1590674899484-d5640e854abe?auto=format&fit=crop&w=1200&q=80';
   }
-  return 'https://images.unsplash.com/photo-1513694203232-719a280e022f?auto=format&fit=crop&w=1200&q=80';
+  return 'https://images.unsplash.com/photo-1497215728101-856f4ea42174?auto=format&fit=crop&w=1200&q=80';
 }
 
 export function normalizeSpace(raw: any): Space {

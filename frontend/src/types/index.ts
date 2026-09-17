@@ -2,14 +2,23 @@ export interface User {
   id: number;
   email: string;
   name: string;
-  role: 'seeker' | 'host' | 'owner' | 'partner' | 'admin';
+  role: 'seeker' | 'host' | 'owner' | 'partner' | 'admin' | string;
+  is_host?: boolean;
   college_verified?: boolean;
   host_verified?: boolean;
+  is_host_verified?: boolean;
+  discom_provider?: string;
+  discom_ca_masked?: string;
+  upi_verified?: boolean;
+  upi_vpa_masked?: string;
+  bank_beneficiary_name?: string;
   trust_score?: number;
   avatar_url?: string;
   phone?: string;
   college_name?: string;
 }
+
+export type PortalMode = 'seeker' | 'host';
 
 export interface SpaceSpecs {
   usable_sqft?: number;
@@ -64,6 +73,7 @@ export interface Booking {
   seeker_id: number;
   seeker_name?: string;
   seeker_email?: string;
+  user_name?: string;
   start_time: string;
   end_time: string;
   hours_booked?: number;

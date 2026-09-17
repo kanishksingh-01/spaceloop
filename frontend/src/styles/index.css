@@ -9,6 +9,7 @@ html, body, #root {
   background-color: #020617; /* slate-950 */
   color: #f8fafc; /* slate-50 */
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  transition: background-color 0.25s ease, color 0.25s ease;
 }
 
 /* Glassmorphism utility helpers */
@@ -17,4 +18,181 @@ html, body, #root {
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
   border: 1px solid rgba(99, 102, 241, 0.2);
+}
+
+/* =========================================================================
+   LIGHT / WHITE THEME STYLES (Activated via <html class="light">)
+   ========================================================================= */
+
+html.light,
+html.light body,
+html.light #root {
+  background-color: #f8fafc !important;
+  color: #0f172a !important;
+}
+
+/* Surface backgrounds */
+html.light .bg-slate-950 {
+  background-color: #f8fafc !important;
+}
+html.light .bg-slate-950\/95,
+html.light .bg-slate-950\/90 {
+  background-color: rgba(255, 255, 255, 0.92) !important;
+}
+html.light .bg-slate-950\/80 {
+  background-color: rgba(255, 255, 255, 0.85) !important;
+}
+
+html.light .bg-slate-900 {
+  background-color: #ffffff !important;
+  box-shadow: 0 2px 8px -2px rgba(15, 23, 42, 0.06), 0 1px 3px -1px rgba(15, 23, 42, 0.04);
+}
+html.light .bg-slate-900\/95,
+html.light .bg-slate-900\/90,
+html.light .bg-slate-900\/80 {
+  background-color: rgba(255, 255, 255, 0.94) !important;
+}
+html.light .bg-slate-900\/60,
+html.light .bg-slate-900\/50,
+html.light .bg-slate-900\/40 {
+  background-color: rgba(241, 245, 249, 0.85) !important;
+}
+
+html.light .bg-slate-800 {
+  background-color: #f1f5f9 !important;
+}
+html.light .bg-slate-800\/80,
+html.light .bg-slate-800\/60,
+html.light .bg-slate-800\/50,
+html.light .bg-slate-800\/40 {
+  background-color: #f1f5f9 !important;
+}
+
+/* Borders */
+html.light .border-slate-800,
+html.light .border-slate-800\/80,
+html.light .border-slate-800\/60,
+html.light .border-slate-700,
+html.light .border-slate-700\/80 {
+  border-color: #e2e8f0 !important;
+}
+
+/* Typography */
+html.light .text-white,
+html.light .text-slate-100,
+html.light .text-slate-200 {
+  color: #0f172a !important;
+}
+html.light .text-slate-300,
+html.light .text-slate-400 {
+  color: #475569 !important;
+}
+html.light .text-slate-500 {
+  color: #64748b !important;
+}
+
+/* Contrast Preservation: Buttons & CTAs with colored backgrounds MUST keep white text */
+html.light .bg-indigo-600,
+html.light .bg-indigo-500,
+html.light .bg-brand-600,
+html.light .bg-brand-500,
+html.light .bg-emerald-600,
+html.light .bg-emerald-500,
+html.light .bg-rose-600,
+html.light .bg-violet-600,
+html.light [class*="bg-gradient-to-"] {
+  color: #ffffff !important;
+}
+html.light [class*="bg-indigo-"] .text-white,
+html.light [class*="bg-brand-"] .text-white,
+html.light [class*="bg-emerald-"] .text-white,
+html.light [class*="bg-rose-"] .text-white,
+html.light [class*="bg-violet-"] .text-white,
+html.light [class*="bg-gradient-to-"] .text-white,
+html.light [class*="bg-gradient-to-"] * {
+  color: #ffffff !important;
+}
+html.light button[class*="bg-indigo-"] *,
+html.light button[class*="bg-brand-"] *,
+html.light button[class*="bg-emerald-"] *,
+html.light button[class*="bg-gradient-to-"] * {
+  color: #ffffff !important;
+}
+
+/* Light mode badges */
+html.light .bg-indigo-500\/10,
+html.light .bg-indigo-600\/10,
+html.light .bg-indigo-500\/20,
+html.light .bg-indigo-600\/20 {
+  background-color: #eef2ff !important;
+  color: #4338ca !important;
+  border-color: #c7d2fe !important;
+}
+html.light .bg-emerald-500\/10,
+html.light .bg-emerald-500\/20 {
+  background-color: #ecfdf5 !important;
+  color: #047857 !important;
+  border-color: #a7f3d0 !important;
+}
+html.light .bg-amber-500\/10,
+html.light .bg-amber-500\/20 {
+  background-color: #fffbeb !important;
+  color: #b45309 !important;
+  border-color: #fde68a !important;
+}
+html.light .bg-rose-500\/10,
+html.light .bg-rose-500\/20 {
+  background-color: #fff1f2 !important;
+  color: #be123c !important;
+  border-color: #fecdd3 !important;
+}
+html.light .text-indigo-400,
+html.light .text-indigo-300 {
+  color: #4f46e5 !important;
+}
+
+/* Light mode form inputs & controls */
+html.light input,
+html.light textarea,
+html.light select {
+  background-color: #ffffff !important;
+  color: #0f172a !important;
+  border-color: #cbd5e1 !important;
+}
+html.light input::placeholder,
+html.light textarea::placeholder {
+  color: #94a3b8 !important;
+}
+html.light input:focus,
+html.light textarea:focus,
+html.light select:focus {
+  border-color: #6366f1 !important;
+  box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.2) !important;
+}
+
+/* Light mode hover states */
+html.light .hover\:bg-slate-800:hover,
+html.light .hover\:bg-slate-800\/60:hover {
+  background-color: #f1f5f9 !important;
+}
+html.light .hover\:bg-slate-900:hover {
+  background-color: #f8fafc !important;
+}
+html.light .hover\:text-white:hover {
+  color: #0f172a !important;
+}
+
+/* Light mode modal overlays */
+html.light .bg-black\/60,
+html.light .bg-black\/70,
+html.light .bg-black\/80 {
+  background-color: rgba(15, 23, 42, 0.45) !important;
+}
+
+/* Light mode glass panel */
+html.light .glass-panel {
+  background: rgba(255, 255, 255, 0.9) !important;
+  border: 1px solid rgba(226, 232, 240, 0.9) !important;
+  color: #0f172a !important;
+  box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.08) !important;
 }

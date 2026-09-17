@@ -1,140 +1,667 @@
 import React, { useState } from 'react';
-import { View, Text, Pressable, TextInput } from 'react-native';
-import { demoSwitch, loginUser } from '../../services/auth';
+import { loginUser, registerUser, digilockerAuth, studentSsoAuth, demoSwitch } from '../../services/auth';
 
 interface AuthModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSuccess?: () => void;
+  initialMode?: 'login' | 'register';
+  onSwitchToHost?: () => void;
 }
 
-export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess }) => {
+type AuthMethod = 'credentials' | 'sso' | 'digilocker';
+
+export const AuthModal: React.FC<AuthModalProps> = ({
+  isOpen,
+  onClose,
+  onSuccess,
+  initialMode = 'login',
+  onSwitchToHost,
+}) => {
+  const [mode, setMode] = useState<'login' | 'register'>(initialMode);
+  const [method, setMethod] = useState<AuthMethod>('credentials');
+
+  // Form fields
+  const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [role, setRole] = useState<'seeker' | 'host'>('seeker');
+
+  // Academic SSO fields
+  const [collegeName, setCollegeName] = useState('IIT Delhi');
+  const [studentId, setStudentId] = useState('2023CSB108');
+  const [collegeEmail, setCollegeEmail] = useState('student@iitd.ac.in');
+
+  // DigiLocker fields
+  const [aadhaarNumber, setAadhaarNumber] = useState('999988884821');
+  const [otp, setOtp] = useState('123456');
+
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [successMsg, setSuccessMsg] = useState<string | null>(null);
 
   if (!isOpen) return null;
 
-  const handleDemoLogin = async (role: 'seeker' | 'host' | 'admin') => {
+  // Fill spoofed persona data into form fields so user can edit or inspect
+  const applySpoofedPersona = (persona: 'aarav' | 'sunita' | 'kabir') => {
+    setError(null);
+    setSuccessMsg(null);
+    setMethod('credentials');
+    if (persona === 'aarav') {
+      setName('Aarav Sharma');
+      setEmail('aarav@iitd.ac.in');
+      setPassword('password123');
+      setConfirmPassword('password123');
+      setRole('seeker');
+      setCollegeEmail('aarav@iitd.ac.in');
+      setCollegeName('IIT Delhi');
+      setStudentId('2023CSB108');
+    } else if (persona === 'sunita') {
+      setName('Sunita Deshmukh');
+      setEmail('sunita@spaceloop.in');
+      setPassword('password123');
+      setConfirmPassword('password123');
+      setRole('host');
+      setAadhaarNumber('888877771234');
+    } else if (persona === 'kabir') {
+      setName('Kabir Bose');
+      setEmail('admin@spaceloop.in');
+      setPassword('password123');
+      setConfirmPassword('password123');
+      setRole('host');
+    }
+  };
+
+  // Instant demo switch shortcut
+  const handleInstantDemoSwitch = async (roleName: 'seeker' | 'host' | 'admin') => {
     setLoading(true);
     setError(null);
     try {
-      await demoSwitch(role);
+      await demoSwitch(roleName);
       if (onSuccess) onSuccess();
       window.location.reload();
     } catch (err: any) {
-      setError(err.message || 'Failed to authenticate demo persona');
+      setError(err.message || 'Failed to switch demo persona');
       setLoading(false);
     }
   };
 
-  const handleStandardLogin = async () => {
+  const handleCredentialsSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError(null);
+    setSuccessMsg(null);
+
     if (!email || !password) {
-      setError('Please enter both email and password');
+      setError('Please enter both email and password.');
       return;
     }
+
     setLoading(true);
-    setError(null);
     try {
-      await loginUser(email, password);
+      if (mode === 'login') {
+        await loginUser(email, password);
+        setSuccessMsg('Signed in successfully!');
+      } else {
+        if (password !== confirmPassword) {
+          setError('Passwords do not match.');
+          setLoading(false);
+          return;
+        }
+        const nameParts = name.trim().split(' ');
+        const firstName = nameParts[0] || 'User';
+        const lastName = nameParts.slice(1).join(' ') || '';
+
+        await registerUser({
+          first_name: firstName,
+          last_name: lastName,
+          email,
+          password,
+          confirm_password: confirmPassword,
+          role,
+        });
+        setSuccessMsg('Account registered and verified!');
+      }
+
       if (onSuccess) onSuccess();
-      window.location.reload();
+      setTimeout(() => {
+        window.location.reload();
+      }, 500);
     } catch (err: any) {
-      setError(err.message || 'Invalid credentials');
+      setError(err.message || 'Authentication failed. Please check your credentials.');
+      setLoading(false);
+    }
+  };
+
+  const handleSsoSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError(null);
+    setSuccessMsg(null);
+
+    if (!collegeEmail || !studentId) {
+      setError('Please provide academic email and student ID.');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      await studentSsoAuth({
+        name: name || 'Student Scholar',
+        college_email: collegeEmail,
+        college_name: collegeName,
+        student_id: studentId,
+      });
+      setSuccessMsg('University Student SSO verified!');
+      if (onSuccess) onSuccess();
+      setTimeout(() => {
+        window.location.reload();
+      }, 500);
+    } catch (err: any) {
+      setError(err.message || 'SSO verification failed.');
+      setLoading(false);
+    }
+  };
+
+  const handleDigiLockerSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError(null);
+    setSuccessMsg(null);
+
+    if (!aadhaarNumber || !otp) {
+      setError('Please provide Aadhaar number and OTP.');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      await digilockerAuth({
+        name: name || 'DigiLocker Verified User',
+        aadhaar_number: aadhaarNumber,
+        otp,
+        role,
+      });
+      setSuccessMsg('DigiLocker Aadhaar authentication verified!');
+      if (onSuccess) onSuccess();
+      setTimeout(() => {
+        window.location.reload();
+      }, 500);
+    } catch (err: any) {
+      setError(err.message || 'DigiLocker verification failed.');
       setLoading(false);
     }
   };
 
   return (
-    <View className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm items-center justify-center p-4">
-      <View className="bg-slate-900 border border-slate-800 w-full max-w-md rounded-2xl shadow-2xl overflow-hidden p-6">
-        <View className="flex-row items-center justify-between pb-4 border-b border-slate-800">
-          <View>
-            <Text className="text-lg font-bold text-white">Sign In to SpaceLoop</Text>
-            <Text className="text-xs text-slate-400">Access instant booking, hosting & leases</Text>
-          </View>
-          <Pressable onPress={onClose} className="p-1 text-slate-400 hover:text-white">
-            <Text className="text-base font-bold">✕</Text>
-          </Pressable>
-        </View>
-
-        {error && (
-          <View className="mt-4 p-3 bg-rose-500/10 border border-rose-500/30 rounded-xl">
-            <Text className="text-xs text-rose-300 font-medium">{error}</Text>
-          </View>
-        )}
-
-        {/* 1-Click Demo Personas */}
-        <View className="mt-5 space-y-2">
-          <Text className="text-xs font-semibold text-indigo-300 uppercase tracking-wider">
-            1-Click Demo Personas
-          </Text>
-          <Pressable
-            onPress={() => handleDemoLogin('seeker')}
-            disabled={loading}
-            className="flex-row items-center justify-between p-3 rounded-xl bg-slate-800/90 border border-slate-700 hover:border-indigo-500 transition"
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm overflow-y-auto">
+      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white w-full max-w-lg rounded-3xl shadow-2xl overflow-hidden my-6 transition-all">
+        {/* Header */}
+        <div className="flex items-center justify-between p-6 border-b border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50">
+          <div>
+            <div className="flex items-center gap-2 mb-1">
+              <span className="px-2 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider bg-indigo-100 text-indigo-700 dark:bg-indigo-500/20 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-500/30">
+                🎓 Seeker & Student Authentication
+              </span>
+            </div>
+            <h2 className="text-xl font-bold text-slate-900 dark:text-white">
+              {mode === 'login' ? 'Seeker Sign In' : 'Join as a Space Seeker'}
+            </h2>
+            <p className="text-xs text-slate-500 dark:text-slate-400">
+              {mode === 'login'
+                ? 'Sign in to reserve study spaces, unlock micro-pods, and manage your student bookings.'
+                : 'Create your Seeker account with Academic SSO or verified credentials.'}
+            </p>
+          </div>
+          <button
+            onClick={onClose}
+            type="button"
+            className="w-8 h-8 rounded-full flex items-center justify-center text-slate-400 hover:text-slate-700 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 transition"
           >
-            <View>
-              <Text className="text-sm font-bold text-white">👤 Aarav Sharma (Seeker)</Text>
-              <Text className="text-xs text-slate-400">Verified Student • IIT Delhi • 840 Trust</Text>
-            </View>
-            <Text className="text-xs font-semibold text-indigo-400">Instant Login →</Text>
-          </Pressable>
+            ✕
+          </button>
+        </div>
 
-          <Pressable
-            onPress={() => handleDemoLogin('host')}
-            disabled={loading}
-            className="flex-row items-center justify-between p-3 rounded-xl bg-slate-800/90 border border-slate-700 hover:border-indigo-500 transition"
-          >
-            <View>
-              <Text className="text-sm font-bold text-white">🏠 Sunita Deshmukh (Host)</Text>
-              <Text className="text-xs text-slate-400">Property Owner • Wagholi, Pune • ₹18.4k Earned</Text>
-            </View>
-            <Text className="text-xs font-semibold text-indigo-400">Instant Login →</Text>
-          </Pressable>
-        </View>
+        <div className="p-6 space-y-5">
+          {/* Switch to Host Auth Banner */}
+          {onSwitchToHost && (
+            <div className="p-3.5 bg-amber-500/10 border border-amber-500/30 rounded-2xl flex items-center justify-between gap-3">
+              <div className="flex items-center gap-2.5">
+                <span className="text-xl">🏡</span>
+                <div>
+                  <div className="text-xs font-bold text-amber-300">Looking to Host or List Spaces?</div>
+                  <div className="text-[10px] text-slate-400">Hosts require State Electricity Discom & UPI Bank KYC.</div>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  onClose();
+                  onSwitchToHost();
+                }}
+                className="px-3 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs shrink-0 transition"
+              >
+                Host Portal →
+              </button>
+            </div>
+          )}
+          {/* Status Banners */}
+          {error && (
+            <div className="p-3.5 bg-rose-50 dark:bg-rose-500/10 border border-rose-200 dark:border-rose-500/30 rounded-2xl flex items-start gap-2">
+              <span className="text-rose-500 text-sm">⚠️</span>
+              <p className="text-xs text-rose-700 dark:text-rose-300 font-medium">{error}</p>
+            </div>
+          )}
+          {successMsg && (
+            <div className="p-3.5 bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/30 rounded-2xl flex items-start gap-2">
+              <span className="text-emerald-500 text-sm">✓</span>
+              <p className="text-xs text-emerald-700 dark:text-emerald-300 font-medium">{successMsg}</p>
+            </div>
+          )}
 
-        <View className="my-5 flex-row items-center">
-          <View className="flex-1 h-px bg-slate-800" />
-          <Text className="px-3 text-xs text-slate-500 font-medium uppercase">Or Credentials</Text>
-          <View className="flex-1 h-px bg-slate-800" />
-        </View>
+          {/* Quick-Fill Spoofed Data Persona Pills */}
+          <div className="bg-slate-50 dark:bg-slate-950/60 p-3.5 rounded-2xl border border-slate-200 dark:border-slate-800">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-[11px] font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider">
+                ⚡ Quick Spoofed Personas (Auto-Fill)
+              </span>
+              <span className="text-[10px] text-slate-400">Click to fill form</span>
+            </div>
+            <div className="grid grid-cols-3 gap-2">
+              <button
+                type="button"
+                onClick={() => applySpoofedPersona('aarav')}
+                className="p-2 text-left rounded-xl bg-white dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 hover:border-indigo-500 hover:shadow-sm transition"
+              >
+                <div className="text-xs font-bold text-slate-900 dark:text-white truncate">🎓 Aarav</div>
+                <div className="text-[10px] text-slate-500 dark:text-slate-400 truncate">Student Seeker</div>
+              </button>
+              <button
+                type="button"
+                onClick={() => applySpoofedPersona('sunita')}
+                className="p-2 text-left rounded-xl bg-white dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 hover:border-indigo-500 hover:shadow-sm transition"
+              >
+                <div className="text-xs font-bold text-slate-900 dark:text-white truncate">🏡 Sunita</div>
+                <div className="text-[10px] text-slate-500 dark:text-slate-400 truncate">Host & Owner</div>
+              </button>
+              <button
+                type="button"
+                onClick={() => applySpoofedPersona('kabir')}
+                className="p-2 text-left rounded-xl bg-white dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 hover:border-indigo-500 hover:shadow-sm transition"
+              >
+                <div className="text-xs font-bold text-slate-900 dark:text-white truncate">🛡️ Kabir</div>
+                <div className="text-[10px] text-slate-500 dark:text-slate-400 truncate">Admin / Ops</div>
+              </button>
+            </div>
+            <div className="mt-2.5 flex items-center justify-between pt-2 border-t border-slate-200/60 dark:border-slate-800/60 text-[11px]">
+              <span className="text-slate-500 dark:text-slate-400">Or bypass form directly:</span>
+              <div className="flex gap-1.5">
+                <button
+                  type="button"
+                  onClick={() => handleInstantDemoSwitch('seeker')}
+                  className="px-2 py-0.5 rounded bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 font-semibold text-[10px] hover:bg-indigo-100"
+                >
+                  Login Seeker →
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleInstantDemoSwitch('host')}
+                  className="px-2 py-0.5 rounded bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 font-semibold text-[10px] hover:bg-emerald-100"
+                >
+                  Login Host →
+                </button>
+              </div>
+            </div>
+          </div>
 
-        {/* Standard Form */}
-        <View className="space-y-3">
-          <View>
-            <Text className="text-xs font-medium text-slate-300 mb-1">Email Address</Text>
-            <TextInput
-              value={email}
-              onChangeText={setEmail}
-              placeholder="e.g. user@spaceloop.in"
-              placeholderTextColor="#64748b"
-              className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-sm text-white focus:border-indigo-500"
-            />
-          </View>
-          <View>
-            <Text className="text-xs font-medium text-slate-300 mb-1">Password</Text>
-            <TextInput
-              value={password}
-              onChangeText={setPassword}
-              secureTextEntry
-              placeholder="••••••••"
-              placeholderTextColor="#64748b"
-              className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-sm text-white focus:border-indigo-500"
-            />
-          </View>
-          <Pressable
-            onPress={handleStandardLogin}
-            disabled={loading}
-            className="w-full py-2.5 bg-indigo-600 hover:bg-indigo-500 rounded-xl items-center justify-center transition shadow-lg shadow-indigo-600/30"
-          >
-            <Text className="text-sm font-semibold text-white">
-              {loading ? 'Authenticating...' : 'Sign In'}
-            </Text>
-          </Pressable>
-        </View>
-      </View>
-    </View>
+          {/* Authentication Method Selector */}
+          <div className="flex rounded-xl bg-slate-100 dark:bg-slate-950 p-1 border border-slate-200 dark:border-slate-800">
+            <button
+              type="button"
+              onClick={() => setMethod('credentials')}
+              className={`flex-1 py-1.5 rounded-lg text-xs font-bold transition ${
+                method === 'credentials'
+                  ? 'bg-white dark:bg-slate-800 text-slate-900 dark:text-white shadow-sm'
+                  : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-300'
+              }`}
+            >
+              Email & Password
+            </button>
+            <button
+              type="button"
+              onClick={() => setMethod('sso')}
+              className={`flex-1 py-1.5 rounded-lg text-xs font-bold transition ${
+                method === 'sso'
+                  ? 'bg-white dark:bg-slate-800 text-slate-900 dark:text-white shadow-sm'
+                  : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-300'
+              }`}
+            >
+              University SSO
+            </button>
+            <button
+              type="button"
+              onClick={() => setMethod('digilocker')}
+              className={`flex-1 py-1.5 rounded-lg text-xs font-bold transition ${
+                method === 'digilocker'
+                  ? 'bg-white dark:bg-slate-800 text-slate-900 dark:text-white shadow-sm'
+                  : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-300'
+              }`}
+            >
+              DigiLocker / Aadhaar
+            </button>
+          </div>
+
+          {/* METHOD 1: Credentials (Standard Login / Register) */}
+          {method === 'credentials' && (
+            <form onSubmit={handleCredentialsSubmit} className="space-y-3.5">
+              {mode === 'register' && (
+                <>
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                      Full Name
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={name}
+                      onChange={(e) => setName(e.target.value)}
+                      placeholder="e.g. Aarav Sharma"
+                      className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 text-sm text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                      Account Type / Role
+                    </label>
+                    <div className="grid grid-cols-2 gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setRole('seeker')}
+                        className={`p-2.5 rounded-xl border text-left text-xs font-bold transition ${
+                          role === 'seeker'
+                            ? 'bg-indigo-50 dark:bg-indigo-950/40 border-indigo-500 text-indigo-700 dark:text-indigo-300'
+                            : 'border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400'
+                        }`}
+                      >
+                        <div>🎟️ Seeker (Student)</div>
+                        <div className="text-[10px] font-normal text-slate-400">Book study pods & desks</div>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setRole('host')}
+                        className={`p-2.5 rounded-xl border text-left text-xs font-bold transition ${
+                          role === 'host'
+                            ? 'bg-indigo-50 dark:bg-indigo-950/40 border-indigo-500 text-indigo-700 dark:text-indigo-300'
+                            : 'border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400'
+                        }`}
+                      >
+                        <div>🏠 Host / Owner</div>
+                        <div className="text-[10px] font-normal text-slate-400">List spaces & earn hourly</div>
+                      </button>
+                    </div>
+                  </div>
+                </>
+              )}
+
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                  Email Address
+                </label>
+                <input
+                  type="email"
+                  required
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="e.g. aarav@iitd.ac.in or sunita@spaceloop.in"
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 text-sm text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                  Password
+                </label>
+                <input
+                  type="password"
+                  required
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="••••••••"
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 text-sm text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                />
+              </div>
+
+              {mode === 'register' && (
+                <div>
+                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                    Confirm Password
+                  </label>
+                  <input
+                    type="password"
+                    required
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    placeholder="••••••••"
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 text-sm text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  />
+                </div>
+              )}
+
+              <button
+                type="submit"
+                disabled={loading}
+                className="w-full py-3 px-4 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-sm transition shadow-lg shadow-indigo-600/25 disabled:opacity-50"
+              >
+                {loading
+                  ? 'Authenticating...'
+                  : mode === 'login'
+                  ? 'Sign In to Account'
+                  : 'Complete Registration'}
+              </button>
+            </form>
+          )}
+
+          {/* METHOD 2: University SSO */}
+          {method === 'sso' && (
+            <form onSubmit={handleSsoSubmit} className="space-y-3.5">
+              <div className="p-3 bg-indigo-50/70 dark:bg-indigo-950/40 rounded-xl border border-indigo-200 dark:border-indigo-800 text-xs text-indigo-800 dark:text-indigo-300">
+                🎓 <strong>Verified Academic Access:</strong> Grants immediate student discount tier and verified trust badge on your door passes.
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                  Full Name
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={name || 'Aarav Sharma'}
+                  onChange={(e) => setName(e.target.value)}
+                  placeholder="Student Full Name"
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                  College / University
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={collegeName}
+                  onChange={(e) => setCollegeName(e.target.value)}
+                  placeholder="e.g. IIT Delhi / BITS Pilani / COEP"
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                    Student ID / Roll No
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={studentId}
+                    onChange={(e) => setStudentId(e.target.value)}
+                    placeholder="2023CSB108"
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                    Academic Email
+                  </label>
+                  <input
+                    type="email"
+                    required
+                    value={collegeEmail}
+                    onChange={(e) => setCollegeEmail(e.target.value)}
+                    placeholder="name@college.edu.in"
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  />
+                </div>
+              </div>
+
+              <button
+                type="submit"
+                disabled={loading}
+                className="w-full py-3 px-4 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-sm transition shadow-lg shadow-indigo-600/25 disabled:opacity-50"
+              >
+                {loading ? 'Authenticating SSO...' : 'Verify & Continue with College SSO'}
+              </button>
+            </form>
+          )}
+
+          {/* METHOD 3: DigiLocker Aadhaar */}
+          {method === 'digilocker' && (
+            <form onSubmit={handleDigiLockerSubmit} className="space-y-3.5">
+              <div className="p-3 bg-emerald-50/70 dark:bg-emerald-950/40 rounded-xl border border-emerald-200 dark:border-emerald-800 text-xs text-emerald-800 dark:text-emerald-300">
+                🛡️ <strong>DigiLocker National Stack:</strong> Instantly issues verified host or seeker credentials with objective 920+ trust rating.
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                  Full Name (as registered on Aadhaar)
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={name || 'Sunita Deshmukh'}
+                  onChange={(e) => setName(e.target.value)}
+                  placeholder="Full Legal Name"
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                    Aadhaar Number (12 digits)
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={aadhaarNumber}
+                    onChange={(e) => setAadhaarNumber(e.target.value)}
+                    placeholder="999988884821"
+                    maxLength={14}
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                    DigiLocker OTP
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={otp}
+                    onChange={(e) => setOtp(e.target.value)}
+                    placeholder="123456"
+                    maxLength={6}
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                  Authenticate As
+                </label>
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setRole('seeker')}
+                    className={`p-2.5 rounded-xl border text-center text-xs font-bold transition ${
+                      role === 'seeker'
+                        ? 'bg-emerald-50 dark:bg-emerald-950/40 border-emerald-500 text-emerald-700 dark:text-emerald-300'
+                        : 'border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400'
+                    }`}
+                  >
+                    Verified Seeker
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setRole('host')}
+                    className={`p-2.5 rounded-xl border text-center text-xs font-bold transition ${
+                      role === 'host'
+                        ? 'bg-emerald-50 dark:bg-emerald-950/40 border-emerald-500 text-emerald-700 dark:text-emerald-300'
+                        : 'border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400'
+                    }`}
+                  >
+                    Verified Host
+                  </button>
+                </div>
+              </div>
+
+              <button
+                type="submit"
+                disabled={loading}
+                className="w-full py-3 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-sm transition shadow-lg shadow-emerald-600/25 disabled:opacity-50"
+              >
+                {loading ? 'Verifying OTP...' : 'Authenticate via DigiLocker OTP'}
+              </button>
+            </form>
+          )}
+
+          {/* Toggle between Login and Sign Up */}
+          <div className="pt-3 border-t border-slate-200 dark:border-slate-800 text-center">
+            {mode === 'login' ? (
+              <p className="text-xs text-slate-600 dark:text-slate-400">
+                Don't have an account?{' '}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMode('register');
+                    setError(null);
+                    setSuccessMsg(null);
+                  }}
+                  className="font-bold text-indigo-600 dark:text-indigo-400 hover:underline ml-1"
+                >
+                  Sign up
+                </button>
+              </p>
+            ) : (
+              <p className="text-xs text-slate-600 dark:text-slate-400">
+                Already have an account?{' '}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMode('login');
+                    setError(null);
+                    setSuccessMsg(null);
+                  }}
+                  className="font-bold text-indigo-600 dark:text-indigo-400 hover:underline ml-1"
+                >
+                  Log in
+                </button>
+              </p>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
   );
 };

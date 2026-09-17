@@ -1,25 +1,33 @@
 import React, { useState } from 'react';
-import { View, Text, Pressable, Image } from 'react-native';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { User } from '../../types';
 import { logoutUser, demoSwitch } from '../../services/auth';
+import { ThemeToggle } from './ThemeToggle';
 
 interface HeaderProps {
   currentUser: User | null;
   onOpenAuthModal: () => void;
+  onOpenHostAuthModal?: () => void;
   onOpenDemoModal: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
   currentUser,
   onOpenAuthModal,
+  onOpenHostAuthModal,
   onOpenDemoModal,
 }) => {
   const navigate = useNavigate();
   const location = useLocation();
   const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
 
-  const isHostContext = currentUser?.role === 'host' || currentUser?.role === 'owner';
+  const isHostPortal =
+    location.pathname.startsWith('/host') ||
+    location.pathname === '/list-space' ||
+    location.pathname === '/calculator' ||
+    location.pathname === '/verify';
+
+  const isVerifiedHost = Boolean(currentUser?.is_host && (currentUser?.is_host_verified ?? true));
 
   const handleLogout = async () => {
     try {
@@ -30,135 +38,116 @@ export const Header: React.FC<HeaderProps> = ({
     }
   };
 
-  const handleRoleToggle = async () => {
-    try {
-      const nextRole = isHostContext ? 'seeker' : 'host';
-      await demoSwitch(nextRole);
-      window.location.reload();
-    } catch (err) {
-      console.error('Role switch failed:', err);
+  const openHostAuth = () => {
+    if (onOpenHostAuthModal) {
+      onOpenHostAuthModal();
+    } else {
+      onOpenAuthModal();
     }
   };
 
   return (
-    <header className="sticky top-0 z-40 backdrop-blur-md bg-slate-950/90 border-b border-slate-800/80">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-4">
-        {/* Brand Logo */}
-        <button
-          type="button"
-          onClick={() => navigate('/')}
-          className="flex items-center gap-2.5 group shrink-0 focus:outline-none"
-        >
-          <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-brand-600 via-violet-600 to-indigo-400 flex items-center justify-center shadow-lg shadow-indigo-500/25 group-hover:scale-105 transition duration-200">
-            <i className="fa-solid fa-infinity text-white text-lg" />
+    <header className="sticky top-0 z-40 backdrop-blur-md bg-slate-950/95 border-b border-slate-800/80">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-3">
+        {/* Brand Logo & Active Portal Indicator */}
+        <div className="flex items-center gap-2.5">
+          <button
+            type="button"
+            onClick={() => navigate(isHostPortal ? '/host/dashboard' : '/')}
+            className="flex items-center gap-2.5 group shrink-0 focus:outline-none"
+          >
+            <div
+              className={`w-9 h-9 rounded-xl flex items-center justify-center shadow-lg transition duration-200 group-hover:scale-105 ${
+                isHostPortal
+                  ? 'bg-gradient-to-tr from-amber-600 via-orange-600 to-amber-400 shadow-amber-500/25'
+                  : 'bg-gradient-to-tr from-indigo-600 via-violet-600 to-indigo-400 shadow-indigo-500/25'
+              }`}
+            >
+              <i className="fa-solid fa-infinity text-white text-lg" />
+            </div>
+            <div className="text-left">
+              <span className="text-xl font-bold tracking-tight text-white flex items-center gap-1.5">
+                Space
+                <span
+                  className={`text-transparent bg-clip-text ${
+                    isHostPortal
+                      ? 'bg-gradient-to-r from-amber-400 to-orange-400'
+                      : 'bg-gradient-to-r from-indigo-400 to-violet-400'
+                  }`}
+                >
+                  Loop
+                </span>
+              </span>
+            </div>
+          </button>
+
+          {/* Portal Identity Pill */}
+          <div className="hidden sm:flex items-center">
+            {isHostPortal ? (
+              <span className="text-[10px] uppercase font-extrabold tracking-wider px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-400 border border-amber-500/30 flex items-center gap-1">
+                🏡 Host Portal
+              </span>
+            ) : (
+              <span className="text-[10px] uppercase font-extrabold tracking-wider px-2 py-0.5 rounded-full bg-indigo-500/10 text-indigo-400 border border-indigo-500/30 flex items-center gap-1">
+                🎓 Seeker Portal
+              </span>
+            )}
           </div>
-          <div>
-            <span className="text-xl font-bold tracking-tight text-white flex items-center gap-1.5">
-              Space<span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-violet-400">Loop</span>
-              <span className="text-[10px] uppercase font-semibold tracking-wider px-1.5 py-0.5 rounded bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">AI</span>
-            </span>
-          </div>
-        </button>
+        </div>
 
         {/* Center Role-Aware Nav Links (Desktop) */}
         <nav className="hidden lg:flex items-center gap-1 text-xs font-semibold">
-          {currentUser ? (
-            isHostContext ? (
-              <>
-                <button
-                  onClick={() => navigate('/dashboard')}
-                  className={`px-3 py-1.5 rounded-lg transition flex items-center gap-1.5 ${
-                    location.pathname === '/dashboard'
-                      ? 'bg-indigo-600/20 text-indigo-300 border border-indigo-500/30'
-                      : 'text-slate-300 hover:text-white hover:bg-slate-800/60'
-                  }`}
-                >
-                  <i className="fa-solid fa-chart-pie text-indigo-400" />
-                  <span>Dashboard</span>
-                </button>
-                <button
-                  onClick={() => navigate('/dashboard')}
-                  className="px-3 py-1.5 rounded-lg transition flex items-center gap-1.5 text-slate-300 hover:text-white hover:bg-slate-800/60"
-                >
-                  <i className="fa-solid fa-warehouse text-slate-400" />
-                  <span>My Spaces</span>
-                </button>
-                <button
-                  onClick={() => navigate('/dashboard')}
-                  className="px-3 py-1.5 rounded-lg transition flex items-center gap-1.5 text-slate-300 hover:text-white hover:bg-slate-800/60"
-                >
-                  <i className="fa-solid fa-calendar-check text-slate-400" />
-                  <span>Bookings</span>
-                </button>
-                <button
-                  onClick={() => navigate('/calculator')}
-                  className={`px-3 py-1.5 rounded-lg transition flex items-center gap-1.5 ${
-                    location.pathname === '/calculator'
-                      ? 'bg-indigo-600/20 text-indigo-300 border border-indigo-500/30'
-                      : 'text-slate-300 hover:text-white hover:bg-slate-800/60'
-                  }`}
-                >
-                  <i className="fa-solid fa-calculator text-slate-400" />
-                  <span>Earnings</span>
-                </button>
-                <button
-                  onClick={() => navigate('/verify')}
-                  className={`px-3 py-1.5 rounded-lg transition flex items-center gap-1.5 ${
-                    location.pathname === '/verify'
-                      ? 'bg-indigo-600/20 text-indigo-300 border border-indigo-500/30'
-                      : 'text-slate-300 hover:text-white hover:bg-slate-800/60'
-                  }`}
-                >
-                  <i className="fa-solid fa-shield-halved text-emerald-400" />
-                  <span>Verification</span>
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" title="Host Verified" />
-                </button>
-              </>
-            ) : (
-              <>
-                <button
-                  onClick={() => navigate('/')}
-                  className={`px-3 py-1.5 rounded-lg transition flex items-center gap-1.5 ${
-                    location.pathname === '/'
-                      ? 'bg-indigo-600/20 text-indigo-300 border border-indigo-500/30'
-                      : 'text-slate-300 hover:text-white hover:bg-slate-800/60'
-                  }`}
-                >
-                  <i className="fa-solid fa-house text-indigo-400" />
-                  <span>Home</span>
-                </button>
-                <button
-                  onClick={() => navigate('/explore')}
-                  className={`px-3 py-1.5 rounded-lg transition flex items-center gap-1.5 ${
-                    location.pathname === '/explore'
-                      ? 'bg-indigo-600/20 text-indigo-300 border border-indigo-500/30'
-                      : 'text-slate-300 hover:text-white hover:bg-slate-800/60'
-                  }`}
-                >
-                  <i className="fa-solid fa-compass text-slate-400" />
-                  <span>Explore Spaces</span>
-                </button>
-                <button
-                  onClick={() => navigate('/dashboard')}
-                  className={`px-3 py-1.5 rounded-lg transition flex items-center gap-1.5 ${
-                    location.pathname === '/dashboard'
-                      ? 'bg-indigo-600/20 text-indigo-300 border border-indigo-500/30'
-                      : 'text-slate-300 hover:text-white hover:bg-slate-800/60'
-                  }`}
-                >
-                  <i className="fa-solid fa-calendar-check text-slate-400" />
-                  <span>My Bookings</span>
-                </button>
-                <button
-                  onClick={() => navigate('/how-it-works')}
-                  className="px-3 py-1.5 rounded-lg transition flex items-center gap-1.5 text-slate-300 hover:text-white hover:bg-slate-800/60"
-                >
-                  <i className="fa-solid fa-circle-question text-slate-400" />
-                  <span>How It Works</span>
-                </button>
-              </>
-            )
+          {isHostPortal ? (
+            /* HOST PORTAL NAVIGATION */
+            <>
+              <button
+                onClick={() => navigate('/host/dashboard')}
+                className={`px-3 py-1.5 rounded-lg transition flex items-center gap-1.5 ${
+                  location.pathname === '/host/dashboard' || location.pathname === '/host'
+                    ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
+                    : 'text-slate-300 hover:text-white hover:bg-slate-800/60'
+                }`}
+              >
+                <i className="fa-solid fa-chart-pie text-amber-400" />
+                <span>Host Dashboard</span>
+              </button>
+              <button
+                onClick={() => navigate('/list-space')}
+                className={`px-3 py-1.5 rounded-lg transition flex items-center gap-1.5 ${
+                  location.pathname === '/list-space'
+                    ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
+                    : 'text-slate-300 hover:text-white hover:bg-slate-800/60'
+                }`}
+              >
+                <i className="fa-solid fa-plus-circle text-amber-400" />
+                <span>List Space</span>
+              </button>
+              <button
+                onClick={() => navigate('/calculator')}
+                className={`px-3 py-1.5 rounded-lg transition flex items-center gap-1.5 ${
+                  location.pathname === '/calculator'
+                    ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
+                    : 'text-slate-300 hover:text-white hover:bg-slate-800/60'
+                }`}
+              >
+                <i className="fa-solid fa-calculator text-slate-400" />
+                <span>Earnings Calculator</span>
+              </button>
+              <button
+                onClick={() => navigate('/verify')}
+                className={`px-3 py-1.5 rounded-lg transition flex items-center gap-1.5 ${
+                  location.pathname === '/verify'
+                    ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
+                    : 'text-slate-300 hover:text-white hover:bg-slate-800/60'
+                }`}
+              >
+                <i className="fa-solid fa-shield-halved text-emerald-400" />
+                <span>Discom & KYC</span>
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+              </button>
+            </>
           ) : (
+            /* SEEKER PORTAL NAVIGATION */
             <>
               <button
                 onClick={() => navigate('/explore')}
@@ -169,7 +158,29 @@ export const Header: React.FC<HeaderProps> = ({
                 }`}
               >
                 <i className="fa-solid fa-compass text-indigo-400" />
-                <span>Explore</span>
+                <span>Explore Spaces</span>
+              </button>
+              <button
+                onClick={() => navigate('/boutique')}
+                className={`px-3 py-1.5 rounded-lg transition flex items-center gap-1.5 ${
+                  location.pathname === '/boutique'
+                    ? 'bg-indigo-600/20 text-indigo-300 border border-indigo-500/30'
+                    : 'text-slate-300 hover:text-white hover:bg-slate-800/60'
+                }`}
+              >
+                <i className="fa-solid fa-wand-magic-sparkles text-amber-400" />
+                <span>Boutique</span>
+              </button>
+              <button
+                onClick={() => navigate('/dashboard')}
+                className={`px-3 py-1.5 rounded-lg transition flex items-center gap-1.5 ${
+                  location.pathname === '/dashboard'
+                    ? 'bg-indigo-600/20 text-indigo-300 border border-indigo-500/30'
+                    : 'text-slate-300 hover:text-white hover:bg-slate-800/60'
+                }`}
+              >
+                <i className="fa-solid fa-calendar-check text-slate-400" />
+                <span>My Bookings</span>
               </button>
               <button
                 onClick={() => navigate('/how-it-works')}
@@ -182,96 +193,128 @@ export const Header: React.FC<HeaderProps> = ({
                 <i className="fa-solid fa-circle-question text-slate-400" />
                 <span>How It Works</span>
               </button>
-              <button
-                onClick={() => navigate('/#for-seekers')}
-                className="px-3 py-1.5 rounded-lg transition flex items-center gap-1.5 text-slate-300 hover:text-white hover:bg-slate-800/60"
-              >
-                <i className="fa-solid fa-graduation-cap text-slate-400" />
-                <span>For Seekers</span>
-              </button>
-              <button
-                onClick={() => navigate('/#for-hosts')}
-                className="px-3 py-1.5 rounded-lg transition flex items-center gap-1.5 text-slate-300 hover:text-white hover:bg-slate-800/60"
-              >
-                <i className="fa-solid fa-house-chimney-user text-slate-400" />
-                <span>For Hosts</span>
-              </button>
-              <button
-                onClick={() => navigate('/#trust-safety')}
-                className="px-3 py-1.5 rounded-lg transition flex items-center gap-1.5 text-slate-300 hover:text-white hover:bg-slate-800/60"
-              >
-                <i className="fa-solid fa-shield-halved text-emerald-400" />
-                <span>Trust & Safety</span>
-              </button>
             </>
           )}
         </nav>
 
-        {/* Right Action Controls */}
+        {/* Right Controls & Portal Switcher */}
         <div className="flex items-center gap-2 sm:gap-3 shrink-0">
-          {/* Live System Connectivity Status Indicator */}
+          {/* Portal Switcher Button */}
+          {isHostPortal ? (
+            <button
+              type="button"
+              onClick={() => navigate('/explore')}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-indigo-600/10 hover:bg-indigo-600/20 text-indigo-300 border border-indigo-500/30 text-xs font-bold transition"
+              title="Switch to Seeker Portal"
+            >
+              <span>🎓 Switch to Seeker</span>
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={() => navigate('/host/dashboard')}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border border-amber-500/30 text-xs font-bold transition"
+              title="Switch to Host Portal"
+            >
+              <span>🏡 Switch to Host</span>
+            </button>
+          )}
+
+          {/* Theme Toggle */}
+          <ThemeToggle />
+
+          {/* Evaluation Console Status */}
           <button
             type="button"
             onClick={onOpenDemoModal}
             className="hidden sm:inline-block cursor-pointer transition hover:opacity-80 focus:outline-none"
-            title="System Status: SpaceLoop AI Engine Online. Click for Evaluation Console."
+            title="System Status: SpaceLoop AI Engine Online"
           >
             <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 flex items-center gap-1.5">
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" /> ONLINE
             </span>
           </button>
 
-          {currentUser ? (
-            <>
-              {/* Context Switch */}
-              <button
-                type="button"
-                onClick={handleRoleToggle}
-                className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-xs font-semibold border border-slate-700/80 transition"
-              >
-                <i className="fa-solid fa-repeat text-[10px] text-indigo-400" />
-                <span className={isHostContext ? 'text-indigo-300' : 'text-amber-300'}>
-                  {isHostContext ? 'Seeker View' : 'Host View'}
-                </span>
-              </button>
-
-              {/* Add / List Space CTA */}
-              <button
-                type="button"
-                onClick={() => navigate('/list-space')}
-                className="hidden sm:inline-flex items-center gap-1.5 bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white font-semibold text-xs px-3.5 py-1.5 rounded-lg shadow-md shadow-indigo-600/20 transition"
-              >
-                <i className="fa-solid fa-plus text-[10px]" /> Add Space
-              </button>
-
-              {/* Logout */}
-              <button
-                type="button"
-                onClick={handleLogout}
-                className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-900 hover:bg-rose-950/40 text-slate-400 hover:text-rose-400 border border-slate-800 hover:border-rose-800/40 text-xs font-semibold transition"
-                title="Sign Out"
-              >
-                <i className="fa-solid fa-arrow-right-from-bracket text-[11px]" />
-                <span>Logout</span>
-              </button>
-            </>
+          {/* Authenticated Controls vs Sign In Buttons */}
+          {isHostPortal ? (
+            /* HOST PORTAL AUTH CONTROLS */
+            isVerifiedHost ? (
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => navigate('/list-space')}
+                  className="hidden sm:inline-flex items-center gap-1.5 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-bold text-xs px-3.5 py-1.5 rounded-xl shadow-md shadow-amber-500/20 transition"
+                >
+                  <i className="fa-solid fa-plus text-[10px]" /> Add Space
+                </button>
+                <div className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-slate-900 border border-slate-800 text-xs font-bold text-slate-200">
+                  <span>🏡 {currentUser?.name?.split(' ')[0] || 'Host'}</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={handleLogout}
+                  className="px-2.5 py-1.5 rounded-xl bg-slate-900 hover:bg-rose-950/40 text-slate-400 hover:text-rose-400 border border-slate-800 text-xs font-semibold transition"
+                  title="Sign Out"
+                >
+                  <i className="fa-solid fa-arrow-right-from-bracket" />
+                </button>
+              </div>
+            ) : (
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={openHostAuth}
+                  className="text-xs font-bold text-slate-300 hover:text-white px-3 py-1.5 rounded-lg hover:bg-slate-900 transition"
+                >
+                  Host Sign In
+                </button>
+                <button
+                  type="button"
+                  onClick={openHostAuth}
+                  className="bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-bold text-xs px-3.5 py-2 rounded-xl shadow-md shadow-amber-500/25 transition"
+                >
+                  Register Property
+                </button>
+              </div>
+            )
           ) : (
-            <>
-              <button
-                type="button"
-                onClick={onOpenAuthModal}
-                className="text-xs font-bold text-slate-300 hover:text-white px-3 py-1.5 rounded-lg hover:bg-slate-900 transition"
-              >
-                Sign In
-              </button>
-              <button
-                type="button"
-                onClick={onOpenAuthModal}
-                className="bg-gradient-to-r from-indigo-600 via-violet-600 to-indigo-700 hover:from-indigo-500 hover:to-violet-500 text-white font-bold text-xs px-4 py-2 rounded-xl shadow-md shadow-indigo-600/30 transition"
-              >
-                Get Started
-              </button>
-            </>
+            /* SEEKER PORTAL AUTH CONTROLS */
+            currentUser ? (
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => navigate('/dashboard')}
+                  className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-slate-900 border border-slate-800 text-xs font-bold text-slate-200"
+                >
+                  <span>🎓 {currentUser.name?.split(' ')[0] || 'Seeker'}</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={handleLogout}
+                  className="px-2.5 py-1.5 rounded-xl bg-slate-900 hover:bg-rose-950/40 text-slate-400 hover:text-rose-400 border border-slate-800 text-xs font-semibold transition"
+                  title="Sign Out"
+                >
+                  <i className="fa-solid fa-arrow-right-from-bracket" />
+                </button>
+              </div>
+            ) : (
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={onOpenAuthModal}
+                  className="text-xs font-bold text-slate-300 hover:text-white px-3 py-1.5 rounded-lg hover:bg-slate-900 transition"
+                >
+                  Seeker Sign In
+                </button>
+                <button
+                  type="button"
+                  onClick={onOpenAuthModal}
+                  className="bg-gradient-to-r from-indigo-600 via-violet-600 to-indigo-700 hover:from-indigo-500 hover:to-violet-500 text-white font-bold text-xs px-3.5 py-2 rounded-xl shadow-md shadow-indigo-600/30 transition"
+                >
+                  Student SSO
+                </button>
+              </div>
+            )
           )}
 
           {/* Mobile Menu Toggle Button */}
@@ -289,73 +332,146 @@ export const Header: React.FC<HeaderProps> = ({
       {/* Mobile Drawer Menu */}
       {mobileDrawerOpen && (
         <div className="lg:hidden border-t border-slate-800/80 bg-slate-950/95 backdrop-blur-xl px-4 py-4 space-y-3 shadow-2xl">
-          {currentUser ? (
+          {currentUser && (
             <div className="flex items-center justify-between pb-3 border-b border-slate-800">
               <div className="flex items-center gap-2.5">
-                <img
-                  src={
-                    currentUser.avatar_url ||
-                    'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=100&q=80'
-                  }
-                  alt={currentUser.name}
-                  className="w-8 h-8 rounded-lg object-cover"
-                />
                 <div>
                   <div className="text-xs font-bold text-white">{currentUser.name}</div>
-                  <div className="text-[10px] text-indigo-400 uppercase font-semibold">
-                    {currentUser.role} mode
+                  <div className="text-[10px] text-slate-400">
+                    {currentUser.email} • {currentUser.role}
                   </div>
                 </div>
               </div>
               <button
                 type="button"
-                onClick={handleRoleToggle}
-                className="text-[11px] font-semibold text-indigo-300 bg-indigo-950/60 border border-indigo-500/30 px-2.5 py-1 rounded-lg"
+                onClick={handleLogout}
+                className="text-xs text-rose-400 font-semibold"
               >
-                Switch to {isHostContext ? 'Seeker' : 'Host'}
+                Sign Out
               </button>
             </div>
-          ) : null}
+          )}
 
+          {/* Mobile Portal Navigation Links */}
           <div className="grid grid-cols-2 gap-2 text-xs font-medium">
-            <button
-              onClick={() => {
-                navigate('/');
-                setMobileDrawerOpen(false);
-              }}
-              className="p-2 rounded-lg bg-slate-900/60 hover:bg-slate-800 text-slate-200 flex items-center gap-2 text-left"
-            >
-              <i className="fa-solid fa-house text-indigo-400" /> Home
-            </button>
-            <button
-              onClick={() => {
-                navigate('/explore');
-                setMobileDrawerOpen(false);
-              }}
-              className="p-2 rounded-lg bg-slate-900/60 hover:bg-slate-800 text-slate-200 flex items-center gap-2 text-left"
-            >
-              <i className="fa-solid fa-compass text-indigo-400" /> Explore
-            </button>
-            <button
-              onClick={() => {
-                navigate('/how-it-works');
-                setMobileDrawerOpen(false);
-              }}
-              className="p-2 rounded-lg bg-slate-900/60 hover:bg-slate-800 text-slate-200 flex items-center gap-2 text-left"
-            >
-              <i className="fa-solid fa-circle-question text-slate-400" /> How It Works
-            </button>
-            <button
-              onClick={() => {
-                navigate('/list-space');
-                setMobileDrawerOpen(false);
-              }}
-              className="p-2 rounded-lg bg-slate-900/60 hover:bg-slate-800 text-slate-200 flex items-center gap-2 text-left"
-            >
-              <i className="fa-solid fa-plus text-indigo-400" /> List Space
-            </button>
+            {isHostPortal ? (
+              <>
+                <button
+                  onClick={() => {
+                    navigate('/host/dashboard');
+                    setMobileDrawerOpen(false);
+                  }}
+                  className="p-2 rounded-lg bg-slate-900/60 hover:bg-slate-800 text-slate-200 flex items-center gap-2 text-left"
+                >
+                  <i className="fa-solid fa-chart-pie text-amber-400" /> Host Dashboard
+                </button>
+                <button
+                  onClick={() => {
+                    navigate('/list-space');
+                    setMobileDrawerOpen(false);
+                  }}
+                  className="p-2 rounded-lg bg-slate-900/60 hover:bg-slate-800 text-slate-200 flex items-center gap-2 text-left"
+                >
+                  <i className="fa-solid fa-plus text-amber-400" /> List Space
+                </button>
+                <button
+                  onClick={() => {
+                    navigate('/calculator');
+                    setMobileDrawerOpen(false);
+                  }}
+                  className="p-2 rounded-lg bg-slate-900/60 hover:bg-slate-800 text-slate-200 flex items-center gap-2 text-left"
+                >
+                  <i className="fa-solid fa-calculator text-slate-400" /> Calculator
+                </button>
+                <button
+                  onClick={() => {
+                    navigate('/verify');
+                    setMobileDrawerOpen(false);
+                  }}
+                  className="p-2 rounded-lg bg-slate-900/60 hover:bg-slate-800 text-slate-200 flex items-center gap-2 text-left"
+                >
+                  <i className="fa-solid fa-shield-halved text-emerald-400" /> KYC Verify
+                </button>
+              </>
+            ) : (
+              <>
+                <button
+                  onClick={() => {
+                    navigate('/explore');
+                    setMobileDrawerOpen(false);
+                  }}
+                  className="p-2 rounded-lg bg-slate-900/60 hover:bg-slate-800 text-slate-200 flex items-center gap-2 text-left"
+                >
+                  <i className="fa-solid fa-compass text-indigo-400" /> Explore
+                </button>
+                <button
+                  onClick={() => {
+                    navigate('/boutique');
+                    setMobileDrawerOpen(false);
+                  }}
+                  className="p-2 rounded-lg bg-slate-900/60 hover:bg-slate-800 text-slate-200 flex items-center gap-2 text-left"
+                >
+                  <i className="fa-solid fa-wand-magic-sparkles text-amber-400" /> Boutique
+                </button>
+                <button
+                  onClick={() => {
+                    navigate('/dashboard');
+                    setMobileDrawerOpen(false);
+                  }}
+                  className="p-2 rounded-lg bg-slate-900/60 hover:bg-slate-800 text-slate-200 flex items-center gap-2 text-left"
+                >
+                  <i className="fa-solid fa-calendar-check text-slate-400" /> My Bookings
+                </button>
+                <button
+                  onClick={() => {
+                    navigate('/how-it-works');
+                    setMobileDrawerOpen(false);
+                  }}
+                  className="p-2 rounded-lg bg-slate-900/60 hover:bg-slate-800 text-slate-200 flex items-center gap-2 text-left"
+                >
+                  <i className="fa-solid fa-circle-question text-slate-400" /> How It Works
+                </button>
+              </>
+            )}
           </div>
 
+          {/* Switch Portal Button in Mobile */}
+          <div className="pt-2 border-t border-slate-800">
+            {isHostPortal ? (
+              <button
+                type="button"
+                onClick={() => {
+                  navigate('/explore');
+                  setMobileDrawerOpen(false);
+                }}
+                className="w-full py-2.5 rounded-xl bg-indigo-600/20 text-indigo-300 border border-indigo-500/30 text-xs font-bold text-center"
+              >
+                🎓 Switch to Seeker Portal
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={() => {
+                  navigate('/host/dashboard');
+                  setMobileDrawerOpen(false);
+                }}
+                className="w-full py-2.5 rounded-xl bg-amber-500/20 text-amber-300 border border-amber-500/30 text-xs font-bold text-center"
+              >
+                🏡 Switch to Host Portal
+              </button>
+            )}
+          </div>
+
+          {/* Mobile Theme Switcher */}
+          <div className="pt-2 border-t border-slate-800 flex items-center justify-between">
+            <span className="text-xs font-semibold text-slate-300 flex items-center gap-1.5">
+              <i className="fa-solid fa-circle-half-stroke text-indigo-400" />
+              <span>Theme</span>
+            </span>
+            <ThemeToggle variant="pill" />
+          </div>
+
+          {/* Evaluation Console */}
           <div className="pt-2 border-t border-slate-800 flex items-center justify-between">
             <button
               type="button"
@@ -368,15 +484,6 @@ export const Header: React.FC<HeaderProps> = ({
               <i className="fa-solid fa-sliders text-indigo-400" />
               <span>Judge / Demo Console</span>
             </button>
-            {currentUser && (
-              <button
-                type="button"
-                onClick={handleLogout}
-                className="text-xs text-rose-400 font-semibold"
-              >
-                Sign Out
-              </button>
-            )}
           </div>
         </div>
       )}

@@ -105,8 +105,8 @@ class SimpleRateLimiter:
             return True
 
 
-# Global rate limiter instance for AI endpoints (25 requests / min per IP)
-ai_rate_limiter = SimpleRateLimiter(max_requests=25, window_seconds=60)
+# Global rate limiter instance for AI endpoints (200 requests / min per IP)
+ai_rate_limiter = SimpleRateLimiter(max_requests=200, window_seconds=60)
 
 
 def rate_limit_ai(func):

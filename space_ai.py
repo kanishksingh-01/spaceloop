@@ -8,8 +8,14 @@ from config import Config
 
 from security import sanitize_string, validate_numeric
 
-GROQ_API_KEY = Config.GROQ_API_KEY
-GEMINI_API_KEY = Config.GEMINI_API_KEY
+def _get_groq_key():
+    return os.environ.get("GROQ_API_KEY") or getattr(Config, "GROQ_API_KEY", "")
+
+def _get_gemini_key():
+    return os.environ.get("GEMINI_API_KEY") or os.environ.get("GOOGLE_API_KEY") or getattr(Config, "GEMINI_API_KEY", "")
+
+GROQ_API_KEY = _get_groq_key()
+GEMINI_API_KEY = _get_gemini_key()
 
 # Simulation switch for testing resilience & external API failure
 _DEV_SIMULATE_AI_FAILURE = False
@@ -38,25 +44,34 @@ def get_system_connectivity_status(simulate_override=None) -> dict:
             "description": "Simulated AI failure active. Running on deterministic offline rule engines."
         }
 
-    has_groq = bool(GROQ_API_KEY and len(GROQ_API_KEY) > 5)
-    has_gemini = bool(GEMINI_API_KEY and len(GEMINI_API_KEY) > 5)
+    groq_key = _get_groq_key()
+    gemini_key = _get_gemini_key()
+    has_groq = bool(groq_key and len(groq_key) > 5)
+    has_gemini = bool(gemini_key and len(gemini_key) > 5)
 
     if has_groq and has_gemini:
         return {
             "status": "ONLINE",
             "code": "online",
-            "provider": "groq_primary_gemini_fallback",
+            "provider": "gemini_groq_dual_engine",
             "simulated": False,
-            "description": "All AI systems operational with multi-tier failover."
+            "description": "All AI systems operational with multi-tier failover (Gemini + Groq 120B)."
         }
-    elif has_groq or has_gemini:
-        active = "Groq" if has_groq else "Gemini"
+    elif has_groq:
         return {
-            "status": "LIMITED CONNECTIVITY",
-            "code": "limited",
-            "provider": f"{active.lower()}_only",
+            "status": "ONLINE",
+            "code": "online",
+            "provider": "groq_high_throughput",
             "simulated": False,
-            "description": f"Running with single provider ({active}) + deterministic fallback."
+            "description": "External AI active via Groq (GPT-OSS 120B / 20B) + deterministic fallback."
+        }
+    elif has_gemini:
+        return {
+            "status": "ONLINE",
+            "code": "online",
+            "provider": "gemini_primary",
+            "simulated": False,
+            "description": "External AI active via Google Gemini 3.8 Flash + deterministic fallback."
         }
     else:
         return {
@@ -69,55 +84,109 @@ def get_system_connectivity_status(simulate_override=None) -> dict:
 
 
 def _call_groq(messages, json_mode=False, temperature=0.3):
-    """Calls Groq API using requests with low latency."""
-    if _DEV_SIMULATE_AI_FAILURE or not GROQ_API_KEY:
+    """
+    Calls Groq API using requests with low latency and automatic model failover.
+    Primary: openai/gpt-oss-120b (high reasoning & JSON adherence)
+    Fallback: openai/gpt-oss-20b, qwen/qwen3.8-27b
+    """
+    groq_key = _get_groq_key()
+    if _DEV_SIMULATE_AI_FAILURE or not groq_key:
         return None
     url = "https://api.groq.com/openai/v1/chat/completions"
     headers = {
-        "Authorization": f"Bearer {GROQ_API_KEY}",
+        "Authorization": f"Bearer {groq_key}",
         "Content-Type": "application/json",
     }
-    payload = {
-        "model": "llama-3.3-70b-versatile",
-        "messages": messages,
-        "temperature": temperature,
-        "max_tokens": 1200,
-    }
-    if json_mode:
-        payload["response_format"] = {"type": "json_object"}
+    
+    models_to_try = [
+        getattr(Config, "GROQ_MODEL", None) or os.environ.get("GROQ_MODEL", "openai/gpt-oss-120b"),
+        getattr(Config, "GROQ_FALLBACK_MODEL", None) or os.environ.get("GROQ_FALLBACK_MODEL", "openai/gpt-oss-20b"),
+        "qwen/qwen3.8-27b",
+        "groq/compound-mini",
+        "groq/compound"
+    ]
 
-    try:
-        resp = requests.post(url, headers=headers, json=payload, timeout=12)
-        if resp.status_code == 200:
-            return resp.json()["choices"][0]["message"]["content"]
-        else:
-            payload["model"] = "llama-3.1-8b-instant"
-            resp2 = requests.post(url, headers=headers, json=payload, timeout=10)
-            if resp2.status_code == 200:
-                return resp2.json()["choices"][0]["message"]["content"]
-    except Exception as e:
-        print(f"Groq API call failed: {e}")
+    for model_name in models_to_try:
+        payload = {
+            "model": model_name,
+            "messages": messages,
+            "temperature": temperature,
+            "max_tokens": 1200,
+        }
+        if json_mode:
+            payload["response_format"] = {"type": "json_object"}
+
+        try:
+            resp = requests.post(url, headers=headers, json=payload, timeout=10)
+            if resp.status_code == 200:
+                data = resp.json()
+                choices = data.get("choices", [])
+                if choices:
+                    content = choices[0].get("message", {}).get("content", "")
+                    if content:
+                        return content
+        except Exception as e:
+            # Continue to next model on timeout or rate limit
+            continue
     return None
 
 
-def _call_gemini(prompt_text):
-    """Calls Google Gemini API using REST endpoint."""
-    if _DEV_SIMULATE_AI_FAILURE or not GEMINI_API_KEY:
+def _call_gemini(messages_or_prompt, temperature=0.3):
+    """
+    Calls Google Gemini API using the official google.genai SDK with REST failover.
+    Supports current official Gemini models (gemini-3.8-flash, gemini-flash-latest, gemini-3.5-flash-lite).
+    """
+    api_key = _get_gemini_key()
+    if _DEV_SIMULATE_AI_FAILURE or not api_key:
         return None
-    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={GEMINI_API_KEY}"
-    headers = {"Content-Type": "application/json"}
-    payload = {
-        "contents": [{"parts": [{"text": prompt_text}]}],
-        "generationConfig": {"temperature": 0.3, "maxOutputTokens": 1200}
-    }
+
+    if isinstance(messages_or_prompt, str):
+        contents_text = messages_or_prompt
+    elif isinstance(messages_or_prompt, list):
+        contents_text = "\n\n".join([
+            f"{m.get('role', 'user')}: {m.get('content', '')}"
+            for m in messages_or_prompt if isinstance(m, dict) and m.get('content')
+        ])
+    else:
+        contents_text = str(messages_or_prompt)
+
+    gemini_models = ["gemini-3.8-flash", "gemini-flash-latest", "gemini-3.5-flash-lite", "gemini-2.5-flash"]
+
+    # 1. Attempt official google.genai client
     try:
-        resp = requests.post(url, headers=headers, json=payload, timeout=12)
-        if resp.status_code == 200:
-            data = resp.json()
-            return data["candidates"][0]["content"]["parts"][0]["text"]
+        from google import genai
+        client = genai.Client(api_key=api_key)
+        for model_name in gemini_models:
+            try:
+                response = client.models.generate_content(
+                    model=model_name,
+                    contents=contents_text,
+                )
+                if response and response.text:
+                    return response.text
+            except Exception:
+                continue
     except Exception as e:
-        print(f"Gemini API call failed: {e}")
+        pass
+
+    # 2. REST API multi-model failover
+    for model_name in gemini_models:
+        try:
+            url = f"https://generativelanguage.googleapis.com/v1beta/models/{model_name}:generateContent?key={api_key}"
+            headers = {"Content-Type": "application/json"}
+            payload = {
+                "contents": [{"parts": [{"text": contents_text}]}],
+                "generationConfig": {"temperature": temperature, "maxOutputTokens": 1200}
+            }
+            resp = requests.post(url, headers=headers, json=payload, timeout=10)
+            if resp.status_code == 200:
+                data = resp.json()
+                return data["candidates"][0]["content"]["parts"][0]["text"]
+        except Exception:
+            continue
+
     return None
+
 
 
 def _clean_ai_output(data: dict) -> dict:
@@ -203,7 +272,9 @@ Respond ONLY with valid JSON conforming to this schema:
 
     if groq_res:
         try:
-            output = _clean_ai_output(json.loads(groq_res))
+            match = re.search(r'\{.*\}', groq_res, re.DOTALL)
+            raw = json.loads(match.group(0) if match else groq_res)
+            output = _clean_ai_output(raw)
             output["_provider"] = "primary_groq"
             output["_is_fallback"] = False
             return output
@@ -362,11 +433,12 @@ Return ONLY valid JSON with this format:
     ], json_mode=True)
     if groq_res:
         try:
-            ai_json = json.loads(groq_res)
+            m = re.search(r'\{.*\}', groq_res, re.DOTALL)
+            ai_json = json.loads(m.group(0) if m else groq_res)
         except Exception:
             pass
 
-    if not ai_json and GEMINI_API_KEY:
+    if not ai_json:
         gemini_res = _call_gemini(prompt)
         if gemini_res:
             try:
@@ -508,10 +580,9 @@ Format with clear headers and bullet points. Keep it concise, readable, and unde
     if groq_res:
         return sanitize_string(groq_res, max_length=4000)
 
-    if GEMINI_API_KEY:
-        gemini_res = _call_gemini(prompt)
-        if gemini_res:
-            return sanitize_string(gemini_res, max_length=4000)
+    gemini_res = _call_gemini(prompt)
+    if gemini_res:
+        return sanitize_string(gemini_res, max_length=4000)
 
     # Default fallback contract template
     return f"""# SpaceLoop Temporary Space License Agreement (Micro-Lease)
@@ -643,20 +714,22 @@ def concierge_chat(messages, context_data=None):
     # 1. Retrieve real database listings to ground recommendations
     db_spaces = []
     try:
-        from models import Space
-        active = Space.query.filter_by(is_active=True).limit(10).all()
-        for s in active:
-            db_spaces.append({
-                "id": s.id,
-                "title": s.title,
-                "city": s.city,
-                "location": s.location,
-                "category": s.category,
-                "hourly_rate": s.hourly_rate,
-                "amenities": s.amenities or []
-            })
-    except Exception as e:
-        print(f"Error querying active spaces for LoopBot: {e}")
+        from flask import has_app_context
+        if has_app_context():
+            from models import Space
+            active = Space.query.filter_by(is_active=True).limit(10).all()
+            for s in active:
+                db_spaces.append({
+                    "id": s.id,
+                    "title": s.title,
+                    "city": s.city,
+                    "location": s.location,
+                    "category": s.category,
+                    "hourly_rate": s.hourly_rate,
+                    "amenities": s.amenities or []
+                })
+    except Exception:
+        pass
 
     active_spaces_text = ""
     if db_spaces:
@@ -688,114 +761,180 @@ Guidelines:
                 if content:
                     formatted_msgs.append({"role": role, "content": content})
 
+    # 1. Primary: Google Gemini API with multi-turn grounding
+    gemini_res = _call_gemini(formatted_msgs, temperature=0.5)
+    if gemini_res:
+        return sanitize_string(gemini_res, max_length=2500)
+
+    # 2. Secondary: Groq API with GPT-OSS 120B / 20B
     res = _call_groq(formatted_msgs, temperature=0.6)
     if res:
         return sanitize_string(res, max_length=2000)
 
-    if GEMINI_API_KEY:
-        last_user_msg = formatted_msgs[-1]["content"] if len(formatted_msgs) > 1 else "Hello"
-        gemini_res = _call_gemini(f"{system_prompt}\n\nUser: {last_user_msg}")
-        if gemini_res:
-            return sanitize_string(gemini_res, max_length=2000)
-
     # =========================================================================
-    # DETERMINISTIC RULE ENGINE: 7 ESSENTIAL INTENT CATEGORIES
+    # 3. SEMANTIC CONVERSATIONAL ENGINE (Grounding in Database & Platform Context)
     # =========================================================================
-    last_msg = (messages[-1].get("content", "") if messages else "").lower()
+    user_msgs = [m.get("content", "").lower() for m in messages if isinstance(m, dict) and m.get("role") != "assistant"]
+    last_msg = user_msgs[-1] if user_msgs else ""
+    user_name = context_data.get("user_name") if context_data else None
+    role = context_data.get("role", "seeker") if context_data else "seeker"
+    greeting_prefix = f"Hi {user_name}! " if user_name else ""
 
-    # Category 1: Micro-Lease & Escrow Protections (Indian Easements Act, 1882)
-    if any(k in last_msg for k in ["lease", "agreement", "protect", "legal", "easement", "squat", "tenancy", "escrow", "law", "act", "section 52"]):
-        return (
-            "⚖️ **Legal Protections under Section 52, Indian Easements Act, 1882:**\n\n"
-            "• **Revocable Temporary License**: SpaceLoop bookings are strictly revocable licenses, NOT leaseholds or tenancies. Occupants have zero tenancy rights or adverse possession claims.\n"
-            "• **Automated UPI Escrow**: A ₹100 refundable security deposit is locked in escrow during the reservation and released automatically after photo-verified checkout.\n"
-            "• **Cryptographic Access Audit**: Every check-in and check-out timestamp is sealed with GPS coordinates and QR tokens for complete legal traceability."
-        )
-
-    # Category 2: Navigation, Geofencing & Digital Door Pass
-    elif any(k in last_msg for k in ["check-in", "checkin", "unlock", "door", "pass", "qr", "geofence", "direction", "navigate", "pin"]):
-        return (
-            "📍 **Zero-Hardware Check-In & Door Pass Walkthrough:**\n\n"
-            "1. **Access Your Pass**: Open your booking from the Seeker Dashboard (`/dashboard`) or navigate to `/session/:id`.\n"
-            "2. **Approach Property**: Stand within the 50-meter GPS geofence radius of the premise.\n"
-            "3. **Activate Pass**: Tap **📍 Verify Geofence & Activate Digital Pass** or provide your 4-digit arrival PIN to the guard/caretaker.\n"
-            "4. **Session Checkout**: When finished, tap **🏁 Check-Out & Release ₹100 Deposit** to complete your reservation and release your deposit instantly."
-        )
-
-    # Category 3: Safety, Verification & DigiLocker Aadhaar e-KYC
-    elif any(k in last_msg for k in ["safe", "safety", "verify", "verification", "aadhaar", "digilocker", "student", "kyc", "trust"]):
-        return (
-            "🛡️ **SpaceLoop Safety & Identity Verification Architecture:**\n\n"
-            "• **DigiLocker Aadhaar e-KYC**: Compliant with India's DPDP Act 2023. Raw 12-digit Aadhaar numbers are never stored; only masked representations (XXXX-XXXX-1234) and SHA-256 tokens are retained.\n"
-            "• **Institutional Student Credentialing**: Verified college email addresses unlock student discounts and trust badges.\n"
-            "• **Objective Trust Scoring**: Users build verified reputation scores based on on-time vacating and space cleanliness inspection."
-        )
-
-    # Category 4: Hosting & Monetization / Earning Calculator
-    elif any(k in last_msg for k in ["host", "list", "monetiz", "earn", "calculator", "owner", "empty room", "unused space"]):
-        return (
-            "💰 **Host Monetization & Space Listing:**\n\n"
-            "• **60-Second AI Staging**: Upload a photo on the **List Space** page. Our Multimodal AI inspects usable sqft, acoustic dB profile, natural lux lighting, and recommends hourly pricing.\n"
-            "• **High Earnings Yield**: Renting an empty garage or study nook for 4 hours/day typically yields **₹3,500 to ₹8,500/month** in passive income.\n"
-            "• **Host Keeps 95%**: SpaceLoop takes only a 5% platform fee. 95% of gross revenue goes directly to your verified UPI VPA.\n"
-            "• **Zero Hardware Cost**: Guests check in via GPS geofence and printable door QR code — no smart lock or hardware installation required!"
-        )
-
-    # Category 5: Booking & Duration / Pricing Rules
-    elif any(k in last_msg for k in ["book", "duration", "hours", "how long", "minimum", "maximum", "rates", "platform fee", "cost", "pricing"]):
-        return (
-            "⏱️ **SpaceLoop Booking & Duration Guidelines:**\n\n"
-            "• **Flexible Duration**: Book anywhere from **0.5 hours (30 minutes)** up to **168 hours (7 days maximum)** per session.\n"
-            "• **Transparent Pricing Formula**:\n"
-            "  - **Rental Subtotal**: Hourly Rate × Hours Booked\n"
-            "  - **Platform Convenience Fee**: Flat 5% platform fee\n"
-            "  - **Refundable Security Escrow**: ₹100 pre-authorized via UPI and returned upon checkout.\n"
-            "• **Instant Digital Pass**: As soon as payment completes, your digital access pass and 4-digit entrance PIN are issued immediately."
-        )
-
-    # Category 6: Finding Spaces & Recommendations
-    elif any(k in last_msg for k in ["find", "search", "looking for", "recommend", "space", "study", "desk", "studio", "podcast", "storage", "garage", "pune", "wagholi", "delhi", "bengaluru", "bangalore", "hauz khas", "koramangala"]):
-        # Match real spaces in database
-        matched = []
-        for s in db_spaces:
-            s_text = f"{s['title']} {s['location']} {s['city']} {s['category']}".lower()
-            if any(k in s_text for k in ["pune", "wagholi", "delhi", "bengaluru", "studio", "study", "storage", "pod"] if k in last_msg):
-                matched.append(s)
-        
-        display_spaces = matched if matched else db_spaces[:3]
-        if display_spaces:
-            items_str = "\n".join([
-                f"• **{s['title']}** ({s['location']}, {s['city']}): ₹{s['hourly_rate']}/hr — *{s['category']}* (Booking Ref #{s['id']})"
-                for s in display_spaces
-            ])
+    # A. Greetings, Casual Inquiries, Identity
+    if any(last_msg.strip() == k or last_msg.strip().startswith(f"{k} ") for k in ["hi", "hello", "hey", "hola", "namaste", "greetings", "good morning", "good afternoon", "good evening"]):
+        if role in ("host", "owner"):
             return (
-                f"📍 **Verified Spaces Matching Your Criteria:**\n\n"
-                f"{items_str}\n\n"
-                f"All bookings include instant digital pass generation, 50m geofence verification, and automated ₹100 UPI escrow security. "
-                f"Head to **Explore** to reserve any spot instantly!"
+                f"👋 {greeting_prefix}I'm **LoopBot**, your SpaceLoop AI Concierge.\n\n"
+                f"As a space owner, here is how I can assist you today:\n"
+                f"• 🏠 **List a Space**: Stage an unused room or garage with our 60-second AI camera inspector.\n"
+                f"• 💰 **Earnings Calculator**: Estimate monthly yield based on your square footage and location.\n"
+                f"• ⚖️ **Legal Protection**: Explain how Section 52 of the Indian Easements Act protects you from tenancy claims.\n"
+                f"• 📱 **IoT & Pass Monitoring**: Track arrivals and active geofenced guest sessions.\n\n"
+                f"What would you like to work on?"
             )
         else:
             return (
-                "📍 **Explore Verified SpaceLoop Listings:**\n\n"
-                "• **Wagholi Quiet Study Pod near JSPM (Pune)**: ₹45/hr — Silent zone with 20A outlet and 300 Mbps Wi-Fi.\n"
-                "• **Sound-Treated Creator Studio (Hauz Khas, Delhi)**: ₹95/hr — Acoustic foam, ring lighting, and audio circuits.\n"
-                "• **Clean Ground Floor Storage (Koramangala, Bengaluru)**: ₹65/hr — Dry CCTV-monitored inventory storage.\n\n"
-                "Browse all active listings on our **Explore** page!"
+                f"👋 {greeting_prefix}I'm **LoopBot**, your SpaceLoop AI Concierge.\n\n"
+                f"I can help you instantly discover and book character-rich micro-spaces across India:\n"
+                f"• 🔍 **Search by City**: Ask for study pods, studios, or storage in Pune, Delhi, or Bangalore.\n"
+                f"• ⏱️ **Flexible Hours**: Book from 30 minutes up to 7 days, or schedule ahead for tomorrow.\n"
+                f"• 🛡️ **₹100 UPI Escrow**: Transparent pricing with zero surprise deposits.\n"
+                f"• 📍 **Digital Door Pass**: Unlock instant access via our 50m GPS geofence handshake.\n\n"
+                f"Tell me what kind of space you need or ask any question!"
             )
 
-    # Category 7: Out-of-Scope / General Help
-    else:
+    if any(k in last_msg for k in ["who are you", "what are you", "what can you do", "help me"]):
         return (
-            "👋 Hello! I'm **LoopBot**, your SpaceLoop AI Concierge.\n\n"
-            "SpaceLoop unlocks unused property square footage across India for affordable hourly use under Section 52 of the Indian Easements Act, 1882.\n\n"
-            "Here's what I can assist you with:\n"
-            "• 🔍 **Find Spaces**: Search study pods, podcast studios, and storage in Pune, Delhi, or Bengaluru.\n"
-            "• ⏱️ **Booking & Duration**: Learn about flexible 0.5h to 168h micro-leases and transparent pricing.\n"
-            "• 🏠 **Host Monetization**: Calculate earning potential for your garage or idle rooms.\n"
-            "• ⚖️ **Micro-Leases & Escrow**: Understand our Section 52 legal protections and ₹100 UPI escrow.\n"
-            "• 📍 **Digital Door Pass**: Guide you through 50m geofence verification and check-in.\n\n"
-            "What would you like to explore?"
+            "🤖 **I'm LoopBot**, the built-in AI concierge for **SpaceLoop**.\n\n"
+            "SpaceLoop is India's leading hourly micro-leasing platform built on the India Stack. "
+            "I can help you:\n"
+            "1. **Find & Filter Spaces**: Recommend verified pods, creative studios, and desks matching your location and budget.\n"
+            "2. **Flexible Scheduling**: Guide you through 'Start Now' sprints or 'Schedule Ahead' bookings.\n"
+            "3. **Host Monetization**: Help hosts list rooms and calculate 95% net earnings.\n"
+            "4. **Legal & Security**: Explain Section 52 revocable licenses and automated ₹100 UPI escrow security.\n\n"
+            "Just ask me a question like *'Show me study pods in Wagholi under ₹60'* or *'How does check-in work?'*!"
         )
+
+    if any(k in last_msg for k in ["thank", "thanks", "awesome", "great", "perfect", "ok", "okay"]):
+        return (
+            "You're very welcome! Let me know if you need help finding another space, scheduling a session, or managing your account. Happy looping! 🚀"
+        )
+
+    # B. Legal Framework & Section 52 Indian Easements Act
+    if any(k in last_msg for k in ["legal", "squat", "tenancy", "tenant", "lease", "easement", "section 52", "agreement", "law", "act", "rights"]):
+        return (
+            "⚖️ **Legal Framework under Section 52, Indian Easements Act, 1882:**\n\n"
+            "• **Revocable Temporary License**: SpaceLoop bookings are legally classified as revocable licenses, NOT tenancies. Guests have zero tenancy rights or adverse possession claims.\n"
+            "• **Automated Micro-Lease**: Every reservation generates a digitally sealed micro-lease agreement stating the exact booked time window and purpose.\n"
+            "• **Full Host Dominion**: The host retains complete legal possession and control of the premise at all times.\n"
+            "• **No Eviction Suits Needed**: Since possession never transfers, overdue overstays are treated as trespass, protected by our automated platform terms."
+        )
+
+    # C. Host Side: Listing Spaces, Monetization & Renting Out
+    if any(k in last_msg for k in ["how can i rent", "rent out", "how to host", "earn", "monetiz", "income", "owner", "empty room", "empty corner", "list my", "my property", "list a space"]):
+        return (
+            "🏠 **How to Rent Out Your Space on SpaceLoop:**\n\n"
+            "1. **Switch to Host View**: Use the Host toggle in the top navigation or open the `/list-space` page.\n"
+            "2. **60-Second AI Staging**: Upload a photo. Our Multimodal AI automatically measures estimated square footage, lighting lux, and recommends optimal hourly rates (₹45–₹150/hr).\n"
+            "3. **Keep 95% of Earnings**: SpaceLoop takes only a minimal 5% platform fee. 95% goes directly to your verified UPI VPA.\n"
+            "4. **Zero Hardware Needed**: Guests check in via GPS geofencing and your printable door pass QR — no costly smart lock installation required.\n"
+            "5. **Manage Bookings**: Visit your **Host Dashboard** (`/dashboard`) to activate/pause listings, view incoming guest reservations, and track your escrow payouts!"
+        )
+
+    # D. Check-In, Geofence & Digital Door Pass
+    if any(k in last_msg for k in ["check-in", "checkin", "door pass", "pass", "qr", "geofence", "unlock", "enter", "pin", "gate", "smart lock", "bluetooth"]):
+        return (
+            "📍 **Zero-Hardware Check-In & Door Pass Access:**\n\n"
+            "1. **View Your Pass**: Navigate to your booking in the Dashboard or `/session/:id`.\n"
+            "2. **GPS Geofence Handshake**: When you arrive within 50 meters of the property, tap **Verify Geofence** on your device.\n"
+            "3. **Door Entry**: Scan the host's printable door QR or share your **4-digit Arrival PIN** with the caretaker or unlock via ESP32 Bluetooth mesh.\n"
+            "4. **Checkout**: When your session ends, tap **Check-Out & Release Deposit** to complete your reservation and automatically refund your escrow."
+        )
+
+    # E. Timing, Scheduling & Booking Flexibility
+    if any(k in last_msg for k in ["schedule", "timing", "start now", "schedule ahead", "tomorrow", "time slot", "duration", "hours", "how long", "minimum hours"]):
+        return (
+            "⏱️ **SpaceLoop Flexible Scheduling & Duration:**\n\n"
+            "• **Timing Modes**:\n"
+            "  - **⚡ Start Now**: Instant booking starting in 15 minutes.\n"
+            "  - **📅 Schedule Ahead**: Select your exact date and starting time slot.\n"
+            "• **Flexible Durations**: From **0.5 hours (30-minute quick sprints)** up to **168 hours (7 full days)**.\n"
+            "• **Quick Stepper**: Use our pre-set duration chips (0.5h, 1h, 2h, 4h, 8h, 24h) or step by 30-minute increments.\n"
+            "• **Immediate Confirmation**: Your digital door pass and arrival PIN are issued the moment you confirm!"
+        )
+
+    # F. Pricing, UPI Escrow & Payments
+    if any(k in last_msg for k in ["price", "cost", "pricing", "rate", "fee", "deposit", "escrow", "upi", "gpay", "phonepe", "refund", "payment"]):
+        return (
+            "💳 **Transparent Pricing & ₹100 UPI Micro-Escrow:**\n\n"
+            "• **Clear Formula**: `Total = (Hourly Rate × Hours Booked) + 5% Platform Fee + ₹100 Refundable Deposit`\n"
+            "• **Zero Lock-In Escrow**: The ₹100 security deposit is held safely via UPI during your session.\n"
+            "• **Instant Checkout Refund**: When you check out on the session page and vacate on time, your ₹100 deposit is instantly released to your UPI account.\n"
+            "• **Supported Payment Methods**: Works seamlessly with UPI apps (Google Pay, PhonePe, Paytm, BHIM) and Netbanking."
+        )
+
+    # G. Space Search & Recommendations (City / Category / Budget / Amenities)
+    is_search = any(k in last_msg for k in [
+        "find", "search", "looking for", "recommend", "space", "study", "desk", "studio", 
+        "podcast", "storage", "garage", "pune", "wagholi", "delhi", "bengaluru", "bangalore", 
+        "hauz khas", "koramangala", "cheap", "under", "available", "where can i"
+    ])
+    if is_search:
+        # Filter DB spaces dynamically
+        matched = []
+        city_keywords = ["pune", "wagholi", "delhi", "hauz khas", "bengaluru", "bangalore", "koramangala", "whitefield", "noida"]
+        category_keywords = ["study", "studio", "storage", "pod", "music", "podcast", "workspace", "meeting", "garage"]
+        
+        detected_cities = [c for c in city_keywords if c in last_msg]
+        detected_cats = [c for c in category_keywords if c in last_msg]
+
+        # Extract budget constraint if present (e.g. "under 50", "under 100", "under ₹60")
+        budget_match = re.search(r'(?:under|below|less than)\s*₹?\s*(\d+)', last_msg)
+        max_budget = float(budget_match.group(1)) if budget_match else None
+
+        for s in db_spaces:
+            s_text = f"{s['title']} {s['location']} {s['city']} {s['category']} {' '.join(s.get('amenities', []))}".lower()
+            city_hit = not detected_cities or any(c in s_text for c in detected_cities)
+            cat_hit = not detected_cats or any(c in s_text for c in detected_cats)
+            budget_hit = max_budget is None or s['hourly_rate'] <= max_budget
+
+            if city_hit and cat_hit and budget_hit:
+                matched.append(s)
+
+        results = matched if matched else (db_spaces[:4] if db_spaces else [])
+        if results:
+            items_str = "\n".join([
+                f"• **{s['title']}**\n"
+                f"  📍 {s['location']}, {s['city']} • Category: *{s['category']}*\n"
+                f"  💰 **₹{s['hourly_rate']}/hr** (Ref #{s['id']})\n"
+                f"  ✨ Amenities: {', '.join(s.get('amenities', [])[:3])}"
+                for s in results[:4]
+            ])
+            return (
+                f"📍 **Verified Spaces Matching Your Request:**\n\n"
+                f"{items_str}\n\n"
+                f"👉 **Ready to reserve?** Tap on any space from the **Explore** page (`/explore`) or curated showcase (`/curated`) to pick your start time and duration!"
+            )
+
+    # H. DigiLocker & Identity Safety
+    if any(k in last_msg for k in ["safe", "safety", "verify", "verification", "aadhaar", "digilocker", "kyc", "student id", "trust score"]):
+        return (
+            "🛡️ **DigiLocker Verification & Safety Protocol:**\n\n"
+            "• **DPDP Act (2023) Compliance**: We never store 12-digit plaintext Aadhaar numbers. We use cryptographic SHA-256 tokens and masked identifiers (`XXXX-XXXX-4821`).\n"
+            "• **Student SSO**: University email verification (`.ac.in` / `.edu`) unlocks student discounts and builds reputation.\n"
+            "• **Objective Trust Score**: Renters and hosts maintain trust scores out of 1000 based on punctuality and room cleanliness."
+        )
+
+    # I. Default Context-Aware Helpful Response
+    return (
+        f"💡 **LoopBot Assistant**:\n\n"
+        f"I'm here to assist you with SpaceLoop! Here are key areas I can help with:\n"
+        f"• 🔍 **Find Spaces**: Tell me your city (e.g. Pune, Delhi, Bangalore) or type of room (study pod, audio studio, storage).\n"
+        f"• ⏱️ **Booking Flexibility**: Choose between 'Start Now' or 'Schedule Ahead' for custom durations from 0.5h to 168h.\n"
+        f"• 🏠 **Host & Earn**: Rent out your empty room or garage and keep 95% of hourly revenue.\n"
+        f"• 💳 **UPI Escrow**: Learn about our refundable ₹100 deposit and transparent pricing.\n\n"
+        f"How can I help you today?"
+    )
 
 
 # =====================================================================

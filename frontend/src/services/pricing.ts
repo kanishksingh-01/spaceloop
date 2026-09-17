@@ -58,3 +58,53 @@ export function calculateRentalPricing(hourlyRate: number, requestedHours: numbe
     validationError: validation.error,
   };
 }
+
+export function formatTimeWindow(
+  startDate: Date | string,
+  hours: number
+): {
+  startFormatted: string;
+  endFormatted: string;
+  durationFormatted: string;
+  fullWindow: string;
+} {
+  const start = typeof startDate === 'string' ? new Date(startDate) : startDate;
+  const validStart = isNaN(start.getTime()) ? new Date() : start;
+  const end = new Date(validStart.getTime() + (Number(hours) || 2) * 3600 * 1000);
+
+  const formatOpts: Intl.DateTimeFormatOptions = {
+    weekday: 'short',
+    month: 'short',
+    day: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+    hour12: true,
+  };
+
+  const timeOnlyOpts: Intl.DateTimeFormatOptions = {
+    hour: 'numeric',
+    minute: '2-digit',
+    hour12: true,
+  };
+
+  const startFormatted = validStart.toLocaleDateString(undefined, formatOpts);
+  const endFormatted = end.toLocaleDateString(undefined, formatOpts);
+  const endTimeOnly = end.toLocaleTimeString(undefined, timeOnlyOpts);
+
+  const durationFormatted =
+    hours >= 1
+      ? Number.isInteger(hours)
+        ? `${hours} hr${hours > 1 ? 's' : ''}`
+        : `${Math.floor(hours)} hr ${Math.round((hours % 1) * 60)} mins`
+      : `${Math.round(hours * 60)} mins`;
+
+  const fullWindow = `${startFormatted} → ${endTimeOnly} (${durationFormatted})`;
+
+  return {
+    startFormatted,
+    endFormatted,
+    durationFormatted,
+    fullWindow,
+  };
+}
+

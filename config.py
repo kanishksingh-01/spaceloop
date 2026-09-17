@@ -1,7 +1,10 @@
 from datetime import timedelta
 import os
+from dotenv import load_dotenv
 
 basedir = os.path.abspath(os.path.dirname(__file__))
+# Automatically load environment variables from .env file
+load_dotenv(os.path.join(basedir, ".env"))
 
 
 class Config:
@@ -25,12 +28,12 @@ class Config:
     WTF_CSRF_ENABLED = True
     WTF_CSRF_TIME_LIMIT = 3600
 
-    # Security: Rate Limiting
-    AUTH_LOGIN_RATE_LIMIT = os.environ.get("AUTH_LOGIN_RATE_LIMIT", "5 per minute")
-    AUTH_REGISTER_RATE_LIMIT = os.environ.get("AUTH_REGISTER_RATE_LIMIT", "3 per hour")
-    AUTH_PASSWORD_RESET_RATE_LIMIT = os.environ.get("AUTH_PASSWORD_RESET_RATE_LIMIT", "3 per hour")
+    # Security: Rate Limiting (Relaxed for dev / interactive testing)
+    AUTH_LOGIN_RATE_LIMIT = os.environ.get("AUTH_LOGIN_RATE_LIMIT", "120 per minute")
+    AUTH_REGISTER_RATE_LIMIT = os.environ.get("AUTH_REGISTER_RATE_LIMIT", "120 per minute")
+    AUTH_PASSWORD_RESET_RATE_LIMIT = os.environ.get("AUTH_PASSWORD_RESET_RATE_LIMIT", "60 per minute")
     RATELIMIT_STORAGE_URI = os.environ.get("RATELIMIT_STORAGE_URI", "memory://")
-    RATELIMIT_DEFAULT = "100 per minute"
+    RATELIMIT_DEFAULT = "300 per minute"
 
     # Token Expiration Settings (in seconds)
     PASSWORD_RESET_TOKEN_EXPIRY = int(os.environ.get("PASSWORD_RESET_TOKEN_EXPIRY", "3600"))
@@ -39,9 +42,18 @@ class Config:
     # Security: Limit maximum request size to 5MB to prevent memory DoS
     MAX_CONTENT_LENGTH = 5 * 1024 * 1024
 
-    # AI Service Keys
+    # AI Service Keys & Models
     GROQ_API_KEY = os.environ.get("GROQ_API_KEY", "")
+    GROQ_MODEL = os.environ.get("GROQ_MODEL", "openai/gpt-oss-120b")
+    GROQ_FALLBACK_MODEL = os.environ.get("GROQ_FALLBACK_MODEL", "openai/gpt-oss-20b")
     GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", os.environ.get("GOOGLE_API_KEY", ""))
+    AI_RATE_LIMIT = os.environ.get("AI_RATE_LIMIT", "200 per minute")
     
+    # CORS Configuration
+    CORS_ORIGINS = os.environ.get(
+        "CORS_ORIGINS",
+        "http://localhost:3000,http://127.0.0.1:3000,http://localhost:5000,http://127.0.0.1:5000"
+    ).split(",")
+
     # Upload settings
     UPLOAD_FOLDER = os.path.join(basedir, "static", "uploads")

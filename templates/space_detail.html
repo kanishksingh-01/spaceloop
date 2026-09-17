@@ -416,11 +416,17 @@
               Duration of Use
             </label>
             <select id="hoursSelect" onchange="updatePriceCalculation()" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-indigo-500">
+              <option value="0.5">30 minutes (Quick Sprint)</option>
               <option value="1">1 hour</option>
-              <option value="2" selected>2 hours (Recommended)</option>
+              <option value="1.5">1.5 hours</option>
+              <option value="2" selected>2 hours (Standard)</option>
+              <option value="2.5">2.5 hours</option>
               <option value="3">3 hours</option>
               <option value="4">4 hours (Half-day)</option>
-              <option value="8">8 hours (Full day)</option>
+              <option value="6">6 hours</option>
+              <option value="8">8 hours (Full work day)</option>
+              <option value="12">12 hours (Day pass)</option>
+              <option value="24">24 hours (Full 24-hour pass)</option>
             </select>
           </div>
 

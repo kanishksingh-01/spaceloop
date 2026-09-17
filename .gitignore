@@ -8,8 +8,14 @@ app.db
 *.db
 .DS_Store
 .env
+.env.local
+.env.*.local
+frontend/.env
+frontend/.env.local
+!*.example
 *.bak
 node_modules/
 spaceloop/node_modules/
 NIRIKSHAK/frontend/node_modules/
 _backup_frontend_pre_migration/
+instance/

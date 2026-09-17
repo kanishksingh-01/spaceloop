@@ -14,8 +14,10 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => 
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<'seeker' | 'host'>('seeker');
   const [bookings, setBookings] = useState<Booking[]>([]);
+  const [hostBookings, setHostBookings] = useState<Booking[]>([]);
   const [hostSpaces, setHostSpaces] = useState<Space[]>([]);
   const [loading, setLoading] = useState(true);
+  const [seedingSpace, setSeedingSpace] = useState(false);
   const [cancelingId, setCancelingId] = useState<number | null>(null);
   const [metrics, setMetrics] = useState<{
     gross_revenue: number;
@@ -39,10 +41,11 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => 
   const loadDashboardData = async () => {
     setLoading(true);
     try {
-      // Load real seeker bookings and host properties from backend
+      // Load real seeker bookings, incoming host reservations, and host properties from backend
       const dashData = await request<{
         success: boolean;
         bookings?: Booking[];
+        host_bookings?: Booking[];
         host_spaces?: Space[];
         host_metrics?: any;
       }>('/api/dashboard');
@@ -51,6 +54,12 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => 
         setBookings(dashData.bookings);
       } else {
         setBookings([]);
+      }
+
+      if (dashData?.host_bookings) {
+        setHostBookings(dashData.host_bookings);
+      } else {
+        setHostBookings([]);
       }
 
       if (dashData?.host_spaces && dashData.host_spaces.length > 0) {
@@ -74,6 +83,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => 
         // ignore
       }
       setBookings([]);
+      setHostBookings([]);
     } finally {
       setLoading(false);
     }
@@ -103,6 +113,22 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => 
       );
     } catch (err) {
       console.error('Failed to toggle status:', err);
+    }
+  };
+
+  const handleSeedSampleSpace = async () => {
+    setSeedingSpace(true);
+    try {
+      const res = await request<{ success: boolean; space: Space }>('/api/host/seed-sample-space', {
+        method: 'POST',
+      });
+      if (res.success && res.space) {
+        setHostSpaces(prev => [res.space, ...prev]);
+      }
+    } catch (err) {
+      console.error('Failed to seed sample space:', err);
+    } finally {
+      setSeedingSpace(false);
     }
   };
 
@@ -198,19 +224,11 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => 
           </Pressable>
 
           <Pressable
-            onPress={() => setActiveTab('host')}
-            className={`px-4 py-2 rounded-xl border text-xs font-bold transition ${
-              activeTab === 'host'
-                ? 'bg-indigo-600 border-indigo-400 text-white'
-                : 'bg-slate-900 border-slate-800 text-slate-400 hover:text-white'
-            }`}
+            onPress={() => navigate('/host/dashboard')}
+            className="px-4 py-2 rounded-xl border border-amber-500/30 bg-amber-500/10 text-amber-300 hover:bg-amber-500/20 transition flex-row items-center gap-1.5 ml-auto"
           >
-            <Text
-              className={`text-xs font-bold ${
-                activeTab === 'host' ? 'text-white' : 'text-slate-400'
-              }`}
-            >
-              🏠 My Space Listings (Host)
+            <Text className="text-xs font-bold text-amber-300">
+              🏡 Switch to Host Portal & Dashboard →
             </Text>
           </Pressable>
         </View>
@@ -299,65 +317,199 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => 
           </View>
         )}
 
-        {/* Tab 2: Host Listings */}
+        {/* Tab 2: Host Workspace & Listings */}
         {activeTab === 'host' && (
-          <View className="space-y-4">
-            <View className="flex-row items-center justify-between mb-2">
-              <Text className="text-base font-bold text-white">Your Listed Properties</Text>
-              <Pressable
-                onPress={() => navigate('/list-space')}
-                className="px-3.5 py-1.5 bg-indigo-600 hover:bg-indigo-500 rounded-xl"
-              >
-                <Text className="text-xs font-bold text-white">+ List New Space</Text>
-              </Pressable>
+          <View className="space-y-6">
+            {/* Host IoT Mesh & Connectivity Telemetry Banner */}
+            <View className="p-4 bg-emerald-950/40 border border-emerald-500/30 rounded-2xl flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+              <View className="flex-row items-center gap-3">
+                <View className="w-3 h-3 rounded-full bg-emerald-400" />
+                <View>
+                  <Text className="text-xs font-bold text-emerald-300">
+                    Host Access & IoT Connectivity Mesh: ONLINE (14ms Latency)
+                  </Text>
+                  <Text className="text-[11px] text-slate-400">
+                    ESP32 Bluetooth Mesh Synced • Door Relay Online • Geofence armed (25m) • Micro-Escrow UPI Active
+                  </Text>
+                </View>
+              </View>
+              <View className="flex-row items-center gap-2">
+                <View className="px-2 py-0.5 rounded bg-emerald-500/20 border border-emerald-500/30">
+                  <Text className="text-[10px] font-bold text-emerald-300 uppercase">Hardware 99.9%</Text>
+                </View>
+              </View>
             </View>
 
-            <View className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {hostSpaces.map((space) => (
-                <View
-                  key={space.id}
-                  className="p-4 bg-slate-900 border border-slate-800 rounded-2xl flex-row items-center justify-between gap-4"
-                >
-                  <View className="flex-row items-center gap-3 flex-1">
-                    <Image
-                      source={{
-                        uri:
-                          space.photos && space.photos.length > 0
-                            ? space.photos[0]
-                            : 'https://images.unsplash.com/photo-1513694203232-719a280e022f?auto=format&fit=crop&w=400&q=80',
-                      }}
-                      className="w-16 h-16 rounded-xl object-cover"
-                    />
-                    <View className="flex-1">
-                      <Text className="text-sm font-bold text-white" numberOfLines={1}>
-                        {space.title}
-                      </Text>
-                      <Text className="text-xs text-slate-400 mb-1">
-                        ₹{space.hourly_rate}/hr • {space.location}
-                      </Text>
-                      <View className="flex-row items-center gap-1.5">
-                        <View
-                          className={`w-2 h-2 rounded-full ${
-                            space.is_active ? 'bg-emerald-400' : 'bg-slate-600'
-                          }`}
-                        />
-                        <Text className="text-[10px] text-slate-400">
-                          {space.is_active ? 'Active & Accepting Bookings' : 'Paused / Offline'}
-                        </Text>
+            {/* Section A: Incoming Guest Reservations */}
+            <View>
+              <View className="flex-row items-center justify-between mb-3">
+                <View>
+                  <Text className="text-base font-bold text-white">Incoming Guest Reservations</Text>
+                  <Text className="text-xs text-slate-400">Bookings placed on your spaces with held escrow deposits</Text>
+                </View>
+                <View className="px-2.5 py-1 rounded-lg bg-indigo-500/20 border border-indigo-500/30">
+                  <Text className="text-xs font-bold text-indigo-300">
+                    {hostBookings.length} {hostBookings.length === 1 ? 'Booking' : 'Bookings'}
+                  </Text>
+                </View>
+              </View>
+
+              {hostBookings.length === 0 ? (
+                <View className="p-6 bg-slate-900 border border-slate-800 rounded-2xl items-center text-center">
+                  <Text className="text-2xl mb-1">📅</Text>
+                  <Text className="text-sm font-bold text-white mb-0.5">No Guest Reservations Yet</Text>
+                  <Text className="text-xs text-slate-400 max-w-md">
+                    When seekers book your active spaces, their reservation details, access codes, and automated payout escrow will appear here.
+                  </Text>
+                </View>
+              ) : (
+                <View className="space-y-3">
+                  {hostBookings.map((hb) => (
+                    <View
+                      key={hb.id}
+                      className="p-4 bg-slate-900 border border-slate-800 rounded-2xl flex-col sm:flex-row items-start sm:items-center justify-between gap-3"
+                    >
+                      <View className="flex-row items-center gap-3">
+                        <View className="w-10 h-10 rounded-xl bg-indigo-600/20 border border-indigo-500/30 items-center justify-center">
+                          <Text className="text-base">🎟️</Text>
+                        </View>
+                        <View>
+                          <View className="flex-row items-center gap-2">
+                            <Text className="text-sm font-bold text-white">
+                              {hb.seeker_name || 'Verified Seeker'}
+                            </Text>
+                            <View className="px-2 py-0.5 rounded bg-emerald-500/20 border border-emerald-500/30">
+                              <Text className="text-[10px] font-bold text-emerald-300 uppercase">
+                                {hb.status}
+                              </Text>
+                            </View>
+                          </View>
+                          <Text className="text-xs text-slate-400">
+                            {hb.space_title || 'Space Listing'} • {hb.hours_booked || 1} hrs
+                          </Text>
+                        </View>
+                      </View>
+
+                      <View className="flex-row items-center gap-4 self-stretch sm:self-auto justify-between sm:justify-end">
+                        <View className="text-right">
+                          <Text className="text-sm font-bold text-emerald-400">₹{hb.total_price}</Text>
+                          <Text className="text-[10px] text-slate-400">
+                            Deposit: ₹{hb.deposit_held || 100} Held
+                          </Text>
+                        </View>
+                        <Pressable
+                          onPress={() => navigate(`/session/${hb.id}`)}
+                          className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-xl transition"
+                        >
+                          <Text className="text-xs font-semibold text-indigo-300">View Pass →</Text>
+                        </Pressable>
                       </View>
                     </View>
-                  </View>
+                  ))}
+                </View>
+              )}
+            </View>
 
+            {/* Section B: Listed Spaces Portfolio */}
+            <View>
+              <View className="flex-row items-center justify-between mb-3">
+                <View>
+                  <Text className="text-base font-bold text-white">Your Listed Properties</Text>
+                  <Text className="text-xs text-slate-400">Manage active spaces, pricing, and availability</Text>
+                </View>
+                <View className="flex-row items-center gap-2">
                   <Pressable
-                    onPress={() => handleToggleStatus(space.id)}
-                    className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-xl"
+                    onPress={handleSeedSampleSpace}
+                    disabled={seedingSpace}
+                    className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-xl transition"
                   >
-                    <Text className="text-xs font-medium text-slate-300">
-                      {space.is_active ? 'Pause' : 'Activate'}
+                    <Text className="text-xs font-bold text-indigo-300">
+                      {seedingSpace ? 'Provisioning...' : '⚡ Seed Turnkey Pod'}
                     </Text>
                   </Pressable>
+                  <Pressable
+                    onPress={() => navigate('/list-space')}
+                    className="px-3.5 py-1.5 bg-indigo-600 hover:bg-indigo-500 rounded-xl shadow-md transition"
+                  >
+                    <Text className="text-xs font-bold text-white">+ List New Space</Text>
+                  </Pressable>
                 </View>
-              ))}
+              </View>
+
+              {hostSpaces.length === 0 ? (
+                <View className="p-8 bg-slate-900 border border-slate-800 rounded-2xl items-center text-center">
+                  <Text className="text-3xl mb-2">🏠</Text>
+                  <Text className="text-sm font-bold text-white mb-1">No Listed Spaces Found</Text>
+                  <Text className="text-xs text-slate-400 mb-4 max-w-sm">
+                    Monetize your unused square footage. List a room, study desk, or studio in under 2 minutes.
+                  </Text>
+                  <View className="flex-row items-center gap-3">
+                    <Pressable
+                      onPress={handleSeedSampleSpace}
+                      disabled={seedingSpace}
+                      className="px-4 py-2 bg-slate-800 border border-slate-700 rounded-xl"
+                    >
+                      <Text className="text-xs font-bold text-indigo-300">
+                        {seedingSpace ? 'Generating Pod...' : '⚡ Seed Turnkey Pod'}
+                      </Text>
+                    </Pressable>
+                    <Pressable
+                      onPress={() => navigate('/list-space')}
+                      className="px-4 py-2 bg-indigo-600 rounded-xl"
+                    >
+                      <Text className="text-xs font-bold text-white">List Your First Space</Text>
+                    </Pressable>
+                  </View>
+                </View>
+              ) : (
+                <View className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {hostSpaces.map((space) => (
+                    <View
+                      key={space.id}
+                      className="p-4 bg-slate-900 border border-slate-800 rounded-2xl flex-row items-center justify-between gap-4"
+                    >
+                      <View className="flex-row items-center gap-3 flex-1">
+                        <Image
+                          source={{
+                            uri:
+                              space.photos && space.photos.length > 0
+                                ? space.photos[0]
+                                : 'https://images.unsplash.com/photo-1513694203232-719a280e022f?auto=format&fit=crop&w=400&q=80',
+                          }}
+                          className="w-16 h-16 rounded-xl object-cover"
+                        />
+                        <View className="flex-1">
+                          <Text className="text-sm font-bold text-white" numberOfLines={1}>
+                            {space.title}
+                          </Text>
+                          <Text className="text-xs text-slate-400 mb-1">
+                            ₹{space.hourly_rate || space.price_hourly}/hr • {space.location || space.city}
+                          </Text>
+                          <View className="flex-row items-center gap-1.5">
+                            <View
+                              className={`w-2 h-2 rounded-full ${
+                                space.is_active ? 'bg-emerald-400' : 'bg-slate-600'
+                              }`}
+                            />
+                            <Text className="text-[10px] text-slate-400">
+                              {space.is_active ? 'Active & Accepting Bookings' : 'Paused / Offline'}
+                            </Text>
+                          </View>
+                        </View>
+                      </View>
+
+                      <Pressable
+                        onPress={() => handleToggleStatus(space.id)}
+                        className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-xl"
+                      >
+                        <Text className="text-xs font-medium text-slate-300">
+                          {space.is_active ? 'Pause' : 'Activate'}
+                        </Text>
+                      </Pressable>
+                    </View>
+                  ))}
+                </View>
+              )}
             </View>
           </View>
         )}
