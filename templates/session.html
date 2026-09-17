@@ -233,17 +233,85 @@
 
   <!-- STAGE 2: ACTIVE SESSION DASHBOARD (Shown when checked_in) -->
   <div id="activeSessionPanel" class="{% if booking.session_state != 'checked_in' %}hidden{% endif %} space-y-6">
-    <div class="bg-gradient-to-br from-slate-900 to-indigo-950/40 border border-indigo-500/30 rounded-2xl p-6 sm:p-8 shadow-xl">
-      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
-        <div>
-          <span class="text-xs font-semibold uppercase tracking-wider text-emerald-400 flex items-center gap-1.5">
-            <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span> In-Room Session Active
-          </span>
-          <h2 class="text-xl font-bold text-white mt-1">Enjoy your study & work sprint!</h2>
+    <div class="bg-gradient-to-br from-slate-900 via-slate-900 to-indigo-950/40 border border-indigo-500/30 rounded-2xl p-6 sm:p-8 shadow-xl">
+      
+      <!-- SPACELOOP SESSION ACTIVE CONSOLE (Task 15) -->
+      <div class="bg-slate-950/90 border border-indigo-500/40 rounded-2xl p-6 mb-6 shadow-2xl relative overflow-hidden">
+        <div class="absolute top-0 right-0 w-64 h-64 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none"></div>
+
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-5 border-b border-slate-800">
+          <div>
+            <div class="flex items-center gap-2 mb-1.5">
+              <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-ping"></span>
+              <span class="text-xs font-extrabold uppercase tracking-widest text-emerald-400">
+                SPACELOOP SESSION ACTIVE
+              </span>
+            </div>
+            <h2 class="text-xl sm:text-2xl font-black text-white flex items-center gap-2">
+              <span>{{ space.title }}</span>
+            </h2>
+            <p class="text-xs text-slate-400 mt-1">
+              Booking #{{ booking.id }} &bull; {{ space.neighborhood }}, {{ space.city }} &bull; Arrival logged: <span class="text-indigo-300 font-semibold">{{ booking.arrival_time or "Just now" }}</span>
+            </p>
+          </div>
+
+          <!-- Time Remaining Live Countdown Display -->
+          <div class="bg-slate-900/90 border border-indigo-500/30 rounded-2xl p-4 text-center shrink-0 min-w-[210px] shadow-lg shadow-indigo-500/10">
+            <div class="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Time Remaining</div>
+            <div id="sessionCountdownDisplay" class="text-3xl font-mono font-black text-emerald-400 tracking-widest my-1">
+              --:--:--
+            </div>
+            <div id="sessionTimeSubtext" class="text-[10px] text-slate-400">
+              Valid until {{ booking.end_time }}
+            </div>
+          </div>
         </div>
-        <div class="text-left sm:text-right">
-          <div class="text-xs text-slate-400">Arrival Logged:</div>
-          <div class="text-sm font-bold text-indigo-300">{{ booking.arrival_time or "Just now" }}</div>
+
+        <!-- Verification Checklist Matrix (Task 15) -->
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 py-5 border-b border-slate-800 text-xs">
+          <div class="bg-slate-900/60 border border-slate-800/80 rounded-xl p-3">
+            <div class="text-[10px] uppercase font-semibold text-slate-400 mb-1">Booking</div>
+            <div class="font-bold text-white text-sm">#{{ booking.id }}</div>
+            <div class="text-[10px] text-indigo-400 mt-0.5">{{ booking.hours_booked }} hr duration</div>
+          </div>
+
+          <div class="bg-slate-900/60 border border-slate-800/80 rounded-xl p-3">
+            <div class="text-[10px] uppercase font-semibold text-slate-400 mb-1">Location</div>
+            <div class="font-bold text-emerald-400 flex items-center gap-1 text-sm">
+              <i class="fa-solid fa-circle-check text-xs"></i> Verified
+            </div>
+            <div class="text-[10px] text-slate-400 mt-0.5">&le; 50m Geofence passed</div>
+          </div>
+
+          <div class="bg-slate-900/60 border border-slate-800/80 rounded-xl p-3">
+            <div class="text-[10px] uppercase font-semibold text-slate-400 mb-1">Access</div>
+            <div class="font-bold text-emerald-400 flex items-center gap-1 text-sm">
+              <i class="fa-solid fa-circle-check text-xs"></i> Verified
+            </div>
+            <div class="text-[10px] text-slate-400 mt-0.5">PIN {{ booking.arrival_pin }} cleared</div>
+          </div>
+
+          <div class="bg-slate-900/60 border border-slate-800/80 rounded-xl p-3">
+            <div class="text-[10px] uppercase font-semibold text-slate-400 mb-1">License</div>
+            <div class="font-bold text-emerald-400 flex items-center gap-1 text-sm">
+              <i class="fa-solid fa-circle-check text-xs"></i> Active
+            </div>
+            <button type="button" onclick="viewSessionLeaseModal()" class="text-[10px] text-indigo-400 hover:text-indigo-300 font-semibold mt-0.5 underline block text-left">
+              View Micro-Lease &rarr;
+            </button>
+          </div>
+        </div>
+
+        <!-- End Session Action CTA -->
+        <div class="pt-5 flex flex-col sm:flex-row items-center justify-between gap-4">
+          <div class="text-xs text-slate-400 flex items-center gap-2">
+            <i class="fa-solid fa-shield-halved text-emerald-400"></i>
+            <span>₹{{ booking.escrow_deposit_amount | int }} UPI Escrow held safely &bull; Instant release upon checkout scan</span>
+          </div>
+          <button type="button" onclick="scrollToCheckout()" class="w-full sm:w-auto px-6 py-2.5 rounded-xl bg-gradient-to-r from-rose-600 to-amber-600 hover:from-rose-500 hover:to-amber-500 text-white text-xs font-bold transition flex items-center justify-center gap-2 shadow-lg shadow-rose-600/20">
+            <i class="fa-solid fa-door-closed"></i>
+            <span>End Session</span>
+          </button>
         </div>
       </div>
 
@@ -267,7 +335,7 @@
       </div>
 
       <!-- Check-out Trigger Card -->
-      <div class="bg-slate-950 border border-slate-800 rounded-xl p-6">
+      <div id="checkoutSection" class="bg-slate-950 border border-slate-800 rounded-xl p-6 transition-all duration-300">
         <h3 class="text-base font-bold text-white mb-2 flex items-center gap-2">
           <i class="fa-solid fa-door-closed text-indigo-400"></i> Ready to leave? Check-out Handshake
         </h3>
@@ -354,7 +422,32 @@
       </div>
     </div>
   </div>
+</div>
 
+<!-- Micro-Lease Modal in Session Console (Task 15) -->
+<div id="sessionLeaseModal" class="fixed inset-0 bg-black/75 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+  <div class="bg-slate-900 border border-slate-800 w-full max-w-2xl rounded-2xl shadow-2xl max-h-[90vh] flex flex-col overflow-hidden">
+    <div class="p-4 bg-slate-950 border-b border-slate-800 flex items-center justify-between">
+      <div class="flex items-center gap-2">
+        <i class="fa-solid fa-file-contract text-emerald-400"></i>
+        <h3 class="text-sm font-bold text-white">Active Micro-Lease License Agreement</h3>
+      </div>
+      <button onclick="closeSessionLeaseModal()" class="text-slate-400 hover:text-white p-1">
+        <i class="fa-solid fa-xmark text-lg"></i>
+      </button>
+    </div>
+    <div class="p-6 overflow-y-auto flex-grow">
+      <pre class="font-mono text-xs whitespace-pre-wrap text-slate-300 bg-slate-950 p-4 rounded-xl border border-slate-800">{{ booking.micro_lease_agreement }}</pre>
+    </div>
+    <div class="p-4 bg-slate-950 border-t border-slate-800 flex justify-between items-center">
+      <span class="text-xs text-emerald-400 flex items-center gap-1.5 font-semibold">
+        <i class="fa-solid fa-circle-check"></i> Digitally executed & legally binding
+      </span>
+      <button onclick="closeSessionLeaseModal()" class="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-white text-xs font-semibold transition">
+        Close
+      </button>
+    </div>
+  </div>
 </div>
 
 <script>
@@ -572,10 +665,69 @@ async function handleCheckOut(e) {
   }
 }
 
-// Auto-trigger GPS location acquisition on page load
+function viewSessionLeaseModal() {
+  document.getElementById('sessionLeaseModal').classList.remove('hidden');
+}
+
+function closeSessionLeaseModal() {
+  document.getElementById('sessionLeaseModal').classList.add('hidden');
+}
+
+function scrollToCheckout() {
+  const checkoutCard = document.getElementById('checkoutSection');
+  if (checkoutCard) {
+    checkoutCard.scrollIntoView({ behavior: 'smooth' });
+    checkoutCard.classList.add('ring-2', 'ring-indigo-500', 'bg-indigo-950/20');
+    setTimeout(() => {
+      checkoutCard.classList.remove('ring-2', 'ring-indigo-500', 'bg-indigo-950/20');
+    }, 2500);
+  }
+}
+
+// Live Session True-Time Countdown (Task 15)
+const endTimestampMs = {{ booking.end_timestamp_ms or 0 }};
+let countdownInterval = null;
+
+function updateCountdown() {
+  const countdownEl = document.getElementById('sessionCountdownDisplay');
+  const subtextEl = document.getElementById('sessionTimeSubtext');
+  if (!countdownEl || !endTimestampMs) return;
+
+  const now = Date.now();
+  const diffMs = endTimestampMs - now;
+
+  if (diffMs <= 0) {
+    countdownEl.textContent = "00:00:00";
+    countdownEl.className = "text-3xl font-mono font-black text-rose-400 tracking-widest my-1 animate-pulse";
+    if (subtextEl) {
+      subtextEl.innerHTML = "<span class='text-rose-400 font-bold'>Session window expired. Please complete check-out.</span>";
+    }
+    return;
+  }
+
+  const totalSec = Math.floor(diffMs / 1000);
+  const hours = Math.floor(totalSec / 3600);
+  const minutes = Math.floor((totalSec % 3600) / 60);
+  const seconds = totalSec % 60;
+
+  const hh = String(hours).padStart(2, '0');
+  const mm = String(minutes).padStart(2, '0');
+  const ss = String(seconds).padStart(2, '0');
+
+  countdownEl.textContent = `${hh}:${mm}:${ss}`;
+  countdownEl.className = diffMs < 15 * 60 * 1000 
+    ? "text-3xl font-mono font-black text-amber-400 tracking-widest my-1" 
+    : "text-3xl font-mono font-black text-emerald-400 tracking-widest my-1";
+}
+
+// Auto-trigger GPS location acquisition & timer on page load
 document.addEventListener('DOMContentLoaded', () => {
   {% if booking.session_state == 'confirmed' %}
   acquireDeviceGps();
+  {% endif %}
+  {% if booking.session_state == 'checked_in' %}
+  updateCountdown();
+  countdownInterval = setInterval(updateCountdown, 1000);
   {% endif %}
 });
 </script>
