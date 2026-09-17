@@ -46,6 +46,10 @@
           <span class="text-[11px] text-slate-500">Click to autofill Step 1</span>
         </div>
         <div class="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+          <div onclick="selectPresetPhoto('https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&w=800&q=80', 'Studio', 'Acoustically damped project studio with fiber internet, ergonomic study desks, dual monitors, and power backup near JSPM campus.', 'Wagholi', 'Bakori Road, Near JSPM Campus, Wagholi, Pune')" class="preset-card border border-slate-800 hover:border-indigo-500 rounded-xl overflow-hidden cursor-pointer p-1 bg-slate-900 transition hover:scale-[1.02]">
+            <img src="https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&w=400&q=80" class="w-full h-16 object-cover rounded-lg">
+            <div class="p-1 text-[11px] text-center font-medium text-slate-300 truncate">Wagholi Study Suite</div>
+          </div>
           <div onclick="selectPresetPhoto('https://images.unsplash.com/photo-1598488035139-bdbb2231ce04?auto=format&fit=crop&w=800&q=80', 'Studio', 'Sunlit study nook with whiteboard, air-conditioning, high-speed Wi-Fi, and power strips for laptops.', 'Hauz Khas', 'C-14 Hauz Khas Enclave, New Delhi')" class="preset-card border border-slate-800 hover:border-indigo-500 rounded-xl overflow-hidden cursor-pointer p-1 bg-slate-900 transition hover:scale-[1.02]">
             <img src="https://images.unsplash.com/photo-1598488035139-bdbb2231ce04?auto=format&fit=crop&w=400&q=80" class="w-full h-16 object-cover rounded-lg">
             <div class="p-1 text-[11px] text-center font-medium text-slate-300 truncate">Hauz Khas Study Nook</div>
@@ -57,10 +61,6 @@
           <div onclick="selectPresetPhoto('https://images.unsplash.com/photo-1590674899484-d5640e854abe?auto=format&fit=crop&w=800&q=80', 'Parking', 'Paved covered porch with two-wheeler EV charging plug and gate lock.', 'FC Road', 'Shivajinagar, FC Road, Pune')" class="preset-card border border-slate-800 hover:border-indigo-500 rounded-xl overflow-hidden cursor-pointer p-1 bg-slate-900 transition hover:scale-[1.02]">
             <img src="https://images.unsplash.com/photo-1590674899484-d5640e854abe?auto=format&fit=crop&w=400&q=80" class="w-full h-16 object-cover rounded-lg">
             <div class="p-1 text-[11px] text-center font-medium text-slate-300 truncate">FC Road EV Spot</div>
-          </div>
-          <div onclick="selectPresetPhoto('https://images.unsplash.com/photo-1554118811-1e0d58224f24?auto=format&fit=crop&w=800&q=80', 'Event/Workshop', 'Quiet study cafe mezzanine floor available during afternoon off-peak hours for student projects.', 'Sector 62', 'Block B, Sector 62, Noida')" class="preset-card border border-slate-800 hover:border-indigo-500 rounded-xl overflow-hidden cursor-pointer p-1 bg-slate-900 transition hover:scale-[1.02]">
-            <img src="https://images.unsplash.com/photo-1554118811-1e0d58224f24?auto=format&fit=crop&w=400&q=80" class="w-full h-16 object-cover rounded-lg">
-            <div class="p-1 text-[11px] text-center font-medium text-slate-300 truncate">Noida Cafe Mezzanine</div>
           </div>
         </div>
       </div>
@@ -211,7 +211,7 @@
         <input 
           type="text" 
           id="listingNeighborhood" 
-          placeholder="e.g. Mission District, SoMa, Sunset" 
+          placeholder="e.g. Wagholi, Koramangala, Hauz Khas, Powai, Baner" 
           class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500 transition"
         >
       </div>

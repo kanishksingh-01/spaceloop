@@ -327,6 +327,12 @@ def create_app():
                 max_price = None
 
         lat, lng, resolved_loc_name = resolve_location_coordinates(loc, raw_lat, raw_lng)
+        if (lat is None or lng is None) and q:
+            q_lat, q_lng, q_loc_name = resolve_location_coordinates(q)
+            if q_lat is not None and q_lng is not None:
+                lat, lng = q_lat, q_lng
+                if not active_location:
+                    active_location = q_loc_name
 
         query = Space.query.filter_by(is_active=True)
         if category and category != "All":
@@ -554,15 +560,59 @@ def create_app():
 
         return render_template("auth/register.html")
 
-    @app.route("/auth/logout", methods=["POST"])
-    @login_required
+    @app.route("/auth/logout", methods=["GET", "POST"])
     def auth_logout():
-        uid = current_user.id
-        logout_user()
-        session.clear()
-        record_audit("AUTH_LOGOUT", user_id=uid)
+        if current_user.is_authenticated:
+            uid = current_user.id
+            logout_user()
+            session.clear()
+            record_audit("AUTH_LOGOUT", user_id=uid)
         flash("You have been signed out successfully.", "success")
         return redirect(url_for("index"))
+
+    @app.route("/auth/demo-switch/<role>")
+    def auth_demo_switch(role):
+        role_clean = (role or "").strip().lower()
+        target_email = None
+        persona_name = ""
+
+        if role_clean in ["seeker", "student", "aarav"]:
+            target_email = "aarav@iitd.ac.in"
+            persona_name = "Student Seeker (Aarav Sharma)"
+        elif role_clean in ["host", "sunita"]:
+            target_email = "sunita@spaceloop.in"
+            persona_name = "Verified Host (Sunita Deshmukh)"
+        elif role_clean in ["admin"]:
+            target_email = "admin@spaceloop.in"
+            persona_name = "Platform Administrator"
+        elif role_clean in ["logout", "guest"]:
+            if current_user.is_authenticated:
+                uid = current_user.id
+                logout_user()
+                session.clear()
+                record_audit("AUTH_LOGOUT", user_id=uid)
+            flash("Switched to Guest Mode (signed out).", "info")
+            return redirect(request.referrer or url_for("index"))
+        else:
+            flash(f"Unknown demo persona '{role}'.", "warning")
+            return redirect(request.referrer or url_for("index"))
+
+        user = User.query.filter_by(email=target_email).first()
+        if not user:
+            flash(f"Demo user '{target_email}' not found in database.", "danger")
+            return redirect(request.referrer or url_for("index"))
+
+        login_user(user, remember=True)
+        session.permanent = True
+        record_audit("DEMO_SWITCH_LOGIN", user_id=user.id, details=f"Switched to {persona_name}")
+        flash(f"⚡ Testing as {persona_name}! Active session enabled.", "success")
+
+        referrer = request.referrer or ""
+        if "/auth/" in referrer or not referrer:
+            if role_clean == "host":
+                return redirect(url_for("dashboard_page"))
+            return redirect(url_for("explore_page"))
+        return redirect(referrer)
 
     @app.route("/auth/forgot-password", methods=["GET", "POST"])
     @limiter.limit(Config.AUTH_PASSWORD_RESET_RATE_LIMIT)
@@ -691,6 +741,7 @@ def create_app():
     @app.route("/api/spaces", methods=["GET"])
     def get_spaces():
         category = sanitize_string(request.args.get("category"), max_length=50)
+        q = sanitize_string(request.args.get("q", ""), max_length=200)
         loc = sanitize_string(request.args.get("loc", ""), max_length=100)
         raw_lat = request.args.get("lat")
         raw_lng = request.args.get("lng")
@@ -712,12 +763,23 @@ def create_app():
                 max_price = None
 
         lat, lng, resolved_loc_name = resolve_location_coordinates(loc, raw_lat, raw_lng)
+        if (lat is None or lng is None) and q:
+            q_lat, q_lng, q_loc_name = resolve_location_coordinates(q)
+            if q_lat is not None and q_lng is not None:
+                lat, lng = q_lat, q_lng
 
         query = Space.query.filter_by(is_active=True)
         if category and category != "All":
             query = query.filter(Space.category == category)
         if max_price is not None:
             query = query.filter(Space.price_hourly <= max_price)
+        if q:
+            query = query.filter(
+                (Space.title.ilike(f"%{q}%")) |
+                (Space.location.ilike(f"%{q}%")) |
+                (Space.address.ilike(f"%{q}%")) |
+                (Space.description.ilike(f"%{q}%"))
+            )
 
         all_spaces = query.all()
         spaces_data = []
@@ -923,6 +985,12 @@ def create_app():
                 radius_km = None
 
         lat, lng, resolved_loc_name = resolve_location_coordinates(loc, raw_lat, raw_lng)
+        if (lat is None or lng is None) and query_text:
+            q_lat, q_lng, q_loc_name = resolve_location_coordinates(query_text)
+            if q_lat is not None and q_lng is not None:
+                lat, lng = q_lat, q_lng
+                if not resolved_loc_name:
+                    resolved_loc_name = q_loc_name
 
         all_spaces = [s.to_dict() for s in Space.query.filter_by(is_active=True).all()]
         candidate_spaces = []

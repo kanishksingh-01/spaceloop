@@ -33,9 +33,55 @@
     }
   </script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
   <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col antialiased selection:bg-brand-500 selection:text-white">
+
+  <!-- Top Demo / Evaluation Persona Bar -->
+  <aside aria-label="Demo Testing Bar" class="bg-gradient-to-r from-slate-950 via-indigo-950/70 to-slate-950 border-b border-indigo-500/20 py-1.5 px-4 text-xs relative z-50">
+    <div class="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-2">
+      
+      <div class="flex items-center gap-2 text-slate-300">
+        <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-indigo-500/20 border border-indigo-500/30 text-indigo-300 font-bold text-[10px] uppercase tracking-wider">
+          <i class="fa-solid fa-flask-vial text-amber-400"></i> Demo Mode
+        </span>
+        <span class="hidden sm:inline text-slate-400 text-[11px]">Active Persona:</span>
+        {% if current_user.is_authenticated %}
+          {% if current_user.is_admin %}
+            <span class="font-bold text-violet-300 flex items-center gap-1"><i class="fa-solid fa-crown text-amber-400 text-[10px]"></i> Admin ({{ current_user.name }})</span>
+          {% elif is_host_context %}
+            <span class="font-bold text-indigo-300 flex items-center gap-1"><i class="fa-solid fa-house-chimney-user text-indigo-400 text-[10px]"></i> Host (Sunita)</span>
+          {% else %}
+            <span class="font-bold text-emerald-300 flex items-center gap-1"><i class="fa-solid fa-graduation-cap text-emerald-400 text-[10px]"></i> Seeker (Aarav)</span>
+          {% endif %}
+        {% else %}
+          <span class="font-medium text-slate-400 flex items-center gap-1"><i class="fa-solid fa-user text-slate-500 text-[10px]"></i> Guest (Unauthenticated)</span>
+        {% endif %}
+      </div>
+
+      <!-- Quick Switcher Buttons -->
+      <div class="flex items-center gap-1.5 text-[11px]">
+        <span class="text-slate-500 mr-1 hidden md:inline">1-Click Switch:</span>
+        <a href="{{ url_for('auth_demo_switch', role='seeker') }}" class="px-2.5 py-0.5 rounded-lg transition flex items-center gap-1 {% if current_user.is_authenticated and not is_host_context and not current_user.is_admin %}bg-emerald-600/30 text-emerald-200 border border-emerald-500/40 font-bold{% else %}bg-slate-900/80 text-slate-300 hover:text-white hover:bg-slate-800 border border-slate-800{% endif %}" title="Switch to Student Seeker (Aarav Sharma)">
+          <i class="fa-solid fa-graduation-cap text-emerald-400"></i> Seeker
+        </a>
+        <a href="{{ url_for('auth_demo_switch', role='host') }}" class="px-2.5 py-0.5 rounded-lg transition flex items-center gap-1 {% if current_user.is_authenticated and is_host_context and not current_user.is_admin %}bg-indigo-600/30 text-indigo-200 border border-indigo-500/40 font-bold{% else %}bg-slate-900/80 text-slate-300 hover:text-white hover:bg-slate-800 border border-slate-800{% endif %}" title="Switch to Verified Host (Sunita Deshmukh)">
+          <i class="fa-solid fa-house-chimney-user text-indigo-400"></i> Host
+        </a>
+        <a href="{{ url_for('auth_demo_switch', role='admin') }}" class="px-2 py-0.5 rounded-lg transition flex items-center gap-1 {% if current_user.is_authenticated and current_user.is_admin %}bg-violet-600/30 text-violet-200 border border-violet-500/40 font-bold{% else %}bg-slate-900/80 text-slate-400 hover:text-white hover:bg-slate-800 border border-slate-800{% endif %}" title="Switch to Admin">
+          <i class="fa-solid fa-crown text-amber-400"></i> Admin
+        </a>
+        {% if current_user.is_authenticated %}
+        <a href="{{ url_for('auth_demo_switch', role='guest') }}" class="px-2 py-0.5 rounded-lg bg-slate-900/80 text-slate-400 hover:text-rose-300 hover:bg-slate-800 border border-slate-800 transition" title="Log out to Guest view">
+          <i class="fa-solid fa-arrow-right-from-bracket"></i> Guest
+        </a>
+        {% endif %}
+      </div>
+
+    </div>
+  </aside>
 
   <!-- Main Navigation Bar -->
   <header class="sticky top-0 z-40 backdrop-blur-md bg-slate-950/90 border-b border-slate-800/80">

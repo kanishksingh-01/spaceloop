@@ -31,6 +31,34 @@
         {% endif %}
       {% endwith %}
 
+      <!-- 1-Click Demo Quick Logins -->
+      <div class="mb-6 p-3.5 rounded-2xl bg-indigo-950/40 border border-indigo-500/30">
+        <div class="text-[11px] font-bold text-indigo-300 uppercase tracking-wider mb-2 flex items-center justify-between">
+          <span class="flex items-center gap-1.5"><i class="fa-solid fa-bolt text-amber-400"></i> Instant 1-Click Testing Logins:</span>
+          <span class="text-[10px] text-slate-400 font-normal">No password needed</span>
+        </div>
+        <div class="grid grid-cols-2 gap-2">
+          <a href="{{ url_for('auth_demo_switch', role='seeker') }}" class="p-2.5 rounded-xl bg-slate-900/90 hover:bg-emerald-950/50 border border-slate-700 hover:border-emerald-500 text-left transition group">
+            <div class="text-xs font-bold text-emerald-400 flex items-center gap-1.5">
+              <i class="fa-solid fa-graduation-cap"></i> Student Seeker
+            </div>
+            <div class="text-[10px] text-slate-400 mt-0.5 group-hover:text-slate-300">Aarav Sharma (IIT-D)</div>
+          </a>
+          <a href="{{ url_for('auth_demo_switch', role='host') }}" class="p-2.5 rounded-xl bg-slate-900/90 hover:bg-indigo-950/50 border border-slate-700 hover:border-indigo-500 text-left transition group">
+            <div class="text-xs font-bold text-indigo-400 flex items-center gap-1.5">
+              <i class="fa-solid fa-house-chimney-user"></i> Verified Host
+            </div>
+            <div class="text-[10px] text-slate-400 mt-0.5 group-hover:text-slate-300">Sunita Deshmukh (Pune)</div>
+          </a>
+        </div>
+      </div>
+
+      <div class="relative flex py-2 items-center mb-4">
+        <div class="flex-grow border-t border-slate-800"></div>
+        <span class="flex-shrink mx-3 text-[10px] font-bold text-slate-500 uppercase tracking-wider">or sign in with email</span>
+        <div class="flex-grow border-t border-slate-800"></div>
+      </div>
+
       <!-- Login Form -->
       <form method="POST" action="{{ url_for("auth_login", next=request.args.get("next", "")) }}" class="space-y-4">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
