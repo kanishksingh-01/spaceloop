@@ -180,3 +180,5 @@ In accordance with Hack2Ignite guidelines:
 - **LLM / AI Model Usage:** Used for multimodal space analysis, semantic matchmaking scoring, dynamic micro-leasing agreement synthesis, and real-time user assistance.
 - **Architectural Fallback:** Includes deterministic heuristic algorithms ensuring zero disruption during live stage evaluations.
 
+SYNC TEST -AARYA
+
