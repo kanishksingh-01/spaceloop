@@ -37,11 +37,11 @@
 <body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col antialiased selection:bg-brand-500 selection:text-white">
 
   <!-- Main Navigation Bar -->
-  <header class="sticky top-0 z-40 backdrop-blur-md bg-slate-950/80 border-b border-slate-800/80">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+  <header class="sticky top-0 z-40 backdrop-blur-md bg-slate-950/90 border-b border-slate-800/80">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-4">
       
       <!-- Brand Logo -->
-      <a href="{{ url_for('index') }}" class="flex items-center gap-2.5 group">
+      <a href="{{ url_for('index') }}" class="flex items-center gap-2.5 group shrink-0">
         <div class="w-9 h-9 rounded-xl bg-gradient-to-tr from-brand-600 via-violet-600 to-indigo-400 flex items-center justify-center shadow-lg shadow-indigo-500/25 group-hover:scale-105 transition duration-200">
           <i class="fa-solid fa-infinity text-white text-lg"></i>
         </div>
@@ -53,58 +53,164 @@
         </div>
       </a>
 
-      <!-- Center Nav Links -->
-      <nav class="hidden md:flex items-center gap-1 text-sm font-medium text-slate-300">
-        <a href="{{ url_for('index') }}" class="px-3.5 py-2 rounded-lg hover:text-white hover:bg-slate-800/60 transition">
-          <i class="fa-solid fa-compass mr-1.5 text-slate-400"></i> Explore Spaces
-        </a>
-        <a href="{{ url_for('list_space_page') }}" class="px-3.5 py-2 rounded-lg hover:text-white hover:bg-slate-800/60 transition flex items-center gap-1.5">
-          <i class="fa-solid fa-wand-magic-sparkles text-indigo-400"></i> List with AI
-        </a>
-        <a href="{{ url_for('calculator_page') }}" class="px-3.5 py-2 rounded-lg hover:text-white hover:bg-slate-800/60 transition">
-          <i class="fa-solid fa-calculator mr-1.5 text-slate-400"></i> Earnings Calculator
-        </a>
-        <a href="{{ url_for('dashboard_page') }}" class="px-3.5 py-2 rounded-lg hover:text-white hover:bg-slate-800/60 transition">
-          <i class="fa-solid fa-layer-group mr-1.5 text-slate-400"></i> My Dashboard
-        </a>
-        <a href="{{ url_for('verify_page') }}" class="px-3.5 py-2 rounded-lg hover:text-white hover:bg-slate-800/60 transition flex items-center gap-1.5">
-          <i class="fa-solid fa-shield-halved text-emerald-400"></i> Verification
-          {% if current_user and (current_user.is_student_verified or current_user.is_host_verified) %}
-          <span class="w-1.5 h-1.5 rounded-full bg-emerald-400" title="Identity Verified"></span>
-          {% else %}
-          <span class="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" title="KYC Pending"></span>
-          {% endif %}
-        </a>
-        <a href="{{ url_for('how_it_works') }}" class="px-3.5 py-2 rounded-lg hover:text-white hover:bg-slate-800/60 transition">
-          <i class="fa-regular fa-lightbulb mr-1.5 text-slate-400"></i> How It Works
-        </a>
+      <!-- Center Role-Aware Nav Links (Desktop) -->
+      <nav class="hidden lg:flex items-center gap-1 text-xs font-semibold">
+        {% if current_user and current_user.role == 'owner' %}
+          <!-- HOST NAVIGATION -->
+          <a href="{{ url_for('dashboard_page') }}" class="px-3 py-1.5 rounded-lg transition flex items-center gap-1.5 {% if request.endpoint == 'dashboard_page' %}bg-indigo-600/20 text-indigo-300 border border-indigo-500/30{% else %}text-slate-300 hover:text-white hover:bg-slate-800/60{% endif %}">
+            <i class="fa-solid fa-chart-pie text-indigo-400"></i> Dashboard
+          </a>
+          <a href="{{ url_for('dashboard_page') }}#spaces" class="px-3 py-1.5 rounded-lg transition flex items-center gap-1.5 text-slate-300 hover:text-white hover:bg-slate-800/60">
+            <i class="fa-solid fa-warehouse text-slate-400"></i> My Spaces
+          </a>
+          <a href="{{ url_for('dashboard_page') }}#bookings" class="px-3 py-1.5 rounded-lg transition flex items-center gap-1.5 text-slate-300 hover:text-white hover:bg-slate-800/60">
+            <i class="fa-solid fa-calendar-check text-slate-400"></i> Bookings
+          </a>
+          <a href="{{ url_for('calculator_page') }}" class="px-3 py-1.5 rounded-lg transition flex items-center gap-1.5 {% if request.endpoint == 'calculator_page' %}bg-indigo-600/20 text-indigo-300 border border-indigo-500/30{% else %}text-slate-300 hover:text-white hover:bg-slate-800/60{% endif %}">
+            <i class="fa-solid fa-calculator text-slate-400"></i> Earnings
+          </a>
+          <a href="{{ url_for('verify_page') }}" class="px-3 py-1.5 rounded-lg transition flex items-center gap-1.5 {% if request.endpoint == 'verify_page' %}bg-indigo-600/20 text-indigo-300 border border-indigo-500/30{% else %}text-slate-300 hover:text-white hover:bg-slate-800/60{% endif %}">
+            <i class="fa-solid fa-shield-halved text-emerald-400"></i> Verification
+            {% if current_user and current_user.is_host_verified %}
+            <span class="w-1.5 h-1.5 rounded-full bg-emerald-400" title="Host Verified"></span>
+            {% else %}
+            <span class="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" title="KYC Pending"></span>
+            {% endif %}
+          </a>
+          <a href="{{ url_for('profile_page') }}" class="px-3 py-1.5 rounded-lg transition flex items-center gap-1.5 {% if request.endpoint == 'profile_page' %}bg-indigo-600/20 text-indigo-300 border border-indigo-500/30{% else %}text-slate-300 hover:text-white hover:bg-slate-800/60{% endif %}">
+            <i class="fa-solid fa-user text-slate-400"></i> Profile
+          </a>
+        {% else %}
+          <!-- SEEKER NAVIGATION -->
+          <a href="{{ url_for('index') }}" class="px-3 py-1.5 rounded-lg transition flex items-center gap-1.5 {% if request.endpoint == 'index' and not request.args.get('explore') %}bg-indigo-600/20 text-indigo-300 border border-indigo-500/30{% else %}text-slate-300 hover:text-white hover:bg-slate-800/60{% endif %}">
+            <i class="fa-solid fa-house text-indigo-400"></i> Home
+          </a>
+          <a href="{{ url_for('index') }}?explore=1#explore" class="px-3 py-1.5 rounded-lg transition flex items-center gap-1.5 {% if request.endpoint == 'index' and request.args.get('explore') or request.endpoint == 'space_detail' %}bg-indigo-600/20 text-indigo-300 border border-indigo-500/30{% else %}text-slate-300 hover:text-white hover:bg-slate-800/60{% endif %}">
+            <i class="fa-solid fa-compass text-slate-400"></i> Explore Spaces
+          </a>
+          <a href="{{ url_for('dashboard_page') }}#bookings" class="px-3 py-1.5 rounded-lg transition flex items-center gap-1.5 {% if request.endpoint == 'dashboard_page' %}bg-indigo-600/20 text-indigo-300 border border-indigo-500/30{% else %}text-slate-300 hover:text-white hover:bg-slate-800/60{% endif %}">
+            <i class="fa-solid fa-calendar-check text-slate-400"></i> My Bookings
+          </a>
+          <a href="{{ url_for('active_session_redirect') }}" class="px-3 py-1.5 rounded-lg transition flex items-center gap-1.5 {% if request.endpoint in ['session_page', 'active_session_redirect'] %}bg-emerald-600/20 text-emerald-300 border border-emerald-500/30{% else %}text-slate-300 hover:text-white hover:bg-slate-800/60{% endif %}">
+            <i class="fa-solid fa-door-open text-emerald-400"></i> Active Session
+          </a>
+          <a href="{{ url_for('inquiries_page') }}" class="px-3 py-1.5 rounded-lg transition flex items-center gap-1.5 {% if request.endpoint == 'inquiries_page' %}bg-indigo-600/20 text-indigo-300 border border-indigo-500/30{% else %}text-slate-300 hover:text-white hover:bg-slate-800/60{% endif %}">
+            <i class="fa-solid fa-comments text-slate-400"></i> Inquiries
+          </a>
+          <a href="{{ url_for('profile_page') }}" class="px-3 py-1.5 rounded-lg transition flex items-center gap-1.5 {% if request.endpoint == 'profile_page' %}bg-indigo-600/20 text-indigo-300 border border-indigo-500/30{% else %}text-slate-300 hover:text-white hover:bg-slate-800/60{% endif %}">
+            <i class="fa-solid fa-user text-slate-400"></i> Profile
+          </a>
+        {% endif %}
       </nav>
 
       <!-- Right Action Controls -->
-      <div class="flex items-center gap-3">
-        <!-- Quick Switch Demo Persona -->
-        <div class="hidden sm:flex items-center bg-slate-900 border border-slate-800 rounded-lg p-1 text-xs">
-          <span class="text-slate-400 px-2 flex items-center gap-1.5">
-            <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-            Demo as:
-          </span>
+      <div class="flex items-center gap-2 sm:gap-3 shrink-0">
+        <!-- Prominent Persona Switch Action -->
+        {% if current_user and current_user.role == 'owner' %}
+          <form method="POST" action="{{ url_for('switch_role') }}" class="hidden sm:inline-block">
+            <input type="hidden" name="role" value="seeker">
+            <button type="submit" class="px-3 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-indigo-300 hover:text-white border border-slate-700/80 text-xs font-semibold transition flex items-center gap-1.5" title="Switch to Seeker mode">
+              <i class="fa-solid fa-repeat text-[10px]"></i>
+              <span>Switch to Seeker</span>
+            </button>
+          </form>
+          <a href="{{ url_for('list_space_page') }}" class="hidden sm:inline-flex items-center gap-1.5 bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white font-semibold text-xs px-3.5 py-1.5 rounded-lg shadow-md shadow-indigo-600/20 transition">
+            <i class="fa-solid fa-plus text-[10px]"></i> Add Space
+          </a>
+        {% else %}
+          <form method="POST" action="{{ url_for('switch_role') }}" class="hidden sm:inline-block">
+            <input type="hidden" name="role" value="owner">
+            <button type="submit" class="px-3 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-amber-300 hover:text-white border border-slate-700/80 text-xs font-semibold transition flex items-center gap-1.5" title="Switch to Host mode">
+              <i class="fa-solid fa-repeat text-[10px]"></i>
+              <span>Switch to Host</span>
+            </button>
+          </form>
+          <a href="{{ url_for('list_space_page') }}" class="hidden sm:inline-flex items-center gap-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white border border-slate-700 font-semibold text-xs px-3.5 py-1.5 rounded-lg transition">
+            <i class="fa-solid fa-wand-magic-sparkles text-indigo-400 text-[10px]"></i> List Space
+          </a>
+        {% endif %}
+
+        <!-- Quick Switch Demo Persona Pills -->
+        <div class="flex items-center bg-slate-900 border border-slate-800 rounded-lg p-0.5 text-[11px]">
           <form method="POST" action="{{ url_for('switch_user', user_id=3) }}" class="inline">
-            <button type="submit" class="px-2.5 py-1 rounded font-medium {% if current_user and current_user.role == 'seeker' %}bg-indigo-600 text-white{% else %}text-slate-400 hover:text-white{% endif %}">
-              Student
+            <button type="submit" class="px-2 py-1 rounded font-medium transition {% if current_user and current_user.role == 'seeker' %}bg-indigo-600 text-white font-semibold{% else %}text-slate-400 hover:text-white{% endif %}">
+              Seeker
             </button>
           </form>
           <form method="POST" action="{{ url_for('switch_user', user_id=1) }}" class="inline">
-            <button type="submit" class="px-2.5 py-1 rounded font-medium {% if current_user and current_user.role == 'owner' %}bg-indigo-600 text-white{% else %}text-slate-400 hover:text-white{% endif %}">
+            <button type="submit" class="px-2 py-1 rounded font-medium transition {% if current_user and current_user.role == 'owner' %}bg-indigo-600 text-white font-semibold{% else %}text-slate-400 hover:text-white{% endif %}">
               Host
             </button>
           </form>
         </div>
 
-        <a href="{{ url_for('list_space_page') }}" class="hidden lg:inline-flex items-center gap-2 bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white font-medium text-xs sm:text-sm px-4 py-2 rounded-lg shadow-md shadow-indigo-600/20 transition">
-          <i class="fa-solid fa-plus"></i> List Space
-        </a>
+        <!-- Mobile Menu Toggle Button (Hamburger) -->
+        <button id="mobileMenuBtn" onclick="toggleMobileDrawer()" class="lg:hidden p-2 rounded-lg bg-slate-900 border border-slate-800 text-slate-300 hover:text-white focus:outline-none" aria-label="Toggle Navigation Menu">
+          <i class="fa-solid fa-bars text-sm"></i>
+        </button>
       </div>
 
+    </div>
+
+    <!-- Mobile Drawer Menu (Collapsible) -->
+    <div id="mobileDrawerMenu" class="hidden lg:hidden border-t border-slate-800/80 bg-slate-950/95 backdrop-blur-xl px-4 py-4 space-y-3 shadow-2xl">
+      <div class="flex items-center justify-between pb-3 border-b border-slate-800">
+        <div class="flex items-center gap-2.5">
+          <img src="{{ current_user.avatar_url or 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=100&q=80' }}" class="w-8 h-8 rounded-lg object-cover">
+          <div>
+            <div class="text-xs font-bold text-white">{{ current_user.name if current_user else 'SpaceLoop User' }}</div>
+            <div class="text-[10px] text-indigo-400 uppercase font-semibold">{{ current_user.role if current_user else 'seeker' }} mode</div>
+          </div>
+        </div>
+        <form method="POST" action="{{ url_for('switch_role') }}" class="inline">
+          <input type="hidden" name="role" value="{% if current_user and current_user.role == 'owner' %}seeker{% else %}owner{% endif %}">
+          <button type="submit" class="text-[11px] font-semibold text-indigo-300 bg-indigo-950/60 border border-indigo-500/30 px-2.5 py-1 rounded-lg">
+            Switch to {% if current_user and current_user.role == 'owner' %}Seeker{% else %}Host{% endif %}
+          </button>
+        </form>
+      </div>
+
+      <div class="grid grid-cols-2 gap-2 text-xs font-medium">
+        {% if current_user and current_user.role == 'owner' %}
+          <a href="{{ url_for('dashboard_page') }}" class="p-2 rounded-lg bg-slate-900/60 hover:bg-slate-800 text-slate-200 flex items-center gap-2">
+            <i class="fa-solid fa-chart-pie text-indigo-400"></i> Dashboard
+          </a>
+          <a href="{{ url_for('dashboard_page') }}#spaces" class="p-2 rounded-lg bg-slate-900/60 hover:bg-slate-800 text-slate-200 flex items-center gap-2">
+            <i class="fa-solid fa-warehouse text-slate-400"></i> My Spaces
+          </a>
+          <a href="{{ url_for('dashboard_page') }}#bookings" class="p-2 rounded-lg bg-slate-900/60 hover:bg-slate-800 text-slate-200 flex items-center gap-2">
+            <i class="fa-solid fa-calendar-check text-slate-400"></i> Bookings
+          </a>
+          <a href="{{ url_for('calculator_page') }}" class="p-2 rounded-lg bg-slate-900/60 hover:bg-slate-800 text-slate-200 flex items-center gap-2">
+            <i class="fa-solid fa-calculator text-slate-400"></i> Earnings
+          </a>
+          <a href="{{ url_for('verify_page') }}" class="p-2 rounded-lg bg-slate-900/60 hover:bg-slate-800 text-slate-200 flex items-center gap-2">
+            <i class="fa-solid fa-shield-halved text-emerald-400"></i> Verification
+          </a>
+          <a href="{{ url_for('profile_page') }}" class="p-2 rounded-lg bg-slate-900/60 hover:bg-slate-800 text-slate-200 flex items-center gap-2">
+            <i class="fa-solid fa-user text-slate-400"></i> Profile
+          </a>
+        {% else %}
+          <a href="{{ url_for('index') }}" class="p-2 rounded-lg bg-slate-900/60 hover:bg-slate-800 text-slate-200 flex items-center gap-2">
+            <i class="fa-solid fa-house text-indigo-400"></i> Home
+          </a>
+          <a href="{{ url_for('index') }}?explore=1#explore" class="p-2 rounded-lg bg-slate-900/60 hover:bg-slate-800 text-slate-200 flex items-center gap-2">
+            <i class="fa-solid fa-compass text-slate-400"></i> Explore
+          </a>
+          <a href="{{ url_for('dashboard_page') }}#bookings" class="p-2 rounded-lg bg-slate-900/60 hover:bg-slate-800 text-slate-200 flex items-center gap-2">
+            <i class="fa-solid fa-calendar-check text-slate-400"></i> Bookings
+          </a>
+          <a href="{{ url_for('active_session_redirect') }}" class="p-2 rounded-lg bg-slate-900/60 hover:bg-slate-800 text-emerald-300 flex items-center gap-2">
+            <i class="fa-solid fa-door-open text-emerald-400"></i> Session
+          </a>
+          <a href="{{ url_for('inquiries_page') }}" class="p-2 rounded-lg bg-slate-900/60 hover:bg-slate-800 text-slate-200 flex items-center gap-2">
+            <i class="fa-solid fa-comments text-slate-400"></i> Inquiries
+          </a>
+          <a href="{{ url_for('profile_page') }}" class="p-2 rounded-lg bg-slate-900/60 hover:bg-slate-800 text-slate-200 flex items-center gap-2">
+            <i class="fa-solid fa-user text-slate-400"></i> Profile
+          </a>
+        {% endif %}
+      </div>
     </div>
   </header>
 
@@ -113,30 +219,55 @@
     {% block content %}{% endblock %}
   </main>
 
-  <!-- Mobile App Bottom Navigation Bar -->
+  <!-- Mobile App Bottom Navigation Bar (Role-Aware) -->
   <nav class="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-slate-950/95 backdrop-blur-lg border-t border-slate-800/80 px-2 py-2 flex items-center justify-around text-[10px] font-medium text-slate-400">
-    <a href="{{ url_for('index') }}" class="flex flex-col items-center gap-1 hover:text-indigo-400 {% if request.endpoint == 'index' %}text-indigo-400{% endif %}">
-      <i class="fa-solid fa-compass text-base"></i>
-      <span>Explore</span>
-    </a>
-    <a href="{{ url_for('verify_page') }}" class="flex flex-col items-center gap-1 hover:text-emerald-400 {% if request.endpoint == 'verify_page' %}text-emerald-400{% endif %}">
-      <i class="fa-solid fa-shield-halved text-base"></i>
-      <span>KYC Hub</span>
-    </a>
-    <a href="{{ url_for('list_space_page') }}" class="flex flex-col items-center gap-1 text-white">
-      <div class="w-8 h-8 rounded-full bg-gradient-to-r from-indigo-600 to-violet-600 flex items-center justify-center -mt-3 shadow-lg shadow-indigo-600/40">
-        <i class="fa-solid fa-plus text-xs"></i>
-      </div>
-      <span>List</span>
-    </a>
-    <a href="{{ url_for('dashboard_page') }}" class="flex flex-col items-center gap-1 hover:text-indigo-400 {% if request.endpoint == 'dashboard_page' %}text-indigo-400{% endif %}">
-      <i class="fa-solid fa-layer-group text-base"></i>
-      <span>Dashboard</span>
-    </a>
-    <a href="{{ url_for('calculator_page') }}" class="flex flex-col items-center gap-1 hover:text-indigo-400 {% if request.endpoint == 'calculator_page' %}text-indigo-400{% endif %}">
-      <i class="fa-solid fa-calculator text-base"></i>
-      <span>Earnings</span>
-    </a>
+    {% if current_user and current_user.role == 'owner' %}
+      <a href="{{ url_for('dashboard_page') }}" class="flex flex-col items-center gap-1 {% if request.endpoint == 'dashboard_page' %}text-indigo-400 font-semibold{% else %}hover:text-indigo-400{% endif %}">
+        <i class="fa-solid fa-chart-pie text-base"></i>
+        <span>Dashboard</span>
+      </a>
+      <a href="{{ url_for('dashboard_page') }}#spaces" class="flex flex-col items-center gap-1 hover:text-indigo-400">
+        <i class="fa-solid fa-warehouse text-base"></i>
+        <span>Spaces</span>
+      </a>
+      <a href="{{ url_for('list_space_page') }}" class="flex flex-col items-center gap-1 text-white">
+        <div class="w-8 h-8 rounded-full bg-gradient-to-r from-indigo-600 to-violet-600 flex items-center justify-center -mt-3 shadow-lg shadow-indigo-600/40">
+          <i class="fa-solid fa-plus text-xs"></i>
+        </div>
+        <span>List</span>
+      </a>
+      <a href="{{ url_for('calculator_page') }}" class="flex flex-col items-center gap-1 {% if request.endpoint == 'calculator_page' %}text-indigo-400 font-semibold{% else %}hover:text-indigo-400{% endif %}">
+        <i class="fa-solid fa-calculator text-base"></i>
+        <span>Earnings</span>
+      </a>
+      <a href="{{ url_for('profile_page') }}" class="flex flex-col items-center gap-1 {% if request.endpoint == 'profile_page' %}text-indigo-400 font-semibold{% else %}hover:text-indigo-400{% endif %}">
+        <i class="fa-solid fa-user text-base"></i>
+        <span>Profile</span>
+      </a>
+    {% else %}
+      <a href="{{ url_for('index') }}" class="flex flex-col items-center gap-1 {% if request.endpoint == 'index' %}text-indigo-400 font-semibold{% else %}hover:text-indigo-400{% endif %}">
+        <i class="fa-solid fa-compass text-base"></i>
+        <span>Explore</span>
+      </a>
+      <a href="{{ url_for('dashboard_page') }}#bookings" class="flex flex-col items-center gap-1 {% if request.endpoint == 'dashboard_page' %}text-indigo-400 font-semibold{% else %}hover:text-indigo-400{% endif %}">
+        <i class="fa-solid fa-calendar-check text-base"></i>
+        <span>Bookings</span>
+      </a>
+      <a href="{{ url_for('active_session_redirect') }}" class="flex flex-col items-center gap-1 {% if request.endpoint in ['session_page', 'active_session_redirect'] %}text-emerald-400 font-semibold{% else %}hover:text-emerald-400{% endif %}">
+        <div class="w-8 h-8 rounded-full bg-gradient-to-r from-emerald-600 to-teal-600 flex items-center justify-center -mt-3 shadow-lg shadow-emerald-600/40">
+          <i class="fa-solid fa-door-open text-xs text-white"></i>
+        </div>
+        <span>Session</span>
+      </a>
+      <a href="{{ url_for('inquiries_page') }}" class="flex flex-col items-center gap-1 {% if request.endpoint == 'inquiries_page' %}text-indigo-400 font-semibold{% else %}hover:text-indigo-400{% endif %}">
+        <i class="fa-solid fa-comments text-base"></i>
+        <span>Inquiries</span>
+      </a>
+      <a href="{{ url_for('profile_page') }}" class="flex flex-col items-center gap-1 {% if request.endpoint == 'profile_page' %}text-indigo-400 font-semibold{% else %}hover:text-indigo-400{% endif %}">
+        <i class="fa-solid fa-user text-base"></i>
+        <span>Profile</span>
+      </a>
+    {% endif %}
   </nav>
 
   <!-- Floating LoopBot Concierge Launcher -->
@@ -261,6 +392,14 @@
 
   <!-- Core App Scripts -->
   <script src="{{ url_for('static', filename='app.js') }}"></script>
+  <script>
+    function toggleMobileDrawer() {
+      var drawer = document.getElementById('mobileDrawerMenu');
+      if (drawer) {
+        drawer.classList.toggle('hidden');
+      }
+    }
+  </script>
   {% block scripts %}{% endblock %}
 </body>
 </html>
