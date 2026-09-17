@@ -234,8 +234,8 @@ class Space(db.Model):
             return 4.9  # Default new space rating
         return round(sum(r.rating for r in self.reviews) / len(self.reviews), 1)
 
-    def to_dict(self):
-        return {
+    def to_dict(self, include_access_secrets: bool = False):
+        data = {
             "id": self.id,
             "owner_id": self.owner_id,
             "owner_name": self.owner.name if self.owner else "Verified Host",
@@ -272,10 +272,8 @@ class Space(db.Model):
             "longitude": self.longitude,
             "geofence_radius_meters": self.geofence_radius_meters,
             "physical_access_type": self.physical_access_type,
-            "keybox_code": self.keybox_code,
             "discom_ca_number": self.discom_ca_number,
             "discom_consumer_name": self.discom_consumer_name,
-            "room_qr_token": self.room_qr_token,
             "is_discom_verified": bool(self.discom_ca_number),
             # Host Trust & Verification (SpaceLoop Verified)
             "owner_verified": self.owner.is_host_verified if self.owner else False,
@@ -287,6 +285,10 @@ class Space(db.Model):
             "owner_discom_provider": self.owner.discom_provider if self.owner else "",
             "is_space_info_verified": bool(self.ai_suitability_score and self.ai_suitability_score >= 80),
         }
+        if include_access_secrets:
+            data["keybox_code"] = self.keybox_code
+            data["room_qr_token"] = self.room_qr_token
+        return data
 
 
 class Booking(db.Model):

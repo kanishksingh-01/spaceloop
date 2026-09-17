@@ -1,6 +1,7 @@
 """
 SpaceLoop India Stack Verification Engine
-Compliant with DPDP Act 2023, UIDAI Security Directives, and BBPS / NPCI protocols.
+Simulated India Stack Sandbox (Demo Mode for Prototype Evaluation)
+Compliant with DPDP Act 2023 design principles: Tokenization, salted hashing, and zero raw PII storage.
 """
 
 import re
@@ -24,7 +25,7 @@ ACADEMIC_DOMAIN_PATTERN = re.compile(r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.(ac\.i
 
 
 def verify_digilocker_aadhaar(aadhaar_number: str, otp: str = None) -> Dict[str, Any]:
-    """DigiLocker / UIDAI Sandbox Handshake.
+    """DigiLocker / UIDAI Sandbox Handshake (Simulated Demo Mode).
     DPDP Act 2023 Section 8 Compliant: Never stores raw 12-digit Aadhaar.
     Returns masked representation and salted SHA-256 token hash.
     """
@@ -41,7 +42,7 @@ def verify_digilocker_aadhaar(aadhaar_number: str, otp: str = None) -> Dict[str,
             'success': True,
             'otp_sent': True,
             'masked_aadhaar': mask_aadhaar(clean_aadhaar),
-            'message': 'Instant UIDAI verification OTP sent to Aadhaar-linked mobile.'
+            'message': 'Instant UIDAI verification OTP sent to Aadhaar-linked mobile (Simulated Sandbox).'
         }
 
     # Simulate OTP verification (demo accepts 123456 or 6-digit number)
@@ -58,9 +59,10 @@ def verify_digilocker_aadhaar(aadhaar_number: str, otp: str = None) -> Dict[str,
     return {
         'success': True,
         'is_verified': True,
+        'is_simulated_sandbox': True,
         'masked_aadhaar': masked,
         'token_hash': token_hash,
-        'verification_source': 'DigiLocker_UIDAI_Sandbox_2026',
+        'verification_source': 'Simulated_DigiLocker_UIDAI_Sandbox_Demo_Mode',
         'message': f'Aadhaar verified via DigiLocker tokenization ({masked}). Zero raw data stored.'
     }
 
@@ -126,7 +128,7 @@ def verify_discom_meter(ca_number: str, provider: str, address: str = "") -> Dic
 
 
 def execute_upi_penny_drop(upi_vpa: str, claimed_name: str) -> Dict[str, Any]:
-    """NPCI UPI Rs. 1 Penny Drop Verification.
+    """NPCI UPI Rs. 1 Penny Drop Verification (Simulated Sandbox Demo Mode).
     Validates host bank account title against claimed KYC / PAN name.
     """
     if not upi_vpa or '@' not in upi_vpa:
@@ -142,10 +144,12 @@ def execute_upi_penny_drop(upi_vpa: str, claimed_name: str) -> Dict[str, Any]:
     return {
         'success': True,
         'is_verified': True,
+        'is_simulated_sandbox': True,
         'upi_vpa_masked': vpa_masked,
         'beneficiary_name': bank_resolved_name,
-        'bank_rrn': f"NPCI{secrets.randbelow(899999999) + 100000000}",
+        'bank_rrn': f"SIM-NPCI{secrets.randbelow(899999999) + 100000000}",
         'penny_drop_status': 'SUCCESS_RESOLVED',
         'payout_ready': True,
-        'message': f'Rs. 1 penny drop successful. Beneficiary title matches KYC name: {bank_resolved_name}.'
+        'verification_type': 'Simulated UPI Penny Drop Sandbox',
+        'message': f'Rs. 1 penny drop simulated successfully. Beneficiary title matches KYC name: {bank_resolved_name}.'
     }
