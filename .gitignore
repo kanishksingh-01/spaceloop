@@ -18,3 +18,10 @@ venv/
 
 # Local Antigravity backup
 spaceloop-antigravity-backup/
+
+# IDE & Assistant Metadata
+.agent/
+.gemini/
+.gsd/
+GSD-STYLE.md
+PROJECT_RULES.md

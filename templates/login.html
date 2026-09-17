@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+
+{% block title %}Sign In / Switch Persona | SpaceLoop{% endblock %}
+
+{% block content %}
+
+<div class="max-w-md mx-auto px-4 py-16">
+
+  <div class="bg-slate-900/90 border border-slate-800 rounded-3xl p-8 shadow-2xl backdrop-blur-md text-center">
+    
+    <div class="w-12 h-12 rounded-2xl bg-indigo-600/20 text-indigo-400 flex items-center justify-center mx-auto mb-4 text-xl">
+      <i class="fa-solid fa-user-astronaut"></i>
+    </div>
+
+    <h1 class="text-2xl font-extrabold text-white mb-2">SpaceLoop Personas</h1>
+    <p class="text-xs text-slate-400 mb-6">
+      Select a persona to test the platform from either a Seeker or Property Host perspective.
+    </p>
+
+    <div class="space-y-3 text-left">
+      {% for u in users %}
+        <form method="POST" action="{{ url_for('switch_user', user_id=u.id) }}">
+          <button type="submit" class="w-full p-3.5 rounded-2xl bg-slate-950/80 border border-slate-800 hover:border-indigo-500/50 flex items-center justify-between group transition text-left">
+            <div class="flex items-center gap-3">
+              <img src="{{ u.avatar_url }}" class="w-10 h-10 rounded-xl object-cover">
+              <div>
+                <div class="text-sm font-bold text-white group-hover:text-indigo-400 transition">{{ u.name }}</div>
+                <div class="text-[11px] text-slate-400">{{ u.email }} • <span class="uppercase text-indigo-400 font-semibold">{{ u.role }}</span></div>
+              </div>
+            </div>
+            <i class="fa-solid fa-arrow-right text-slate-600 group-hover:text-white transition text-xs"></i>
+          </button>
+        </form>
+      {% endfor %}
+    </div>
+
+    <div class="mt-8 pt-6 border-t border-slate-800 text-xs text-slate-500">
+      Passwordless demo mode active for Hack2Ignite evaluation.
+    </div>
+
+  </div>
+
+</div>
+
+{% endblock %}

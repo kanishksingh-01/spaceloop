@@ -1,245 +1,577 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}SpaceLoop | Zero-Hardware Micro-Space Platform{% endblock %}</title>
-    <!-- TailwindCSS CDN -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    colors: {
-                        brand: {
-                            50: '#eef2ff',
-                            100: '#e0e7ff',
-                            500: '#6366f1',
-                            600: '#4f46e5',
-                            700: '#4338ca',
-                            900: '#312e81',
-                        }
-                    },
-                    fontFamily: {
-                        sans: ['Inter', 'sans-serif'],
-                        display: ['Outfit', 'sans-serif']
-                    }
-                }
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}SpaceLoop | AI-Powered Temporary Spaces{% endblock %}</title>
+  <meta name="csrf-token" content="{{ csrf_token() }}">
+  
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              50: '#eef2ff',
+              100: '#e0e7ff',
+              500: '#6366f1',
+              600: '#4f46e5',
+              700: '#4338ca',
+              800: '#3730a3',
+              900: '#312e81',
+            },
+            accent: {
+              emerald: '#10b981',
+              amber: '#f59e0b',
+              violet: '#8b5cf6'
             }
+          }
         }
-    </script>
-    <!-- FontAwesome 6 -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- Google Fonts -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Outfit:wght@500;600;700;800&display=swap" rel="stylesheet">
-    <!-- Custom CSS -->
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/custom.css') }}">
+      }
+    }
+  </script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
-<body class="bg-slate-50 text-slate-900 min-h-screen flex flex-col font-sans antialiased selection:bg-brand-500 selection:text-white">
+<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col antialiased selection:bg-brand-500 selection:text-white">
 
-    <!-- Top Notice Banner -->
-    <div class="bg-gradient-to-r from-brand-900 via-indigo-900 to-slate-900 text-white text-xs py-2 px-4 border-b border-indigo-800">
-        <div class="max-w-7xl mx-auto flex flex-wrap justify-between items-center gap-2">
-            <div class="flex items-center gap-2">
-                <span class="bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 px-2 py-0.5 rounded font-mono text-[10px] tracking-wider uppercase">DPDP Act 2023 Compliant</span>
-                <span class="hidden sm:inline text-slate-300">Zero Raw Aadhaar Storage &bull; Section 52 Revocable License &bull; Zero-Hardware India Stack</span>
-            </div>
-            <div class="flex items-center gap-3 text-slate-300">
-                <span>Hack2Ignite 2026 Finalist</span>
-                <span class="text-slate-500">|</span>
-                <span class="text-emerald-400 flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span> Telemetry Radar Active</span>
-            </div>
+  <!-- Main Navigation Bar -->
+  <header class="sticky top-0 z-40 backdrop-blur-md bg-slate-950/90 border-b border-slate-800/80">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-4">
+      
+      <!-- Brand Logo -->
+      <a href="{{ url_for('index') }}" class="flex items-center gap-2.5 group shrink-0">
+        <div class="w-9 h-9 rounded-xl bg-gradient-to-tr from-brand-600 via-violet-600 to-indigo-400 flex items-center justify-center shadow-lg shadow-indigo-500/25 group-hover:scale-105 transition duration-200">
+          <i class="fa-solid fa-infinity text-white text-lg"></i>
         </div>
-    </div>
-
-    <!-- Main Navigation Header -->
-    <header class="sticky top-0 z-40 bg-white/90 backdrop-blur-md border-b border-slate-200">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="flex items-center justify-between h-16">
-                <!-- Logo & Brand -->
-                <a href="{{ url_for('index') }}" class="flex items-center gap-3 group">
-                    <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-brand-600 to-cyan-500 flex items-center justify-center text-white shadow-md shadow-brand-500/20 group-hover:scale-105 transition-transform">
-                        <i class="fa-solid fa-layer-group text-lg"></i>
-                    </div>
-                    <div>
-                        <span class="font-display text-xl font-extrabold tracking-tight text-slate-900 flex items-center gap-1">
-                            Space<span class="text-brand-600">Loop</span>
-                            <span class="text-[10px] uppercase font-mono px-1.5 py-0.5 bg-brand-50 text-brand-700 rounded border border-brand-200 ml-1">v2.4</span>
-                        </span>
-                        <p class="text-[10px] text-slate-500 font-medium -mt-1 hidden sm:block">Zero-Hardware Micro-Spaces</p>
-                    </div>
-                </a>
-
-                <!-- Desktop Navigation Links -->
-                <nav class="hidden md:flex items-center gap-1 text-sm font-medium text-slate-600">
-                    <a href="{{ url_for('index') }}" class="px-3 py-2 rounded-lg hover:text-brand-600 hover:bg-slate-100 transition-colors">
-                        <i class="fa-solid fa-compass mr-1.5 text-slate-400"></i> Marketplace
-                    </a>
-                    <a href="{{ url_for('calculator_page') }}" class="px-3 py-2 rounded-lg hover:text-brand-600 hover:bg-slate-100 transition-colors">
-                        <i class="fa-solid fa-calculator mr-1.5 text-slate-400"></i> Yield Calculator
-                    </a>
-                    <a href="{{ url_for('verify_student_page') }}" class="px-3 py-2 rounded-lg hover:text-brand-600 hover:bg-slate-100 transition-colors">
-                        <i class="fa-solid fa-graduation-cap mr-1.5 text-slate-400"></i> Student KYC
-                    </a>
-                    <a href="{{ url_for('verify_host_page') }}" class="px-3 py-2 rounded-lg hover:text-brand-600 hover:bg-slate-100 transition-colors">
-                        <i class="fa-solid fa-bolt mr-1.5 text-slate-400"></i> Discom Verification
-                    </a>
-                    <a href="{{ url_for('session_console', booking_id=1) }}" class="px-3 py-2 rounded-lg text-emerald-700 bg-emerald-50 hover:bg-emerald-100 transition-colors border border-emerald-200">
-                        <i class="fa-solid fa-satellite-dish mr-1 text-emerald-600 animate-pulse"></i> In-Room HUD
-                    </a>
-                </nav>
-
-                <!-- Persona Switcher & Dashboard Trigger -->
-                <div class="flex items-center gap-3">
-                    <!-- Interactive Persona Switcher -->
-                    <div class="bg-slate-100 p-1 rounded-xl flex items-center border border-slate-200 text-xs font-semibold">
-                        <button onclick="switchPersona('seeker')" 
-                                class="px-2.5 py-1 rounded-lg transition-all flex items-center gap-1.5 {% if current_persona != 'owner' %}bg-white text-brand-700 shadow-sm font-bold{% else %}text-slate-500 hover:text-slate-900{% endif %}">
-                            <i class="fa-solid fa-user-graduate"></i>
-                            <span>Student</span>
-                        </button>
-                        <button onclick="switchPersona('owner')" 
-                                class="px-2.5 py-1 rounded-lg transition-all flex items-center gap-1.5 {% if current_persona == 'owner' %}bg-white text-brand-700 shadow-sm font-bold{% else %}text-slate-500 hover:text-slate-900{% endif %}">
-                            <i class="fa-solid fa-house-user"></i>
-                            <span>Host</span>
-                        </button>
-                    </div>
-
-                    <!-- Dashboard Link -->
-                    {% if current_persona == 'owner' %}
-                    <a href="{{ url_for('host_dashboard') }}" class="bg-brand-600 hover:bg-brand-700 text-white px-3.5 py-2 rounded-xl text-xs font-semibold shadow-sm transition-colors flex items-center gap-1.5">
-                        <i class="fa-solid fa-chart-pie"></i>
-                        <span class="hidden sm:inline">Host Portal</span>
-                    </a>
-                    {% else %}
-                    <a href="{{ url_for('seeker_dashboard') }}" class="bg-brand-600 hover:bg-brand-700 text-white px-3.5 py-2 rounded-xl text-xs font-semibold shadow-sm transition-colors flex items-center gap-1.5">
-                        <i class="fa-solid fa-id-badge"></i>
-                        <span class="hidden sm:inline">My Passes</span>
-                    </a>
-                    {% endif %}
-                </div>
-            </div>
+        <div>
+          <span class="text-xl font-bold tracking-tight text-white flex items-center gap-1.5">
+            Space<span class="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-violet-400">Loop</span>
+            <span class="text-[10px] uppercase font-semibold tracking-wider px-1.5 py-0.5 rounded bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">AI</span>
+          </span>
         </div>
-    </header>
+      </a>
 
-    <!-- Main Content Body -->
-    <main class="flex-grow">
-        {% block content %}{% endblock %}
-    </main>
+      <!-- Center Role-Aware Nav Links (Desktop) -->
+      <nav class="hidden lg:flex items-center gap-1 text-xs font-semibold">
+        {% if current_user.is_authenticated %}
+          {% if is_host_context %}
+            <!-- HOST NAVIGATION -->
+            <a href="{{ url_for('dashboard_page') }}" class="px-3 py-1.5 rounded-lg transition flex items-center gap-1.5 {% if request.endpoint == 'dashboard_page' %}bg-indigo-600/20 text-indigo-300 border border-indigo-500/30{% else %}text-slate-300 hover:text-white hover:bg-slate-800/60{% endif %}">
+              <i class="fa-solid fa-chart-pie text-indigo-400"></i> Dashboard
+            </a>
+            <a href="{{ url_for('dashboard_page') }}#spaces" class="px-3 py-1.5 rounded-lg transition flex items-center gap-1.5 text-slate-300 hover:text-white hover:bg-slate-800/60">
+              <i class="fa-solid fa-warehouse text-slate-400"></i> My Spaces
+            </a>
+            <a href="{{ url_for('dashboard_page') }}#bookings" class="px-3 py-1.5 rounded-lg transition flex items-center gap-1.5 text-slate-300 hover:text-white hover:bg-slate-800/60">
+              <i class="fa-solid fa-calendar-check text-slate-400"></i> Bookings
+            </a>
+            <a href="{{ url_for('calculator_page') }}" class="px-3 py-1.5 rounded-lg transition flex items-center gap-1.5 {% if request.endpoint == 'calculator_page' %}bg-indigo-600/20 text-indigo-300 border border-indigo-500/30{% else %}text-slate-300 hover:text-white hover:bg-slate-800/60{% endif %}">
+              <i class="fa-solid fa-calculator text-slate-400"></i> Earnings
+            </a>
+            <a href="{{ url_for('verify_page') }}" class="px-3 py-1.5 rounded-lg transition flex items-center gap-1.5 {% if request.endpoint == 'verify_page' %}bg-indigo-600/20 text-indigo-300 border border-indigo-500/30{% else %}text-slate-300 hover:text-white hover:bg-slate-800/60{% endif %}">
+              <i class="fa-solid fa-shield-halved text-emerald-400"></i> Verification
+              {% if current_user.is_host_verified %}
+              <span class="w-1.5 h-1.5 rounded-full bg-emerald-400" title="Host Verified"></span>
+              {% else %}
+              <span class="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" title="KYC Pending"></span>
+              {% endif %}
+            </a>
+            <a href="{{ url_for('profile_page') }}" class="px-3 py-1.5 rounded-lg transition flex items-center gap-1.5 {% if request.endpoint == 'profile_page' %}bg-indigo-600/20 text-indigo-300 border border-indigo-500/30{% else %}text-slate-300 hover:text-white hover:bg-slate-800/60{% endif %}">
+              <i class="fa-solid fa-user text-slate-400"></i> Profile
+            </a>
+          {% else %}
+            <!-- SEEKER NAVIGATION -->
+            <a href="{{ url_for('index') }}" class="px-3 py-1.5 rounded-lg transition flex items-center gap-1.5 {% if request.endpoint == 'index' %}bg-indigo-600/20 text-indigo-300 border border-indigo-500/30{% else %}text-slate-300 hover:text-white hover:bg-slate-800/60{% endif %}">
+              <i class="fa-solid fa-house text-indigo-400"></i> Home
+            </a>
+            <a href="{{ url_for('explore_page') }}" class="px-3 py-1.5 rounded-lg transition flex items-center gap-1.5 {% if request.endpoint == 'explore_page' or request.endpoint == 'space_detail' %}bg-indigo-600/20 text-indigo-300 border border-indigo-500/30{% else %}text-slate-300 hover:text-white hover:bg-slate-800/60{% endif %}">
+              <i class="fa-solid fa-compass text-slate-400"></i> Explore Spaces
+            </a>
+            <a href="{{ url_for('dashboard_page') }}#bookings" class="px-3 py-1.5 rounded-lg transition flex items-center gap-1.5 {% if request.endpoint == 'dashboard_page' %}bg-indigo-600/20 text-indigo-300 border border-indigo-500/30{% else %}text-slate-300 hover:text-white hover:bg-slate-800/60{% endif %}">
+              <i class="fa-solid fa-calendar-check text-slate-400"></i> My Bookings
+            </a>
+            <a href="{{ url_for('active_session_redirect') }}" class="px-3 py-1.5 rounded-lg transition flex items-center gap-1.5 {% if request.endpoint in ['session_page', 'active_session_redirect'] %}bg-emerald-600/20 text-emerald-300 border border-emerald-500/30{% else %}text-slate-300 hover:text-white hover:bg-slate-800/60{% endif %}">
+              <i class="fa-solid fa-door-open text-emerald-400"></i> Active Session
+            </a>
+            <a href="{{ url_for('inquiries_page') }}" class="px-3 py-1.5 rounded-lg transition flex items-center gap-1.5 {% if request.endpoint == 'inquiries_page' %}bg-indigo-600/20 text-indigo-300 border border-indigo-500/30{% else %}text-slate-300 hover:text-white hover:bg-slate-800/60{% endif %}">
+              <i class="fa-solid fa-comments text-slate-400"></i> Inquiries
+            </a>
+            <a href="{{ url_for('profile_page') }}" class="px-3 py-1.5 rounded-lg transition flex items-center gap-1.5 {% if request.endpoint == 'profile_page' %}bg-indigo-600/20 text-indigo-300 border border-indigo-500/30{% else %}text-slate-300 hover:text-white hover:bg-slate-800/60{% endif %}">
+              <i class="fa-solid fa-user text-slate-400"></i> Profile
+            </a>
+          {% endif %}
+        {% else %}
+          <!-- PUBLIC / ANONYMOUS GUEST NAVIGATION -->
+          <a href="{{ url_for('explore_page') }}" class="px-3 py-1.5 rounded-lg transition flex items-center gap-1.5 {% if request.endpoint == 'explore_page' %}bg-indigo-600/20 text-indigo-300 border border-indigo-500/30{% else %}text-slate-300 hover:text-white hover:bg-slate-800/60{% endif %}">
+            <i class="fa-solid fa-compass text-indigo-400"></i> Explore
+          </a>
+          <a href="{{ url_for('how_it_works') }}" class="px-3 py-1.5 rounded-lg transition flex items-center gap-1.5 {% if request.endpoint == 'how_it_works' %}bg-indigo-600/20 text-indigo-300 border border-indigo-500/30{% else %}text-slate-300 hover:text-white hover:bg-slate-800/60{% endif %}">
+            <i class="fa-solid fa-circle-question text-slate-400"></i> How It Works
+          </a>
+          <a href="{{ url_for('index') }}#for-seekers" class="px-3 py-1.5 rounded-lg transition flex items-center gap-1.5 text-slate-300 hover:text-white hover:bg-slate-800/60">
+            <i class="fa-solid fa-graduation-cap text-slate-400"></i> For Seekers
+          </a>
+          <a href="{{ url_for('index') }}#for-hosts" class="px-3 py-1.5 rounded-lg transition flex items-center gap-1.5 text-slate-300 hover:text-white hover:bg-slate-800/60">
+            <i class="fa-solid fa-house-chimney-user text-slate-400"></i> For Hosts
+          </a>
+          <a href="{{ url_for('index') }}#trust-safety" class="px-3 py-1.5 rounded-lg transition flex items-center gap-1.5 text-slate-300 hover:text-white hover:bg-slate-800/60">
+            <i class="fa-solid fa-shield-halved text-emerald-400"></i> Trust & Safety
+          </a>
+        {% endif %}
+      </nav>
 
-    <!-- Floating LoopBot AI Concierge Widget -->
-    <div class="fixed bottom-6 right-6 z-50">
-        <!-- Chat Window Popover -->
-        <div id="loopbot-window" class="hidden mb-3 w-80 sm:w-96 bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden transition-all duration-300 transform">
-            <div class="bg-gradient-to-r from-brand-700 to-indigo-800 p-3.5 text-white flex items-center justify-between">
-                <div class="flex items-center gap-2.5">
-                    <div class="w-8 h-8 rounded-lg bg-white/20 flex items-center justify-center">
-                        <i class="fa-solid fa-robot text-sm"></i>
-                    </div>
-                    <div>
-                        <h4 class="font-display font-bold text-sm leading-tight">LoopBot Concierge</h4>
-                        <p class="text-[10px] text-indigo-200">Context-Aware AI Assistant &bull; Online</p>
-                    </div>
-                </div>
-                <button onclick="toggleLoopBot()" class="text-white/80 hover:text-white p-1 rounded-lg">
-                    <i class="fa-solid fa-xmark text-sm"></i>
-                </button>
-            </div>
+      <!-- Right Action Controls -->
+      <div class="flex items-center gap-2 sm:gap-3 shrink-0">
+        <!-- Live System Connectivity Status Indicator -->
+        <form method="POST" action="{{ url_for('toggle_ai_simulation') }}" class="hidden sm:inline-block m-0 p-0" title="SpaceLoop Failover Engine: Click to toggle simulated offline AI mode">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <button type="submit" class="cursor-pointer transition hover:opacity-80 focus:outline-none">
+            {% if system_status and system_status.status == 'ONLINE' %}
+              <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 flex items-center gap-1.5">
+                <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span> ONLINE
+              </span>
+            {% elif system_status and system_status.status == 'LIMITED CONNECTIVITY' %}
+              <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-400 border border-amber-500/30 flex items-center gap-1.5">
+                <span class="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse"></span> LIMITED
+              </span>
+            {% else %}
+              <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-rose-500/10 text-rose-400 border border-rose-500/30 flex items-center gap-1.5">
+                <span class="w-1.5 h-1.5 rounded-full bg-rose-400 animate-ping"></span> FALLBACK MODE
+              </span>
+            {% endif %}
+          </button>
+        </form>
 
-            <!-- Messages Area -->
-            <div id="loopbot-messages" class="p-4 h-72 overflow-y-auto space-y-3 bg-slate-50 text-xs">
-                <div class="flex justify-start items-start gap-2">
-                    <div class="w-6 h-6 rounded-full bg-brand-600 text-white flex items-center justify-center text-[10px] shrink-0 mt-0.5">
-                        <i class="fa-solid fa-robot"></i>
-                    </div>
-                    <div class="bg-white border border-slate-200 text-slate-800 rounded-2xl rounded-tl-none p-3 shadow-sm leading-relaxed">
-                        Namaste! I am LoopBot. Ask me about finding quiet study rooms near IITs, our ₹5 printable door QR pass, Section 52 micro-leases, or instant ₹100 UPI refunds!
-                    </div>
-                </div>
-            </div>
+        {% if current_user.is_authenticated %}
+          <!-- Context Switch & Add Space Actions for Authenticated User -->
+          {% if is_host_context %}
+            <form method="POST" action="{{ url_for('switch_role') }}" class="hidden sm:inline-block">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+              <input type="hidden" name="role" value="seeker">
+              <button type="submit" class="px-3 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-indigo-300 hover:text-white border border-slate-700/80 text-xs font-semibold transition flex items-center gap-1.5" title="Switch to Seeker view">
+                <i class="fa-solid fa-repeat text-[10px]"></i>
+                <span>Seeker View</span>
+              </button>
+            </form>
+            <a href="{{ url_for('list_space_page') }}" class="hidden sm:inline-flex items-center gap-1.5 bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white font-semibold text-xs px-3.5 py-1.5 rounded-lg shadow-md shadow-indigo-600/20 transition">
+              <i class="fa-solid fa-plus text-[10px]"></i> Add Space
+            </a>
+          {% else %}
+            <form method="POST" action="{{ url_for('switch_role') }}" class="hidden sm:inline-block">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+              <input type="hidden" name="role" value="owner">
+              <button type="submit" class="px-3 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-amber-300 hover:text-white border border-slate-700/80 text-xs font-semibold transition flex items-center gap-1.5" title="Switch to Host view">
+                <i class="fa-solid fa-repeat text-[10px]"></i>
+                <span>Host View</span>
+              </button>
+            </form>
+            <a href="{{ url_for('list_space_page') }}" class="hidden sm:inline-flex items-center gap-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white border border-slate-700 font-semibold text-xs px-3.5 py-1.5 rounded-lg transition">
+              <i class="fa-solid fa-wand-magic-sparkles text-indigo-400 text-[10px]"></i> List Space
+            </a>
+          {% endif %}
 
-            <!-- Chat Input Form -->
-            <div class="p-2.5 bg-white border-t border-slate-100 flex items-center gap-2">
-                <input type="text" id="loopbot-input" 
-                       placeholder="Ask LoopBot anything..." 
-                       class="flex-grow text-xs px-3 py-2 bg-slate-100 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-500 border border-slate-200"
-                       onkeydown="if(event.key === 'Enter') sendLoopBotMessage()">
-                <button onclick="sendLoopBotMessage()" class="w-8 h-8 rounded-xl bg-brand-600 hover:bg-brand-700 text-white flex items-center justify-center shrink-0 transition-colors shadow-sm">
-                    <i class="fa-solid fa-paper-plane text-xs"></i>
-                </button>
-            </div>
-        </div>
+          <!-- Logout Form -->
+          <form method="POST" action="{{ url_for('auth_logout') }}" class="hidden sm:inline-block">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button type="submit" class="px-3 py-1.5 rounded-lg bg-slate-900 hover:bg-rose-950/40 text-slate-400 hover:text-rose-400 border border-slate-800 hover:border-rose-800/40 text-xs font-semibold transition flex items-center gap-1.5" title="Sign Out">
+              <i class="fa-solid fa-arrow-right-from-bracket text-[11px]"></i>
+              <span>Logout</span>
+            </button>
+          </form>
 
-        <!-- Floating Button -->
-        <button onclick="toggleLoopBot()" class="w-14 h-14 rounded-2xl bg-brand-600 hover:bg-brand-700 text-white shadow-xl shadow-brand-500/30 flex items-center justify-center text-xl transition-all duration-300 hover:scale-110 active:scale-95 group">
-            <i class="fa-solid fa-comment-dots group-hover:scale-110 transition-transform"></i>
-            <span class="absolute -top-1 -right-1 w-4 h-4 bg-emerald-500 border-2 border-white rounded-full"></span>
+        {% else %}
+          <!-- ANONYMOUS GUEST ACTIONS -->
+          <a href="{{ url_for('auth_login') }}" class="text-xs font-bold text-slate-300 hover:text-white px-3 py-1.5 rounded-lg hover:bg-slate-900 transition">
+            Sign In
+          </a>
+          <a href="{{ url_for('auth_register') }}" class="bg-gradient-to-r from-indigo-600 via-violet-600 to-indigo-700 hover:from-indigo-500 hover:to-violet-500 text-white font-bold text-xs px-4 py-2 rounded-xl shadow-md shadow-indigo-600/30 transition">
+            Get Started
+          </a>
+        {% endif %}
+
+        <!-- Mobile Menu Toggle Button (Hamburger) -->
+        <button id="mobileMenuBtn" onclick="toggleMobileDrawer()" class="lg:hidden p-2 rounded-lg bg-slate-900 border border-slate-800 text-slate-300 hover:text-white focus:outline-none" aria-label="Toggle Navigation Menu">
+          <i class="fa-solid fa-bars text-sm"></i>
         </button>
+      </div>
+
     </div>
 
-    <!-- Global Toast Container -->
-    <div id="toast-container" class="fixed top-5 right-5 z-50 flex flex-col gap-2 pointer-events-none"></div>
-
-    <!-- Platform Footer -->
-    <footer class="bg-slate-900 text-slate-400 text-xs py-10 border-t border-slate-800 mt-16">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="grid grid-cols-1 md:grid-cols-4 gap-8 pb-8 border-b border-slate-800">
-                <div class="space-y-3">
-                    <div class="flex items-center gap-2 text-white font-display text-base font-bold">
-                        <i class="fa-solid fa-layer-group text-brand-500"></i> SpaceLoop
-                    </div>
-                    <p class="text-slate-400 text-xs leading-relaxed">
-                        The Zero-Hardware India Stack converting underutilized urban spaces into ₹40–₹75/hr quiet study and project pods for young builders.
-                    </p>
-                    <div class="flex items-center gap-2 pt-1">
-                        <span class="bg-slate-800 text-slate-300 px-2 py-1 rounded text-[10px] font-mono border border-slate-700">DPDP Act 2023</span>
-                        <span class="bg-slate-800 text-slate-300 px-2 py-1 rounded text-[10px] font-mono border border-slate-700">Sec 52 Easements Act</span>
-                    </div>
-                </div>
-
-                <div>
-                    <h5 class="text-white font-semibold text-xs uppercase tracking-wider mb-3">Zero-Hardware Stack</h5>
-                    <ul class="space-y-2">
-                        <li><a href="{{ url_for('session_console', booking_id=1) }}" class="hover:text-white transition-colors">Haversine GPS Radar (&lt;50m)</a></li>
-                        <li><a href="{{ url_for('printable_qr', space_id=1) }}" class="hover:text-white transition-colors">₹5 Printable A4 Door QR Pass</a></li>
-                        <li><span class="text-slate-500">Dynamic 4-Digit Caretaker PIN</span></li>
-                        <li><span class="text-slate-500">Multimodal CV Visual Diff & Appliance Off</span></li>
-                        <li><span class="text-slate-500">Instant ₹100 UPI Micro-Escrow Hold</span></li>
-                    </ul>
-                </div>
-
-                <div>
-                    <h5 class="text-white font-semibold text-xs uppercase tracking-wider mb-3">Dual-Sided Verification</h5>
-                    <ul class="space-y-2">
-                        <li><a href="{{ url_for('verify_student_page') }}" class="hover:text-white transition-colors">DigiLocker Aadhaar OTP (Zero Raw Storage)</a></li>
-                        <li><a href="{{ url_for('verify_student_page') }}" class="hover:text-white transition-colors">Institutional .ac.in Domain Check</a></li>
-                        <li><a href="{{ url_for('verify_host_page') }}" class="hover:text-white transition-colors">State Discom CA Bill (BESCOM, BSES, etc.)</a></li>
-                        <li><a href="{{ url_for('verify_host_page') }}" class="hover:text-white transition-colors">NPCI UPI ₹1 Penny Drop Verification</a></li>
-                    </ul>
-                </div>
-
-                <div>
-                    <h5 class="text-white font-semibold text-xs uppercase tracking-wider mb-3">Hack2Ignite 2026 Pitch</h5>
-                    <p class="text-slate-400 text-xs leading-relaxed mb-2">
-                        Built by <strong>Kanishk Singh</strong> for Hack2Ignite 2026. Production audited (14/14 Audited & 35+ Test Validations).
-                    </p>
-                    <div class="text-emerald-400 font-mono text-[11px] flex items-center gap-1.5">
-                        <i class="fa-solid fa-circle-check"></i> 100% Test Pass Rate
-                    </div>
-                </div>
+    <!-- Mobile Drawer Menu (Collapsible) -->
+    <div id="mobileDrawerMenu" class="hidden lg:hidden border-t border-slate-800/80 bg-slate-950/95 backdrop-blur-xl px-4 py-4 space-y-3 shadow-2xl">
+      {% if current_user.is_authenticated %}
+        <div class="flex items-center justify-between pb-3 border-b border-slate-800">
+          <div class="flex items-center gap-2.5">
+            <img src="{{ current_user.avatar_url or 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=100&q=80' }}" class="w-8 h-8 rounded-lg object-cover">
+            <div>
+              <div class="text-xs font-bold text-white">{{ current_user.name }}</div>
+              <div class="text-[10px] text-indigo-400 uppercase font-semibold">{{ active_context }} mode</div>
             </div>
-
-            <div class="pt-6 flex flex-col sm:flex-row justify-between items-center text-slate-500 gap-3">
-                <p>&copy; 2026 SpaceLoop Core Engineering. All rights reserved.</p>
-                <p class="text-[11px]">Governed strictly under Section 52, Indian Easements Act 1882 (Revocable License).</p>
-            </div>
+          </div>
+          <form method="POST" action="{{ url_for('switch_role') }}" class="inline">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <input type="hidden" name="role" value="{% if is_host_context %}seeker{% else %}owner{% endif %}">
+            <button type="submit" class="text-[11px] font-semibold text-indigo-300 bg-indigo-950/60 border border-indigo-500/30 px-2.5 py-1 rounded-lg">
+              Switch to {% if is_host_context %}Seeker{% else %}Host{% endif %}
+            </button>
+          </form>
         </div>
-    </footer>
 
-    <!-- Client Script -->
-    <script src="{{ url_for('static', filename='js/app.js') }}"></script>
-    {% block scripts %}{% endblock %}
+        <div class="grid grid-cols-2 gap-2 text-xs font-medium">
+          {% if is_host_context %}
+            <a href="{{ url_for('dashboard_page') }}" class="p-2 rounded-lg bg-slate-900/60 hover:bg-slate-800 text-slate-200 flex items-center gap-2">
+              <i class="fa-solid fa-chart-pie text-indigo-400"></i> Dashboard
+            </a>
+            <a href="{{ url_for('dashboard_page') }}#spaces" class="p-2 rounded-lg bg-slate-900/60 hover:bg-slate-800 text-slate-200 flex items-center gap-2">
+              <i class="fa-solid fa-warehouse text-slate-400"></i> My Spaces
+            </a>
+            <a href="{{ url_for('dashboard_page') }}#bookings" class="p-2 rounded-lg bg-slate-900/60 hover:bg-slate-800 text-slate-200 flex items-center gap-2">
+              <i class="fa-solid fa-calendar-check text-slate-400"></i> Bookings
+            </a>
+            <a href="{{ url_for('calculator_page') }}" class="p-2 rounded-lg bg-slate-900/60 hover:bg-slate-800 text-slate-200 flex items-center gap-2">
+              <i class="fa-solid fa-calculator text-slate-400"></i> Earnings
+            </a>
+            <a href="{{ url_for('verify_page') }}" class="p-2 rounded-lg bg-slate-900/60 hover:bg-slate-800 text-slate-200 flex items-center gap-2">
+              <i class="fa-solid fa-shield-halved text-emerald-400"></i> Verification
+            </a>
+            <a href="{{ url_for('profile_page') }}" class="p-2 rounded-lg bg-slate-900/60 hover:bg-slate-800 text-slate-200 flex items-center gap-2">
+              <i class="fa-solid fa-user text-slate-400"></i> Profile
+            </a>
+          {% else %}
+            <a href="{{ url_for('index') }}" class="p-2 rounded-lg bg-slate-900/60 hover:bg-slate-800 text-slate-200 flex items-center gap-2">
+              <i class="fa-solid fa-house text-indigo-400"></i> Home
+            </a>
+            <a href="{{ url_for('explore_page') }}" class="p-2 rounded-lg bg-slate-900/60 hover:bg-slate-800 text-slate-200 flex items-center gap-2">
+              <i class="fa-solid fa-compass text-slate-400"></i> Explore
+            </a>
+            <a href="{{ url_for('dashboard_page') }}#bookings" class="p-2 rounded-lg bg-slate-900/60 hover:bg-slate-800 text-slate-200 flex items-center gap-2">
+              <i class="fa-solid fa-calendar-check text-slate-400"></i> Bookings
+            </a>
+            <a href="{{ url_for('active_session_redirect') }}" class="p-2 rounded-lg bg-slate-900/60 hover:bg-slate-800 text-emerald-300 flex items-center gap-2">
+              <i class="fa-solid fa-door-open text-emerald-400"></i> Session
+            </a>
+            <a href="{{ url_for('inquiries_page') }}" class="p-2 rounded-lg bg-slate-900/60 hover:bg-slate-800 text-slate-200 flex items-center gap-2">
+              <i class="fa-solid fa-comments text-slate-400"></i> Inquiries
+            </a>
+            <a href="{{ url_for('profile_page') }}" class="p-2 rounded-lg bg-slate-900/60 hover:bg-slate-800 text-slate-200 flex items-center gap-2">
+              <i class="fa-solid fa-user text-slate-400"></i> Profile
+            </a>
+          {% endif %}
+        </div>
+
+        <form method="POST" action="{{ url_for('auth_logout') }}" class="pt-2 border-t border-slate-800">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <button type="submit" class="w-full py-2 rounded-lg bg-slate-900 text-rose-400 hover:bg-rose-950/40 text-xs font-semibold flex items-center justify-center gap-2 transition">
+            <i class="fa-solid fa-arrow-right-from-bracket"></i>
+            <span>Log Out</span>
+          </button>
+        </form>
+
+      {% else %}
+        <!-- Mobile Guest Links -->
+        <div class="space-y-2 text-xs font-semibold">
+          <a href="{{ url_for('explore_page') }}" class="block p-2.5 rounded-xl bg-slate-900/60 hover:bg-slate-800 text-slate-200">
+            <i class="fa-solid fa-compass text-indigo-400 mr-2"></i> Explore Spaces
+          </a>
+          <a href="{{ url_for('how_it_works') }}" class="block p-2.5 rounded-xl bg-slate-900/60 hover:bg-slate-800 text-slate-200">
+            <i class="fa-solid fa-circle-question text-slate-400 mr-2"></i> How It Works
+          </a>
+          <div class="grid grid-cols-2 gap-2 pt-2 border-t border-slate-800">
+            <a href="{{ url_for('auth_login') }}" class="text-center py-2.5 rounded-xl bg-slate-900 text-white border border-slate-700">
+              Sign In
+            </a>
+            <a href="{{ url_for('auth_register') }}" class="text-center py-2.5 rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 text-white">
+              Get Started
+            </a>
+          </div>
+        </div>
+      {% endif %}
+    </div>
+  </header>
+
+  <!-- Main Content Area -->
+  <main class="flex-grow pb-20 md:pb-0">
+    {% block content %}{% endblock %}
+  </main>
+
+  <!-- Mobile App Bottom Navigation Bar (Role-Aware) -->
+  <nav class="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-slate-950/95 backdrop-blur-lg border-t border-slate-800/80 px-2 py-2 flex items-center justify-around text-[10px] font-medium text-slate-400">
+    {% if current_user.is_authenticated %}
+      {% if is_host_context %}
+        <a href="{{ url_for('dashboard_page') }}" class="flex flex-col items-center gap-1 {% if request.endpoint == 'dashboard_page' %}text-indigo-400 font-semibold{% else %}hover:text-indigo-400{% endif %}">
+          <i class="fa-solid fa-chart-pie text-base"></i>
+          <span>Dashboard</span>
+        </a>
+        <a href="{{ url_for('dashboard_page') }}#spaces" class="flex flex-col items-center gap-1 hover:text-indigo-400">
+          <i class="fa-solid fa-warehouse text-base"></i>
+          <span>Spaces</span>
+        </a>
+        <a href="{{ url_for('list_space_page') }}" class="flex flex-col items-center gap-1 text-white">
+          <div class="w-8 h-8 rounded-full bg-gradient-to-r from-indigo-600 to-violet-600 flex items-center justify-center -mt-3 shadow-lg shadow-indigo-600/40">
+            <i class="fa-solid fa-plus text-xs"></i>
+          </div>
+          <span>List</span>
+        </a>
+        <a href="{{ url_for('calculator_page') }}" class="flex flex-col items-center gap-1 {% if request.endpoint == 'calculator_page' %}text-indigo-400 font-semibold{% else %}hover:text-indigo-400{% endif %}">
+          <i class="fa-solid fa-calculator text-base"></i>
+          <span>Earnings</span>
+        </a>
+        <a href="{{ url_for('profile_page') }}" class="flex flex-col items-center gap-1 {% if request.endpoint == 'profile_page' %}text-indigo-400 font-semibold{% else %}hover:text-indigo-400{% endif %}">
+          <i class="fa-solid fa-user text-base"></i>
+          <span>Profile</span>
+        </a>
+      {% else %}
+        <a href="{{ url_for('explore_page') }}" class="flex flex-col items-center gap-1 {% if request.endpoint == 'explore_page' %}text-indigo-400 font-semibold{% else %}hover:text-indigo-400{% endif %}">
+          <i class="fa-solid fa-compass text-base"></i>
+          <span>Explore</span>
+        </a>
+        <a href="{{ url_for('dashboard_page') }}#bookings" class="flex flex-col items-center gap-1 {% if request.endpoint == 'dashboard_page' %}text-indigo-400 font-semibold{% else %}hover:text-indigo-400{% endif %}">
+          <i class="fa-solid fa-calendar-check text-base"></i>
+          <span>Bookings</span>
+        </a>
+        <a href="{{ url_for('active_session_redirect') }}" class="flex flex-col items-center gap-1 {% if request.endpoint in ['session_page', 'active_session_redirect'] %}text-emerald-400 font-semibold{% else %}hover:text-emerald-400{% endif %}">
+          <div class="w-8 h-8 rounded-full bg-gradient-to-r from-emerald-600 to-teal-600 flex items-center justify-center -mt-3 shadow-lg shadow-emerald-600/40">
+            <i class="fa-solid fa-door-open text-xs text-white"></i>
+          </div>
+          <span>Session</span>
+        </a>
+        <a href="{{ url_for('inquiries_page') }}" class="flex flex-col items-center gap-1 {% if request.endpoint == 'inquiries_page' %}text-indigo-400 font-semibold{% else %}hover:text-indigo-400{% endif %}">
+          <i class="fa-solid fa-comments text-base"></i>
+          <span>Inquiries</span>
+        </a>
+        <a href="{{ url_for('profile_page') }}" class="flex flex-col items-center gap-1 {% if request.endpoint == 'profile_page' %}text-indigo-400 font-semibold{% else %}hover:text-indigo-400{% endif %}">
+          <i class="fa-solid fa-user text-base"></i>
+          <span>Profile</span>
+        </a>
+      {% endif %}
+    {% else %}
+      <!-- Anonymous Mobile Bottom Nav -->
+      <a href="{{ url_for('index') }}" class="flex flex-col items-center gap-1 {% if request.endpoint == 'index' %}text-indigo-400 font-semibold{% else %}hover:text-indigo-400{% endif %}">
+        <i class="fa-solid fa-house text-base"></i>
+        <span>Home</span>
+      </a>
+      <a href="{{ url_for('explore_page') }}" class="flex flex-col items-center gap-1 {% if request.endpoint == 'explore_page' %}text-indigo-400 font-semibold{% else %}hover:text-indigo-400{% endif %}">
+        <i class="fa-solid fa-compass text-base"></i>
+        <span>Explore</span>
+      </a>
+      <a href="{{ url_for('how_it_works') }}" class="flex flex-col items-center gap-1 {% if request.endpoint == 'how_it_works' %}text-indigo-400 font-semibold{% else %}hover:text-indigo-400{% endif %}">
+        <i class="fa-solid fa-circle-question text-base"></i>
+        <span>How It Works</span>
+      </a>
+      <a href="{{ url_for('auth_login') }}" class="flex flex-col items-center gap-1 {% if request.endpoint == 'auth_login' %}text-indigo-400 font-semibold{% else %}hover:text-indigo-400{% endif %}">
+        <i class="fa-solid fa-lock text-base"></i>
+        <span>Sign In</span>
+      </a>
+    {% endif %}
+  </nav>
+
+  <!-- Floating LoopBot Concierge Launcher -->
+  <div class="fixed bottom-20 md:bottom-6 right-4 sm:right-6 z-40">
+    <button id="openConciergeBtn" class="flex items-center gap-2.5 bg-gradient-to-r from-indigo-600 via-violet-600 to-indigo-700 text-white px-3.5 py-2.5 sm:px-4 sm:py-3 rounded-full shadow-2xl shadow-indigo-500/30 hover:scale-105 transition-all duration-200 border border-indigo-400/30">
+      <div class="relative">
+        <i class="fa-solid fa-robot text-sm sm:text-base"></i>
+        <span class="absolute -top-1 -right-1 w-2.5 h-2.5 bg-emerald-400 rounded-full border-2 border-slate-900"></span>
+      </div>
+      <span class="text-xs sm:text-sm font-semibold tracking-wide">Ask LoopBot</span>
+    </button>
+  </div>
+
+  <!-- AI Concierge Modal -->
+  <div id="conciergeModal" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 hidden">
+    <div class="bg-slate-900 border border-slate-800 w-full sm:max-w-lg rounded-t-2xl sm:rounded-2xl shadow-2xl flex flex-col h-[560px] max-h-[90vh] overflow-hidden">
+      <!-- Modal Header -->
+      <div class="p-4 bg-slate-950/80 border-b border-slate-800 flex items-center justify-between">
+        <div class="flex items-center gap-3">
+          <div class="w-8 h-8 rounded-lg bg-indigo-600/20 border border-indigo-500/30 flex items-center justify-center text-indigo-400">
+            <i class="fa-solid fa-robot text-sm"></i>
+          </div>
+          <div>
+            <h3 class="text-sm font-semibold text-white">LoopBot AI Concierge</h3>
+            <p class="text-xs text-emerald-400 flex items-center gap-1">
+              <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span> Online & Ready
+            </p>
+          </div>
+        </div>
+        <button id="closeConciergeBtn" class="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800 transition">
+          <i class="fa-solid fa-xmark text-lg"></i>
+        </button>
+      </div>
+
+      <!-- Message History -->
+      <div id="chatMessages" class="flex-grow p-4 overflow-y-auto space-y-3.5 text-sm">
+        <div class="flex gap-2.5">
+          <div class="w-7 h-7 rounded-full bg-indigo-600/30 text-indigo-300 flex items-center justify-center shrink-0 text-xs">
+            <i class="fa-solid fa-robot"></i>
+          </div>
+          <div class="bg-slate-800/90 text-slate-200 p-3 rounded-2xl rounded-tl-sm max-w-[85%] border border-slate-700/50 leading-relaxed">
+            Hi! I'm <strong>LoopBot</strong>, your SpaceLoop AI assistant. Looking for temporary studio, storage, parking, or pop-up space? Or want tips on monetizing your own unused square footage? Ask away!
+          </div>
+        </div>
+      </div>
+
+      <!-- Quick Suggested Chips -->
+      <div class="px-4 py-2 bg-slate-950/50 border-t border-slate-800/60 flex items-center gap-2 overflow-x-auto text-xs whitespace-nowrap scrollbar-none">
+        <button onclick="sendQuickPrompt('How do AI micro-lease agreements protect owners?')" class="px-2.5 py-1 rounded-full bg-slate-800 text-slate-300 hover:text-white hover:bg-slate-700 border border-slate-700">
+          🛡️ Micro-Lease Protections
+        </button>
+        <button onclick="sendQuickPrompt('How much can I earn renting an empty garage?')" class="px-2.5 py-1 rounded-full bg-slate-800 text-slate-300 hover:text-white hover:bg-slate-700 border border-slate-700">
+          💰 Garage Earnings
+        </button>
+        <button onclick="sendQuickPrompt('Find me a podcast studio with natural light')" class="px-2.5 py-1 rounded-full bg-slate-800 text-slate-300 hover:text-white hover:bg-slate-700 border border-slate-700">
+          🎙️ Find Podcast Studio
+        </button>
+      </div>
+
+      <!-- Input Bar -->
+      <form id="chatForm" class="p-3 bg-slate-950 border-t border-slate-800 flex gap-2">
+        <input type="text" id="chatInput" placeholder="Ask about spaces, rules, or earnings..." class="flex-grow bg-slate-900 border border-slate-700/80 rounded-xl px-3.5 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500 transition">
+        <button type="submit" class="bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2.5 rounded-xl font-medium text-sm transition shrink-0 flex items-center justify-center">
+          <i class="fa-solid fa-arrow-up"></i>
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Footer (Task 17) -->
+  <footer class="bg-slate-950 border-t border-slate-800/80 mt-20 py-12">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="grid grid-cols-1 md:grid-cols-12 gap-8 mb-10">
+        
+        <!-- Brand (5 cols) -->
+        <div class="md:col-span-5 space-y-3">
+          <div class="flex items-center gap-2.5">
+            <div class="w-8 h-8 rounded-xl bg-indigo-600 flex items-center justify-center text-white text-sm shadow-md shadow-indigo-600/30">
+              <i class="fa-solid fa-infinity"></i>
+            </div>
+            <span class="text-xl font-extrabold text-white tracking-tight">SpaceLoop</span>
+          </div>
+          <p class="text-sm text-slate-200 font-semibold italic">
+            &ldquo;Turning idle spaces into opportunities.&rdquo;
+          </p>
+          <p class="text-xs text-slate-400 max-w-sm leading-relaxed">
+            India's premier AI-powered micro-leasing platform connecting students and creators with verified study rooms, workspaces, and creative studios.
+          </p>
+          <div class="inline-flex items-center gap-2 px-2.5 py-1 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-semibold">
+            <i class="fa-solid fa-shield-halved text-[11px]"></i>
+            <span>SpaceLoop Verified &bull; Zero-Hardware India Stack Protocol</span>
+          </div>
+        </div>
+
+        <!-- Navigation (4 cols) -->
+        <div class="md:col-span-4">
+          <h4 class="text-xs font-bold uppercase tracking-wider text-slate-300 mb-3.5">Navigation</h4>
+          <ul class="grid grid-cols-2 gap-2 text-xs font-medium text-slate-400">
+            <li><a href="{{ url_for('index') }}" class="hover:text-white hover:underline transition flex items-center gap-1.5"><i class="fa-solid fa-compass text-slate-500 text-[10px]"></i> Explore</a></li>
+            <li><a href="{{ url_for('list_space_page') }}" class="hover:text-white hover:underline transition flex items-center gap-1.5"><i class="fa-solid fa-plus text-slate-500 text-[10px]"></i> Host</a></li>
+            <li><a href="{{ url_for('how_it_works') }}" class="hover:text-white hover:underline transition flex items-center gap-1.5"><i class="fa-solid fa-circle-question text-slate-500 text-[10px]"></i> How It Works</a></li>
+            <li><a href="{{ url_for('verify_page') }}" class="hover:text-white hover:underline transition flex items-center gap-1.5"><i class="fa-solid fa-shield-check text-slate-500 text-[10px]"></i> Safety</a></li>
+            <li><a href="{{ url_for('inquiries_page') }}" class="hover:text-white hover:underline transition flex items-center gap-1.5"><i class="fa-solid fa-comments text-slate-500 text-[10px]"></i> Help</a></li>
+            <li><a href="{{ url_for('calculator_page') }}" class="hover:text-white hover:underline transition flex items-center gap-1.5"><i class="fa-solid fa-calculator text-slate-500 text-[10px]"></i> Calculator</a></li>
+          </ul>
+        </div>
+
+        <!-- Legal (3 cols) -->
+        <div class="md:col-span-3">
+          <h4 class="text-xs font-bold uppercase tracking-wider text-slate-300 mb-3.5">Legal</h4>
+          <ul class="space-y-2 text-xs font-medium text-slate-400">
+            <li>
+              <button type="button" onclick="openLegalModal('privacy')" class="hover:text-white hover:underline transition flex items-center gap-1.5">
+                <i class="fa-solid fa-user-shield text-slate-500 text-[10px]"></i> Privacy Policy
+              </button>
+            </li>
+            <li>
+              <button type="button" onclick="openLegalModal('terms')" class="hover:text-white hover:underline transition flex items-center gap-1.5">
+                <i class="fa-solid fa-file-contract text-slate-500 text-[10px]"></i> Terms of Service
+              </button>
+            </li>
+            <li>
+              <button type="button" onclick="openLegalModal('easements')" class="hover:text-white hover:underline transition flex items-center gap-1.5">
+                <i class="fa-solid fa-scale-balanced text-slate-500 text-[10px]"></i> Indian Easements Act, 1882
+              </button>
+            </li>
+          </ul>
+        </div>
+
+      </div>
+
+      <!-- Bottom Bar -->
+      <div class="pt-8 border-t border-slate-900 flex flex-col sm:flex-row items-center justify-between text-xs text-slate-500 gap-4">
+        <p>&copy; 2026 SpaceLoop. All rights reserved.</p>
+        <div class="flex items-center gap-3 text-slate-400">
+          <span class="flex items-center gap-1"><i class="fa-solid fa-shield-halved text-emerald-400"></i> ₹100 UPI Escrow</span>
+          <span>&bull;</span>
+          <span class="flex items-center gap-1"><i class="fa-solid fa-robot text-indigo-400"></i> AI Condition Delta</span>
+          <span>&bull;</span>
+          <span class="flex items-center gap-1"><i class="fa-solid fa-location-crosshairs text-amber-400"></i> 50m Geofence Gate</span>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Legal Info Modal -->
+  <div id="baseLegalModal" class="fixed inset-0 bg-black/75 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+    <div class="bg-slate-900 border border-slate-800 w-full max-w-xl rounded-2xl shadow-2xl overflow-hidden flex flex-col">
+      <div class="p-4 bg-slate-950 border-b border-slate-800 flex items-center justify-between">
+        <h3 id="legalModalTitle" class="text-sm font-bold text-white flex items-center gap-2"></h3>
+        <button onclick="closeLegalModal()" class="text-slate-400 hover:text-white p-1">
+          <i class="fa-solid fa-xmark text-lg"></i>
+        </button>
+      </div>
+      <div id="legalModalContent" class="p-6 text-xs text-slate-300 space-y-3 leading-relaxed max-h-[60vh] overflow-y-auto"></div>
+      <div class="p-4 bg-slate-950 border-t border-slate-800 flex justify-end">
+        <button onclick="closeLegalModal()" class="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-white text-xs font-semibold transition">
+          Close
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Core App Scripts -->
+  <script src="{{ url_for('static', filename='app.js') }}"></script>
+  <script>
+    function toggleMobileDrawer() {
+      var drawer = document.getElementById('mobileDrawerMenu');
+      if (drawer) {
+        drawer.classList.toggle('hidden');
+      }
+    }
+
+    function openLegalModal(type) {
+      const modal = document.getElementById('baseLegalModal');
+      const title = document.getElementById('legalModalTitle');
+      const content = document.getElementById('legalModalContent');
+      if (!modal) return;
+
+      if (type === 'privacy') {
+        title.innerHTML = '<i class="fa-solid fa-user-shield text-indigo-400"></i> SpaceLoop Privacy Policy (DPDP Act, 2023 Compliant)';
+        content.innerHTML = `
+          <p><b>Data Minimization & Encryption:</b> SpaceLoop adheres strictly to the Digital Personal Data Protection Act, 2023. We never store raw 12-digit Aadhaar numbers. All identity proofs are processed ephemerally via UIDAI DigiLocker OTP handshakes and stored solely as masked strings (XXXX-XXXX-XXXX) and irreversible SHA-256 token hashes.</p>
+          <p><b>Zero Hardware Privacy:</b> Device geolocation is acquired on-demand solely during the check-in verification moment and compared against stored space coordinates. No background continuous location tracking is ever conducted.</p>
+        `;
+      } else if (type === 'terms') {
+        title.innerHTML = '<i class="fa-solid fa-file-contract text-indigo-400"></i> Terms of Service';
+        content.innerHTML = `
+          <p><b>Revocable Temporary License:</b> SpaceLoop operates strictly under Section 52 of the Indian Easements Act, 1882. Every booking grants a temporary, permissive, revocable license for micro-duration occupancy. No landlord-tenant relationship, leasehold interest, or tenancy rights are created.</p>
+          <p><b>Escrow Protection:</b> The ₹100 UPI security deposit is held in automated micro-escrow and released immediately upon digital checkout QR scan and Computer Vision condition verification.</p>
+        `;
+      } else if (type === 'easements') {
+        title.innerHTML = '<i class="fa-solid fa-scale-balanced text-indigo-400"></i> Indian Easements Act, 1882 Framework';
+        content.innerHTML = `
+          <p><b>Section 52 Compliance:</b> Micro-leasing on SpaceLoop is structured under the Indian Easements Act, 1882. The host grants the seeker a pure license to enter and use the premises for the declared educational or creative purpose for the exact specified window of hours.</p>
+          <p><b>Overstay Protocol:</b> Unilateral overstay beyond the booked end-time incurs automated 1.5x penalty adjustments and temporary suspension of the student's zero-hardware door pass clearance.</p>
+        `;
+      }
+      modal.classList.remove('hidden');
+    }
+
+    function closeLegalModal() {
+      const modal = document.getElementById('baseLegalModal');
+      if (modal) modal.classList.add('hidden');
+    }
+  </script>
+  {% block scripts %}{% endblock %}
 </body>
 </html>
