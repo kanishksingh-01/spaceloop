@@ -1,19 +1,28 @@
 import json
+import uuid
 from datetime import datetime
 from flask_sqlalchemy import SQLAlchemy
+from flask_login import UserMixin
 from werkzeug.security import generate_password_hash, check_password_hash
 
 db = SQLAlchemy()
 
 
-class User(db.Model):
+class User(db.Model, UserMixin):
     __tablename__ = "users"
 
     id = db.Column(db.Integer, primary_key=True)
+    public_id = db.Column(db.String(36), unique=True, default=lambda: str(uuid.uuid4()), index=True)
     name = db.Column(db.String(120), nullable=False)
+    first_name = db.Column(db.String(60), default="")
+    last_name = db.Column(db.String(60), default="")
     email = db.Column(db.String(120), unique=True, nullable=False)
     password_hash = db.Column(db.String(256), nullable=False)
     role = db.Column(db.String(20), default="both")  # 'owner', 'seeker', 'both'
+    is_active = db.Column(db.Boolean, default=True)
+    is_email_verified = db.Column(db.Boolean, default=False)
+    is_admin = db.Column(db.Boolean, default=False)
+    last_login_at = db.Column(db.DateTime, nullable=True)
     bio = db.Column(db.Text, default="")
     phone = db.Column(db.String(40), default="")
     avatar_url = db.Column(db.String(500), default="")
@@ -48,6 +57,22 @@ class User(db.Model):
     bookings = db.relationship("Booking", backref="renter", lazy=True, cascade="all, delete-orphan")
     reviews = db.relationship("Review", backref="user", lazy=True, cascade="all, delete-orphan")
     inquiries = db.relationship("SpaceInquiry", backref="user", lazy=True, cascade="all, delete-orphan")
+    password_reset_tokens = db.relationship("PasswordResetToken", backref="user", lazy=True, cascade="all, delete-orphan")
+    email_verification_tokens = db.relationship("EmailVerificationToken", backref="user", lazy=True, cascade="all, delete-orphan")
+    audit_logs = db.relationship("AuditLog", backref="user", lazy=True, cascade="all, delete-orphan")
+
+    @property
+    def is_host(self) -> bool:
+        return self.role in ("owner", "both") or self.is_admin
+
+    @property
+    def is_seeker(self) -> bool:
+        return self.role in ("seeker", "both") or self.is_admin
+
+    @property
+    def full_name(self) -> str:
+        combined = f"{self.first_name} {self.last_name}".strip()
+        return combined if combined else self.name
 
     def set_password(self, password: str):
         self.password_hash = generate_password_hash(password)
@@ -58,9 +83,18 @@ class User(db.Model):
     def to_dict(self):
         return {
             "id": self.id,
+            "public_id": self.public_id,
             "name": self.name,
+            "first_name": self.first_name,
+            "last_name": self.last_name,
             "email": self.email,
             "role": self.role,
+            "is_host": self.is_host,
+            "is_seeker": self.is_seeker,
+            "is_admin": self.is_admin,
+            "is_active": self.is_active,
+            "is_email_verified": self.is_email_verified,
+            "last_login_at": self.last_login_at.isoformat() if self.last_login_at else None,
             "bio": self.bio,
             "phone": self.phone,
             "avatar_url": self.avatar_url or f"https://api.dicebear.com/7.x/initials/svg?seed={self.name}",
@@ -387,4 +421,55 @@ class SpaceInquiry(db.Model):
             "question": self.question,
             "ai_answer": self.ai_answer,
             "created_at": self.created_at.strftime("%b %d, %Y at %I:%M %p") if self.created_at else "",
+        }
+
+
+class PasswordResetToken(db.Model):
+    __tablename__ = "password_reset_tokens"
+
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    token_hash = db.Column(db.String(64), nullable=False, index=True)
+    expires_at = db.Column(db.DateTime, nullable=False)
+    used = db.Column(db.Boolean, default=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    def is_valid(self) -> bool:
+        return not self.used and datetime.utcnow() < self.expires_at
+
+
+class EmailVerificationToken(db.Model):
+    __tablename__ = "email_verification_tokens"
+
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    token_hash = db.Column(db.String(64), nullable=False, index=True)
+    expires_at = db.Column(db.DateTime, nullable=False)
+    used = db.Column(db.Boolean, default=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    def is_valid(self) -> bool:
+        return not self.used and datetime.utcnow() < self.expires_at
+
+
+class AuditLog(db.Model):
+    __tablename__ = "audit_logs"
+
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    action = db.Column(db.String(64), nullable=False, index=True)
+    ip_address = db.Column(db.String(45), default="")
+    user_agent = db.Column(db.String(255), default="")
+    details = db.Column(db.Text, default="")
+    created_at = db.Column(db.DateTime, default=datetime.utcnow, index=True)
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "user_id": self.user_id,
+            "action": self.action,
+            "ip_address": self.ip_address,
+            "user_agent": self.user_agent,
+            "details": self.details,
+            "created_at": self.created_at.isoformat() if self.created_at else None,
         }

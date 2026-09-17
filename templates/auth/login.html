@@ -1,0 +1,128 @@
+{% extends "base.html" %}
+
+{% block title %}Sign In | SpaceLoop{% endblock %}
+
+{% block content %}
+<div class="min-h-[75vh] flex items-center justify-center px-4 py-12">
+  <div class="w-full max-w-md">
+
+    <div class="bg-slate-900/90 border border-slate-800/80 rounded-3xl p-8 shadow-2xl backdrop-blur-xl">
+      
+      <!-- Icon & Header -->
+      <div class="text-center mb-8">
+        <div class="w-14 h-14 rounded-2xl bg-gradient-to-tr from-indigo-600 to-violet-600 text-white flex items-center justify-center mx-auto mb-4 text-2xl shadow-lg shadow-indigo-600/30">
+          <i class="fa-solid fa-lock"></i>
+        </div>
+        <h1 class="text-2xl font-black tracking-tight text-white">Welcome to SpaceLoop</h1>
+        <p class="text-xs text-slate-400 mt-1.5">Sign in to manage your micro-spaces or active bookings</p>
+      </div>
+
+      <!-- Flash Messages -->
+      {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+          <div class="space-y-2 mb-6">
+            {% for category, message in messages %}
+              <div class="p-3.5 rounded-xl text-xs font-semibold flex items-center gap-2.5 {% if category == "danger" or category == "error" %}bg-rose-500/10 text-rose-300 border border-rose-500/20{% elif category == "success" %}bg-emerald-500/10 text-emerald-300 border border-emerald-500/20{% else %}bg-amber-500/10 text-amber-300 border border-amber-500/20{% endif %}">
+                <i class="fa-solid {% if category == "danger" or category == "error" %}fa-circle-exclamation{% elif category == "success" %}fa-circle-check{% else %}fa-triangle-exclamation{% endif %}"></i>
+                <span>{{ message }}</span>
+              </div>
+            {% endfor %}
+          </div>
+        {% endif %}
+      {% endwith %}
+
+      <!-- Login Form -->
+      <form method="POST" action="{{ url_for("auth_login", next=request.args.get("next", "")) }}" class="space-y-4">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+        <div>
+          <label for="email" class="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-1.5">Email Address</label>
+          <div class="relative">
+            <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-500 text-sm">
+              <i class="fa-solid fa-envelope"></i>
+            </div>
+            <input 
+              type="email" 
+              id="email" 
+              name="email" 
+              required 
+              autocomplete="email"
+              placeholder="you@example.com"
+              class="w-full bg-slate-950/80 border border-slate-700/80 rounded-xl pl-10 pr-4 py-3 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition"
+            >
+          </div>
+        </div>
+
+        <div>
+          <div class="flex items-center justify-between mb-1.5">
+            <label for="password" class="block text-xs font-bold text-slate-300 uppercase tracking-wider">Password</label>
+            <a href="{{ url_for("auth_forgot_password") }}" class="text-xs text-indigo-400 hover:text-indigo-300 transition">Forgot password?</a>
+          </div>
+          <div class="relative">
+            <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-500 text-sm">
+              <i class="fa-solid fa-key"></i>
+            </div>
+            <input 
+              type="password" 
+              id="password" 
+              name="password" 
+              required 
+              autocomplete="current-password"
+              placeholder="••••••••"
+              class="w-full bg-slate-950/80 border border-slate-700/80 rounded-xl pl-10 pr-4 py-3 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition"
+            >
+          </div>
+        </div>
+
+        <div class="flex items-center">
+          <input 
+            type="checkbox" 
+            id="remember_me" 
+            name="remember_me" 
+            value="1" 
+            class="h-4 w-4 rounded bg-slate-950 border-slate-700 text-indigo-600 focus:ring-indigo-500"
+          >
+          <label for="remember_me" class="ml-2 block text-xs text-slate-400">Keep me signed in for 7 days</label>
+        </div>
+
+        <button 
+          type="submit" 
+          class="w-full py-3.5 px-4 rounded-xl bg-gradient-to-r from-indigo-600 via-violet-600 to-indigo-700 hover:from-indigo-500 hover:to-violet-500 text-white font-bold text-sm shadow-lg shadow-indigo-600/30 transition duration-150 flex items-center justify-center gap-2"
+        >
+          <span>Sign In</span>
+          <i class="fa-solid fa-arrow-right text-xs"></i>
+        </button>
+      </form>
+
+      <!-- Register Link -->
+      <div class="mt-6 pt-6 border-t border-slate-800 text-center">
+        <p class="text-xs text-slate-400">
+          New to SpaceLoop? 
+          <a href="{{ url_for("auth_register", next=request.args.get("next", "")) }}" class="text-indigo-400 hover:text-indigo-300 font-bold ml-1 transition">Create an account</a>
+        </p>
+      </div>
+
+    </div>
+
+    <!-- Dev Testing Accounts Helper (Discreet) -->
+    <div class="mt-6 p-4 rounded-2xl bg-slate-900/50 border border-slate-800/60 text-xs text-slate-400">
+      <div class="font-bold text-slate-300 mb-1 flex items-center gap-1.5">
+        <i class="fa-solid fa-flask text-indigo-400"></i> Development Fixture Accounts:
+      </div>
+      <div class="grid grid-cols-2 gap-2 text-[11px] mt-2">
+        <div class="p-2 rounded-lg bg-slate-950/60 border border-slate-800">
+          <div class="font-semibold text-white">Host Persona</div>
+          <div class="text-slate-400">sunita@spaceloop.in</div>
+          <div class="text-indigo-400">password123</div>
+        </div>
+        <div class="p-2 rounded-lg bg-slate-950/60 border border-slate-800">
+          <div class="font-semibold text-white">Seeker Persona</div>
+          <div class="text-slate-400">aarav@iitd.ac.in</div>
+          <div class="text-indigo-400">password123</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+{% endblock %}

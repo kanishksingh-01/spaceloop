@@ -1,0 +1,557 @@
+{% extends "base.html" %}
+
+{% block title %}SpaceLoop | AI-Powered Platform for Temporary Spaces{% endblock %}
+
+{% block content %}
+
+<!-- Hero Banner & Natural Language AI Search -->
+<section class="relative overflow-hidden pt-12 pb-16 md:pt-20 md:pb-24 border-b border-slate-800/60 bg-gradient-to-b from-slate-900 via-slate-950 to-slate-950">
+  
+  <!-- Glowing Background Ambience -->
+  <div class="absolute -top-40 left-1/2 -translate-x-1/2 w-[700px] h-[350px] bg-indigo-600/15 blur-[120px] rounded-full pointer-events-none"></div>
+  <div class="absolute top-20 right-10 w-[300px] h-[300px] bg-violet-600/10 blur-[100px] rounded-full pointer-events-none"></div>
+
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+    <div class="text-center max-w-3xl mx-auto mb-10">
+      
+      <div class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-indigo-300 text-xs font-medium mb-6 shadow-sm">
+        <span class="flex h-2 w-2 rounded-full bg-indigo-400 animate-ping"></span>
+        <span class="font-semibold">AI Matchmaking 2.0</span> • Convert Dead Space into Living Value
+      </div>
+
+      <h1 class="text-4xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight text-white leading-tight">
+        Turn Unused Property into <br>
+        <span class="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 via-violet-300 to-indigo-300">
+          Useful Temporary Spaces
+        </span>
+      </h1>
+
+      <p class="mt-5 text-base sm:text-lg text-slate-400 leading-relaxed max-w-2xl mx-auto">
+        Intelligently matching homeowners, cafes, and property owners with creators, students, and businesses who need flexible space by the hour or day.
+      </p>
+
+    </div>
+
+    <!-- AI Intent-Based Search Engine Bar -->
+    <div class="max-w-4xl mx-auto">
+      <div class="bg-slate-900/90 backdrop-blur-xl border border-indigo-500/30 rounded-2xl p-3 sm:p-4 shadow-2xl shadow-indigo-950/50 transition-all hover:border-indigo-500/50">
+        
+        <form id="aiSearchForm" class="flex flex-col sm:flex-row gap-3">
+          <div class="relative flex-grow flex items-center">
+            <div class="absolute left-4 text-indigo-400 text-base">
+              <i class="fa-solid fa-wand-magic-sparkles"></i>
+            </div>
+            <input 
+              type="text" 
+              id="aiQueryInput"
+              value="{{ search_query }}"
+              placeholder="Describe your ideal space (e.g. 'Quiet studio with power outlets for a 3-person podcast under $40/hr')..."
+              class="w-full bg-slate-950/80 border border-slate-700/80 rounded-xl pl-11 pr-4 py-3.5 text-sm sm:text-base text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition"
+            >
+          </div>
+          
+          <button 
+            type="submit" 
+            id="aiSearchBtn"
+            class="bg-gradient-to-r from-indigo-600 via-violet-600 to-indigo-700 hover:from-indigo-500 hover:to-violet-500 text-white font-semibold text-sm sm:text-base px-6 py-3.5 rounded-xl shadow-lg shadow-indigo-600/30 flex items-center justify-center gap-2 transition shrink-0 group"
+          >
+            <span>Match with AI</span>
+            <i class="fa-solid fa-arrow-right text-xs group-hover:translate-x-0.5 transition"></i>
+          </button>
+        </form>
+
+        <!-- Prompt suggestion chips -->
+        <div class="mt-3.5 pt-3 border-t border-slate-800/70 flex items-center gap-2 text-xs overflow-x-auto whitespace-nowrap pb-1 scrollbar-none">
+          <span class="text-slate-400 font-medium shrink-0 flex items-center gap-1">
+            <i class="fa-regular fa-compass text-indigo-400"></i> Try prompts:
+          </span>
+          <button type="button" onclick="applySearchPrompt('Quiet, sunlit space for a 3-person podcast recording under $40/hr')" class="px-2.5 py-1 rounded-lg bg-slate-800/80 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700/60 transition">
+            🎙️ Sunlit Podcast Studio under $40
+          </button>
+          <button type="button" onclick="applySearchPrompt('Dry secure garage storage for 15 boxes for 1 month')" class="px-2.5 py-1 rounded-lg bg-slate-800/80 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700/60 transition">
+            📦 Dry Garage Storage for Boxes
+          </button>
+          <button type="button" onclick="applySearchPrompt('Gated off-street parking with EV charger near SoMa')" class="px-2.5 py-1 rounded-lg bg-slate-800/80 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700/60 transition">
+            ⚡ EV Charger Parking
+          </button>
+          <button type="button" onclick="applySearchPrompt('Evening cafe space for a 20-person book club meetup')" class="px-2.5 py-1 rounded-lg bg-slate-800/80 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700/60 transition">
+            ☕ Evening Cafe for Book Club
+          </button>
+        </div>
+
+      </div>
+
+      <!-- Quick Platform Stats -->
+      <div class="mt-8 grid grid-cols-2 sm:grid-cols-4 gap-4 text-center">
+        <div class="bg-slate-900/50 border border-slate-800/70 rounded-xl p-3">
+          <div class="text-xl font-bold text-white">400M+ sqft</div>
+          <div class="text-xs text-slate-400">Unused Urban Dead Space</div>
+        </div>
+        <div class="bg-slate-900/50 border border-slate-800/70 rounded-xl p-3">
+          <div class="text-xl font-bold text-indigo-400">65% Cheaper</div>
+          <div class="text-xs text-slate-400">Vs Commercial Studios</div>
+        </div>
+        <div class="bg-slate-900/50 border border-slate-800/70 rounded-xl p-3">
+          <div class="text-xl font-bold text-emerald-400">&lt; 30 Seconds</div>
+          <div class="text-xs text-slate-400">AI Micro-Lease Generation</div>
+        </div>
+        <div class="bg-slate-900/50 border border-slate-800/70 rounded-xl p-3">
+          <div class="text-xl font-bold text-amber-400">₹15,000/mo</div>
+          <div class="text-xs text-slate-400">Avg Host Passive Income</div>
+        </div>
+      </div>
+
+    </div>
+
+  </div>
+</section>
+
+<!-- Space Explorer & Filter Section -->
+<section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+
+  <!-- Controls Bar: Category Pills & Sort -->
+  <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
+    
+    <!-- Category Pills -->
+    <div class="flex items-center gap-2 overflow-x-auto pb-2 md:pb-0 scrollbar-none">
+      {% for cat in categories %}
+        <a 
+          href="{{ url_for('index', category=cat if cat != 'All' else None) }}"
+          class="px-4 py-2 rounded-xl text-xs sm:text-sm font-medium transition whitespace-nowrap {% if active_category == cat %}bg-indigo-600 text-white shadow-md shadow-indigo-600/30{% else %}bg-slate-900 text-slate-400 hover:text-white hover:bg-slate-800 border border-slate-800{% endif %}"
+        >
+          {% if cat == 'All' %}
+            <i class="fa-solid fa-border-all mr-1.5"></i> All Spaces
+          {% elif cat == 'Studio' %}
+            <i class="fa-solid fa-camera mr-1.5 text-indigo-400"></i> Creative & Studio
+          {% elif cat == 'Storage' %}
+            <i class="fa-solid fa-boxes-stacked mr-1.5 text-amber-400"></i> Garage & Storage
+          {% elif cat == 'Parking' %}
+            <i class="fa-solid fa-charging-station mr-1.5 text-emerald-400"></i> Parking & EV
+          {% elif cat == 'Pop-up/Retail' %}
+            <i class="fa-solid fa-store mr-1.5 text-pink-400"></i> Pop-up Retail
+          {% elif cat == 'Event/Workshop' %}
+            <i class="fa-solid fa-users mr-1.5 text-cyan-400"></i> Off-Peak & Events
+          {% endif %}
+        </a>
+      {% endfor %}
+    </div>
+
+    <!-- Active Indicator / Reset -->
+    <div class="flex items-center gap-3 text-xs text-slate-400">
+      <span id="spacesCountDisplay">{{ spaces|length }} spaces available</span>
+      <span class="w-1 h-1 rounded-full bg-slate-700"></span>
+      <span class="flex items-center gap-1 text-emerald-400">
+        <i class="fa-solid fa-shield-check"></i> 100% Host Verified
+      </span>
+    </div>
+
+  </div>
+
+  <!-- Location & Radius Dynamic Discovery Filter Bar -->
+  <div class="bg-slate-900/80 border border-slate-800/90 rounded-2xl p-4 mb-8 shadow-xl">
+    <form id="locationFilterForm" method="GET" action="{{ url_for('index') }}" class="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-3">
+      <input type="hidden" name="category" value="{{ active_category if active_category != 'All' else '' }}">
+      <input type="hidden" id="filterLat" name="lat" value="{{ active_lat or '' }}">
+      <input type="hidden" id="filterLng" name="lng" value="{{ active_lng or '' }}">
+
+      <!-- Location Input with Geolocation Action -->
+      <div class="flex-grow flex items-center gap-2 bg-slate-950/80 border border-slate-700/70 rounded-xl px-3 py-2">
+        <i class="fa-solid fa-location-dot text-indigo-400 shrink-0"></i>
+        <input 
+          type="text" 
+          id="locationInput" 
+          name="loc" 
+          value="{{ active_location or '' }}" 
+          placeholder="Enter location or college (e.g. Wagholi, Hauz Khas, Koramangala)..."
+          class="bg-transparent border-none text-xs sm:text-sm text-white placeholder-slate-500 focus:outline-none w-full"
+        >
+        <button 
+          type="button" 
+          id="btnDetectLocation"
+          onclick="detectCurrentLocation()"
+          class="shrink-0 text-[11px] font-semibold text-indigo-300 hover:text-white bg-indigo-950/80 hover:bg-indigo-900/80 border border-indigo-500/30 px-2.5 py-1 rounded-lg flex items-center gap-1 transition"
+          title="Use my current GPS coordinates"
+        >
+          <i class="fa-solid fa-crosshairs text-indigo-400"></i>
+          <span class="hidden sm:inline">Use GPS</span>
+        </button>
+      </div>
+
+      <!-- Radius Selector -->
+      <div class="flex items-center gap-2 shrink-0">
+        <label for="radiusSelect" class="text-xs text-slate-400 font-medium shrink-0 flex items-center gap-1">
+          <i class="fa-solid fa-ruler-combined text-slate-500"></i> Radius:
+        </label>
+        <select 
+          id="radiusSelect" 
+          name="radius" 
+          class="bg-slate-950 border border-slate-700/70 rounded-xl px-3 py-2 text-xs sm:text-sm text-white focus:outline-none focus:border-indigo-500 transition"
+        >
+          <option value="" {% if not active_radius %}selected{% endif %}>Any Distance</option>
+          <option value="1" {% if active_radius == 1.0 %}selected{% endif %}>Within 1 km</option>
+          <option value="3" {% if active_radius == 3.0 %}selected{% endif %}>Within 3 km</option>
+          <option value="5" {% if active_radius == 5.0 %}selected{% endif %}>Within 5 km</option>
+          <option value="10" {% if active_radius == 10.0 %}selected{% endif %}>Within 10 km</option>
+        </select>
+      </div>
+
+      <!-- Max Budget Filter -->
+      <div class="flex items-center gap-2 shrink-0">
+        <label for="priceSelect" class="text-xs text-slate-400 font-medium shrink-0 flex items-center gap-1">
+          <i class="fa-solid fa-indian-rupee-sign text-slate-500"></i> Max Price:
+        </label>
+        <select 
+          id="priceSelect" 
+          name="max_price" 
+          class="bg-slate-950 border border-slate-700/70 rounded-xl px-3 py-2 text-xs sm:text-sm text-white focus:outline-none focus:border-indigo-500 transition"
+        >
+          <option value="" {% if not active_max_price %}selected{% endif %}>Any Budget</option>
+          <option value="60" {% if active_max_price == 60.0 %}selected{% endif %}>Under ₹60/hr</option>
+          <option value="80" {% if active_max_price == 80.0 %}selected{% endif %}>Under ₹80/hr</option>
+          <option value="100" {% if active_max_price == 100.0 %}selected{% endif %}>Under ₹100/hr</option>
+        </select>
+      </div>
+
+      <!-- Submit & Reset Actions -->
+      <div class="flex items-center gap-2 shrink-0">
+        <button 
+          type="submit" 
+          class="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs sm:text-sm font-semibold transition flex items-center justify-center gap-1.5 shadow-md shadow-indigo-600/20"
+        >
+          <i class="fa-solid fa-filter text-xs"></i> Apply Filter
+        </button>
+        {% if active_location or active_radius or active_max_price or (active_category and active_category != 'All') %}
+          <a 
+            href="{{ url_for('index') }}" 
+            class="px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs sm:text-sm font-semibold transition border border-slate-700 flex items-center justify-center"
+            title="Clear all filters"
+          >
+            <i class="fa-solid fa-rotate-left"></i>
+          </a>
+        {% endif %}
+      </div>
+    </form>
+
+    <!-- Location Hub Quick Suggestion Chips -->
+    <div class="mt-3 pt-2.5 border-t border-slate-800/60 flex items-center gap-2 text-xs overflow-x-auto whitespace-nowrap scrollbar-none">
+      <span class="text-slate-500 text-[11px] font-medium shrink-0">Quick Hubs:</span>
+      <button type="button" onclick="setFilterLocation('Wagholi, Pune')" class="px-2 py-0.5 rounded-lg bg-slate-950/70 hover:bg-slate-800 text-slate-400 hover:text-white border border-slate-800 text-[11px] transition">
+        📍 Wagholi, Pune
+      </button>
+      <button type="button" onclick="setFilterLocation('Hauz Khas, New Delhi')" class="px-2 py-0.5 rounded-lg bg-slate-950/70 hover:bg-slate-800 text-slate-400 hover:text-white border border-slate-800 text-[11px] transition">
+        📍 IIT Delhi / Hauz Khas
+      </button>
+      <button type="button" onclick="setFilterLocation('Koramangala, Bangalore')" class="px-2 py-0.5 rounded-lg bg-slate-950/70 hover:bg-slate-800 text-slate-400 hover:text-white border border-slate-800 text-[11px] transition">
+        📍 Koramangala, Bangalore
+      </button>
+      <button type="button" onclick="setFilterLocation('Shivajinagar, Pune')" class="px-2 py-0.5 rounded-lg bg-slate-950/70 hover:bg-slate-800 text-slate-400 hover:text-white border border-slate-800 text-[11px] transition">
+        📍 Shivajinagar / FC Road
+      </button>
+      <button type="button" onclick="setFilterLocation('North Campus, New Delhi')" class="px-2 py-0.5 rounded-lg bg-slate-950/70 hover:bg-slate-800 text-slate-400 hover:text-white border border-slate-800 text-[11px] transition">
+        📍 DU North Campus
+      </button>
+      <button type="button" onclick="setFilterLocation('Sector 62, Noida')" class="px-2 py-0.5 rounded-lg bg-slate-950/70 hover:bg-slate-800 text-slate-400 hover:text-white border border-slate-800 text-[11px] transition">
+        📍 Sector 62, Noida
+      </button>
+    </div>
+  </div>
+
+  <!-- AI Matching Banner (Shows when AI search query is executed) -->
+  <div id="aiMatchHeader" class="hidden mb-6 p-4 rounded-xl bg-gradient-to-r from-indigo-950/60 via-slate-900 to-indigo-950/60 border border-indigo-500/30 flex items-center justify-between">
+    <div class="flex items-center gap-3">
+      <div class="w-8 h-8 rounded-lg bg-indigo-600/30 text-indigo-300 flex items-center justify-center">
+        <i class="fa-solid fa-sparkles text-sm"></i>
+      </div>
+      <div>
+        <h3 class="text-sm font-semibold text-white">AI Compatibility Ranking Active</h3>
+        <p id="aiMatchQueryLabel" class="text-xs text-slate-400">Sorted by best fit for your requirements</p>
+      </div>
+    </div>
+    <button onclick="resetSearch()" class="text-xs text-indigo-400 hover:text-indigo-300 font-medium px-3 py-1.5 rounded-lg bg-indigo-950 border border-indigo-800/60">
+      Clear AI Filter
+    </button>
+  </div>
+
+  <!-- Spaces Grid Container -->
+  <div id="spacesGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+    {% for space in spaces %}
+      <div class="space-card group bg-slate-900/90 border border-slate-800 rounded-2xl overflow-hidden hover:border-indigo-500/50 transition-all duration-300 flex flex-col hover:shadow-xl hover:shadow-indigo-950/40">
+        
+        <!-- Image Card Header -->
+        <div class="relative aspect-[16/10] overflow-hidden bg-slate-950">
+          <img 
+            src="{{ space.photos[0] }}" 
+            alt="{{ space.title }}" 
+            class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+            loading="lazy"
+          >
+          <div class="absolute inset-0 bg-gradient-to-t from-slate-950/90 via-transparent to-black/30"></div>
+
+          <!-- Category & Verified Badges -->
+          <div class="absolute top-3 left-3 flex items-center gap-1.5">
+            <span class="px-2.5 py-1 rounded-lg text-xs font-semibold backdrop-blur-md bg-slate-900/80 text-white border border-white/10 shadow-sm">
+              {{ space.category }}
+            </span>
+            {% if space.owner_verified or space.is_discom_verified %}
+            <span class="px-2 py-1 rounded-lg text-[10px] font-bold backdrop-blur-md bg-emerald-600/90 text-white shadow-sm flex items-center gap-1" title="SpaceLoop Verified Host">
+              <i class="fa-solid fa-shield-check"></i> Verified
+            </span>
+            {% endif %}
+          </div>
+
+          <!-- Match Score Pill (Rendered dynamically if matched, or high default) -->
+          <div class="absolute top-3 right-3 match-badge-container">
+            <span class="px-2.5 py-1 rounded-lg text-xs font-bold backdrop-blur-md bg-emerald-500/90 text-white shadow-sm flex items-center gap-1">
+              <i class="fa-solid fa-sparkles text-[10px]"></i>
+              <span class="match-score-text">{{ space.ai_suitability_score }}%</span> Match
+            </span>
+          </div>
+
+          <!-- Price overlay at bottom of photo -->
+          <div class="absolute bottom-3 left-3 right-3 flex items-end justify-between">
+            <div>
+              <span class="text-2xl font-extrabold text-white">₹{{ space.price_hourly|int }}</span>
+              <span class="text-xs text-slate-300 font-medium">/hour</span>
+              <span class="text-xs text-slate-400 ml-1.5">• ₹{{ space.price_daily|int }}/day</span>
+            </div>
+            <div class="text-xs text-slate-300 flex items-center gap-1 font-medium bg-black/40 px-2 py-0.5 rounded backdrop-blur-sm">
+              <i class="fa-solid fa-star text-amber-400 text-[11px]"></i> {{ space.rating }}
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Space Content Body -->
+        <div class="p-5 flex flex-col flex-grow">
+          
+          <div class="flex items-center gap-2 text-xs text-slate-400 mb-1.5 flex-wrap">
+            <span class="flex items-center gap-1">
+              <i class="fa-solid fa-location-dot text-indigo-400"></i>
+              <span>{{ space.neighborhood or space.city }}, {{ space.state }}</span>
+            </span>
+            {% if space.distance_km is not none %}
+              <span>•</span>
+              <span class="px-2 py-0.5 rounded-full text-[11px] font-bold bg-indigo-500/15 text-indigo-300 border border-indigo-500/30 flex items-center gap-1">
+                <i class="fa-solid fa-location-arrow text-[10px] text-indigo-400"></i> {{ space.distance_km }} km
+              </span>
+            {% endif %}
+            <span>•</span>
+            <span>{{ space.sqft }} sqft</span>
+            <span>•</span>
+            <span>Up to {{ space.max_capacity }} ppl</span>
+          </div>
+
+          <h3 class="text-base font-bold text-white group-hover:text-indigo-300 transition line-clamp-1 mb-2">
+            <a href="{{ url_for('space_detail', space_id=space.id) }}">
+              {{ space.title }}
+            </a>
+          </h3>
+
+          <p class="text-xs text-slate-400 line-clamp-2 mb-4 flex-grow leading-relaxed">
+            {{ space.description }}
+          </p>
+
+          <!-- AI Space Highlights -->
+          <div class="p-2.5 rounded-xl bg-slate-950/70 border border-slate-800/80 mb-4 space-y-1.5 text-xs">
+            <div class="flex items-center gap-2 text-slate-300">
+              <i class="fa-solid fa-sun text-amber-400 w-4 text-center"></i>
+              <span class="text-slate-400 truncate">{{ space.ai_lighting or 'Natural lighting' }}</span>
+            </div>
+            <div class="flex items-center gap-2 text-slate-300">
+              <i class="fa-solid fa-volume-xmark text-cyan-400 w-4 text-center"></i>
+              <span class="text-slate-400 truncate">{{ space.ai_noise_level or 'Quiet environment' }}</span>
+            </div>
+          </div>
+
+          <!-- Dynamic Match Reason (Shown on AI search) -->
+          <div class="match-reason-box hidden mb-3 p-2 rounded-lg bg-indigo-950/40 border border-indigo-500/20 text-xs text-indigo-300">
+            <i class="fa-solid fa-check text-emerald-400 mr-1"></i> <span class="reason-text">Fits requirement</span>
+          </div>
+
+          <!-- Action Footer with Verification Indicator -->
+          <div class="pt-3 border-t border-slate-800/80 flex items-center justify-between gap-3">
+            <span class="text-[11px] text-slate-400 flex items-center gap-1">
+              {% if space.owner_verified or space.is_discom_verified %}
+              <i class="fa-solid fa-circle-check text-emerald-400 text-xs"></i>
+              <span class="text-slate-300 font-medium">Verified</span>
+              {% else %}
+              <i class="fa-solid fa-clock text-amber-400 text-xs"></i>
+              <span class="text-slate-400">KYC Pending</span>
+              {% endif %}
+              <span class="text-slate-600">•</span>
+              <span class="text-slate-500 font-mono">OTI {{ space.owner_trust_score or 98.5 }}</span>
+            </span>
+            <a 
+              href="{{ url_for('space_detail', space_id=space.id) }}"
+              class="px-3.5 py-1.5 rounded-lg bg-indigo-600/20 hover:bg-indigo-600 text-indigo-300 hover:text-white border border-indigo-500/30 text-xs font-semibold transition"
+            >
+              View & Book Space
+            </a>
+          </div>
+
+        </div>
+
+      </div>
+    {% endfor %}
+
+    {% if spaces|length == 0 %}
+      <div class="col-span-full text-center py-16 bg-slate-900/40 border border-slate-800 rounded-3xl p-8 sm:p-12">
+        <div class="w-16 h-16 rounded-2xl bg-indigo-600/20 text-indigo-400 border border-indigo-500/30 flex items-center justify-center mx-auto mb-4 text-2xl">
+          <i class="fa-solid fa-map-location-dot"></i>
+        </div>
+        <h3 class="text-xl font-bold text-white mb-2">No spaces found in this area</h3>
+        <p class="text-xs sm:text-sm text-slate-400 max-w-md mx-auto mb-6 leading-relaxed">
+          No spaces match your selected location hub, radius, or category filter. Try widening your radius or exploring other hubs.
+        </p>
+        <div class="flex flex-wrap items-center justify-center gap-3">
+          <a href="{{ url_for('index') }}" class="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold transition shadow-lg shadow-indigo-600/25 flex items-center gap-2">
+            <i class="fa-solid fa-rotate-left"></i> Reset All Filters
+          </a>
+          <a href="{{ url_for('list_space_page') }}" class="px-5 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold border border-slate-700 transition flex items-center gap-2">
+            <i class="fa-solid fa-plus"></i> List a New Space
+          </a>
+        </div>
+      </div>
+    {% endif %}
+  </div>
+
+  <!-- Empty state (hidden by default, displayed when AI client matching yields 0 results) -->
+  <div id="noResultsState" class="hidden text-center py-16 bg-slate-900/40 border border-slate-800 rounded-3xl mt-6 p-8 sm:p-12">
+    <div class="w-16 h-16 rounded-2xl bg-indigo-600/20 text-indigo-400 border border-indigo-500/30 flex items-center justify-center mx-auto mb-4 text-2xl">
+      <i class="fa-solid fa-magnifying-glass"></i>
+    </div>
+    <h3 class="text-xl font-bold text-white mb-2">No exact space matches</h3>
+    <p class="text-xs sm:text-sm text-slate-400 max-w-md mx-auto mb-6 leading-relaxed">
+      No micro-spaces matched your specific requirements. Try broadening your query, increasing the radius, or clearing category restrictions.
+    </p>
+    <div class="flex flex-wrap items-center justify-center gap-3">
+      <button onclick="resetSearch()" class="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold transition shadow-lg shadow-indigo-600/25 flex items-center gap-2">
+        <i class="fa-solid fa-rotate-left"></i> Reset Search
+      </button>
+      <a href="{{ url_for('index') }}" class="px-5 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold border border-slate-700 transition">
+        Browse All Spaces
+      </a>
+    </div>
+  </div>
+
+</section>
+
+<!-- How SpaceLoop Works Explainer Banner -->
+<section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 border-t border-slate-800/80">
+  <div class="text-center max-w-2xl mx-auto mb-12">
+    <h2 class="text-2xl sm:text-3xl font-extrabold text-white">How SpaceLoop Monetizes Dead Space</h2>
+    <p class="mt-2 text-sm text-slate-400">From an empty basement to an active revenue stream in four intelligent steps.</p>
+  </div>
+
+  <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+    
+    <div class="bg-slate-900/60 border border-slate-800 rounded-2xl p-6 relative">
+      <div class="w-10 h-10 rounded-xl bg-indigo-600/20 border border-indigo-500/30 text-indigo-400 flex items-center justify-center font-bold text-base mb-4">
+        1
+      </div>
+      <h3 class="text-base font-bold text-white mb-2">Snap a Photo</h3>
+      <p class="text-xs text-slate-400 leading-relaxed">
+        Upload a snapshot of your garage, backyard, cafe during off-hours, or spare studio.
+      </p>
+    </div>
+
+    <div class="bg-slate-900/60 border border-slate-800 rounded-2xl p-6 relative">
+      <div class="w-10 h-10 rounded-xl bg-violet-600/20 border border-violet-500/30 text-violet-400 flex items-center justify-center font-bold text-base mb-4">
+        2
+      </div>
+      <h3 class="text-base font-bold text-white mb-2">AI Visual Inspector</h3>
+      <p class="text-xs text-slate-400 leading-relaxed">
+        Multimodal AI calculates square footage, lighting, acoustic profile, amenities, and dynamic fair pricing.
+      </p>
+    </div>
+
+    <div class="bg-slate-900/60 border border-slate-800 rounded-2xl p-6 relative">
+      <div class="w-10 h-10 rounded-xl bg-emerald-600/20 border border-emerald-500/30 text-emerald-400 flex items-center justify-center font-bold text-base mb-4">
+        3
+      </div>
+      <h3 class="text-base font-bold text-white mb-2">Natural Matchmaking</h3>
+      <p class="text-xs text-slate-400 leading-relaxed">
+        Renters search in natural language; AI calculates compatibility scores and pairs the right activity with the right space.
+      </p>
+    </div>
+
+    <div class="bg-slate-900/60 border border-slate-800 rounded-2xl p-6 relative">
+      <div class="w-10 h-10 rounded-xl bg-amber-600/20 border border-amber-500/30 text-amber-400 flex items-center justify-center font-bold text-base mb-4">
+        4
+      </div>
+      <h3 class="text-base font-bold text-white mb-2">Instant Micro-Lease</h3>
+      <p class="text-xs text-slate-400 leading-relaxed">
+        Every booking instantly synthesizes a binding, plain-English temporary use license with liability waivers.
+      </p>
+    </div>
+
+  </div>
+
+  <div class="mt-12 text-center">
+    <a href="{{ url_for('list_space_page') }}" class="inline-flex items-center gap-2 bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white font-semibold text-sm px-6 py-3 rounded-xl shadow-lg shadow-indigo-600/20 transition">
+      <i class="fa-solid fa-wand-magic-sparkles"></i> Try Listing with AI Space Inspector
+    </a>
+  </div>
+
+</section>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+  function setFilterLocation(locName) {
+    const input = document.getElementById('locationInput');
+    const latInput = document.getElementById('filterLat');
+    const lngInput = document.getElementById('filterLng');
+    if (input) input.value = locName;
+    if (latInput) latInput.value = '';
+    if (lngInput) lngInput.value = '';
+    const form = document.getElementById('locationFilterForm');
+    if (form) form.submit();
+  }
+
+  function detectCurrentLocation() {
+    const btn = document.getElementById('btnDetectLocation');
+    const input = document.getElementById('locationInput');
+    const latInput = document.getElementById('filterLat');
+    const lngInput = document.getElementById('filterLng');
+    const form = document.getElementById('locationFilterForm');
+
+    if (!navigator.geolocation) {
+      alert("Geolocation is not supported by your browser. Please select or type a location hub manually.");
+      return;
+    }
+
+    if (btn) {
+      btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin text-indigo-400"></i> Locating...`;
+      btn.disabled = true;
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        const lat = pos.coords.latitude.toFixed(4);
+        const lng = pos.coords.longitude.toFixed(4);
+        if (latInput) latInput.value = lat;
+        if (lngInput) lngInput.value = lng;
+        if (input) input.value = `📍 GPS (${lat}, ${lng})`;
+        if (btn) {
+          btn.innerHTML = `<i class="fa-solid fa-check text-emerald-400"></i> Detected`;
+        }
+        if (form) form.submit();
+      },
+      (err) => {
+        if (btn) {
+          btn.innerHTML = `<i class="fa-solid fa-crosshairs text-indigo-400"></i> <span class="hidden sm:inline">Use GPS</span>`;
+          btn.disabled = false;
+        }
+        console.warn("Geolocation denied or unavailable:", err.message);
+        if (input && !input.value) {
+          input.value = "Hauz Khas, New Delhi";
+        }
+        alert("Location access was not granted. Switched to manual location hub selection (e.g. Hauz Khas, Wagholi, Koramangala).");
+      },
+      { timeout: 8000, enableHighAccuracy: true }
+    );
+  }
+</script>
+{% endblock %}
