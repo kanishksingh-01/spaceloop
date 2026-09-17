@@ -149,7 +149,8 @@
 
   <!-- Location & Radius Dynamic Discovery Filter Bar -->
   <div class="bg-slate-900/80 border border-slate-800/90 rounded-2xl p-4 mb-8 shadow-xl">
-    <form id="locationFilterForm" method="GET" action="{{ url_for('index') }}" class="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-3">
+    <form id="locationFilterForm" method="GET" action="{{ url_for('explore_page') }}" class="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-3">
+      <input type="hidden" name="explore" value="1">
       <input type="hidden" name="category" value="{{ active_category if active_category != 'All' else '' }}">
       <input type="hidden" id="filterLat" name="lat" value="{{ active_lat or '' }}">
       <input type="hidden" id="filterLng" name="lng" value="{{ active_lng or '' }}">
@@ -192,6 +193,9 @@
           <option value="3" {% if active_radius == 3.0 %}selected{% endif %}>Within 3 km</option>
           <option value="5" {% if active_radius == 5.0 %}selected{% endif %}>Within 5 km</option>
           <option value="10" {% if active_radius == 10.0 %}selected{% endif %}>Within 10 km</option>
+          <option value="15" {% if active_radius == 15.0 %}selected{% endif %}>Within 15 km</option>
+          <option value="25" {% if active_radius == 25.0 %}selected{% endif %}>Within 25 km</option>
+          <option value="50" {% if active_radius == 50.0 %}selected{% endif %}>Within 50 km</option>
         </select>
       </div>
 
@@ -222,7 +226,7 @@
         </button>
         {% if active_location or active_radius or active_max_price or (active_category and active_category != 'All') %}
           <a 
-            href="{{ url_for('index') }}" 
+            href="{{ url_for('explore_page') }}" 
             class="px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs sm:text-sm font-semibold transition border border-slate-700 flex items-center justify-center"
             title="Clear all filters"
           >

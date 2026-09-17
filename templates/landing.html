@@ -32,20 +32,59 @@
       Discover and book verified spaces by the hour or day. Powered by natural-language AI matching, automated micro-leases, and zero-hardware QR access.
     </p>
 
+    <!-- Direct Location Search Bar & Quick Hubs -->
+    <div class="mt-8 max-w-2xl mx-auto">
+      <form method="GET" action="{{ url_for('explore_page') }}" class="flex flex-col sm:flex-row items-center gap-2 p-2 rounded-2xl bg-slate-900/90 border border-slate-700/80 shadow-2xl backdrop-blur-xl">
+        <div class="flex-grow flex items-center gap-2.5 px-3 py-1.5 w-full">
+          <i class="fa-solid fa-location-dot text-indigo-400 shrink-0"></i>
+          <input 
+            type="text" 
+            name="loc" 
+            placeholder="Search by city or area (e.g. Wagholi, Hauz Khas, Koramangala)..."
+            class="bg-transparent border-none text-xs sm:text-sm text-white placeholder-slate-500 focus:outline-none w-full"
+          >
+        </div>
+        <button 
+          type="submit" 
+          class="w-full sm:w-auto px-6 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs sm:text-sm transition flex items-center justify-center gap-2 shrink-0 shadow-md shadow-indigo-600/30"
+        >
+          <i class="fa-solid fa-magnifying-glass text-xs"></i>
+          <span>Search Spaces</span>
+        </button>
+      </form>
+
+      <!-- Quick Location Chips in Hero -->
+      <div class="mt-3 flex items-center justify-center gap-2 text-xs overflow-x-auto whitespace-nowrap scrollbar-none">
+        <span class="text-slate-500 text-[11px] font-medium shrink-0">Popular Hubs:</span>
+        <a href="{{ url_for('explore_page', loc='Wagholi, Pune') }}" class="px-2.5 py-1 rounded-lg bg-slate-900/80 hover:bg-indigo-950 text-slate-300 hover:text-indigo-200 border border-slate-800 text-[11px] transition flex items-center gap-1">
+          📍 Wagholi, Pune
+        </a>
+        <a href="{{ url_for('explore_page', loc='Hauz Khas, New Delhi') }}" class="px-2.5 py-1 rounded-lg bg-slate-900/80 hover:bg-indigo-950 text-slate-300 hover:text-indigo-200 border border-slate-800 text-[11px] transition flex items-center gap-1">
+          📍 Hauz Khas, Delhi
+        </a>
+        <a href="{{ url_for('explore_page', loc='Koramangala, Bangalore') }}" class="px-2.5 py-1 rounded-lg bg-slate-900/80 hover:bg-indigo-950 text-slate-300 hover:text-indigo-200 border border-slate-800 text-[11px] transition flex items-center gap-1">
+          📍 Koramangala, Bengaluru
+        </a>
+        <a href="{{ url_for('explore_page', loc='Shivajinagar, Pune') }}" class="px-2.5 py-1 rounded-lg bg-slate-900/80 hover:bg-indigo-950 text-slate-300 hover:text-indigo-200 border border-slate-800 text-[11px] transition flex items-center gap-1">
+          📍 Shivajinagar, Pune
+        </a>
+      </div>
+    </div>
+
     <!-- Dual Primary CTAs -->
-    <div class="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4">
+    <div class="mt-8 flex flex-col sm:flex-row items-center justify-center gap-4">
       <a 
         href="{{ url_for('explore_page') }}" 
-        class="w-full sm:w-auto px-8 py-4 rounded-2xl bg-gradient-to-r from-indigo-600 via-violet-600 to-indigo-700 hover:from-indigo-500 hover:to-violet-500 text-white font-extrabold text-base shadow-xl shadow-indigo-600/30 flex items-center justify-center gap-3 transition transform hover:-translate-y-0.5"
+        class="w-full sm:w-auto px-8 py-3.5 rounded-2xl bg-gradient-to-r from-indigo-600 via-violet-600 to-indigo-700 hover:from-indigo-500 hover:to-violet-500 text-white font-extrabold text-sm sm:text-base shadow-xl shadow-indigo-600/30 flex items-center justify-center gap-3 transition transform hover:-translate-y-0.5"
       >
         <i class="fa-solid fa-compass"></i>
-        <span>Find a Space</span>
+        <span>Explore All Spaces</span>
         <i class="fa-solid fa-arrow-right text-xs"></i>
       </a>
 
       <a 
         href="{{ url_for('list_space_page') if current_user.is_authenticated else url_for('auth_register', role='owner') }}" 
-        class="w-full sm:w-auto px-8 py-4 rounded-2xl bg-slate-900/90 hover:bg-slate-800 text-slate-200 hover:text-white font-bold text-base border border-slate-700/80 shadow-lg flex items-center justify-center gap-3 transition transform hover:-translate-y-0.5"
+        class="w-full sm:w-auto px-8 py-3.5 rounded-2xl bg-slate-900/90 hover:bg-slate-800 text-slate-200 hover:text-white font-bold text-sm sm:text-base border border-slate-700/80 shadow-lg flex items-center justify-center gap-3 transition transform hover:-translate-y-0.5"
       >
         <i class="fa-solid fa-warehouse text-indigo-400"></i>
         <span>Become a Host</span>
@@ -290,15 +329,37 @@
 <section id="featured-spaces" class="py-20 bg-slate-900/40 border-b border-slate-800/80">
   <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
     
-    <div class="flex flex-col sm:flex-row sm:items-end justify-between mb-12 gap-4">
+    <div class="flex flex-col sm:flex-row sm:items-end justify-between mb-6 gap-4">
       <div>
         <span class="text-xs font-extrabold uppercase tracking-wider text-indigo-400 bg-indigo-500/10 border border-indigo-500/20 px-3 py-1 rounded-full">Live Marketplace</span>
         <h2 class="text-3xl font-black text-white mt-3">Featured Micro-Spaces</h2>
-        <p class="text-slate-400 text-xs sm:text-sm mt-1">Explore top-rated verified spaces across Delhi, Bengaluru, Pune, and Mumbai.</p>
+        <p class="text-slate-400 text-xs sm:text-sm mt-1">Explore top-rated verified spaces across Pune, Delhi NCR, Bengaluru, and Mumbai.</p>
       </div>
       <a href="{{ url_for('explore_page') }}" class="text-xs font-bold text-indigo-400 hover:text-indigo-300 flex items-center gap-1.5 transition">
         <span>View all spaces</span>
         <i class="fa-solid fa-arrow-right text-[10px]"></i>
+      </a>
+    </div>
+
+    <!-- Quick Location Hub Pills on Landing Page -->
+    <div class="mb-8 flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none text-xs font-semibold">
+      <a href="{{ url_for('explore_page') }}" class="px-3.5 py-1.5 rounded-xl bg-indigo-600 text-white shadow-md shadow-indigo-600/30 transition whitespace-nowrap">
+        All Hubs
+      </a>
+      <a href="{{ url_for('explore_page', loc='Wagholi, Pune') }}" class="px-3.5 py-1.5 rounded-xl bg-slate-900 hover:bg-indigo-950 text-slate-300 hover:text-indigo-200 border border-slate-800 transition whitespace-nowrap flex items-center gap-1.5">
+        📍 Wagholi, Pune
+      </a>
+      <a href="{{ url_for('explore_page', loc='Hauz Khas, New Delhi') }}" class="px-3.5 py-1.5 rounded-xl bg-slate-900 hover:bg-indigo-950 text-slate-300 hover:text-indigo-200 border border-slate-800 transition whitespace-nowrap flex items-center gap-1.5">
+        📍 Hauz Khas, Delhi
+      </a>
+      <a href="{{ url_for('explore_page', loc='Koramangala, Bangalore') }}" class="px-3.5 py-1.5 rounded-xl bg-slate-900 hover:bg-indigo-950 text-slate-300 hover:text-indigo-200 border border-slate-800 transition whitespace-nowrap flex items-center gap-1.5">
+        📍 Koramangala, Bengaluru
+      </a>
+      <a href="{{ url_for('explore_page', loc='Shivajinagar, Pune') }}" class="px-3.5 py-1.5 rounded-xl bg-slate-900 hover:bg-indigo-950 text-slate-300 hover:text-indigo-200 border border-slate-800 transition whitespace-nowrap flex items-center gap-1.5">
+        📍 Shivajinagar, Pune
+      </a>
+      <a href="{{ url_for('explore_page', loc='Powai, Mumbai') }}" class="px-3.5 py-1.5 rounded-xl bg-slate-900 hover:bg-indigo-950 text-slate-300 hover:text-indigo-200 border border-slate-800 transition whitespace-nowrap flex items-center gap-1.5">
+        📍 Powai, Mumbai
       </a>
     </div>
 

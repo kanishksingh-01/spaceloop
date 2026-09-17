@@ -116,7 +116,7 @@
     <div class="flex items-center gap-2 overflow-x-auto pb-2 md:pb-0 scrollbar-none">
       {% for cat in categories %}
         <a 
-          href="{{ url_for('index', category=cat if cat != 'All' else None) }}"
+          href="{{ url_for('explore_page', category=cat if cat != 'All' else None, loc=active_location or None, lat=active_lat or None, lng=active_lng or None, radius=active_radius or None, max_price=active_max_price or None) }}"
           class="px-4 py-2 rounded-xl text-xs sm:text-sm font-medium transition whitespace-nowrap {% if active_category == cat %}bg-indigo-600 text-white shadow-md shadow-indigo-600/30{% else %}bg-slate-900 text-slate-400 hover:text-white hover:bg-slate-800 border border-slate-800{% endif %}"
         >
           {% if cat == 'All' %}
@@ -149,7 +149,8 @@
 
   <!-- Location & Radius Dynamic Discovery Filter Bar -->
   <div class="bg-slate-900/80 border border-slate-800/90 rounded-2xl p-4 mb-8 shadow-xl">
-    <form id="locationFilterForm" method="GET" action="{{ url_for('index') }}" class="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-3">
+    <form id="locationFilterForm" method="GET" action="{{ url_for('explore_page') }}" class="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-3">
+      <input type="hidden" name="explore" value="1">
       <input type="hidden" name="category" value="{{ active_category if active_category != 'All' else '' }}">
       <input type="hidden" id="filterLat" name="lat" value="{{ active_lat or '' }}">
       <input type="hidden" id="filterLng" name="lng" value="{{ active_lng or '' }}">
@@ -192,6 +193,9 @@
           <option value="3" {% if active_radius == 3.0 %}selected{% endif %}>Within 3 km</option>
           <option value="5" {% if active_radius == 5.0 %}selected{% endif %}>Within 5 km</option>
           <option value="10" {% if active_radius == 10.0 %}selected{% endif %}>Within 10 km</option>
+          <option value="15" {% if active_radius == 15.0 %}selected{% endif %}>Within 15 km</option>
+          <option value="25" {% if active_radius == 25.0 %}selected{% endif %}>Within 25 km</option>
+          <option value="50" {% if active_radius == 50.0 %}selected{% endif %}>Within 50 km</option>
         </select>
       </div>
 
@@ -222,7 +226,7 @@
         </button>
         {% if active_location or active_radius or active_max_price or (active_category and active_category != 'All') %}
           <a 
-            href="{{ url_for('index') }}" 
+            href="{{ url_for('explore_page') }}" 
             class="px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs sm:text-sm font-semibold transition border border-slate-700 flex items-center justify-center"
             title="Clear all filters"
           >
@@ -235,25 +239,72 @@
     <!-- Location Hub Quick Suggestion Chips -->
     <div class="mt-3 pt-2.5 border-t border-slate-800/60 flex items-center gap-2 text-xs overflow-x-auto whitespace-nowrap scrollbar-none">
       <span class="text-slate-500 text-[11px] font-medium shrink-0">Quick Hubs:</span>
-      <button type="button" onclick="setFilterLocation('Wagholi, Pune')" class="px-2 py-0.5 rounded-lg bg-slate-950/70 hover:bg-slate-800 text-slate-400 hover:text-white border border-slate-800 text-[11px] transition">
+      <button 
+        type="button" 
+        onclick="setFilterLocation('Wagholi, Pune')" 
+        class="px-2.5 py-1 rounded-lg text-[11px] font-semibold transition border {% if active_location and 'wagholi' in active_location.lower() %}bg-indigo-600 text-white border-indigo-500 shadow-sm shadow-indigo-600/30{% else %}bg-slate-950/70 hover:bg-indigo-950 hover:text-indigo-200 text-slate-400 border-slate-800{% endif %}"
+      >
         📍 Wagholi, Pune
       </button>
-      <button type="button" onclick="setFilterLocation('Hauz Khas, New Delhi')" class="px-2 py-0.5 rounded-lg bg-slate-950/70 hover:bg-slate-800 text-slate-400 hover:text-white border border-slate-800 text-[11px] transition">
+      <button 
+        type="button" 
+        onclick="setFilterLocation('Hauz Khas, New Delhi')" 
+        class="px-2.5 py-1 rounded-lg text-[11px] font-semibold transition border {% if active_location and 'hauz khas' in active_location.lower() %}bg-indigo-600 text-white border-indigo-500 shadow-sm shadow-indigo-600/30{% else %}bg-slate-950/70 hover:bg-indigo-950 hover:text-indigo-200 text-slate-400 border-slate-800{% endif %}"
+      >
         📍 IIT Delhi / Hauz Khas
       </button>
-      <button type="button" onclick="setFilterLocation('Koramangala, Bangalore')" class="px-2 py-0.5 rounded-lg bg-slate-950/70 hover:bg-slate-800 text-slate-400 hover:text-white border border-slate-800 text-[11px] transition">
+      <button 
+        type="button" 
+        onclick="setFilterLocation('Koramangala, Bangalore')" 
+        class="px-2.5 py-1 rounded-lg text-[11px] font-semibold transition border {% if active_location and 'koramangala' in active_location.lower() %}bg-indigo-600 text-white border-indigo-500 shadow-sm shadow-indigo-600/30{% else %}bg-slate-950/70 hover:bg-indigo-950 hover:text-indigo-200 text-slate-400 border-slate-800{% endif %}"
+      >
         📍 Koramangala, Bangalore
       </button>
-      <button type="button" onclick="setFilterLocation('Shivajinagar, Pune')" class="px-2 py-0.5 rounded-lg bg-slate-950/70 hover:bg-slate-800 text-slate-400 hover:text-white border border-slate-800 text-[11px] transition">
+      <button 
+        type="button" 
+        onclick="setFilterLocation('Shivajinagar, Pune')" 
+        class="px-2.5 py-1 rounded-lg text-[11px] font-semibold transition border {% if active_location and 'shivajinagar' in active_location.lower() %}bg-indigo-600 text-white border-indigo-500 shadow-sm shadow-indigo-600/30{% else %}bg-slate-950/70 hover:bg-indigo-950 hover:text-indigo-200 text-slate-400 border-slate-800{% endif %}"
+      >
         📍 Shivajinagar / FC Road
       </button>
-      <button type="button" onclick="setFilterLocation('North Campus, New Delhi')" class="px-2 py-0.5 rounded-lg bg-slate-950/70 hover:bg-slate-800 text-slate-400 hover:text-white border border-slate-800 text-[11px] transition">
+      <button 
+        type="button" 
+        onclick="setFilterLocation('North Campus, New Delhi')" 
+        class="px-2.5 py-1 rounded-lg text-[11px] font-semibold transition border {% if active_location and 'north campus' in active_location.lower() %}bg-indigo-600 text-white border-indigo-500 shadow-sm shadow-indigo-600/30{% else %}bg-slate-950/70 hover:bg-indigo-950 hover:text-indigo-200 text-slate-400 border-slate-800{% endif %}"
+      >
         📍 DU North Campus
       </button>
-      <button type="button" onclick="setFilterLocation('Sector 62, Noida')" class="px-2 py-0.5 rounded-lg bg-slate-950/70 hover:bg-slate-800 text-slate-400 hover:text-white border border-slate-800 text-[11px] transition">
+      <button 
+        type="button" 
+        onclick="setFilterLocation('Sector 62, Noida')" 
+        class="px-2.5 py-1 rounded-lg text-[11px] font-semibold transition border {% if active_location and 'sector 62' in active_location.lower() %}bg-indigo-600 text-white border-indigo-500 shadow-sm shadow-indigo-600/30{% else %}bg-slate-950/70 hover:bg-indigo-950 hover:text-indigo-200 text-slate-400 border-slate-800{% endif %}"
+      >
         📍 Sector 62, Noida
       </button>
     </div>
+
+    <!-- Active Location Banner -->
+    {% if active_location %}
+    <div class="mt-3 pt-2.5 border-t border-slate-800/40 flex items-center justify-between gap-2 text-xs">
+      <div class="flex items-center gap-2">
+        <span class="text-slate-400">Current search location:</span>
+        <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-indigo-500/15 border border-indigo-500/30 text-indigo-300 font-semibold">
+          <i class="fa-solid fa-location-dot text-indigo-400"></i> {{ active_location }}
+          {% if active_radius %}
+            <span class="text-slate-400 font-normal">(within {{ active_radius|int }} km)</span>
+          {% else %}
+            <span class="text-slate-400 font-normal">(sorted by closest)</span>
+          {% endif %}
+        </span>
+      </div>
+      <a 
+        href="{{ url_for('explore_page', category=active_category if active_category != 'All' else None, max_price=active_max_price or None) }}" 
+        class="text-slate-400 hover:text-white text-[11px] flex items-center gap-1 px-2 py-0.5 rounded bg-slate-800/80 border border-slate-700 transition"
+      >
+        <i class="fa-solid fa-xmark"></i> Clear Location
+      </a>
+    </div>
+    {% endif %}
   </div>
 
   <!-- AI Matching Banner (Shows when AI search query is executed) -->
@@ -545,10 +596,7 @@
           btn.disabled = false;
         }
         console.warn("Geolocation denied or unavailable:", err.message);
-        if (input && !input.value) {
-          input.value = "Hauz Khas, New Delhi";
-        }
-        alert("Location access was not granted. Switched to manual location hub selection (e.g. Hauz Khas, Wagholi, Koramangala).");
+        alert("Location access was not granted by your browser. Please select a location hub (e.g. Wagholi, Pune) or enter your location manually.");
       },
       { timeout: 8000, enableHighAccuracy: true }
     );
