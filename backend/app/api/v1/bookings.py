@@ -106,7 +106,8 @@ def precheck_booking():
     if conflict:
         return jsonify({
             "available": False,
-            "error": "This space is already reserved for the requested time slot. Please select a different time or space.",
+            "error": "Booking Conflict",
+            "message": "This space is already booked for the selected time slot. Please choose another time or adjust duration.",
             "conflicting_slot": {
                 "start": conflict.start_time.isoformat(),
                 "end": conflict.end_time.isoformat()
@@ -235,7 +236,7 @@ def create_booking():
     if conflict:
         return jsonify({
             "error": "Booking Conflict",
-            "message": "This space is already booked during the requested time slot. Please select a different time or choose another space.",
+            "message": "This space is already booked for the selected time slot. Please choose another time or adjust duration.",
             "conflicting_booking": {
                 "id": conflict.id,
                 "start_time": conflict.start_time.isoformat(),

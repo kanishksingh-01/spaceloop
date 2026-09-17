@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { User } from '../../types';
 import { logoutUser, demoSwitch } from '../../services/auth';
-import { ThemeToggle } from './ThemeToggle';
 
 interface HeaderProps {
   currentUser: User | null;
@@ -206,9 +205,6 @@ export const Header: React.FC<HeaderProps> = ({
               <span>🏡 Switch to Host</span>
             </button>
           )}
-
-          {/* Theme Toggle */}
-          <ThemeToggle />
 
           {/* Authenticated Controls vs Sign In Buttons */}
           {isHostPortal ? (
@@ -426,15 +422,6 @@ export const Header: React.FC<HeaderProps> = ({
                 🏡 Switch to Host Portal
               </button>
             )}
-          </div>
-
-          {/* Mobile Theme Switcher */}
-          <div className="pt-2 border-t border-slate-800 flex items-center justify-between">
-            <span className="text-xs font-semibold text-slate-300 flex items-center gap-1.5">
-              <i className="fa-solid fa-circle-half-stroke text-indigo-400" />
-              <span>Theme</span>
-            </span>
-            <ThemeToggle variant="pill" />
           </div>
         </div>
       )}

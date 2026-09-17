@@ -36,8 +36,8 @@ export async function request<T>(endpoint: string, options: RequestInit = {}): P
     } catch {
       errorData = await response.text();
     }
-    const message = typeof errorData === 'object' && errorData.error 
-      ? errorData.error 
+    const message = typeof errorData === 'object' && (errorData.message || errorData.error)
+      ? (errorData.message || errorData.error)
       : `Request failed with status ${response.status}`;
     throw new ApiError(message, response.status, errorData);
   }

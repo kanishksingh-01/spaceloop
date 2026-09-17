@@ -58,11 +58,17 @@ Property owners hesitate to rent because of tenancy laws and property liability.
 
 ---
 
-## 🛠️ Tech Stack
+## 🛠️ Tech Stack & Architecture
 
-- **Backend:** Python 3, Flask 3.0, Flask-SQLAlchemy, SQLite
-- **AI Engine:** Dual-provider architecture supporting **Groq** (`llama-3.3-70b-versatile`, `llama-3.1-8b-instant`) and **Google Gemini** (`gemini-1.5-flash`), backed by a reliable rule-based heuristic fallback engine for offline or rate-limited environments.
-- **Frontend:** Tailwind CSS, JetBrains Mono, FontAwesome 6, Vanilla JS.
+- **Backend:** Python 3, Flask 3.0, Flask-SQLAlchemy, SQLite / PostgreSQL, Flask-Login, Flask-WTF
+- **Frontend:** React 18, Vite 5, Tailwind CSS, React Router 6, FontAwesome 6 (Permanent Dark Theme `#020617`)
+- **AI Engine:** Multi-provider architecture supporting **Google Gemini** (`gemini-1.5-flash`) and **Groq** (`llama-3.3-70b-versatile`), backed by a deterministic conversational and heuristic fallback engine.
+- **Zero-Hardware India Stack:**
+  - **Section 52, Indian Easements Act, 1882:** Enforceable revocable micro-lease licenses (prevents adverse tenancy claims).
+  - **DigiLocker & DPDP Act (2023):** SHA-256 masked Aadhaar OTP simulation (`XXXX-XXXX-4821`).
+  - **Discom Electricity Meter Verification:** CA verification ensuring undisputed property dominion.
+  - **UPI Escrow Protocol:** Automated ₹100 UPI security deposit held and instantly refunded upon check-out verification.
+  - **GPS Geofence Handshake:** 50m radius virtual door access pass with fallback caretaker PIN.
 
 ---
 
@@ -86,11 +92,17 @@ cp .env.example .env
 # 5. Provision Super Administrator (Optional CLI)
 python scripts/create_admin.py --email admin@spaceloop.in --name "Platform Administrator"
 
-# 6. Run the application
+# 6. Run the Flask Backend API (Port 5000)
 python app.py
+
+# 7. In a separate terminal, launch the React Frontend (Port 3000)
+cd frontend
+npm install
+npm run dev
 ```
 
-The application will start at `http://localhost:5000` (or `PORT=5050`) with pre-seeded demo spaces, personas, and verified credentials!
+- **Frontend Web App:** `http://localhost:3000`
+- **Backend API & Admin Portal:** `http://localhost:5000`
 
 ---
 

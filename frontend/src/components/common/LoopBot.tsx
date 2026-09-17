@@ -46,6 +46,47 @@ export const LoopBot: React.FC = () => {
     }
   };
 
+  const renderCleanMessage = (rawText: string) => {
+    if (!rawText) return null;
+    const cleaned = rawText
+      .replace(/<br\s*\/?>/gi, '\n')
+      .replace(/<[^>]+>/g, '');
+
+    const lines = cleaned.split('\n');
+
+    return (
+      <div className="space-y-1.5" style={{ wordBreak: 'break-word', overflowWrap: 'anywhere' }}>
+        {lines.map((line, lIdx) => {
+          if (!line.trim()) {
+            return <div key={lIdx} className="h-1" />;
+          }
+
+          const parts = line.split(/(\*\*.*?\*\*)/g);
+          const formattedLine = parts.map((part, pIdx) => {
+            if (part.startsWith('**') && part.endsWith('**') && part.length >= 4) {
+              return (
+                <strong key={pIdx} className="font-semibold text-white">
+                  {part.slice(2, -2)}
+                </strong>
+              );
+            }
+            return <span key={pIdx}>{part}</span>;
+          });
+
+          const isBullet = line.trim().startsWith('•') || line.trim().startsWith('-');
+          return (
+            <p
+              key={lIdx}
+              className={isBullet ? 'pl-2 text-slate-300' : ''}
+            >
+              {formattedLine}
+            </p>
+          );
+        })}
+      </div>
+    );
+  };
+
   return (
     <>
       {/* Floating LoopBot Concierge Launcher */}
@@ -102,13 +143,14 @@ export const LoopBot: React.FC = () => {
                     </div>
                   )}
                   <div
-                    className={`p-3 rounded-2xl max-w-[85%] leading-relaxed text-xs sm:text-sm whitespace-pre-wrap break-words ${
+                    className={`p-3 rounded-2xl max-w-[88%] leading-relaxed text-xs sm:text-sm ${
                       msg.role === 'user'
-                        ? 'bg-indigo-600 text-white rounded-tr-sm'
+                        ? 'bg-indigo-600 text-white rounded-tr-sm whitespace-pre-wrap'
                         : 'bg-slate-800/90 text-slate-200 rounded-tl-sm border border-slate-700/50'
                     }`}
+                    style={{ wordBreak: 'break-word', overflowWrap: 'anywhere' }}
                   >
-                    {msg.content}
+                    {msg.role === 'user' ? msg.content : renderCleanMessage(msg.content)}
                   </div>
                 </div>
               ))}
