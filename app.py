@@ -48,6 +48,64 @@ def haversine_distance(lat1, lon1, lat2, lon2):
         return 0.0
 
 
+KNOWN_HUBS = {
+    "hauz khas": (28.5450, 77.1926),
+    "iit delhi": (28.5450, 77.1926),
+    "delhi": (28.5450, 77.1926),
+    "new delhi": (28.5450, 77.1926),
+    "north campus": (28.6900, 77.2100),
+    "delhi university": (28.6900, 77.2100),
+    "connaught place": (28.6315, 77.2167),
+    "noida": (28.6270, 77.3725),
+    "sector 62": (28.6270, 77.3725),
+    "koramangala": (12.9352, 77.6245),
+    "bangalore": (12.9352, 77.6245),
+    "bengaluru": (12.9352, 77.6245),
+    "shivajinagar": (18.5204, 73.8567),
+    "fc road": (18.5204, 73.8567),
+    "pune": (18.5204, 73.8567),
+    "wagholi": (18.5793, 73.9822),
+    "powai": (19.1334, 72.9133),
+    "mumbai": (19.1334, 72.9133),
+    "iit bombay": (19.1334, 72.9133)
+}
+
+
+def resolve_location_coordinates(loc_name="", lat=None, lng=None):
+    """
+    Resolves human location name or GPS coordinates into (lat, lng, display_name).
+    """
+    if lat is not None and lng is not None:
+        try:
+            fl_lat = float(lat)
+            fl_lng = float(lng)
+            if -90.0 <= fl_lat <= 90.0 and -180.0 <= fl_lng <= 180.0:
+                name = loc_name or "Current GPS Location"
+                return fl_lat, fl_lng, name
+        except (ValueError, TypeError):
+            pass
+
+    if loc_name:
+        clean = loc_name.strip()
+        if "," in clean:
+            parts = clean.split(",")
+            if len(parts) == 2:
+                try:
+                    fl_lat = float(parts[0].strip())
+                    fl_lng = float(parts[1].strip())
+                    if -90.0 <= fl_lat <= 90.0 and -180.0 <= fl_lng <= 180.0:
+                        return fl_lat, fl_lng, f"{round(fl_lat, 3)}, {round(fl_lng, 3)}"
+                except (ValueError, TypeError):
+                    pass
+
+        clean_lower = clean.lower()
+        for hub_key, coords in KNOWN_HUBS.items():
+            if hub_key in clean_lower or clean_lower in hub_key:
+                return coords[0], coords[1], hub_key.title()
+
+    return None, None, ""
+
+
 def create_app():
     app = Flask(__name__)
     app.config.from_object(Config)
@@ -88,19 +146,62 @@ def create_app():
     def index():
         category = sanitize_string(request.args.get("category", ""), max_length=50)
         q = sanitize_string(request.args.get("q", ""), max_length=150)
-        
+        loc = sanitize_string(request.args.get("loc", ""), max_length=100)
+        raw_lat = request.args.get("lat")
+        raw_lng = request.args.get("lng")
+        raw_radius = request.args.get("radius")
+        raw_max_price = request.args.get("max_price")
+
+        radius_km = None
+        if raw_radius and raw_radius != "All":
+            try:
+                radius_km = float(raw_radius)
+            except (ValueError, TypeError):
+                radius_km = None
+
+        max_price = None
+        if raw_max_price:
+            try:
+                max_price = float(raw_max_price)
+            except (ValueError, TypeError):
+                max_price = None
+
+        lat, lng, resolved_loc_name = resolve_location_coordinates(loc, raw_lat, raw_lng)
+
         query = Space.query.filter_by(is_active=True)
         if category and category != "All":
             query = query.filter(Space.category == category)
+        if max_price is not None:
+            query = query.filter(Space.price_hourly <= max_price)
 
-        spaces = [s.to_dict() for s in query.all()]
+        all_spaces = query.all()
+        spaces_data = []
+
+        for s in all_spaces:
+            s_dict = s.to_dict()
+            if lat is not None and lng is not None and s.latitude and s.longitude:
+                dist_m = haversine_distance(lat, lng, s.latitude, s.longitude)
+                dist_km = round(dist_m / 1000.0, 1)
+                s_dict["distance_km"] = dist_km
+                if radius_km is not None and dist_km > radius_km:
+                    continue
+            spaces_data.append(s_dict)
+
+        if lat is not None and lng is not None:
+            spaces_data.sort(key=lambda x: x.get("distance_km", 999999))
+
         categories = ["All", "Studio", "Storage", "Parking", "Pop-up/Retail", "Event/Workshop"]
         return render_template(
             "index.html",
-            spaces=spaces,
+            spaces=spaces_data,
             categories=categories,
             active_category=category or "All",
-            search_query=q
+            search_query=q,
+            active_location=resolved_loc_name or loc,
+            active_lat=lat,
+            active_lng=lng,
+            active_radius=radius_km,
+            active_max_price=max_price
         )
 
     @app.route("/space/<int:space_id>")
@@ -296,10 +397,51 @@ def create_app():
     @app.route("/api/spaces", methods=["GET"])
     def get_spaces():
         category = sanitize_string(request.args.get("category"), max_length=50)
+        loc = sanitize_string(request.args.get("loc", ""), max_length=100)
+        raw_lat = request.args.get("lat")
+        raw_lng = request.args.get("lng")
+        raw_radius = request.args.get("radius")
+        raw_max_price = request.args.get("max_price")
+
+        radius_km = None
+        if raw_radius and raw_radius != "All":
+            try:
+                radius_km = float(raw_radius)
+            except (ValueError, TypeError):
+                radius_km = None
+
+        max_price = None
+        if raw_max_price:
+            try:
+                max_price = float(raw_max_price)
+            except (ValueError, TypeError):
+                max_price = None
+
+        lat, lng, resolved_loc_name = resolve_location_coordinates(loc, raw_lat, raw_lng)
+
         query = Space.query.filter_by(is_active=True)
         if category and category != "All":
             query = query.filter_by(category=category)
-        return jsonify([s.to_dict() for s in query.all()])
+        if max_price is not None:
+            query = query.filter(Space.price_hourly <= max_price)
+
+        all_spaces = query.all()
+        spaces_data = []
+
+        for s in all_spaces:
+            s_dict = s.to_dict()
+            if lat is not None and lng is not None and s.latitude and s.longitude:
+                dist_m = haversine_distance(lat, lng, s.latitude, s.longitude)
+                dist_km = round(dist_m / 1000.0, 1)
+                s_dict["distance_km"] = dist_km
+                if radius_km is not None and dist_km > radius_km:
+                    continue
+            spaces_data.append(s_dict)
+
+        if lat is not None and lng is not None:
+            spaces_data.sort(key=lambda x: x.get("distance_km", 999999))
+
+        return jsonify(spaces_data)
 
     @app.route("/api/spaces/<int:space_id>", methods=["GET"])
     def get_space(space_id):
@@ -412,14 +554,52 @@ def create_app():
     def ai_match_spaces():
         """
         AI Natural Language Matchmaker:
-        Ranks candidate spaces against seeker prompt.
+        Ranks candidate spaces against seeker prompt, integrated with location & radius filtering.
         """
         data = request.get_json(silent=True) or {}
         query_text = sanitize_string(data.get("query", ""), max_length=300)
-        all_spaces = [s.to_dict() for s in Space.query.filter_by(is_active=True).all()]
+        loc = sanitize_string(data.get("loc", ""), max_length=100)
+        raw_lat = data.get("lat")
+        raw_lng = data.get("lng")
+        raw_radius = data.get("radius")
 
-        ranked = match_spaces_with_ai(query_text, all_spaces)
-        return jsonify({"results": ranked, "query": query_text})
+        radius_km = None
+        if raw_radius and raw_radius != "All":
+            try:
+                radius_km = float(raw_radius)
+            except (ValueError, TypeError):
+                radius_km = None
+
+        lat, lng, resolved_loc_name = resolve_location_coordinates(loc, raw_lat, raw_lng)
+
+        all_spaces = [s.to_dict() for s in Space.query.filter_by(is_active=True).all()]
+        candidate_spaces = []
+
+        for s in all_spaces:
+            if lat is not None and lng is not None and s.get("latitude") and s.get("longitude"):
+                dist_m = haversine_distance(lat, lng, s["latitude"], s["longitude"])
+                dist_km = round(dist_m / 1000.0, 1)
+                s["distance_km"] = dist_km
+                if radius_km is not None and dist_km > radius_km:
+                    continue
+            candidate_spaces.append(s)
+
+        spaces_to_rank = candidate_spaces if candidate_spaces else all_spaces
+        ranked = match_spaces_with_ai(query_text, spaces_to_rank)
+
+        # Attach distance_km to ranked match objects
+        for r in ranked:
+            sp = r.get("space", {})
+            if "distance_km" in sp:
+                r["distance_km"] = sp["distance_km"]
+
+        return jsonify({
+            "results": ranked,
+            "query": query_text,
+            "location": resolved_loc_name or loc,
+            "radius_km": radius_km,
+            "total_matches": len(ranked)
+        })
 
     @app.route("/api/bookings", methods=["POST"])
     def create_booking():
