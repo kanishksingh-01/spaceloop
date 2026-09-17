@@ -1,6 +1,6 @@
 import os
 from datetime import datetime, timedelta
-from flask import Flask, request, jsonify, render_template, redirect, url_for, session
+from flask import Flask, request, jsonify, render_template, redirect, url_for, session, flash
 
 from config import Config
 from models import db, User, Space, Booking, Review, SpaceInquiry
@@ -162,6 +162,62 @@ def create_app():
     def printable_qr(space_id):
         space = Space.query.get_or_404(space_id)
         return render_template("printable_qr.html", space=space.to_dict())
+
+    @app.route("/profile")
+    def profile_page():
+        user_id = session.get("user_id")
+        user = User.query.get(user_id) if user_id else (User.query.filter_by(role="seeker").first() or User.query.first())
+        return render_template("profile.html", user=user.to_dict() if user else None)
+
+    @app.route("/inquiries")
+    def inquiries_page():
+        user_id = session.get("user_id")
+        user = User.query.get(user_id) if user_id else (User.query.filter_by(role="seeker").first() or User.query.first())
+        inquiries = SpaceInquiry.query.order_by(SpaceInquiry.created_at.desc()).all()
+        if not inquiries:
+            demo_space = Space.query.first()
+            if demo_space:
+                q1 = SpaceInquiry(
+                    space_id=demo_space.id,
+                    user_id=user.id if user else None,
+                    question="Is high-speed WiFi available for video conferencing?",
+                    ai_answer="Yes! This space features 300 Mbps fiber optical internet, 6 power sockets, and quiet acoustic dampening."
+                )
+                q2 = SpaceInquiry(
+                    space_id=demo_space.id,
+                    user_id=user.id if user else None,
+                    question="What are the access hours and parking availability?",
+                    ai_answer="Access is instant via GPS geofence handshake or 4-digit arrival PIN. Two-wheeler parking is free on premise."
+                )
+                db.session.add_all([q1, q2])
+                db.session.commit()
+                inquiries = [q1, q2]
+        return render_template("inquiries.html", inquiries=inquiries, user=user.to_dict() if user else None)
+
+    @app.route("/session")
+    def active_session_redirect():
+        user_id = session.get("user_id")
+        user = User.query.get(user_id) if user_id else (User.query.filter_by(role="seeker").first() or User.query.first())
+        if user:
+            latest_booking = Booking.query.filter_by(renter_id=user.id).order_by(Booking.created_at.desc()).first()
+            if latest_booking:
+                return redirect(url_for("session_page", booking_id=latest_booking.id))
+        any_booking = Booking.query.order_by(Booking.created_at.desc()).first()
+        if any_booking:
+            return redirect(url_for("session_page", booking_id=any_booking.id))
+        return redirect(url_for("dashboard_page"))
+
+    @app.route("/switch-role", methods=["GET", "POST"])
+    def switch_role():
+        target_role = request.args.get("role") or request.form.get("role")
+        current_id = session.get("user_id")
+        current = User.query.get(current_id) if current_id else None
+        if not target_role:
+            target_role = "owner" if (current and current.role == "seeker") else "seeker"
+        target_user = User.query.filter_by(role=target_role).first()
+        if target_user:
+            session["user_id"] = target_user.id
+        return redirect(request.referrer or url_for("dashboard_page" if target_role == "owner" else "index"))
 
     # ==========================================
     # REST API Endpoints
