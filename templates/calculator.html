@@ -1,33 +1,51 @@
 {% extends "base.html" %}
 
-{% block title %}Space Monetization Calculator | SpaceLoop{% endblock %}
+{% block title %}Host Earnings & Monetization Calculator | SpaceLoop{% endblock %}
 
 {% block content %}
 
-<div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+<div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
 
   <!-- Header -->
   <div class="text-center max-w-2xl mx-auto mb-10">
     <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-semibold mb-3">
-      <i class="fa-solid fa-coins"></i> Passive Revenue Estimator
+      <i class="fa-solid fa-calculator"></i> Host Revenue & Yield Simulator
     </div>
     <h1 class="text-3xl sm:text-4xl font-extrabold text-white tracking-tight">
-      Calculate Your Space's Earning Potential
+      Host Earnings Calculator
     </h1>
     <p class="mt-2 text-sm text-slate-400">
-      See how much passive income your empty garage, spare studio, off-peak cafe, or driveway can generate each month.
+      Simulate passive income from your unused garage, basement, off-peak desk, or parking spot with dynamic pricing and transparent platform fees.
     </p>
   </div>
 
+  <!-- Host Listing Fast Selector (If listings exist) -->
+  {% if host_spaces and host_spaces|length > 0 %}
+  <div class="bg-slate-900/60 border border-slate-800 rounded-2xl p-4 mb-8 flex flex-col sm:flex-row items-center justify-between gap-4">
+    <div class="flex items-center gap-2.5 text-xs text-slate-300">
+      <i class="fa-solid fa-bolt text-amber-400"></i>
+      <span>Load parameters from one of your active listings:</span>
+    </div>
+    <select id="spaceSelector" onchange="loadSpaceData(this.value)" class="bg-slate-950 border border-slate-700 text-xs text-white rounded-xl px-3 py-2 focus:outline-none focus:border-indigo-500 w-full sm:w-auto">
+      <option value="">-- Choose an existing space to prefill --</option>
+      {% for s in host_spaces %}
+        <option value="{{ s.id }}" data-category="{{ s.category }}" data-price="{{ s.price_hourly|int }}" data-sqft="{{ s.sqft }}">
+          {{ s.title }} (₹{{ s.price_hourly|int }}/hr • {{ s.category }})
+        </option>
+      {% endfor %}
+    </select>
+  </div>
+  {% endif %}
+
   <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
     
-    <!-- Sliders and Inputs (7 cols) -->
+    <!-- Controls Column (7 cols) -->
     <div class="lg:col-span-7 bg-slate-900/90 border border-slate-800 rounded-3xl p-6 sm:p-8 shadow-xl space-y-6">
       
-      <!-- Space Category -->
+      <!-- 1. Space Category -->
       <div>
         <label class="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-3">
-          1. Select Type of Dead Space
+          1. Space Category
         </label>
         <div class="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
           <button type="button" onclick="setCalcCategory('Studio')" class="cat-btn px-3 py-2.5 rounded-xl border border-indigo-500 bg-indigo-600/20 text-white font-medium text-xs flex items-center justify-center gap-1.5 transition">
@@ -51,117 +69,177 @@
         </div>
       </div>
 
-      <!-- Square Footage Slider -->
+      <!-- 2. Hourly Rate Input -->
       <div>
         <div class="flex items-center justify-between mb-2">
-          <label class="text-xs font-bold uppercase tracking-wider text-slate-400">
-            2. Usable Square Footage
+          <label for="hourlyRateInput" class="text-xs font-bold uppercase tracking-wider text-slate-400">
+            2. Hourly Rate (₹/hour)
           </label>
-          <span id="sqftDisplay" class="text-sm font-extrabold text-white bg-slate-800 px-2.5 py-1 rounded-lg">
-            300 sqft
+          <span class="text-[11px] text-indigo-400">
+            AI Suggested: <span id="suggestedRateText">₹{{ initial_data.suggested_hourly }}/hr</span>
           </span>
         </div>
-        <input 
-          type="range" 
-          id="sqftSlider" 
-          min="80" 
-          max="1200" 
-          step="20" 
-          value="300"
-          oninput="recalc()" 
-          class="w-full accent-indigo-500 cursor-pointer h-2 bg-slate-800 rounded-lg"
-        >
+        <div class="flex items-center gap-3">
+          <div class="relative flex-grow">
+            <span class="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-sm">₹</span>
+            <input 
+              type="number" 
+              id="hourlyRateInput" 
+              min="10" 
+              max="5000" 
+              step="5" 
+              value="{{ initial_data.hourly_rate|int }}" 
+              oninput="recalc()" 
+              class="w-full bg-slate-950 border border-slate-700 rounded-xl pl-8 pr-4 py-2.5 text-sm font-bold text-white focus:outline-none focus:border-indigo-500 transition"
+            >
+          </div>
+          <button type="button" onclick="adjustRate(-10)" class="px-3 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs transition border border-slate-700">-10</button>
+          <button type="button" onclick="adjustRate(10)" class="px-3 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs transition border border-slate-700">+10</button>
+        </div>
         <div class="flex justify-between text-[11px] text-slate-500 mt-1">
-          <span>80 sqft (Car spot / Nook)</span>
-          <span>500 sqft (Garage)</span>
-          <span>1,200 sqft (Loft / Store)</span>
+          <span>Min: ₹10/hr</span>
+          <span>Competitive student range: ₹40 - ₹120/hr</span>
+          <span>Max: ₹5,000/hr</span>
         </div>
       </div>
 
-      <!-- Days Booked Slider -->
+      <!-- 3. Available Days Per Month -->
       <div>
         <div class="flex items-center justify-between mb-2">
           <label class="text-xs font-bold uppercase tracking-wider text-slate-400">
-            3. Estimated Days Booked / Month
+            3. Available Days / Month
           </label>
           <span id="daysDisplay" class="text-sm font-extrabold text-indigo-400 bg-indigo-950/60 border border-indigo-500/30 px-2.5 py-1 rounded-lg">
-            12 days / month
+            {{ initial_data.days_per_month }} days / month
           </span>
         </div>
         <input 
           type="range" 
           id="daysSlider" 
-          min="2" 
-          max="28" 
+          min="1" 
+          max="30" 
           step="1" 
-          value="12"
+          value="{{ initial_data.days_per_month }}"
           oninput="recalc()" 
           class="w-full accent-indigo-500 cursor-pointer h-2 bg-slate-800 rounded-lg"
         >
         <div class="flex justify-between text-[11px] text-slate-500 mt-1">
           <span>Weekends only (4-8 days)</span>
           <span>Moderate (12-16 days)</span>
-          <span>High demand (20+ days)</span>
+          <span>Full month (20-30 days)</span>
         </div>
       </div>
 
-      <!-- Dynamic Feature Note -->
-      <div class="p-4 bg-slate-950/70 border border-slate-800 rounded-2xl text-xs space-y-1.5 text-slate-400">
-        <div class="text-slate-300 font-semibold flex items-center gap-1.5">
-          <i class="fa-solid fa-chart-line text-indigo-400"></i> AI Micro-Pricing Insights
+      <!-- 4. Available Hours Per Day -->
+      <div>
+        <div class="flex items-center justify-between mb-2">
+          <label class="text-xs font-bold uppercase tracking-wider text-slate-400">
+            4. Available Hours / Day
+          </label>
+          <span id="hoursDisplay" class="text-sm font-extrabold text-emerald-400 bg-emerald-950/60 border border-emerald-500/30 px-2.5 py-1 rounded-lg">
+            {{ initial_data.hours_per_day|int }} hours / day
+          </span>
         </div>
-        <p>
-          Rates are calculated using live neighborhood density indices, amenity premiums, and off-peak yield optimization.
-        </p>
+        <input 
+          type="range" 
+          id="hoursSlider" 
+          min="1" 
+          max="24" 
+          step="1" 
+          value="{{ initial_data.hours_per_day|int }}"
+          oninput="recalc()" 
+          class="w-full accent-emerald-500 cursor-pointer h-2 bg-slate-800 rounded-lg"
+        >
+        <div class="flex justify-between text-[11px] text-slate-500 mt-1">
+          <span>1 hr (Micro-slot)</span>
+          <span>4-6 hrs (Peak study slot)</span>
+          <span>24 hrs (Continuous)</span>
+        </div>
+      </div>
+
+      <!-- 5. Platform Service Fee -->
+      <div>
+        <div class="flex items-center justify-between mb-2">
+          <label class="text-xs font-bold uppercase tracking-wider text-slate-400">
+            5. Platform Service Fee (%)
+          </label>
+          <span id="feeDisplay" class="text-sm font-extrabold text-slate-300 bg-slate-950 border border-slate-800 px-2.5 py-1 rounded-lg">
+            {{ initial_data.platform_fee_percent|int }}%
+          </span>
+        </div>
+        <input 
+          type="range" 
+          id="feeSlider" 
+          min="0" 
+          max="30" 
+          step="1" 
+          value="{{ initial_data.platform_fee_percent|int }}"
+          oninput="recalc()" 
+          class="w-full accent-slate-400 cursor-pointer h-2 bg-slate-800 rounded-lg"
+        >
+        <div class="flex justify-between text-[11px] text-slate-500 mt-1">
+          <span>0% (Promo fee)</span>
+          <span>15% (Standard SpaceLoop SLA)</span>
+          <span>30% (Premium Concierge)</span>
+        </div>
       </div>
 
     </div>
 
-    <!-- Results Card (5 cols) -->
+    <!-- Results Breakdown Column (5 cols) -->
     <div class="lg:col-span-5 bg-gradient-to-b from-indigo-950/60 via-slate-900 to-slate-900 border border-indigo-500/40 rounded-3xl p-6 sm:p-8 shadow-2xl space-y-6">
       
+      <!-- Primary Net Monthly Earnings -->
       <div>
         <span class="text-xs font-bold uppercase tracking-wider text-indigo-300 block mb-1">
-          Projected Passive Income
+          Estimated Net Host Earnings
         </span>
         <div class="flex items-baseline gap-2">
-          <span id="monthlyEarnings" class="text-4xl sm:text-5xl font-extrabold text-white">
+          <span id="monthlyEarnings" class="text-4xl sm:text-5xl font-black text-emerald-400">
             ₹{{ initial_data.estimated_monthly }}
           </span>
           <span class="text-sm text-slate-400 font-medium">/ month</span>
         </div>
         <div class="text-xs text-emerald-400 mt-1 flex items-center gap-1 font-semibold">
           <i class="fa-solid fa-arrow-trend-up"></i>
-          <span id="annualEarnings">₹{{ initial_data.estimated_annual }} / year</span>
+          <span id="annualEarnings">₹{{ initial_data.estimated_annual }} / year projection</span>
         </div>
       </div>
 
-      <div class="grid grid-cols-2 gap-3 pt-4 border-t border-slate-800 text-xs">
-        <div class="p-3 bg-slate-950/80 border border-slate-800 rounded-xl">
-          <span class="text-slate-400 block mb-0.5">Optimal Hourly Rate</span>
-          <span id="suggestedHourly" class="text-base font-extrabold text-white">₹{{ initial_data.suggested_hourly }}/hr</span>
+      <!-- Transparent Breakdown Table -->
+      <div class="bg-slate-950/80 border border-slate-800 rounded-2xl p-4 space-y-3 text-xs">
+        <div class="flex items-center justify-between pb-2 border-b border-slate-800">
+          <span class="text-slate-400">Estimated Bookings</span>
+          <span id="calcBookings" class="font-bold text-white">{{ initial_data.estimated_bookings }} bookings/mo</span>
         </div>
-        <div class="p-3 bg-slate-950/80 border border-slate-800 rounded-xl">
-          <span class="text-slate-400 block mb-0.5">Optimal Daily Rate</span>
-          <span id="suggestedDaily" class="text-base font-extrabold text-white">₹{{ initial_data.suggested_daily }}/day</span>
+        <div class="flex items-center justify-between pb-2 border-b border-slate-800">
+          <span class="text-slate-400">Gross Monthly Revenue</span>
+          <span id="grossMonthly" class="font-bold text-white">₹{{ initial_data.gross_monthly }}</span>
+        </div>
+        <div class="flex items-center justify-between pb-2 border-b border-slate-800">
+          <span class="text-slate-400">Platform Service Fee (<span id="calcFeePercent">{{ initial_data.platform_fee_percent|int }}</span>%)</span>
+          <span id="platformFeeAmount" class="font-bold text-amber-400">-₹{{ initial_data.platform_fee_amount }}</span>
+        </div>
+        <div class="flex items-center justify-between pt-1 font-extrabold text-sm">
+          <span class="text-slate-200">Host Net Take-Home</span>
+          <span id="netMonthlySummary" class="text-emerald-400">₹{{ initial_data.estimated_monthly }}</span>
         </div>
       </div>
 
-      <!-- Comparison Card -->
-      <div class="p-4 bg-indigo-900/20 border border-indigo-500/30 rounded-2xl text-xs space-y-2">
-        <div class="flex items-center justify-between text-indigo-200 font-semibold">
-          <span>Market Price Advantage</span>
-          <span class="text-emerald-400">High Demand</span>
+      <!-- Dynamic Notice / Disclaimer -->
+      <div class="p-4 bg-slate-950/60 border border-slate-800 rounded-2xl text-[11px] text-slate-400 space-y-1.5 leading-relaxed">
+        <div class="text-slate-300 font-semibold flex items-center gap-1.5">
+          <i class="fa-solid fa-circle-info text-indigo-400"></i> Revenue Projection Model
         </div>
-        <p class="text-slate-300 leading-relaxed">
-          Traditional commercial spaces charge <span id="commercialComparison" class="font-bold text-white">₹{{ initial_data.commercial_comparison }}/mo</span> for equivalent footprint. SpaceLoop delivers affordable access to seekers while putting pure passive revenue into your pocket.
+        <p id="calcDisclaimer">
+          {{ initial_data.disclaimer }}
         </p>
       </div>
 
-      <!-- Action CTA -->
-      <a href="{{ url_for('list_space_page') }}" class="w-full bg-gradient-to-r from-indigo-600 via-violet-600 to-indigo-700 hover:from-indigo-500 hover:to-violet-500 text-white font-bold text-sm py-3.5 rounded-xl shadow-lg shadow-indigo-600/30 transition flex items-center justify-center gap-2">
+      <!-- Action CTA with Query Params -->
+      <a id="listSpaceCta" href="{{ url_for('list_space_page') }}" class="w-full bg-gradient-to-r from-indigo-600 via-violet-600 to-indigo-700 hover:from-indigo-500 hover:to-violet-500 text-white font-bold text-sm py-3.5 rounded-xl shadow-lg shadow-indigo-600/30 transition flex items-center justify-center gap-2">
         <i class="fa-solid fa-wand-magic-sparkles"></i>
-        <span>List This Space with AI</span>
+        <span>List This Space</span>
       </a>
 
     </div>
@@ -174,12 +252,12 @@
 
 {% block scripts %}
 <script>
-  let currentCategory = "Studio";
+  let currentCategory = "{{ initial_data.category or 'Studio' }}";
 
   function setCalcCategory(cat) {
     currentCategory = cat;
     document.querySelectorAll('.cat-btn').forEach(btn => {
-      if (btn.innerText.includes(cat) || (cat === 'Studio' && btn.innerText.includes('Spare Studio')) || (cat === 'Storage' && btn.innerText.includes('Garage Storage')) || (cat === 'Parking' && btn.innerText.includes('Driveway')) || (cat === 'Pop-up/Retail' && btn.innerText.includes('Storefront')) || (cat === 'Event/Workshop' && btn.innerText.includes('Off-Peak')) || (cat === 'Workspace' && btn.innerText.includes('Spare Desk'))) {
+      if (btn.innerText.toLowerCase().includes(cat.toLowerCase().slice(0, 4))) {
         btn.classList.add('border-indigo-500', 'bg-indigo-600/20', 'text-white');
         btn.classList.remove('border-slate-700', 'bg-slate-950', 'text-slate-400');
       } else {
@@ -190,12 +268,41 @@
     recalc();
   }
 
-  async function recalc() {
-    const sqft = parseInt(document.getElementById('sqftSlider').value);
-    const days = parseInt(document.getElementById('daysSlider').value);
+  function adjustRate(delta) {
+    const input = document.getElementById('hourlyRateInput');
+    let val = parseFloat(input.value) || 65;
+    val = Math.max(10, Math.min(5000, val + delta));
+    input.value = val;
+    recalc();
+  }
 
-    document.getElementById('sqftDisplay').textContent = `${sqft} sqft`;
+  function loadSpaceData(spaceId) {
+    if (!spaceId) return;
+    const select = document.getElementById('spaceSelector');
+    const option = select.options[select.selectedIndex];
+    if (!option) return;
+
+    const cat = option.getAttribute('data-category');
+    const price = option.getAttribute('data-price');
+
+    if (cat) setCalcCategory(cat);
+    if (price) {
+      document.getElementById('hourlyRateInput').value = price;
+      recalc();
+    }
+  }
+
+  async function recalc() {
+    let rate = parseFloat(document.getElementById('hourlyRateInput').value);
+    if (isNaN(rate) || rate < 0) rate = 65;
+
+    const days = parseInt(document.getElementById('daysSlider').value) || 12;
+    const hours = parseInt(document.getElementById('hoursSlider').value) || 4;
+    const fee = parseInt(document.getElementById('feeSlider').value) || 15;
+
     document.getElementById('daysDisplay').textContent = `${days} days / month`;
+    document.getElementById('hoursDisplay').textContent = `${hours} hours / day`;
+    document.getElementById('feeDisplay').textContent = `${fee}%`;
 
     try {
       const resp = await fetch('/api/calculator/estimate', {
@@ -203,20 +310,39 @@
         headers: {'Content-Type': 'application/json'},
         body: JSON.stringify({
           category: currentCategory,
-          sqft: sqft,
-          days_per_month: days
+          hourly_rate: rate,
+          days_per_month: days,
+          hours_per_day: hours,
+          platform_fee_percent: fee
         })
       });
       const data = await resp.json();
 
       document.getElementById('monthlyEarnings').textContent = `₹${data.estimated_monthly}`;
-      document.getElementById('annualEarnings').textContent = `₹${data.estimated_annual} / year`;
-      document.getElementById('suggestedHourly').textContent = `₹${data.suggested_hourly}/hr`;
-      document.getElementById('suggestedDaily').textContent = `₹${data.suggested_daily}/day`;
-      document.getElementById('commercialComparison').textContent = `₹${data.commercial_comparison}/mo`;
+      document.getElementById('annualEarnings').textContent = `₹${data.estimated_annual} / year projection`;
+      document.getElementById('calcBookings').textContent = `${data.estimated_bookings} bookings/mo`;
+      document.getElementById('grossMonthly').textContent = `₹${data.gross_monthly}`;
+      document.getElementById('platformFeeAmount').textContent = `-₹${data.platform_fee_amount}`;
+      document.getElementById('calcFeePercent').textContent = data.platform_fee_percent;
+      document.getElementById('netMonthlySummary').textContent = `₹${data.estimated_monthly}`;
+      if (data.suggested_hourly) {
+        document.getElementById('suggestedRateText').textContent = `₹${data.suggested_hourly}/hr`;
+      }
+      if (data.disclaimer) {
+        document.getElementById('calcDisclaimer').textContent = data.disclaimer;
+      }
+
+      // Update CTA with current calculation parameters
+      const cta = document.getElementById('listSpaceCta');
+      cta.href = `{{ url_for('list_space_page') }}?category=${encodeURIComponent(currentCategory)}&rate=${rate}&days=${days}`;
     } catch (e) {
-      console.error(e);
+      console.error("Calculator calculation error:", e);
     }
   }
+
+  // Initial calculation run on page load
+  document.addEventListener('DOMContentLoaded', () => {
+    recalc();
+  });
 </script>
 {% endblock %}
