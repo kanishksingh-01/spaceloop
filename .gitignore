@@ -12,3 +12,4 @@ app.db
 node_modules/
 spaceloop/node_modules/
 NIRIKSHAK/frontend/node_modules/
+_backup_frontend_pre_migration/

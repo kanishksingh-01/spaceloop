@@ -666,18 +666,52 @@ Keep responses helpful, structured, concise, and enthusiastic. Use bullet points
         if gemini_res:
             return sanitize_string(gemini_res, max_length=2000)
 
-    # Rule-based fallback
+    # Rule-based fallback & domain knowledge engine
     last_msg = (messages[-1].get("content", "") if messages else "").lower()
-    if "price" in last_msg or "earn" in last_msg or "calculator" in last_msg:
-        return "With SpaceLoop, owners typically earn between ₹3,500 and ₹25,000/month by renting out unused garages, studios, or storefronts just 10-15 days a month! Check out our interactive **Earnings Calculator** in the top navigation to see custom projections for your square footage."
-    elif "agreement" in last_msg or "lease" in last_msg or "safe" in last_msg or "insurance" in last_msg:
-        return "Every booking on SpaceLoop automatically includes an AI-generated **Temporary Space License Agreement (Micro-Lease)**. It defines exact access hours, liability waivers, clean-up checklists, and activity guidelines tailored to the renter's specific activity."
-    elif "storage" in last_msg:
-        return "We have dry, secure garage and basement spaces available starting at $15/hr or $65/day. They include drive-up access and verified padlock security."
-    elif "photo" in last_msg or "studio" in last_msg or "podcast" in last_msg:
-        return "Looking for creative space? We have naturally lit loft studios and acoustically isolated podcast nooks with high-speed Wi-Fi and power outlets starting around $30-$45/hr!"
+    
+    if "podcast" in last_msg or "studio" in last_msg or "photo" in last_msg or "creative" in last_msg:
+        return (
+            "🎙️ **Recommended Creative & Podcast Studios:**\n\n"
+            "• **Sound-Treated Creator Studio (Hauz Khas, Delhi)**: ₹95/hr — Features acoustic foam wall panelling, ring light, natural daylight exposure, and dedicated high-amperage audio circuit.\n"
+            "• **Acoustic Pod & Creative Nook (Wagholi, Pune)**: ₹45/hr — High-speed 300 Mbps fiber Wi-Fi, ergonomic seating, and quiet zone acoustics.\n\n"
+            "All creative bookings include instant zero-hardware access, ₹100 automated UPI deposit escrow, and an AI-generated equipment & property liability micro-lease."
+        )
+    elif "garage" in last_msg or "storage" in last_msg or "earn" in last_msg or "calculator" in last_msg or "renting" in last_msg or "monetiz" in last_msg or "price" in last_msg:
+        return (
+            "💰 **Earning Potential for Unused Garage & Storage Spaces:**\n\n"
+            "• **Hourly Micro-Rental Rate**: ₹60 – ₹120/hour for dry, CCTV-monitored inventory or gear storage.\n"
+            "• **Monthly Projected Earnings**: Monetizing an empty 200 sqft garage for just 4 hours/day across 12 days/month typically generates **₹3,500 to ₹8,500/month** of passive income.\n"
+            "• **Zero Hardware Overhead**: Uses SpaceLoop's India Stack geofenced QR door check-in — no smart lock or biometric installation required.\n\n"
+            "Check out our interactive **Earnings Calculator** in the navigation bar to simulate projections tailored to your exact city and square footage!"
+        )
+    elif "lease" in last_msg or "agreement" in last_msg or "protect" in last_msg or "legal" in last_msg or "easement" in last_msg or "safe" in last_msg or "insurance" in last_msg:
+        return (
+            "⚖️ **How AI Micro-Leases Protect Property Owners:**\n\n"
+            "• **Section 52 Indian Easements Act, 1882**: Every booking creates a strictly revocable temporary license rather than a leasehold tenancy. No tenant rights can be claimed.\n"
+            "• **Automated UPI Escrow**: A ₹100 security deposit is pre-authorized and held in escrow, released only after tamper-proof checkout verification.\n"
+            "• **GPS & QR Timestamp Audit**: Door entry and exit times are cryptographically logged with 50m geofencing, providing immutable proof of occupancy.\n"
+            "• **Condition Delta Analysis**: AI verifies room cleanliness between check-in and checkout to guarantee space integrity."
+        )
+    elif "study" in last_msg or "desk" in last_msg or "exam" in last_msg or "wagholi" in last_msg or "pune" in last_msg:
+        return (
+            "📚 **Top Study Pods & Work Nooks:**\n\n"
+            "• **Wagholi Quiet Study Pod near JSPM (Pune)**: ₹45/hr — Ergonomic chair, 20A grounded power outlet, high-speed fiber Wi-Fi, and silent atmosphere.\n"
+            "• Instant booking available with zero-hardware door pass and flexible 1h, 2h, 4h, or 8h duration blocks.\n\n"
+            "Reserve directly on the **Explore** page for instant confirmation and door pass generation!"
+        )
+    elif "check-in" in last_msg or "checkin" in last_msg or "unlock" in last_msg or "qr" in last_msg or "door" in last_msg or "geofence" in last_msg:
+        return (
+            "📍 **Zero-Hardware Check-In & Door Pass Guide:**\n\n"
+            "1. **GPS Geofence Clearance**: Approach within 50 meters of the property perimeter.\n"
+            "2. **Door QR Scan or PIN**: Scan the printable entrance QR code or enter your 4-digit Arrival PIN.\n"
+            "3. **Instant Access**: The door unlocks and your session timer begins. At session end, simply snap an exit photo to automatically release your ₹100 UPI deposit!"
+        )
     else:
-        return "Hello! I'm **LoopBot**, your SpaceLoop AI assistant. Whether you're looking for a temporary space (storage, photo studio, parking, or pop-up) or want to monetize your own unused square footage, I'm here to help. What kind of space can I find for you today?"
+        return (
+            "Hello! I'm **LoopBot**, your SpaceLoop AI Concierge. SpaceLoop connects unused property square footage "
+            "(study pods, studios, garages, pop-ups) with local seekers needing affordable hourly access under the Indian Easements Act, 1882.\n\n"
+            "How can I help you today? I can recommend spaces, calculate your garage's earning potential, or explain our zero-hardware door passes."
+        )
 
 
 # =====================================================================

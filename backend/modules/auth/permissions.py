@@ -104,3 +104,12 @@ def authorize(user, permission: Permission, resource=None) -> bool:
                 raise ForbiddenError("You do not have permission to cancel this booking.")
 
     return True
+
+
+def has_permission(user, permission: Permission, resource=None) -> bool:
+    """Convenience predicate returning True if authorized, False otherwise."""
+    try:
+        return authorize(user, permission, resource)
+    except (UnauthorizedError, ForbiddenError):
+        return False
+
