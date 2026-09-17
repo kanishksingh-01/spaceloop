@@ -280,12 +280,15 @@
               </div>
 
               <div class="pt-3 border-t border-slate-800 flex items-center justify-between gap-2 text-xs">
-                <div class="flex items-center gap-2">
+                <div class="flex items-center gap-1.5">
                   <a href="{{ url_for('space_detail', space_id=s.id) }}" class="px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold transition flex items-center gap-1">
                     <i class="fa-solid fa-eye text-slate-400"></i> View
                   </a>
+                  <a href="{{ url_for('list_space_page') }}?edit={{ s.id }}" class="px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold transition flex items-center gap-1">
+                    <i class="fa-solid fa-pen-to-square text-slate-400"></i> Edit
+                  </a>
                   <a href="{{ url_for('printable_qr', space_id=s.id) }}" target="_blank" class="px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-indigo-300 font-semibold transition flex items-center gap-1">
-                    <i class="fa-solid fa-qrcode text-indigo-400"></i> Door Pass
+                    <i class="fa-solid fa-qrcode text-indigo-400"></i> Pass
                   </a>
                 </div>
 
@@ -381,10 +384,25 @@
                   <span class="text-[11px] text-emerald-400 block font-medium">Net Payout: ₹{{ (b.total_price * 0.85)|int }}</span>
                 </div>
                 <div class="flex flex-wrap items-center gap-2">
-                  <a href="{{ url_for('session_page', booking_id=b.id) }}" class="px-3.5 py-2 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white text-xs font-bold transition flex items-center gap-1.5 shadow-md shadow-emerald-600/20">
-                    <i class="fa-solid fa-door-open"></i>
-                    <span>In-Room Console</span>
-                  </a>
+                  {% if b.session_state == 'checked_in' %}
+                    <a href="{{ url_for('session_page', booking_id=b.id) }}" class="px-3.5 py-2 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white text-xs font-bold transition flex items-center gap-1.5 shadow-md shadow-emerald-600/20">
+                      <i class="fa-solid fa-door-open"></i>
+                      <span>In-Room Console</span>
+                    </a>
+                  {% elif b.status == 'confirmed' %}
+                    <a href="{{ url_for('session_page', booking_id=b.id) }}" class="px-3 py-2 rounded-xl bg-indigo-600/20 hover:bg-indigo-600/40 text-indigo-300 hover:text-white border border-indigo-500/30 text-xs font-semibold transition flex items-center gap-1.5">
+                      <i class="fa-solid fa-door-open"></i>
+                      <span>Console</span>
+                    </a>
+                    <button type="button" onclick="cancelBooking({{ b.id }})" class="px-3 py-2 rounded-xl bg-rose-950/40 hover:bg-rose-900/60 border border-rose-500/30 text-rose-300 hover:text-white text-xs font-semibold transition flex items-center gap-1.5">
+                      <i class="fa-solid fa-ban text-rose-400"></i>
+                      <span>Cancel</span>
+                    </button>
+                  {% elif b.status == 'cancelled' %}
+                    <span class="px-3 py-1.5 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-400 text-xs font-bold flex items-center gap-1">
+                      <i class="fa-solid fa-ban text-xs"></i> Cancelled
+                    </span>
+                  {% endif %}
                   <script type="text/plain" id="agreement-data-{{ b.id }}">{{ b.micro_lease_agreement }}</script>
                   <button onclick="viewAgreementModal('{{ b.id }}')" class="px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700 text-xs font-semibold transition flex items-center gap-1.5">
                     <i class="fa-solid fa-file-contract"></i>
@@ -531,6 +549,16 @@
                     <i class="fa-solid fa-file-contract"></i>
                     <span>Lease</span>
                   </button>
+                  {% if b.status != 'cancelled' and b.status != 'completed' %}
+                    <button type="button" onclick="cancelBooking({{ b.id }})" class="px-3 py-2 rounded-xl bg-rose-950/40 hover:bg-rose-900/60 border border-rose-500/30 text-rose-300 hover:text-white text-xs font-semibold transition flex items-center gap-1.5">
+                      <i class="fa-solid fa-ban text-rose-400"></i>
+                      <span>Cancel</span>
+                    </button>
+                  {% elif b.status == 'cancelled' %}
+                    <span class="px-3 py-1.5 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-400 text-xs font-bold flex items-center gap-1">
+                      <i class="fa-solid fa-ban text-xs"></i> Cancelled
+                    </span>
+                  {% endif %}
                 </div>
               </div>
 
@@ -628,6 +656,27 @@
 
   function closeDashAgreementModal() {
     document.getElementById('dashAgreementModal').classList.add('hidden');
+  }
+
+  async function cancelBooking(bookingId) {
+    if (!confirm("Are you sure you want to cancel this reservation? The ₹100 UPI escrow deposit will be automatically refunded.")) {
+      return;
+    }
+    try {
+      const res = await fetch(`/api/booking/${bookingId}/cancel`, {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'}
+      });
+      const data = await res.json();
+      if (res.ok) {
+        alert(data.message || "Booking cancelled and security deposit refunded successfully.");
+        window.location.reload();
+      } else {
+        alert(data.error || "Failed to cancel booking.");
+      }
+    } catch (err) {
+      alert("Network error while cancelling booking. Please try again.");
+    }
   }
 </script>
 {% endblock %}
