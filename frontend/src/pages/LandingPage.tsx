@@ -3,6 +3,7 @@ import { View, Text, Pressable, Image } from 'react-native';
 import { useNavigate } from 'react-router-dom';
 import { Space, User } from '../types';
 import { getSpaces } from '../services/spaces';
+import CursorGrid from '../components/common/CursorGrid';
 
 interface LandingPageProps {
   currentUser?: User | null;
@@ -31,6 +32,25 @@ export const LandingPage: React.FC<LandingPageProps> = ({ currentUser }) => {
     <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col antialiased">
       {/* 1. HERO SECTION */}
       <section className="relative overflow-hidden pt-14 pb-20 md:pt-24 md:pb-28 border-b border-slate-800/60 bg-gradient-to-b from-slate-900 via-slate-950 to-slate-950">
+        {/* Interactive Cursor Grid Background */}
+        <div style={{ width: '100%', height: '100%', position: 'absolute', inset: 0, overflow: 'hidden', pointerEvents: 'none' }}>
+          <CursorGrid
+            cellSize={70}
+            color="#D946EF"
+            radius={140}
+            falloff="smooth"
+            holdTime={400}
+            fadeDuration={800}
+            lineWidth={1.2}
+            maxOpacity={1}
+            fillOpacity={0}
+            gridOpacity={0}
+            cellRadius={0}
+            clickPulse
+            pulseSpeed={600}
+          />
+        </div>
+
         {/* Glowing Background Lights */}
         <div className="absolute -top-40 left-1/2 -translate-x-1/2 w-[800px] h-[400px] bg-indigo-600/15 blur-[140px] rounded-full pointer-events-none" />
         <div className="absolute top-28 right-10 w-[350px] h-[350px] bg-violet-600/10 blur-[110px] rounded-full pointer-events-none" />
