@@ -105,6 +105,7 @@ export const ListSpacePage: React.FC<ListSpacePageProps> = ({ currentUser }) => 
   };
 
   const handlePublish = async () => {
+    if (isPublishing) return;
     if (!currentUser) {
       setShowAuthModal(true);
       return;
@@ -351,7 +352,11 @@ export const ListSpacePage: React.FC<ListSpacePageProps> = ({ currentUser }) => 
           <Pressable
             onPress={handlePublish}
             disabled={isPublishing}
-            className="w-full py-4 bg-emerald-600 hover:bg-emerald-500 rounded-2xl items-center justify-center transition shadow-xl shadow-emerald-600/30"
+            className={`w-full py-4 rounded-2xl items-center justify-center transition shadow-xl ${
+              isPublishing
+                ? 'bg-emerald-600/60 cursor-not-allowed shadow-none'
+                : 'bg-emerald-600 hover:bg-emerald-500 shadow-emerald-600/30'
+            }`}
           >
             <Text className="text-sm font-bold text-white">
               {isPublishing ? 'Publishing Space to Marketplace...' : '🚀 Publish Active Space Listing'}
@@ -364,7 +369,10 @@ export const ListSpacePage: React.FC<ListSpacePageProps> = ({ currentUser }) => 
         <AuthModal
           isOpen={showAuthModal}
           onClose={() => setShowAuthModal(false)}
-          onSuccess={() => setShowAuthModal(false)}
+          onSuccess={() => {
+            setShowAuthModal(false);
+            handlePublish();
+          }}
         />
       )}
     </View>

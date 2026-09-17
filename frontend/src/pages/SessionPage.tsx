@@ -80,7 +80,7 @@ export const SessionPage: React.FC = () => {
         pin: pin,
       };
       const res = await checkInBooking(Number(id), coords);
-      setMessage(res.message || 'Check-in verified! In-room access granted.');
+      setMessage(res.message || 'Check-in verified! Digital access pass activated.');
       setBooking({
         ...booking,
         status: (res.status as Booking['status']) || 'active',
@@ -216,16 +216,22 @@ export const SessionPage: React.FC = () => {
             </View>
           </View>
 
-          {/* Micro-escrow status */}
-          <View className="w-full max-w-md bg-slate-950 p-4 rounded-2xl border border-slate-800 mb-6">
-            <View className="flex-row items-center justify-between text-xs mb-2">
-              <Text className="text-slate-400">₹100 UPI Security Escrow:</Text>
-              <Text className="text-emerald-400 font-bold">
-                {isCompleted ? '✓ Released to Bank' : '🔒 Held in Automated Escrow'}
+          {/* Session Details & Escrow Status */}
+          <View className="w-full max-w-md bg-slate-950 p-4 rounded-2xl border border-slate-800 mb-6 space-y-2.5">
+            <View className="flex-row items-center justify-between text-xs">
+              <Text className="text-slate-400">Access Window:</Text>
+              <Text className="text-white font-bold">
+                {booking.hours_booked || 2} Hours ({booking.start_time || 'Start'} → {booking.end_time || 'End'})
               </Text>
             </View>
             <View className="flex-row items-center justify-between text-xs">
-              <Text className="text-slate-400">GPS Geofence Clearance:</Text>
+              <Text className="text-slate-400">UPI Security Deposit:</Text>
+              <Text className="text-emerald-400 font-bold">
+                {isCompleted ? '✓ ₹100 Released to Bank' : '🔒 ₹100 Held in Automated Escrow'}
+              </Text>
+            </View>
+            <View className="flex-row items-center justify-between text-xs">
+              <Text className="text-slate-400">Geofence Proximity:</Text>
               <Text className="text-indigo-400 font-bold">50m Radius Gate Ready</Text>
             </View>
           </View>
@@ -240,19 +246,26 @@ export const SessionPage: React.FC = () => {
                   className="w-full py-4 bg-emerald-600 hover:bg-emerald-500 rounded-2xl items-center justify-center transition shadow-lg shadow-emerald-600/30"
                 >
                   <Text className="text-sm font-bold text-white">
-                    {actionLoading ? 'Verifying 50m Geofence...' : '📍 Unlock & Check-In'}
+                    {actionLoading ? 'Verifying 50m Geofence...' : '📍 Verify Geofence & Activate Digital Pass'}
                   </Text>
                 </Pressable>
               ) : (
-                <Pressable
-                  onPress={handleCheckOut}
-                  disabled={actionLoading}
-                  className="w-full py-4 bg-indigo-600 hover:bg-indigo-500 rounded-2xl items-center justify-center transition shadow-lg shadow-indigo-600/30"
-                >
-                  <Text className="text-sm font-bold text-white">
-                    {actionLoading ? 'Finalizing Checkout...' : '🏁 Check-Out & Release ₹100 Deposit'}
-                  </Text>
-                </Pressable>
+                <View className="space-y-3 w-full">
+                  <View className="p-3 bg-emerald-500/10 border border-emerald-500/30 rounded-xl items-center">
+                    <Text className="text-xs font-bold text-emerald-300">
+                      ✓ Digital Access Pass Active • Zero-Hardware Permitted
+                    </Text>
+                  </View>
+                  <Pressable
+                    onPress={handleCheckOut}
+                    disabled={actionLoading}
+                    className="w-full py-4 bg-indigo-600 hover:bg-indigo-500 rounded-2xl items-center justify-center transition shadow-lg shadow-indigo-600/30"
+                  >
+                    <Text className="text-sm font-bold text-white">
+                      {actionLoading ? 'Finalizing Checkout...' : '🏁 Check-Out & Release ₹100 Deposit'}
+                    </Text>
+                  </Pressable>
+                </View>
               )}
             </View>
           ) : (

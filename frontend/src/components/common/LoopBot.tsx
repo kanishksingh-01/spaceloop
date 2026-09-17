@@ -102,7 +102,7 @@ export const LoopBot: React.FC = () => {
                     </div>
                   )}
                   <div
-                    className={`p-3 rounded-2xl max-w-[85%] leading-relaxed text-xs sm:text-sm ${
+                    className={`p-3 rounded-2xl max-w-[85%] leading-relaxed text-xs sm:text-sm whitespace-pre-wrap break-words ${
                       msg.role === 'user'
                         ? 'bg-indigo-600 text-white rounded-tr-sm'
                         : 'bg-slate-800/90 text-slate-200 rounded-tl-sm border border-slate-700/50'
