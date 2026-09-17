@@ -116,6 +116,8 @@ export async function aiMatchSpaces(queryText: string, lat?: number, lng?: numbe
         const norm = normalizeSpace(r.space);
         norm.ai_match_score = r.match_score;
         norm.ai_match_reasoning = (r.match_reasons && r.match_reasons[0]) || r.considerations;
+        norm.pros = r.pros;
+        norm.cons = r.cons;
         return norm;
       });
   }
@@ -139,6 +141,19 @@ export async function aiScanSpace(photoUrl: string, notes: string): Promise<any>
   return request('/api/spaces/ai-scan', {
     method: 'POST',
     body: JSON.stringify({ photo_url: photoUrl, notes }),
+  });
+}
+
+export async function submitInquiry(spaceId: number | undefined, question: string): Promise<{ success: boolean; message?: string; inquiry?: any }> {
+  return request('/api/inquiries', {
+    method: 'POST',
+    body: JSON.stringify({ space_id: spaceId, question }),
+  });
+}
+
+export async function getInquiries(): Promise<{ success: boolean; inquiries: any[] }> {
+  return request('/api/inquiries', {
+    method: 'GET',
   });
 }
 

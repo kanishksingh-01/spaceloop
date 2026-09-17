@@ -79,7 +79,16 @@ export async function checkInBooking(
 export async function checkOutBooking(
   bookingId: number,
   coords: { lat?: number; lng?: number; exit_photo?: string }
-): Promise<{ success: boolean; message: string; deposit_released?: boolean; status?: string }> {
+): Promise<{
+  success: boolean;
+  message: string;
+  deposit_released?: boolean;
+  status?: string;
+  inspection?: any;
+  punctuality_score?: number;
+  escrow_refund_status?: string;
+  booking?: Booking;
+}> {
   return request(`/api/booking/${bookingId}/check-out`, {
     method: 'POST',
     body: JSON.stringify(coords),

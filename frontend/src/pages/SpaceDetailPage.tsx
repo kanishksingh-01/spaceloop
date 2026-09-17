@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, Pressable, Image, TextInput, ScrollView } from 'react-native';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Space, User } from '../types';
-import { getSpaceById } from '../services/spaces';
+import { getSpaceById, submitInquiry } from '../services/spaces';
 import { createBooking, precheckBooking } from '../services/bookings';
 import { AuthModal } from '../components/common/AuthModal';
 import { calculateRentalPricing, formatTimeWindow, MIN_BOOKING_HOURS, MAX_BOOKING_HOURS } from '../services/pricing';
@@ -17,6 +17,12 @@ export const SpaceDetailPage: React.FC<SpaceDetailPageProps> = ({ currentUser })
 
   const [space, setSpace] = useState<Space | null>(null);
   const [loading, setLoading] = useState(true);
+
+  // Direct Inquiry States
+  const [inquiryQuestion, setInquiryQuestion] = useState('');
+  const [inquiryLoading, setInquiryLoading] = useState(false);
+  const [inquiryResponse, setInquiryResponse] = useState<string | null>(null);
+  const [inquiryError, setInquiryError] = useState<string | null>(null);
 
   // Flexible Booking Time & Duration States
   const [bookingMode, setBookingMode] = useState<'now' | 'schedule'>('now');
@@ -130,6 +136,27 @@ export const SpaceDetailPage: React.FC<SpaceDetailPageProps> = ({ currentUser })
     ? space.photos
     : ['https://images.unsplash.com/photo-1513694203232-719a280e022f?auto=format&fit=crop&w=1200&q=80'];
 
+  const handleSendInquiry = async () => {
+    const q = inquiryQuestion.trim();
+    if (!q || inquiryLoading) return;
+    if (!currentUser) {
+      setShowAuthModal(true);
+      return;
+    }
+    setInquiryLoading(true);
+    setInquiryError(null);
+    try {
+      const res = await submitInquiry(space.id, q);
+      const answer = res.inquiry?.ai_answer || 'Inquiry sent directly to host.';
+      setInquiryResponse(answer);
+      setInquiryQuestion('');
+    } catch (err: any) {
+      setInquiryError(err.message || 'Failed to submit inquiry. Please try again.');
+    } finally {
+      setInquiryLoading(false);
+    }
+  };
+
   const handleBookNow = async () => {
     if (!currentUser) {
       setShowAuthModal(true);
@@ -174,7 +201,7 @@ export const SpaceDetailPage: React.FC<SpaceDetailPageProps> = ({ currentUser })
       {/* Back Bar */}
       <View className="border-b border-slate-800/80 bg-slate-900/50 px-4 py-3">
         <View className="max-w-7xl mx-auto flex-row items-center justify-between">
-          <Pressable onPress={() => navigate('/')} className="flex-row items-center gap-2">
+          <Pressable onPress={() => navigate('/explore')} className="flex-row items-center gap-2">
             <Text className="text-xs font-semibold text-indigo-400">← Back to Explore</Text>
           </Pressable>
           <View className="flex-row items-center gap-2">
@@ -318,6 +345,63 @@ export const SpaceDetailPage: React.FC<SpaceDetailPageProps> = ({ currentUser })
               <Text className="text-[11px] text-slate-400 leading-relaxed">
                 This booking constitutes a revocable temporary license under Section 52 of the Indian Easements Act, 1882. No tenancy or leasehold interest is transferred. The space must be vacated promptly at the booking conclusion.
               </Text>
+            </View>
+
+            {/* Direct Inquiry: Ask Host & AI Concierge */}
+            <View className="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-4 floating-container">
+              <View className="flex-row items-center justify-between">
+                <View className="flex-row items-center gap-2">
+                  <Text className="text-lg">💬</Text>
+                  <View>
+                    <Text className="text-base font-bold text-white">Direct Space Inquiry</Text>
+                    <Text className="text-xs text-slate-400">Ask questions answered by verified metadata & host</Text>
+                  </View>
+                </View>
+                <View className="px-2.5 py-1 rounded-full bg-indigo-500/10 border border-indigo-500/30">
+                  <Text className="text-[10px] font-bold text-indigo-300">AI Grounded</Text>
+                </View>
+              </View>
+
+              {inquiryResponse && (
+                <View className="p-4 bg-indigo-950/40 border border-indigo-500/30 rounded-xl space-y-1.5 animate-in fade-in duration-200">
+                  <View className="flex-row items-center gap-1.5 text-xs text-indigo-400 font-semibold">
+                    <Text className="text-xs font-bold text-indigo-300">🤖 Verified Response:</Text>
+                  </View>
+                  <Text className="text-xs text-slate-200 leading-relaxed whitespace-pre-wrap">
+                    {inquiryResponse}
+                  </Text>
+                </View>
+              )}
+
+              {inquiryError && (
+                <View className="p-3 bg-rose-500/10 border border-rose-500/30 rounded-xl">
+                  <Text className="text-xs text-rose-300 font-medium">✕ {inquiryError}</Text>
+                </View>
+              )}
+
+              <View className="space-y-2">
+                <TextInput
+                  value={inquiryQuestion}
+                  onChangeText={setInquiryQuestion}
+                  placeholder="Ask about power circuits, elevator clearance, AC chilling, quiet hours..."
+                  placeholderTextColor="#64748b"
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-xs text-white placeholder:text-slate-500 focus:border-indigo-500"
+                />
+                <View className="flex-row items-center justify-between pt-1">
+                  <Text className="text-[10px] text-slate-500">
+                    AI checks verified property telemetry first; forwards unknown requests to host.
+                  </Text>
+                  <Pressable
+                    onPress={handleSendInquiry}
+                    disabled={inquiryLoading || !inquiryQuestion.trim()}
+                    className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 rounded-xl items-center justify-center transition shadow-md disabled:opacity-50"
+                  >
+                    <Text className="text-xs font-bold text-white">
+                      {inquiryLoading ? 'Checking...' : 'Send Inquiry →'}
+                    </Text>
+                  </Pressable>
+                </View>
+              </View>
             </View>
           </View>
 

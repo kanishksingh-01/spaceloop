@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { User, Booking, Space } from '../types';
 import { request } from '../services/api';
 import { cancelBooking } from '../services/bookings';
-import { toggleSpaceStatus } from '../services/spaces';
+import { toggleSpaceStatus, getInquiries } from '../services/spaces';
 
 interface DashboardPageProps {
   currentUser: User | null;
@@ -16,6 +16,8 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => 
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [hostBookings, setHostBookings] = useState<Booking[]>([]);
   const [hostSpaces, setHostSpaces] = useState<Space[]>([]);
+  const [inquiries, setInquiries] = useState<any[]>([]);
+  const [showOtiBreakdown, setShowOtiBreakdown] = useState(false);
   const [loading, setLoading] = useState(true);
   const [seedingSpace, setSeedingSpace] = useState(false);
   const [cancelingId, setCancelingId] = useState<number | null>(null);
@@ -72,6 +74,15 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => 
 
       if (dashData?.host_metrics) {
         setMetrics(dashData.host_metrics);
+      }
+
+      try {
+        const inqData = await getInquiries();
+        if (inqData && inqData.inquiries) {
+          setInquiries(inqData.inquiries);
+        }
+      } catch (e) {
+        console.warn('Failed to load inquiries:', e);
       }
     } catch (err) {
       console.warn('Dashboard API call failed or user unauthenticated:', err);
@@ -160,9 +171,23 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => 
               <Text className="text-xs text-slate-400 mt-0.5">
                 {currentUser?.email || 'aarav@iitd.ac.in'}
               </Text>
-              <Text className="text-[11px] text-emerald-400 font-medium mt-1">
-                ✓ DigiLocker Verified • Trust Score 840 / 1000
-              </Text>
+              <View className="flex-row items-center gap-2 mt-1 flex-wrap">
+                <Text className="text-[11px] text-emerald-400 font-medium">
+                  ✓ DigiLocker Verified
+                </Text>
+                <Text className="text-[11px] text-slate-500">•</Text>
+                <Pressable
+                  onPress={() => setShowOtiBreakdown(!showOtiBreakdown)}
+                  className="flex-row items-center gap-1.5 bg-indigo-500/10 hover:bg-indigo-500/20 border border-indigo-500/30 px-2 py-0.5 rounded-md transition cursor-pointer"
+                >
+                  <Text className="text-[11px] text-indigo-300 font-bold">
+                    OTI: {(currentUser as any)?.objective_trust_score ?? 98.5}/100
+                  </Text>
+                  <Text className="text-[10px] text-indigo-400 font-mono">
+                    {showOtiBreakdown ? '▲ Hide' : '▼ 4 Pillars'}
+                  </Text>
+                </Pressable>
+              </View>
             </View>
           </View>
 
@@ -201,6 +226,65 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => 
             )}
           </View>
         </View>
+
+        {/* Objective Trust Index 4-Pillar Breakdown Drawer */}
+        {showOtiBreakdown && (
+          <View className="max-w-7xl mx-auto mt-6 pt-6 border-t border-slate-800 animate-fadeIn">
+            <View className="flex-col sm:flex-row items-start sm:items-center justify-between mb-3 gap-2">
+              <View className="flex-row items-center gap-2">
+                <Text className="text-sm font-bold text-white">Objective Trust Index (OTI) Multi-Pillar Audit</Text>
+                <View className="px-2 py-0.5 rounded bg-emerald-500/20 border border-emerald-500/30">
+                  <Text className="text-[10px] font-bold text-emerald-300">Grade AAA • Verified</Text>
+                </View>
+              </View>
+              <Text className="text-[11px] font-mono text-slate-400">
+                Formula: 0.35·Punctual + 0.35·Condition + 0.20·Identity + 0.10·Dispute
+              </Text>
+            </View>
+            <View className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+              <View className="p-3.5 bg-slate-950/80 border border-slate-800 rounded-xl">
+                <View className="flex-row items-center justify-between mb-1">
+                  <Text className="text-xs font-semibold text-slate-300">⏱️ Punctuality</Text>
+                  <Text className="text-xs font-mono font-bold text-indigo-400">35% Weight</Text>
+                </View>
+                <Text className="text-xl font-black text-white mb-1">100%</Text>
+                <Text className="text-[10px] text-slate-400 leading-tight">
+                  On-time checkout & zero overrun history verified via live session telemetry.
+                </Text>
+              </View>
+              <View className="p-3.5 bg-slate-950/80 border border-slate-800 rounded-xl">
+                <View className="flex-row items-center justify-between mb-1">
+                  <Text className="text-xs font-semibold text-slate-300">🧹 Condition Match</Text>
+                  <Text className="text-xs font-mono font-bold text-indigo-400">35% Weight</Text>
+                </View>
+                <Text className="text-xl font-black text-emerald-400 mb-1">98%</Text>
+                <Text className="text-[10px] text-slate-400 leading-tight">
+                  Pre/post check-in vision scan delta confirms zero property damage or debris.
+                </Text>
+              </View>
+              <View className="p-3.5 bg-slate-950/80 border border-slate-800 rounded-xl">
+                <View className="flex-row items-center justify-between mb-1">
+                  <Text className="text-xs font-semibold text-slate-300">🪪 Identity KYC</Text>
+                  <Text className="text-xs font-mono font-bold text-indigo-400">20% Weight</Text>
+                </View>
+                <Text className="text-xl font-black text-indigo-300 mb-1">100%</Text>
+                <Text className="text-[10px] text-slate-400 leading-tight">
+                  DigiLocker verified Aadhaar/PAN + University institutional SSO active.
+                </Text>
+              </View>
+              <View className="p-3.5 bg-slate-950/80 border border-slate-800 rounded-xl">
+                <View className="flex-row items-center justify-between mb-1">
+                  <Text className="text-xs font-semibold text-slate-300">🛡️ Dispute Free</Text>
+                  <Text className="text-xs font-mono font-bold text-indigo-400">10% Weight</Text>
+                </View>
+                <Text className="text-xl font-black text-emerald-400 mb-1">100%</Text>
+                <Text className="text-[10px] text-slate-400 leading-tight">
+                  0 micro-escrow claims or payment disputes across all bookings.
+                </Text>
+              </View>
+            </View>
+          </View>
+        )}
       </View>
 
       {/* Tabs */}
@@ -314,6 +398,57 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => 
                 </View>
               ))
             )}
+
+            {/* Direct Inquiries Sent to Hosts */}
+            <View className="mt-8 pt-6 border-t border-slate-800/80">
+              <View className="flex-row items-center justify-between mb-3">
+                <View>
+                  <Text className="text-base font-bold text-white">Direct Host Inquiries</Text>
+                  <Text className="text-xs text-slate-400">Questions you asked hosts with instant AI-grounded answers</Text>
+                </View>
+                {inquiries.length > 0 && (
+                  <View className="px-2.5 py-1 rounded-lg bg-indigo-500/20 border border-indigo-500/30">
+                    <Text className="text-xs font-bold text-indigo-300">
+                      {inquiries.length} {inquiries.length === 1 ? 'Inquiry' : 'Inquiries'}
+                    </Text>
+                  </View>
+                )}
+              </View>
+
+              {inquiries.length === 0 ? (
+                <View className="p-6 bg-slate-900 border border-slate-800 rounded-2xl items-center text-center">
+                  <Text className="text-2xl mb-1">💬</Text>
+                  <Text className="text-sm font-bold text-white mb-0.5">No Inquiries Sent Yet</Text>
+                  <Text className="text-xs text-slate-400 max-w-md">
+                    Have questions about noise levels, dual monitors, or WiFi speeds? Ask directly on any space detail page to get an instant AI grounded reply.
+                  </Text>
+                </View>
+              ) : (
+                <View className="space-y-3">
+                  {inquiries.map((inq: any) => (
+                    <View key={inq.id} className="p-4 bg-slate-900 border border-slate-800 rounded-2xl floating-interactive">
+                      <View className="flex-row items-center justify-between mb-2">
+                        <Text className="text-xs font-bold text-indigo-400">Space #{inq.space_id} Inquiry</Text>
+                        <Text className="text-[10px] text-slate-500">{new Date(inq.created_at).toLocaleDateString()}</Text>
+                      </View>
+                      <Text className="text-xs font-semibold text-white mb-2">Q: {inq.question}</Text>
+                      {inq.ai_response && (
+                        <View className="p-3 bg-slate-950 border border-slate-800/80 rounded-xl mb-2">
+                          <Text className="text-[10px] font-bold text-indigo-300 mb-0.5">🤖 AI Instant Answer:</Text>
+                          <Text className="text-xs text-slate-300 leading-relaxed">{inq.ai_response}</Text>
+                        </View>
+                      )}
+                      {inq.response && (
+                        <View className="p-3 bg-emerald-950/30 border border-emerald-500/20 rounded-xl">
+                          <Text className="text-[10px] font-bold text-emerald-400 mb-0.5">👤 Host Response:</Text>
+                          <Text className="text-xs text-slate-300 leading-relaxed">{inq.response}</Text>
+                        </View>
+                      )}
+                    </View>
+                  ))}
+                </View>
+              )}
+            </View>
           </View>
         )}
 

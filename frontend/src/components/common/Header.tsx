@@ -8,14 +8,12 @@ interface HeaderProps {
   currentUser: User | null;
   onOpenAuthModal: () => void;
   onOpenHostAuthModal?: () => void;
-  onOpenDemoModal: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
   currentUser,
   onOpenAuthModal,
   onOpenHostAuthModal,
-  onOpenDemoModal,
 }) => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -161,17 +159,6 @@ export const Header: React.FC<HeaderProps> = ({
                 <span>Explore Spaces</span>
               </button>
               <button
-                onClick={() => navigate('/boutique')}
-                className={`px-3 py-1.5 rounded-lg transition flex items-center gap-1.5 ${
-                  location.pathname === '/boutique'
-                    ? 'bg-indigo-600/20 text-indigo-300 border border-indigo-500/30'
-                    : 'text-slate-300 hover:text-white hover:bg-slate-800/60'
-                }`}
-              >
-                <i className="fa-solid fa-wand-magic-sparkles text-amber-400" />
-                <span>Boutique</span>
-              </button>
-              <button
                 onClick={() => navigate('/dashboard')}
                 className={`px-3 py-1.5 rounded-lg transition flex items-center gap-1.5 ${
                   location.pathname === '/dashboard'
@@ -222,18 +209,6 @@ export const Header: React.FC<HeaderProps> = ({
 
           {/* Theme Toggle */}
           <ThemeToggle />
-
-          {/* Evaluation Console Status */}
-          <button
-            type="button"
-            onClick={onOpenDemoModal}
-            className="hidden sm:inline-block cursor-pointer transition hover:opacity-80 focus:outline-none"
-            title="System Status: SpaceLoop AI Engine Online"
-          >
-            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 flex items-center gap-1.5">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" /> ONLINE
-            </span>
-          </button>
 
           {/* Authenticated Controls vs Sign In Buttons */}
           {isHostPortal ? (
@@ -406,15 +381,6 @@ export const Header: React.FC<HeaderProps> = ({
                 </button>
                 <button
                   onClick={() => {
-                    navigate('/boutique');
-                    setMobileDrawerOpen(false);
-                  }}
-                  className="p-2 rounded-lg bg-slate-900/60 hover:bg-slate-800 text-slate-200 flex items-center gap-2 text-left"
-                >
-                  <i className="fa-solid fa-wand-magic-sparkles text-amber-400" /> Boutique
-                </button>
-                <button
-                  onClick={() => {
                     navigate('/dashboard');
                     setMobileDrawerOpen(false);
                   }}
@@ -469,21 +435,6 @@ export const Header: React.FC<HeaderProps> = ({
               <span>Theme</span>
             </span>
             <ThemeToggle variant="pill" />
-          </div>
-
-          {/* Evaluation Console */}
-          <div className="pt-2 border-t border-slate-800 flex items-center justify-between">
-            <button
-              type="button"
-              onClick={() => {
-                onOpenDemoModal();
-                setMobileDrawerOpen(false);
-              }}
-              className="text-xs font-semibold text-indigo-300 flex items-center gap-1.5"
-            >
-              <i className="fa-solid fa-sliders text-indigo-400" />
-              <span>Judge / Demo Console</span>
-            </button>
           </div>
         </div>
       )}

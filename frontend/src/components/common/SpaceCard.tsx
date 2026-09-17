@@ -38,21 +38,21 @@ export const SpaceCard: React.FC<SpaceCardProps> = ({ space, onPress }) => {
   return (
     <div
       onClick={() => onPress(space.id)}
-      className="space-card floating-card group flex flex-col bg-[#10152B]/90 hover:bg-[#151C38] border border-[#222B52] hover:border-[#4B599E] rounded-2xl overflow-hidden cursor-pointer"
+      className="space-card floating-card group flex flex-col bg-slate-900/90 hover:bg-slate-850 border border-slate-800/80 hover:border-indigo-500/40 rounded-2xl overflow-hidden cursor-pointer"
     >
       {/* Photo Container */}
       <div
         onClick={() => onPress(space.id)}
-        className="relative w-full aspect-[16/10] bg-[#0A0E21] overflow-hidden cursor-pointer"
+        className="relative w-full aspect-[16/10] bg-slate-950 overflow-hidden cursor-pointer"
       >
         {!loaded && !error && (
-          <div className="absolute inset-0 bg-[#161E3D] animate-pulse flex items-center justify-center">
-            <span className="text-[11px] font-medium text-[#5F70A3]">Loading preview...</span>
+          <div className="absolute inset-0 bg-slate-800/60 animate-pulse flex items-center justify-center">
+            <span className="text-[11px] font-medium text-slate-400">Loading preview...</span>
           </div>
         )}
 
         {error ? (
-          <div className="absolute inset-0 flex flex-col items-center justify-center bg-[#0D1226] text-[#606E9C] p-4 text-center">
+          <div className="absolute inset-0 flex flex-col items-center justify-center bg-slate-900 text-slate-400 p-4 text-center">
             <svg className="w-8 h-8 mb-1.5 opacity-60 stroke-current" fill="none" viewBox="0 0 24 24">
               <rect width="18" height="18" x="3" y="3" rx="2" strokeWidth="2" />
               <path d="m3 15 5-5 4 4 6-6" strokeWidth="2" strokeLinecap="round" />
@@ -74,18 +74,18 @@ export const SpaceCard: React.FC<SpaceCardProps> = ({ space, onPress }) => {
         )}
 
         {/* Subtle Bottom Vignette */}
-        <div className="absolute inset-0 bg-gradient-to-t from-[#10152B] via-transparent to-black/35 pointer-events-none" />
+        <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-transparent to-black/30 pointer-events-none" />
 
         {/* Category Pill Tag (Top Left) */}
         <div className="absolute top-3 left-3 z-10">
-          <span className="inline-flex items-center px-2.5 py-0.5 rounded bg-[#1B2347]/90 backdrop-blur-md border border-[#37447E]/70 text-[10px] font-bold tracking-wider text-[#B4C2FF] uppercase shadow-sm">
+          <span className="inline-flex items-center px-2.5 py-0.5 rounded bg-slate-900/90 backdrop-blur-md border border-slate-700/60 text-[10px] font-bold tracking-wider text-indigo-300 uppercase shadow-sm">
             {space.category}
           </span>
         </div>
 
         {/* Match Score / Verified Pill (Top Right) */}
         <div className="absolute top-3 right-3 z-10 flex items-center gap-1.5">
-          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-emerald-500/20 backdrop-blur-md border border-emerald-500/40 text-[10px] font-bold text-emerald-300 shadow-sm">
+          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-emerald-500/20 backdrop-blur-md border border-emerald-500/40 text-[10px] font-bold text-emerald-400 shadow-sm">
             <span>✨</span>
             <span className="match-score-text">{matchScore}% Match</span>
           </span>
@@ -93,8 +93,8 @@ export const SpaceCard: React.FC<SpaceCardProps> = ({ space, onPress }) => {
 
         {/* Location Tag (Bottom Left) */}
         <div className="absolute bottom-3 left-3 z-10">
-          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#0A0D1C]/85 backdrop-blur-md border border-[#2B3563] text-[11px] font-medium text-[#D1D7F5]">
-            <span className="text-[#818CF8]">📍</span>
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-slate-950/85 backdrop-blur-md border border-slate-700/60 text-[11px] font-medium text-slate-200">
+            <span className="text-indigo-400">📍</span>
             <span>{locationText}</span>
           </span>
         </div>
@@ -113,24 +113,24 @@ export const SpaceCard: React.FC<SpaceCardProps> = ({ space, onPress }) => {
         <div className="flex items-start justify-between gap-3 mb-2">
           <h3
             onClick={() => onPress(space.id)}
-            className="text-base font-semibold text-white tracking-tight leading-snug line-clamp-1 group-hover:text-[#A5B4FC] transition-colors cursor-pointer"
+            className="text-base font-semibold text-white tracking-tight leading-snug line-clamp-1 group-hover:text-indigo-400 transition-colors cursor-pointer"
           >
             {space.title}
           </h3>
           <div className="shrink-0 text-right">
             <span className="text-base font-bold text-white tracking-tight">₹{hourlyRate}</span>
-            <span className="text-[11px] text-[#7A88B8] font-normal">/hr</span>
+            <span className="text-[11px] text-slate-400 font-normal">/hr</span>
           </div>
         </div>
 
-        <p className="text-xs text-[#8A96C2] leading-relaxed line-clamp-2 mb-3">
+        <p className="text-xs text-slate-400 leading-relaxed line-clamp-2 mb-3">
           {space.description}
         </p>
 
         {/* Space Meta specs */}
-        <div className="flex items-center gap-2 text-[11px] text-[#7A88B8] mb-3 flex-wrap">
+        <div className="flex items-center gap-2 text-[11px] text-slate-400 mb-3 flex-wrap">
           {space.distance_km !== undefined && (
-            <span className="px-2 py-0.5 rounded bg-indigo-500/10 text-indigo-300 border border-indigo-500/20 font-medium flex items-center gap-1">
+            <span className="px-2 py-0.5 rounded bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 font-medium flex items-center gap-1">
               <span>⚡</span> {space.distance_km} km away
             </span>
           )}
@@ -148,8 +148,8 @@ export const SpaceCard: React.FC<SpaceCardProps> = ({ space, onPress }) => {
         )}
 
         {/* Trust & CTA Row */}
-        <div className="mt-auto pt-3.5 border-t border-[#1F2749] flex items-center justify-between">
-          <div className="flex items-center gap-1.5 text-[11px] font-medium text-[#34D399]">
+        <div className="mt-auto pt-3.5 border-t border-slate-800/80 flex items-center justify-between">
+          <div className="flex items-center gap-1.5 text-[11px] font-medium text-emerald-400">
             <svg className="w-3.5 h-3.5 fill-current" viewBox="0 0 20 20">
               <path
                 fillRule="evenodd"
@@ -163,7 +163,7 @@ export const SpaceCard: React.FC<SpaceCardProps> = ({ space, onPress }) => {
           <button
             type="button"
             onClick={() => onPress(space.id)}
-            className="inline-flex items-center gap-1 text-xs font-semibold text-[#818CF8] hover:text-[#C7D2FE] transition-colors"
+            className="inline-flex items-center gap-1 text-xs font-semibold text-indigo-400 hover:text-indigo-300 group-hover:translate-x-0.5 transition"
           >
             <span>View Space</span>
             <span>→</span>

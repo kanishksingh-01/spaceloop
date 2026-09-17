@@ -4,6 +4,7 @@ import os
 # Add root directory to python path
 sys.path.insert(0, "/Users/kanishksingh/Downloads/hack2ignite")
 
+from datetime import datetime, timedelta
 from app import create_app
 from models import db, User, Space, Booking
 
@@ -164,8 +165,12 @@ def run_comprehensive_check():
     })
     assert login_seeker.status_code == 200, f"Seeker login failed: {login_seeker.get_json()}"
 
+    future_start = (datetime.utcnow() + timedelta(days=30)).replace(microsecond=0)
+    future_end = future_start + timedelta(hours=3)
     res = client.post("/api/bookings", json={
         "space_id": space_id,
+        "start_time": future_start.isoformat(),
+        "end_time": future_end.isoformat(),
         "hours": 3.0,
         "purpose": "Hackathon pitch practice and architecture sprint",
         "attendees_count": 1
