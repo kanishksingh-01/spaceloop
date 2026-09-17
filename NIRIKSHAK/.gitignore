@@ -1,0 +1,77 @@
+# Environment and Secrets
+.env
+.env.local
+.env.production
+.env.development
+*.pem
+*.key
+*.crt
+
+# Python & Virtual Environments
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+.venv/
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Testing & Coverage
+.pytest_cache/
+.coverage
+htmlcov/
+coverage.xml
+*.cover
+.hypothesis/
+test-results/
+playwright-report/
+blob-report/
+playwright/.cache/
+
+# Node & Next.js
+node_modules/
+.next/
+out/
+.turbo/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# ML Artifacts & Checkpoints
+ml/models/*.pkl
+ml/models/*.joblib
+ml/models/*.onnx
+!ml/models/.gitkeep
+
+# Persistent Data & Volumes
+postgres_data/
+redis_data/
+opensearch_data/
+*.db
+*.sqlite3
+
+# Operating System & IDEs
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+*.swo
+*~

@@ -8,3 +8,7 @@ app.db
 *.db
 .DS_Store
 .env
+*.bak
+node_modules/
+spaceloop/node_modules/
+NIRIKSHAK/frontend/node_modules/
