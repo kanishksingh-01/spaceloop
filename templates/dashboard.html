@@ -190,7 +190,7 @@
             <span class="text-[10px] uppercase font-bold text-slate-400">1. Identity</span>
             {% if current_user.is_aadhaar_verified %}<i class="fa-solid fa-circle-check text-emerald-400"></i>{% else %}<span class="text-[9px] text-amber-400">Pending</span>{% endif %}
           </div>
-          <div class="font-bold text-white text-xs">{% if current_user.is_aadhaar_verified %}UIDAI Aadhaar Verified{% else %}Aadhaar Pending{% endif %}</div>
+          <div class="font-bold text-white text-xs">{% if current_user.is_aadhaar_verified %}Identity Verified — Sandbox{% else %}Aadhaar Sandbox Pending{% endif %}</div>
           <div class="text-[10px] text-slate-500 mt-0.5 font-mono">{{ current_user.aadhaar_masked or 'XXXX-XXXX-4821' }}</div>
         </div>
 
@@ -464,7 +464,7 @@
             <span class="text-[10px] uppercase font-bold text-slate-400">1. Identity</span>
             {% if current_user and current_user.is_aadhaar_verified %}<i class="fa-solid fa-circle-check text-emerald-400"></i>{% else %}<span class="text-[9px] text-amber-400">Pending</span>{% endif %}
           </div>
-          <div class="font-bold text-white text-xs">{% if current_user and current_user.is_aadhaar_verified %}Identity Verified{% else %}Aadhaar OTP Pending{% endif %}</div>
+          <div class="font-bold text-white text-xs">{% if current_user and current_user.is_aadhaar_verified %}Identity Verified — Sandbox{% else %}Aadhaar Sandbox Pending{% endif %}</div>
           <div class="text-[10px] text-slate-500 mt-0.5 font-mono">{{ current_user.aadhaar_masked if current_user else 'XXXX-XXXX-4821' }}</div>
         </div>
 
@@ -473,7 +473,7 @@
             <span class="text-[10px] uppercase font-bold text-slate-400">2. Student Credential</span>
             {% if current_user and current_user.is_student_verified %}<i class="fa-solid fa-circle-check text-emerald-400"></i>{% else %}<span class="text-[9px] text-amber-400">Pending</span>{% endif %}
           </div>
-          <div class="font-bold text-white text-xs">{% if current_user and current_user.is_student_verified %}Student Verified{% else %}Academic Domain Pending{% endif %}</div>
+          <div class="font-bold text-white text-xs">{% if current_user and current_user.is_student_verified %}Student Domain Verified — Sandbox{% else %}Academic Domain Pending{% endif %}</div>
           <div class="text-[10px] text-slate-500 mt-0.5">{{ current_user.college_name if current_user and current_user.college_name else 'IIT Delhi Academic Domain' }}</div>
         </div>
 

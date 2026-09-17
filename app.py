@@ -60,6 +60,7 @@ from space_ai import (
     get_system_connectivity_status
 )
 from seed_data import seed_database
+from backend.modules.verification.service import IdentityVerificationService
 
 
 def haversine_distance(lat1, lon1, lat2, lon2):
@@ -202,7 +203,13 @@ def create_app(test_config=None):
                     ("is_active", "BOOLEAN DEFAULT 1"),
                     ("is_email_verified", "BOOLEAN DEFAULT 0"),
                     ("is_admin", "BOOLEAN DEFAULT 0"),
-                    ("last_login_at", "DATETIME")
+                    ("last_login_at", "DATETIME"),
+                    ("student_verification_status", "VARCHAR(30) DEFAULT 'unverified'"),
+                    ("student_verification_method", "VARCHAR(50) DEFAULT 'none'"),
+                    ("aadhaar_verification_status", "VARCHAR(30) DEFAULT 'unverified'"),
+                    ("aadhaar_verification_method", "VARCHAR(50) DEFAULT 'none'"),
+                    ("identity_verification_ref", "VARCHAR(64) DEFAULT ''"),
+                    ("identity_verified_at", "DATETIME")
                 ]
                 for col, col_type in new_cols:
                     if col not in cols:
@@ -1430,19 +1437,39 @@ def create_app(test_config=None):
         college_name = sanitize_string(data.get("college_name", ""), max_length=150)
         student_id = sanitize_string(data.get("student_id", ""), max_length=50)
 
-        aadhaar_res = verify_aadhaar_otp(name, aadhaar_num, otp)
+        # 1. Verify Aadhaar via centralized fail-secure sandbox engine
+        aadhaar_res = IdentityVerificationService.verify_sandbox_aadhaar_otp(
+            user_id=current_user.id,
+            name=name,
+            aadhaar_number=aadhaar_num,
+            otp=otp
+        )
         if not aadhaar_res.get("success"):
             return jsonify({"success": False, "error": aadhaar_res.get("error")}), 400
 
-        acad_res = verify_academic_credentials(college_email, student_id, college_name)
+        # 2. Verify Academic Credentials
+        acad_res = IdentityVerificationService.verify_student_academic(
+            college_email=college_email,
+            student_id=student_id,
+            college_name=college_name
+        )
         if not acad_res.get("success"):
             return jsonify({"success": False, "error": acad_res.get("error", "Academic verification failed.")}), 400
 
+        # 3. Securely update user record (server-controlled, client tampering ignored)
         user = current_user
         user.is_student_verified = True
+        user.student_verification_status = "sandbox_verified"
+        user.student_verification_method = acad_res.get("verification_method", "institutional_domain_regex")
+
         user.is_aadhaar_verified = True
+        user.aadhaar_verification_status = "sandbox_verified"
+        user.aadhaar_verification_method = aadhaar_res.get("verification_method", "simulated_otp_sandbox")
         user.aadhaar_masked = aadhaar_res["masked_aadhaar"]
         user.aadhaar_token_hash = aadhaar_res["token_hash"]
+        user.identity_verification_ref = aadhaar_res.get("verification_ref", "")
+        user.identity_verified_at = datetime.utcnow()
+
         user.college_name = acad_res["college_name"]
         user.college_email = acad_res["college_email"]
         user.student_id_masked = acad_res["student_id_masked"]
@@ -1456,11 +1483,35 @@ def create_app(test_config=None):
 
         return jsonify({
             "success": True,
-            "message": "Student identity and academic enrollment successfully verified!",
+            "message": "Student identity (Sandbox) and academic credentials successfully validated!",
             "aadhaar": aadhaar_res,
             "academic": acad_res,
-            "user": user.to_dict()
+            "user": user.to_dict(),
+            "reality_status": "SANDBOX",
+            "production_notice": "Sandbox demo only. Real legal identity requires authorized UIDAI ASA/KUA and DigiLocker integrations."
         })
+
+    @app.route("/api/verify/student/request-otp", methods=["POST"])
+    @login_required
+    def api_verify_student_request_otp():
+        data = request.get_json(silent=True) or {}
+        aadhaar_num = sanitize_string(data.get("aadhaar_number", ""), max_length=20)
+        name = sanitize_string(data.get("name", current_user.name), max_length=100)
+        res = IdentityVerificationService.request_sandbox_otp(
+            user_id=current_user.id,
+            aadhaar_number=aadhaar_num,
+            name=name
+        )
+        if not res.get("success"):
+            return jsonify(res), 400
+        return jsonify(res), 200
+
+    @app.route("/api/verify/reality-inventory", methods=["GET"])
+    def api_verify_reality_inventory():
+        return jsonify({
+            "success": True,
+            "inventory": IdentityVerificationService.get_reality_inventory()
+        }), 200
 
     @app.route("/api/verify/host", methods=["POST"])
     @login_required

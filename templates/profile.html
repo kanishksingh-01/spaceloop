@@ -128,13 +128,13 @@
             <i class="fa-solid fa-graduation-cap"></i>
           </div>
           <div>
-            <div class="text-xs font-bold text-white">DigiLocker Student ID</div>
+            <div class="text-xs font-bold text-white">Student Domain ID (Sandbox)</div>
             <div class="text-[11px] text-slate-400">{{ user.college_name or 'IIT Delhi (Academic Domain)' }}</div>
           </div>
         </div>
         {% if user and user.is_student_verified %}
         <span class="px-2.5 py-1 rounded-full text-[11px] font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 flex items-center gap-1">
-          <i class="fa-solid fa-circle-check"></i> Verified
+          <i class="fa-solid fa-circle-check"></i> Verified (Sandbox)
         </span>
         {% else %}
         <a href="{{ url_for('verify_page') }}" class="px-2.5 py-1 rounded-full text-[11px] font-bold bg-amber-500/10 text-amber-400 border border-amber-500/20 hover:bg-amber-500/20 transition">

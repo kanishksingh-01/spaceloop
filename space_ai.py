@@ -785,6 +785,11 @@ def verify_aadhaar_otp(name: str, aadhaar_number: str, otp: str = "123456"):
             "success": False,
             "error": "Invalid Aadhaar number format. Must be exactly 12 digits."
         }
+    if clean_digits[0] in ("0", "1"):
+        return {
+            "success": False,
+            "error": "Invalid Aadhaar number format. Aadhaar numbers cannot begin with 0 or 1."
+        }
 
     clean_otp = "".join(filter(str.isdigit, str(otp)))
     if len(clean_otp) != 6:
@@ -799,10 +804,13 @@ def verify_aadhaar_otp(name: str, aadhaar_number: str, otp: str = "123456"):
 
     return {
         "success": True,
+        "is_verified": True,
+        "reality_status": "SANDBOX",
         "masked_aadhaar": masked,
         "token_hash": token_hash,
         "verified_name": name.strip().title(),
-        "kyc_source": "DigiLocker / UIDAI Sandbox Gateway",
+        "kyc_source": "UIDAI / DigiLocker Sandbox Gateway (Demo Simulator)",
+        "production_requirement": "Approved UIDAI ASA/KUA Gateway required for production legal verification",
         "verified_at": datetime.utcnow().isoformat(),
         "dpdp_status": "Compliant — Zero raw Aadhaar stored",
         "age_verified": True,

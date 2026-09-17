@@ -30,13 +30,19 @@ class User(db.Model, UserMixin):
 
     # Verification & KYC (India Stack)
     is_student_verified = db.Column(db.Boolean, default=False)
+    student_verification_status = db.Column(db.String(30), default="unverified")  # 'unverified', 'sandbox_verified', 'verified', 'rejected'
+    student_verification_method = db.Column(db.String(50), default="none")  # 'none', 'institutional_domain_regex', 'nad_digilocker'
     college_name = db.Column(db.String(150), default="")
     college_email = db.Column(db.String(120), default="")
     student_id_masked = db.Column(db.String(50), default="")
     
     is_aadhaar_verified = db.Column(db.Boolean, default=False)
+    aadhaar_verification_status = db.Column(db.String(30), default="unverified")  # 'unverified', 'sandbox_verified', 'verified', 'rejected'
+    aadhaar_verification_method = db.Column(db.String(50), default="none")  # 'none', 'simulated_otp_sandbox', 'uidai_kua'
     aadhaar_masked = db.Column(db.String(30), default="")  # e.g. 'XXXX-XXXX-4821' (DPDP Compliant)
     aadhaar_token_hash = db.Column(db.String(64), default="")
+    identity_verification_ref = db.Column(db.String(64), default="")
+    identity_verified_at = db.Column(db.DateTime, nullable=True)
 
     is_host_verified = db.Column(db.Boolean, default=False)
     discom_provider = db.Column(db.String(80), default="")  # e.g. 'BESCOM', 'TPDDL'
@@ -103,11 +109,17 @@ class User(db.Model, UserMixin):
             "bookings_count": len(self.bookings),
             # Verification statuses
             "is_student_verified": self.is_student_verified,
+            "student_verification_status": getattr(self, "student_verification_status", "unverified") or "unverified",
+            "student_verification_method": getattr(self, "student_verification_method", "none") or "none",
             "college_name": self.college_name,
             "college_email": self.college_email,
             "student_id_masked": self.student_id_masked,
             "is_aadhaar_verified": self.is_aadhaar_verified,
+            "aadhaar_verification_status": getattr(self, "aadhaar_verification_status", "unverified") or "unverified",
+            "aadhaar_verification_method": getattr(self, "aadhaar_verification_method", "none") or "none",
             "aadhaar_masked": self.aadhaar_masked,
+            "identity_verification_ref": getattr(self, "identity_verification_ref", "") or "",
+            "identity_verified_at": self.identity_verified_at.isoformat() if getattr(self, "identity_verified_at", None) else None,
             "is_host_verified": self.is_host_verified,
             "discom_provider": self.discom_provider,
             "discom_ca_masked": self.discom_ca_masked,

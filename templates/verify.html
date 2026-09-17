@@ -22,7 +22,7 @@
           Trust & Identity Verification Center
         </h1>
         <p class="text-slate-300 text-sm mt-1.5 max-w-2xl">
-          Automated zero-knowledge onboarding under 30 seconds. Powered by <b>DigiLocker / UIDAI sandbox</b> for students and <b>State Discom Electricity APIs + NPCI UPI</b> for property owners.
+          Automated onboarding simulation under 30 seconds. Powered by <b>UIDAI / DigiLocker Sandbox Simulator</b> for students and <b>State Discom Electricity APIs + NPCI UPI</b> for property owners.
         </p>
       </div>
 
@@ -39,13 +39,27 @@
           <div class="text-[11px] text-emerald-400 font-medium flex items-center gap-1">
             <i class="fa-solid fa-circle-check text-[9px]"></i> 
             {% if current_user.is_student_verified or current_user.is_host_verified %}
-              KYC Active
+              KYC Active (Sandbox)
             {% else %}
               Unverified
             {% endif %}
           </div>
         </div>
       </div>
+    </div>
+  </div>
+
+  <!-- Sandbox / Hackathon Prototype Transparency Notice -->
+  <div class="bg-amber-500/10 border border-amber-500/30 rounded-2xl p-4 sm:p-5 mb-8 flex items-start gap-3.5 shadow-lg">
+    <i class="fa-solid fa-shield-halved text-amber-400 text-xl mt-0.5 shrink-0"></i>
+    <div class="text-xs text-slate-300 space-y-1">
+      <div class="font-bold text-amber-300 uppercase tracking-wide text-[11px] flex items-center gap-2">
+        <span>Identity Verification — Sandbox Mode</span>
+        <span class="bg-amber-400/20 text-amber-300 px-2 py-0.5 rounded text-[10px] font-mono">DEMO EVALUATION</span>
+      </div>
+      <p class="leading-relaxed text-slate-300">
+        This prototype simulates the India Stack onboarding pipeline. In production, legally binding Aadhaar verification requires an approved <strong>UIDAI ASA/KUA gateway</strong>, and student verification requires a <strong>DigiLocker NAD (National Academic Depository)</strong> partner portal integration. Zero raw 12-digit Aadhaar numbers are persisted in any environment under DPDP Act 2023 design principles.
+      </p>
     </div>
   </div>
 
@@ -78,7 +92,7 @@
           <h3 class="text-sm font-semibold text-white">Student Verification Status</h3>
           <p class="text-xs text-slate-400">
             {% if current_user.is_student_verified %}
-              Verified with {{ current_user.college_name or "College ID" }} &bull; Masked Aadhaar: {{ current_user.aadhaar_masked }}
+              Verified with {{ current_user.college_name or "College ID" }} &bull; Masked Aadhaar: {{ current_user.aadhaar_masked }} (Sandbox)
             {% else %}
               Complete 20-second verification to unlock instant access to student-rate study spaces.
             {% endif %}
@@ -88,7 +102,7 @@
       <div>
         {% if current_user.is_student_verified %}
           <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">
-            <i class="fa-solid fa-badge-check"></i> Verified Student
+            <i class="fa-solid fa-badge-check"></i> Student Domain Verified — Sandbox
           </span>
         {% else %}
           <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-amber-500/10 text-amber-400 border border-amber-500/30">
@@ -101,10 +115,10 @@
     <!-- Student Form Card -->
     <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 sm:p-8 shadow-xl">
       <h2 class="text-lg font-bold text-white mb-2 flex items-center gap-2">
-        <i class="fa-solid fa-id-card text-indigo-400"></i> Instant Student KYC Handshake
+        <i class="fa-solid fa-id-card text-indigo-400"></i> Student Identity Verification (Sandbox)
       </h2>
       <p class="text-xs text-slate-400 mb-6">
-        Zero raw identity data is stored. Aadhaar details are verified via UIDAI OTP sandbox and cryptographically hashed under DPDP Act 2023.
+        Zero raw identity data is stored. Aadhaar details are validated via sandbox OTP tokenization and cryptographically hashed under DPDP Act 2023 principles.
       </p>
 
       <form id="studentVerifyForm" onsubmit="handleStudentVerify(event)" class="space-y-6">
@@ -157,18 +171,18 @@
               class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-indigo-500 font-mono transition">
           </div>
 
-          <!-- Simulated UIDAI OTP -->
+          <!-- Simulated Aadhaar Sandbox OTP -->
           <div>
             <label class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2 flex items-center justify-between">
-              <span>UIDAI Security OTP (6 Digits)</span>
-              <span class="text-[10px] text-slate-400">Default sandbox: 123456</span>
+              <span>Sandbox Security OTP (6 Digits)</span>
+              <span class="text-[10px] text-slate-400">Sandbox challenge: 123456</span>
             </label>
             <div class="flex gap-2">
               <input type="text" id="studentOtp" maxlength="6" value="123456" required
                 class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-indigo-500 font-mono tracking-widest text-center transition">
-              <button type="button" onclick="alert('Demo OTP: 123456 has been dispatched to your Aadhaar registered mobile.');"
+              <button type="button" onclick="requestSandboxOtp();"
                 class="px-4 py-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-semibold text-slate-200 transition shrink-0">
-                Resend OTP
+                Request OTP
               </button>
             </div>
           </div>
@@ -362,6 +376,30 @@ function switchTab(tab) {
   }
 }
 
+async function requestSandboxOtp() {
+  const aadhaar = document.getElementById('studentAadhaar').value;
+  try {
+    const res = await fetch('/api/verify/student/request-otp', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ aadhaar_number: aadhaar })
+    });
+    const data = await res.json();
+    if (data.success) {
+      if (data.sandbox_demo_otp) {
+        document.getElementById('studentOtp').value = data.sandbox_demo_otp;
+        alert(`Sandbox OTP Generated: ${data.sandbox_demo_otp} (Valid for 5 mins). In production, this OTP is sent via UIDAI SMS gateway.`);
+      } else {
+        alert(data.message || 'Sandbox OTP dispatched.');
+      }
+    } else {
+      alert(data.error || 'Failed to request OTP');
+    }
+  } catch (e) {
+    alert('Error connecting to OTP service');
+  }
+}
+
 async function handleStudentVerify(e) {
   e.preventDefault();
   const btn = document.getElementById('studentSubmitBtn');
@@ -369,7 +407,7 @@ async function handleStudentVerify(e) {
   const resDetails = document.getElementById('studentResultDetails');
 
   btn.disabled = true;
-  btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Contacting UIDAI & DigiLocker Gateway...';
+  btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Validating via Sandbox Engine...';
 
   try {
     const payload = {
@@ -391,12 +429,13 @@ async function handleStudentVerify(e) {
     if (data.success) {
       resBox.classList.remove('hidden');
       resDetails.innerHTML = `
-        <div>&bull; <b>DigiLocker Status:</b> Verified (${data.aadhaar.masked_aadhaar})</div>
+        <div>&bull; <b>Identity Status:</b> Identity Verified — Sandbox (${data.aadhaar.masked_aadhaar})</div>
         <div>&bull; <b>Academic Affiliation:</b> ${data.academic.college_name} (${data.academic.college_email})</div>
+        <div>&bull; <b>Environment:</b> Simulated Sandbox (Production requires UIDAI/DigiLocker)</div>
         <div>&bull; <b>DPDP Compliance:</b> ${data.aadhaar.dpdp_status}</div>
         <div>&bull; <b>Updated Trust Index:</b> <b>${data.user.objective_trust_score}/100</b></div>
       `;
-      btn.innerHTML = '<i class="fa-solid fa-check"></i> Identity Verified!';
+      btn.innerHTML = '<i class="fa-solid fa-check"></i> Identity Verified (Sandbox)!';
       setTimeout(() => window.location.reload(), 2000);
     } else {
       alert(data.error || 'Verification failed. Please check inputs.');
