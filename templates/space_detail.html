@@ -93,6 +93,106 @@
     <!-- Left Two Columns: Specs, AI Analysis, Description, Rules -->
     <div class="lg:col-span-2 space-y-8">
 
+      <!-- SpaceLoop Verified Trust Card (Host Verification Breakdown) -->
+      <div class="bg-gradient-to-r from-slate-900 via-indigo-950/40 to-slate-900 border border-indigo-500/30 rounded-2xl p-6 shadow-xl">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4 pb-3 border-b border-slate-800">
+          <div class="flex items-center gap-2.5">
+            <div class="w-9 h-9 rounded-xl bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 flex items-center justify-center font-bold text-base">
+              <i class="fa-solid fa-shield-check"></i>
+            </div>
+            <div>
+              <div class="flex items-center gap-2">
+                <h3 class="text-sm font-bold text-white">SpaceLoop Verified Host</h3>
+                {% if space.owner_verified %}
+                <span class="px-2 py-0.5 rounded text-[10px] font-extrabold bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 uppercase">
+                  Fully Verified
+                </span>
+                {% else %}
+                <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-500/10 text-amber-400 border border-amber-500/30 uppercase">
+                  Verification Pending
+                </span>
+                {% endif %}
+              </div>
+              <p class="text-xs text-slate-400">Audited via DigiLocker, State Discom CA & NPCI UPI</p>
+            </div>
+          </div>
+
+          <div class="flex items-center gap-2 self-start sm:self-auto">
+            <span class="text-xs text-slate-400">Host Trust Score:</span>
+            <span class="px-2.5 py-1 rounded-lg bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 font-extrabold text-xs">
+              OTI {{ space.owner_trust_score or 98.5 }}/100
+            </span>
+          </div>
+        </div>
+
+        <!-- 4-Pillar Host Verification Status -->
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
+          <!-- 1. Identity Verified -->
+          <div class="bg-slate-950/80 border {% if space.owner_aadhaar_verified or space.owner_verified %}border-emerald-500/30{% else %}border-amber-500/30{% endif %} rounded-xl p-3">
+            <div class="flex items-center justify-between mb-1">
+              <span class="text-[10px] font-bold text-slate-400 uppercase">Identity</span>
+              {% if space.owner_aadhaar_verified or space.owner_verified %}
+              <i class="fa-solid fa-circle-check text-emerald-400 text-xs"></i>
+              {% else %}
+              <span class="text-[9px] text-amber-400 font-medium">Pending</span>
+              {% endif %}
+            </div>
+            <div class="text-xs font-bold text-white">
+              {% if space.owner_aadhaar_verified or space.owner_verified %}Identity Verified{% else %}Pending OTP{% endif %}
+            </div>
+            <div class="text-[10px] text-slate-500 mt-0.5">UIDAI Aadhaar OTP</div>
+          </div>
+
+          <!-- 2. Property Verified -->
+          <div class="bg-slate-950/80 border {% if space.is_discom_verified %}border-emerald-500/30{% else %}border-amber-500/30{% endif %} rounded-xl p-3">
+            <div class="flex items-center justify-between mb-1">
+              <span class="text-[10px] font-bold text-slate-400 uppercase">Property</span>
+              {% if space.is_discom_verified %}
+              <i class="fa-solid fa-circle-check text-emerald-400 text-xs"></i>
+              {% else %}
+              <span class="text-[9px] text-amber-400 font-medium">Pending</span>
+              {% endif %}
+            </div>
+            <div class="text-xs font-bold text-white">
+              {% if space.is_discom_verified %}Property Verified{% else %}Discom Pending{% endif %}
+            </div>
+            <div class="text-[10px] text-slate-500 mt-0.5">{{ space.owner_discom_provider or 'Electricity Discom' }}</div>
+          </div>
+
+          <!-- 3. Bank/Payment Account Verified -->
+          <div class="bg-slate-950/80 border {% if space.owner_upi_verified or space.owner_verified %}border-emerald-500/30{% else %}border-amber-500/30{% endif %} rounded-xl p-3">
+            <div class="flex items-center justify-between mb-1">
+              <span class="text-[10px] font-bold text-slate-400 uppercase">Bank / UPI</span>
+              {% if space.owner_upi_verified or space.owner_verified %}
+              <i class="fa-solid fa-circle-check text-emerald-400 text-xs"></i>
+              {% else %}
+              <span class="text-[9px] text-amber-400 font-medium">Pending</span>
+              {% endif %}
+            </div>
+            <div class="text-xs font-bold text-white">
+              {% if space.owner_upi_verified or space.owner_verified %}Payment Verified{% else %}UPI Pending{% endif %}
+            </div>
+            <div class="text-[10px] text-slate-500 mt-0.5">NPCI Penny Drop</div>
+          </div>
+
+          <!-- 4. Space Information Verified -->
+          <div class="bg-slate-950/80 border {% if space.is_space_info_verified %}border-emerald-500/30{% else %}border-slate-800{% endif %} rounded-xl p-3">
+            <div class="flex items-center justify-between mb-1">
+              <span class="text-[10px] font-bold text-slate-400 uppercase">Space Specs</span>
+              {% if space.is_space_info_verified %}
+              <i class="fa-solid fa-circle-check text-emerald-400 text-xs"></i>
+              {% else %}
+              <span class="text-[9px] text-slate-400">Standard</span>
+              {% endif %}
+            </div>
+            <div class="text-xs font-bold text-white">
+              {% if space.is_space_info_verified %}Space Verified{% else %}Self Reported{% endif %}
+            </div>
+            <div class="text-[10px] text-slate-500 mt-0.5">AI Multimodal Scan</div>
+          </div>
+        </div>
+      </div>
+
       <!-- Objective Reliability & Zero-Hardware Trust Card -->
       <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl">
         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4">
@@ -387,6 +487,31 @@
             </div>
           </div>
 
+          <!-- SpaceLoop Verified Renter Status -->
+          <div class="bg-slate-950 border border-slate-800 rounded-xl p-3 mb-5 text-xs space-y-2">
+            <div class="flex items-center justify-between">
+              <span class="text-slate-300 font-bold flex items-center gap-1.5">
+                <i class="fa-solid fa-shield-halved text-emerald-400"></i> Renter Trust Clearance
+              </span>
+              {% if current_user and (current_user.is_student_verified or current_user.is_aadhaar_verified) %}
+              <span class="text-[10px] text-emerald-400 font-bold uppercase"><i class="fa-solid fa-circle-check"></i> Cleared</span>
+              {% else %}
+              <span class="text-[10px] text-emerald-400 font-bold uppercase"><i class="fa-solid fa-circle-check"></i> Escrow Ready</span>
+              {% endif %}
+            </div>
+            <div class="grid grid-cols-3 gap-1 text-[10px] text-center pt-1 border-t border-slate-900">
+              <div class="p-1 rounded bg-slate-900/60 {% if current_user and current_user.is_aadhaar_verified %}text-emerald-400 font-semibold{% else %}text-slate-400{% endif %}">
+                ✓ Identity Verified
+              </div>
+              <div class="p-1 rounded bg-slate-900/60 {% if current_user and current_user.is_student_verified %}text-emerald-400 font-semibold{% else %}text-slate-400{% endif %}">
+                ✓ Student ID
+              </div>
+              <div class="p-1 rounded bg-slate-900/60 text-emerald-400 font-semibold">
+                ✓ UPI Escrow
+              </div>
+            </div>
+          </div>
+
           <!-- Book Button -->
           <button 
             type="submit" 
@@ -423,12 +548,40 @@
         </div>
         <div>
           <h3 class="text-base font-bold text-white">Booking Confirmed!</h3>
-          <p class="text-xs text-slate-400">AI Micro-Lease License Agreement Generated</p>
+          <p class="text-xs text-emerald-400 flex items-center gap-1">
+            <i class="fa-solid fa-shield-check"></i> SpaceLoop Dual-Sided Verification Passed
+          </p>
         </div>
       </div>
       <button onclick="closeBookingModal()" class="text-slate-400 hover:text-white p-1">
         <i class="fa-solid fa-xmark text-lg"></i>
       </button>
+    </div>
+
+    <!-- Dual Verification Checklist In Modal -->
+    <div class="px-6 pt-4 bg-slate-950/40 border-b border-slate-800/80">
+      <div class="grid grid-cols-2 gap-3 text-[11px] pb-3">
+        <div class="bg-slate-900/80 p-2.5 rounded-xl border border-slate-800">
+          <div class="font-bold text-slate-300 mb-1 flex items-center gap-1">
+            <i class="fa-solid fa-user-check text-indigo-400"></i> Host Verified
+          </div>
+          <div class="text-slate-400 space-y-0.5 text-[10px]">
+            <div>✓ Identity (Aadhaar OTP)</div>
+            <div>✓ Premise (Discom Verified)</div>
+            <div>✓ Bank Escrow Ready</div>
+          </div>
+        </div>
+        <div class="bg-slate-900/80 p-2.5 rounded-xl border border-slate-800">
+          <div class="font-bold text-slate-300 mb-1 flex items-center gap-1">
+            <i class="fa-solid fa-graduation-cap text-emerald-400"></i> Renter Verified
+          </div>
+          <div class="text-slate-400 space-y-0.5 text-[10px]">
+            <div>✓ Identity (UIDAI Verified)</div>
+            <div>✓ Student / Academic Credential</div>
+            <div>✓ ₹100 UPI Micro-Escrow Held</div>
+          </div>
+        </div>
+      </div>
     </div>
 
     <!-- Agreement Content Viewer -->

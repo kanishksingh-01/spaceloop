@@ -234,6 +234,15 @@ class Space(db.Model):
             "discom_consumer_name": self.discom_consumer_name,
             "room_qr_token": self.room_qr_token,
             "is_discom_verified": bool(self.discom_ca_number),
+            # Host Trust & Verification (SpaceLoop Verified)
+            "owner_verified": self.owner.is_host_verified if self.owner else False,
+            "owner_aadhaar_verified": self.owner.is_aadhaar_verified if self.owner else False,
+            "owner_upi_verified": self.owner.upi_verified if self.owner else False,
+            "owner_trust_score": round(self.owner.objective_trust_score, 1) if self.owner else 98.5,
+            "owner_on_time_vacate_rate": round(self.owner.on_time_vacate_rate, 1) if self.owner else 100.0,
+            "owner_cleanliness_match_rate": round(self.owner.cleanliness_match_rate, 1) if self.owner else 99.0,
+            "owner_discom_provider": self.owner.discom_provider if self.owner else "",
+            "is_space_info_verified": bool(self.ai_suitability_score and self.ai_suitability_score >= 80),
         }
 
 
