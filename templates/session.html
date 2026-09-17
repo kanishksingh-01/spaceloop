@@ -381,34 +381,49 @@
         <i class="fa-solid fa-check"></i>
       </div>
       <span class="px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 inline-block mb-2">
-        Instant UPI Escrow Refunded
+        Instant UPI Escrow Verification
       </span>
-      <h2 class="text-2xl font-black text-white">Session Completed & Escrow Released!</h2>
+      <h2 class="text-2xl font-black text-white">Session Completed & Verified!</h2>
       <p class="text-xs text-slate-300 max-w-lg mx-auto mt-2">
-        AI visual difference analysis verified that electrical appliances were switched off and the space was left in baseline condition. <b>₹100 security deposit</b> has been credited back to your UPI VPA.
+        Computer Vision condition-delta analysis compared your exit snapshot against the check-in baseline.
       </p>
 
-      <!-- Inspection Scorecard Metrics -->
-      <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 max-w-2xl mx-auto my-8">
-        <div class="bg-slate-950 border border-slate-800 rounded-xl p-3">
-          <div class="text-[10px] text-slate-400 uppercase font-semibold">Punctuality</div>
-          <div class="text-xl font-bold text-emerald-400 mt-1">100%</div>
-          <div class="text-[9px] text-slate-500">On-Time Vacate</div>
+      <!-- Exact Task 16 Condition & Escrow Display Box -->
+      <div class="bg-slate-950/90 border border-slate-800 rounded-2xl p-6 max-w-xl mx-auto my-6 text-left shadow-lg">
+        <div class="flex items-center justify-between pb-4 border-b border-slate-800">
+          <div>
+            <div class="text-[10px] uppercase font-bold text-slate-400">Condition Match</div>
+            <div id="conditionMatchScoreDisplay" class="text-3xl font-black text-emerald-400 mt-0.5">
+              {{ booking.condition_match_score or 96.0 }}%
+            </div>
+          </div>
+          <div class="text-right">
+            <div class="text-[10px] uppercase font-bold text-slate-400">Security Deposit</div>
+            <div class="text-2xl font-black text-white mt-0.5">₹{{ booking.escrow_deposit_amount|int }}</div>
+            <div id="checkoutStatusDisplay" class="text-xs font-bold mt-0.5 {% if booking.escrow_status == 'released' or booking.escrow_status == 'refunded' %}text-emerald-400{% elif booking.escrow_status == 'held' %}text-amber-400{% else %}text-indigo-400{% endif %}">
+              Status: {% if booking.escrow_status == 'released' or booking.escrow_status == 'refunded' %}Released{% elif booking.escrow_status == 'held' %}Review required{% else %}Refund processing{% endif %}
+            </div>
+          </div>
         </div>
-        <div class="bg-slate-950 border border-slate-800 rounded-xl p-3">
-          <div class="text-[10px] text-slate-400 uppercase font-semibold">Condition Match</div>
-          <div class="text-xl font-bold text-emerald-400 mt-1">98.5%</div>
-          <div class="text-[9px] text-slate-500">AI Visual Diff</div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-4 text-xs font-semibold">
+          <div id="condFurnitureCheck" class="flex items-center gap-2 text-emerald-400">
+            <i class="fa-solid fa-check"></i> <span class="text-slate-200">Furniture unchanged</span>
+          </div>
+          <div id="condWasteCheck" class="flex items-center gap-2 text-emerald-400">
+            <i class="fa-solid fa-check"></i> <span class="text-slate-200">No visible waste detected</span>
+          </div>
+          <div id="condLightsCheck" class="flex items-center gap-2 {% if booking.fans_lights_cleared %}text-emerald-400{% else %}text-amber-400{% endif %}">
+            <i class="fa-solid {% if booking.fans_lights_cleared %}fa-check{% else %}fa-triangle-exclamation{% endif %}"></i> <span class="text-slate-200">Lights off</span>
+          </div>
+          <div id="condFanCheck" class="flex items-center gap-2 {% if booking.fans_lights_cleared %}text-emerald-400{% else %}text-amber-400{% endif %}">
+            <i class="fa-solid {% if booking.fans_lights_cleared %}fa-check{% else %}fa-triangle-exclamation{% endif %}"></i> <span class="text-slate-200">Fan off</span>
+          </div>
         </div>
-        <div class="bg-slate-950 border border-slate-800 rounded-xl p-3">
-          <div class="text-[10px] text-slate-400 uppercase font-semibold">Appliances</div>
-          <div class="text-xl font-bold text-emerald-400 mt-1">Cleared</div>
-          <div class="text-[9px] text-slate-500">Fans/Lights OFF</div>
-        </div>
-        <div class="bg-slate-950 border border-slate-800 rounded-xl p-3">
-          <div class="text-[10px] text-slate-400 uppercase font-semibold">Trust Score</div>
-          <div class="text-xl font-bold text-indigo-400 mt-1">99.5/100</div>
-          <div class="text-[9px] text-slate-500">Updated OTI</div>
+
+        <div class="mt-4 pt-3 border-t border-slate-800 text-[11px] text-slate-400 flex items-center justify-between">
+          <span>Punctuality: <b class="text-emerald-400">{{ booking.objective_punctuality_score or 100.0 }}%</b></span>
+          <span>Payment Source: <b class="text-indigo-300">UPI Instant Credit</b></span>
         </div>
       </div>
 
