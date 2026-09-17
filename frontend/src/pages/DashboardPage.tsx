@@ -17,6 +17,18 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => 
   const [hostSpaces, setHostSpaces] = useState<Space[]>([]);
   const [loading, setLoading] = useState(true);
   const [cancelingId, setCancelingId] = useState<number | null>(null);
+  const [metrics, setMetrics] = useState<{
+    gross_revenue: number;
+    platform_fee: number;
+    net_earnings: number;
+    total_hours: number;
+    total_bookings: number;
+    active_spaces_count: number;
+    total_spaces_count: number;
+    upcoming_count: number;
+    completed_count: number;
+    payout_vpa: string;
+  } | null>(null);
 
   useEffect(() => {
     if (currentUser?.role === 'host') {
@@ -27,34 +39,41 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => 
   const loadDashboardData = async () => {
     setLoading(true);
     try {
-      // Load user's bookings and spaces from backend
-      const data = await request<{ bookings?: Booking[]; spaces?: Space[] }>('/api/system/status');
-      // If endpoint doesn't return full list, load spaces from /api/spaces
-      const spacesData = await request<{ spaces?: Space[] } | Space[]>('/api/spaces');
-      const allSpaces = Array.isArray(spacesData) ? spacesData : spacesData.spaces || [];
+      // Load real seeker bookings and host properties from backend
+      const dashData = await request<{
+        success: boolean;
+        bookings?: Booking[];
+        host_spaces?: Space[];
+        host_metrics?: any;
+      }>('/api/dashboard');
 
-      // Filter or set host spaces
-      setHostSpaces(allSpaces);
+      if (dashData?.bookings) {
+        setBookings(dashData.bookings);
+      } else {
+        setBookings([]);
+      }
 
-      // Default sample bookings if empty
-      setBookings([
-        {
-          id: 101,
-          space_id: 7,
-          space_title: 'Wagholi Quiet Study Pod',
-          space_photo: 'https://images.unsplash.com/photo-1598488035139-bdbb2231ce04?auto=format&fit=crop&w=400&q=80',
-          space_address: 'Wagholi, Pune (near JSPM College)',
-          seeker_id: currentUser?.id || 1,
-          start_time: new Date().toISOString(),
-          end_time: new Date(Date.now() + 2 * 3600 * 1000).toISOString(),
-          total_price: 90,
-          deposit_held: 100,
-          status: 'confirmed',
-          qr_code_hash: 'SPL-PASS-WAGHOLI-7',
-        },
-      ]);
+      if (dashData?.host_spaces && dashData.host_spaces.length > 0) {
+        setHostSpaces(dashData.host_spaces);
+      } else {
+        const spacesData = await request<{ spaces?: Space[] } | Space[]>('/api/spaces');
+        const allSpaces = Array.isArray(spacesData) ? spacesData : spacesData.spaces || [];
+        setHostSpaces(allSpaces.filter(s => currentUser ? s.owner_id === currentUser.id : true));
+      }
+
+      if (dashData?.host_metrics) {
+        setMetrics(dashData.host_metrics);
+      }
     } catch (err) {
-      console.error('Failed to load dashboard data:', err);
+      console.warn('Dashboard API call failed or user unauthenticated:', err);
+      try {
+        const spacesData = await request<{ spaces?: Space[] } | Space[]>('/api/spaces');
+        const allSpaces = Array.isArray(spacesData) ? spacesData : spacesData.spaces || [];
+        setHostSpaces(allSpaces);
+      } catch (e) {
+        // ignore
+      }
+      setBookings([]);
     } finally {
       setLoading(false);
     }
@@ -62,7 +81,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => 
 
   useEffect(() => {
     loadDashboardData();
-  }, []);
+  }, [currentUser]);
 
   const handleCancelBooking = async (bookingId: number) => {
     setCancelingId(bookingId);
@@ -123,14 +142,37 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => 
 
           {/* Quick Metrics */}
           <View className="flex-row items-center gap-3">
-            <View className="p-3 bg-slate-950 rounded-xl border border-slate-800 items-center">
-              <Text className="text-[10px] text-slate-400 font-semibold">Active Pass</Text>
-              <Text className="text-base font-black text-emerald-400">1 Online</Text>
-            </View>
-            <View className="p-3 bg-slate-950 rounded-xl border border-slate-800 items-center">
-              <Text className="text-[10px] text-slate-400 font-semibold">Micro-Escrow</Text>
-              <Text className="text-base font-black text-indigo-400">₹100 Held</Text>
-            </View>
+            {activeTab === 'seeker' ? (
+              <>
+                <View className="p-3 bg-slate-950 rounded-xl border border-slate-800 items-center min-w-[90px]">
+                  <Text className="text-[10px] text-slate-400 font-semibold">Active Passes</Text>
+                  <Text className="text-base font-black text-emerald-400">
+                    {bookings.filter(b => b.status === 'confirmed').length} Active
+                  </Text>
+                </View>
+                <View className="p-3 bg-slate-950 rounded-xl border border-slate-800 items-center min-w-[90px]">
+                  <Text className="text-[10px] text-slate-400 font-semibold">Micro-Escrow</Text>
+                  <Text className="text-base font-black text-indigo-400">
+                    ₹{bookings.filter(b => b.status === 'confirmed').reduce((acc, b) => acc + (b.deposit_held || 100), 0)} Held
+                  </Text>
+                </View>
+              </>
+            ) : (
+              <>
+                <View className="p-3 bg-slate-950 rounded-xl border border-slate-800 items-center min-w-[90px]">
+                  <Text className="text-[10px] text-slate-400 font-semibold">Net Earnings</Text>
+                  <Text className="text-base font-black text-emerald-400">
+                    ₹{metrics?.net_earnings ?? 0}
+                  </Text>
+                </View>
+                <View className="p-3 bg-slate-950 rounded-xl border border-slate-800 items-center min-w-[90px]">
+                  <Text className="text-[10px] text-slate-400 font-semibold">Active Spaces</Text>
+                  <Text className="text-base font-black text-indigo-400">
+                    {hostSpaces.filter(s => s.is_active).length} Listed
+                  </Text>
+                </View>
+              </>
+            )}
           </View>
         </View>
       </View>

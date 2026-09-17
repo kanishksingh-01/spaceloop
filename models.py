@@ -229,6 +229,20 @@ class Space(db.Model):
     def ai_tags(self, val):
         self.ai_tags_json = json.dumps(val or [])
 
+    @property
+    def location(self):
+        if self.neighborhood:
+            return f"{self.neighborhood}, {self.city}"
+        return self.city or "India"
+
+    @property
+    def hourly_rate(self):
+        return self.price_hourly
+
+    @property
+    def daily_rate(self):
+        return self.price_daily
+
     def average_rating(self):
         if not self.reviews:
             return 4.9  # Default new space rating
@@ -346,6 +360,7 @@ class Booking(db.Model):
             "space_title": self.space.title if self.space else "Space",
             "space_category": self.space.category if self.space else "",
             "space_photo": self.space.photos[0] if self.space and self.space.photos else "",
+            "space_address": self.space.address if (self.space and self.space.address) else (self.space.location if self.space else "Verified Premise"),
             "renter_id": self.renter_id,
             "renter_name": self.renter.name if self.renter else "Guest",
             "start_time": self.start_time.strftime("%b %d, %Y at %I:%M %p") if self.start_time else "",
@@ -370,6 +385,7 @@ class Booking(db.Model):
             "condition_match_score": round(self.condition_match_score, 1),
             "fans_lights_cleared": self.fans_lights_cleared,
             "escrow_deposit_amount": self.escrow_deposit_amount,
+            "deposit_held": self.escrow_deposit_amount,
             "escrow_status": self.escrow_status,
             "objective_punctuality_score": round(self.objective_punctuality_score, 1),
         }

@@ -638,13 +638,45 @@ def calculate_earnings_estimate(category, sqft=250, days_per_month=12, hourly_ra
 def concierge_chat(messages, context_data=None):
     """
     AI Concierge (LoopBot) for conversational assistance, recommendations, and space guidelines.
+    Includes real database space grounding and comprehensive handling of all 7 intent categories.
     """
+    # 1. Retrieve real database listings to ground recommendations
+    db_spaces = []
+    try:
+        from models import Space
+        active = Space.query.filter_by(is_active=True).limit(10).all()
+        for s in active:
+            db_spaces.append({
+                "id": s.id,
+                "title": s.title,
+                "city": s.city,
+                "location": s.location,
+                "category": s.category,
+                "hourly_rate": s.hourly_rate,
+                "amenities": s.amenities or []
+            })
+    except Exception as e:
+        print(f"Error querying active spaces for LoopBot: {e}")
+
+    active_spaces_text = ""
+    if db_spaces:
+        active_spaces_text = "\nActive Verified Spaces in Database:\n" + "\n".join([
+            f"- #{s['id']}: {s['title']} in {s['location']}, {s['city']} (Category: {s['category']}, ₹{s['hourly_rate']}/hr)"
+            for s in db_spaces
+        ])
+
     context_str = f"\nPlatform Context: {json.dumps(context_data)}" if context_data else ""
     system_prompt = f"""
 You are LoopBot, the friendly, hyper-knowledgeable AI Concierge for SpaceLoop.
-SpaceLoop is an AI-powered platform that converts unused property spaces (garages, backyards, vacant storefronts, off-peak cafes, spare studios, driveways) into useful, affordable temporary spaces.
-Help seekers find ideal spots, explain pricing, clarify micro-lease agreements, and give owners tips on how to stage and monetize their unused square footage.
-Keep responses helpful, structured, concise, and enthusiastic. Use bullet points where appropriate.
+SpaceLoop is an India Stack AI platform that converts unused property square footage (study pods, studios, garages, spare rooms, off-peak cafes) into useful, affordable temporary spaces under Section 52 of the Indian Easements Act, 1882.
+
+Guidelines:
+- Recommend actual spaces listed below where relevant.
+- Duration bounds: 0.5 hours (30 min) to 168 hours (7 days maximum).
+- Pricing: Hourly rate × hours + 5% platform fee + ₹100 refundable UPI escrow deposit.
+- Access: Zero-hardware geofenced digital door pass (50m GPS radius + QR scan + 4-digit arrival PIN fallback).
+- Keep answers concise, helpful, and formatted with clean bullet points.
+{active_spaces_text}
 {context_str}
 """
     formatted_msgs = [{"role": "system", "content": system_prompt}]
@@ -666,51 +698,103 @@ Keep responses helpful, structured, concise, and enthusiastic. Use bullet points
         if gemini_res:
             return sanitize_string(gemini_res, max_length=2000)
 
-    # Rule-based fallback & domain knowledge engine
+    # =========================================================================
+    # DETERMINISTIC RULE ENGINE: 7 ESSENTIAL INTENT CATEGORIES
+    # =========================================================================
     last_msg = (messages[-1].get("content", "") if messages else "").lower()
-    
-    if "podcast" in last_msg or "studio" in last_msg or "photo" in last_msg or "creative" in last_msg:
+
+    # Category 1: Micro-Lease & Escrow Protections (Indian Easements Act, 1882)
+    if any(k in last_msg for k in ["lease", "agreement", "protect", "legal", "easement", "squat", "tenancy", "escrow", "law", "act", "section 52"]):
         return (
-            "🎙️ **Recommended Creative & Podcast Studios:**\n\n"
-            "• **Sound-Treated Creator Studio (Hauz Khas, Delhi)**: ₹95/hr — Features acoustic foam wall panelling, ring light, natural daylight exposure, and dedicated high-amperage audio circuit.\n"
-            "• **Acoustic Pod & Creative Nook (Wagholi, Pune)**: ₹45/hr — High-speed 300 Mbps fiber Wi-Fi, ergonomic seating, and quiet zone acoustics.\n\n"
-            "All creative bookings include instant zero-hardware access, ₹100 automated UPI deposit escrow, and an AI-generated equipment & property liability micro-lease."
+            "⚖️ **Legal Protections under Section 52, Indian Easements Act, 1882:**\n\n"
+            "• **Revocable Temporary License**: SpaceLoop bookings are strictly revocable licenses, NOT leaseholds or tenancies. Occupants have zero tenancy rights or adverse possession claims.\n"
+            "• **Automated UPI Escrow**: A ₹100 refundable security deposit is locked in escrow during the reservation and released automatically after photo-verified checkout.\n"
+            "• **Cryptographic Access Audit**: Every check-in and check-out timestamp is sealed with GPS coordinates and QR tokens for complete legal traceability."
         )
-    elif "garage" in last_msg or "storage" in last_msg or "earn" in last_msg or "calculator" in last_msg or "renting" in last_msg or "monetiz" in last_msg or "price" in last_msg:
+
+    # Category 2: Navigation, Geofencing & Digital Door Pass
+    elif any(k in last_msg for k in ["check-in", "checkin", "unlock", "door", "pass", "qr", "geofence", "direction", "navigate", "pin"]):
         return (
-            "💰 **Earning Potential for Unused Garage & Storage Spaces:**\n\n"
-            "• **Hourly Micro-Rental Rate**: ₹60 – ₹120/hour for dry, CCTV-monitored inventory or gear storage.\n"
-            "• **Monthly Projected Earnings**: Monetizing an empty 200 sqft garage for just 4 hours/day across 12 days/month typically generates **₹3,500 to ₹8,500/month** of passive income.\n"
-            "• **Zero Hardware Overhead**: Uses SpaceLoop's India Stack geofenced QR door check-in — no smart lock or biometric installation required.\n\n"
-            "Check out our interactive **Earnings Calculator** in the navigation bar to simulate projections tailored to your exact city and square footage!"
+            "📍 **Zero-Hardware Check-In & Door Pass Walkthrough:**\n\n"
+            "1. **Access Your Pass**: Open your booking from the Seeker Dashboard (`/dashboard`) or navigate to `/session/:id`.\n"
+            "2. **Approach Property**: Stand within the 50-meter GPS geofence radius of the premise.\n"
+            "3. **Activate Pass**: Tap **📍 Verify Geofence & Activate Digital Pass** or provide your 4-digit arrival PIN to the guard/caretaker.\n"
+            "4. **Session Checkout**: When finished, tap **🏁 Check-Out & Release ₹100 Deposit** to complete your reservation and release your deposit instantly."
         )
-    elif "lease" in last_msg or "agreement" in last_msg or "protect" in last_msg or "legal" in last_msg or "easement" in last_msg or "safe" in last_msg or "insurance" in last_msg:
+
+    # Category 3: Safety, Verification & DigiLocker Aadhaar e-KYC
+    elif any(k in last_msg for k in ["safe", "safety", "verify", "verification", "aadhaar", "digilocker", "student", "kyc", "trust"]):
         return (
-            "⚖️ **How AI Micro-Leases Protect Property Owners:**\n\n"
-            "• **Section 52 Indian Easements Act, 1882**: Every booking creates a strictly revocable temporary license rather than a leasehold tenancy. No tenant rights can be claimed.\n"
-            "• **Automated UPI Escrow**: A ₹100 security deposit is pre-authorized and held in escrow, released only after tamper-proof checkout verification.\n"
-            "• **GPS & QR Timestamp Audit**: Door entry and exit times are cryptographically logged with 50m geofencing, providing immutable proof of occupancy.\n"
-            "• **Condition Delta Analysis**: AI verifies room cleanliness between check-in and checkout to guarantee space integrity."
+            "🛡️ **SpaceLoop Safety & Identity Verification Architecture:**\n\n"
+            "• **DigiLocker Aadhaar e-KYC**: Compliant with India's DPDP Act 2023. Raw 12-digit Aadhaar numbers are never stored; only masked representations (XXXX-XXXX-1234) and SHA-256 tokens are retained.\n"
+            "• **Institutional Student Credentialing**: Verified college email addresses unlock student discounts and trust badges.\n"
+            "• **Objective Trust Scoring**: Users build verified reputation scores based on on-time vacating and space cleanliness inspection."
         )
-    elif "study" in last_msg or "desk" in last_msg or "exam" in last_msg or "wagholi" in last_msg or "pune" in last_msg:
+
+    # Category 4: Hosting & Monetization / Earning Calculator
+    elif any(k in last_msg for k in ["host", "list", "monetiz", "earn", "calculator", "owner", "empty room", "unused space"]):
         return (
-            "📚 **Top Study Pods & Work Nooks:**\n\n"
-            "• **Wagholi Quiet Study Pod near JSPM (Pune)**: ₹45/hr — Ergonomic chair, 20A grounded power outlet, high-speed fiber Wi-Fi, and silent atmosphere.\n"
-            "• Instant booking available with zero-hardware door pass and flexible 1h, 2h, 4h, or 8h duration blocks.\n\n"
-            "Reserve directly on the **Explore** page for instant confirmation and door pass generation!"
+            "💰 **Host Monetization & Space Listing:**\n\n"
+            "• **60-Second AI Staging**: Upload a photo on the **List Space** page. Our Multimodal AI inspects usable sqft, acoustic dB profile, natural lux lighting, and recommends hourly pricing.\n"
+            "• **High Earnings Yield**: Renting an empty garage or study nook for 4 hours/day typically yields **₹3,500 to ₹8,500/month** in passive income.\n"
+            "• **Host Keeps 95%**: SpaceLoop takes only a 5% platform fee. 95% of gross revenue goes directly to your verified UPI VPA.\n"
+            "• **Zero Hardware Cost**: Guests check in via GPS geofence and printable door QR code — no smart lock or hardware installation required!"
         )
-    elif "check-in" in last_msg or "checkin" in last_msg or "unlock" in last_msg or "qr" in last_msg or "door" in last_msg or "geofence" in last_msg:
+
+    # Category 5: Booking & Duration / Pricing Rules
+    elif any(k in last_msg for k in ["book", "duration", "hours", "how long", "minimum", "maximum", "rates", "platform fee", "cost", "pricing"]):
         return (
-            "📍 **Zero-Hardware Check-In & Door Pass Guide:**\n\n"
-            "1. **GPS Geofence Clearance**: Approach within 50 meters of the property perimeter.\n"
-            "2. **Door QR Scan or PIN**: Scan the printable entrance QR code or enter your 4-digit Arrival PIN.\n"
-            "3. **Instant Access**: The door unlocks and your session timer begins. At session end, simply snap an exit photo to automatically release your ₹100 UPI deposit!"
+            "⏱️ **SpaceLoop Booking & Duration Guidelines:**\n\n"
+            "• **Flexible Duration**: Book anywhere from **0.5 hours (30 minutes)** up to **168 hours (7 days maximum)** per session.\n"
+            "• **Transparent Pricing Formula**:\n"
+            "  - **Rental Subtotal**: Hourly Rate × Hours Booked\n"
+            "  - **Platform Convenience Fee**: Flat 5% platform fee\n"
+            "  - **Refundable Security Escrow**: ₹100 pre-authorized via UPI and returned upon checkout.\n"
+            "• **Instant Digital Pass**: As soon as payment completes, your digital access pass and 4-digit entrance PIN are issued immediately."
         )
+
+    # Category 6: Finding Spaces & Recommendations
+    elif any(k in last_msg for k in ["find", "search", "looking for", "recommend", "space", "study", "desk", "studio", "podcast", "storage", "garage", "pune", "wagholi", "delhi", "bengaluru", "bangalore", "hauz khas", "koramangala"]):
+        # Match real spaces in database
+        matched = []
+        for s in db_spaces:
+            s_text = f"{s['title']} {s['location']} {s['city']} {s['category']}".lower()
+            if any(k in s_text for k in ["pune", "wagholi", "delhi", "bengaluru", "studio", "study", "storage", "pod"] if k in last_msg):
+                matched.append(s)
+        
+        display_spaces = matched if matched else db_spaces[:3]
+        if display_spaces:
+            items_str = "\n".join([
+                f"• **{s['title']}** ({s['location']}, {s['city']}): ₹{s['hourly_rate']}/hr — *{s['category']}* (Booking Ref #{s['id']})"
+                for s in display_spaces
+            ])
+            return (
+                f"📍 **Verified Spaces Matching Your Criteria:**\n\n"
+                f"{items_str}\n\n"
+                f"All bookings include instant digital pass generation, 50m geofence verification, and automated ₹100 UPI escrow security. "
+                f"Head to **Explore** to reserve any spot instantly!"
+            )
+        else:
+            return (
+                "📍 **Explore Verified SpaceLoop Listings:**\n\n"
+                "• **Wagholi Quiet Study Pod near JSPM (Pune)**: ₹45/hr — Silent zone with 20A outlet and 300 Mbps Wi-Fi.\n"
+                "• **Sound-Treated Creator Studio (Hauz Khas, Delhi)**: ₹95/hr — Acoustic foam, ring lighting, and audio circuits.\n"
+                "• **Clean Ground Floor Storage (Koramangala, Bengaluru)**: ₹65/hr — Dry CCTV-monitored inventory storage.\n\n"
+                "Browse all active listings on our **Explore** page!"
+            )
+
+    # Category 7: Out-of-Scope / General Help
     else:
         return (
-            "Hello! I'm **LoopBot**, your SpaceLoop AI Concierge. SpaceLoop connects unused property square footage "
-            "(study pods, studios, garages, pop-ups) with local seekers needing affordable hourly access under the Indian Easements Act, 1882.\n\n"
-            "How can I help you today? I can recommend spaces, calculate your garage's earning potential, or explain our zero-hardware door passes."
+            "👋 Hello! I'm **LoopBot**, your SpaceLoop AI Concierge.\n\n"
+            "SpaceLoop unlocks unused property square footage across India for affordable hourly use under Section 52 of the Indian Easements Act, 1882.\n\n"
+            "Here's what I can assist you with:\n"
+            "• 🔍 **Find Spaces**: Search study pods, podcast studios, and storage in Pune, Delhi, or Bengaluru.\n"
+            "• ⏱️ **Booking & Duration**: Learn about flexible 0.5h to 168h micro-leases and transparent pricing.\n"
+            "• 🏠 **Host Monetization**: Calculate earning potential for your garage or idle rooms.\n"
+            "• ⚖️ **Micro-Leases & Escrow**: Understand our Section 52 legal protections and ₹100 UPI escrow.\n"
+            "• 📍 **Digital Door Pass**: Guide you through 50m geofence verification and check-in.\n\n"
+            "What would you like to explore?"
         )
 
 

@@ -392,6 +392,45 @@ def create_app():
             user=current_user.to_dict()
         )
 
+    @app.route("/api/dashboard", methods=["GET"])
+    @login_required
+    def api_dashboard():
+        active_user_id = current_user.id
+
+        seeker_bookings = Booking.query.filter_by(renter_id=active_user_id).order_by(Booking.created_at.desc()).all()
+        host_spaces = Space.query.filter_by(owner_id=active_user_id).order_by(Space.created_at.desc()).all()
+        host_bookings = Booking.query.join(Space).filter(Space.owner_id == active_user_id).order_by(Booking.created_at.desc()).all()
+
+        gross_revenue = sum(b.total_price for b in host_bookings if b.status in ['confirmed', 'completed'])
+        platform_fee = round(gross_revenue * 0.05)
+        net_earnings = gross_revenue - platform_fee
+        total_hours_hosted = sum(b.hours_booked for b in host_bookings if b.status in ['confirmed', 'completed'])
+        active_spaces_count = len([s for s in host_spaces if s.is_active])
+        upcoming_host_bookings = [b for b in host_bookings if b.status == 'confirmed']
+        completed_host_bookings = [b for b in host_bookings if b.status == 'completed']
+
+        host_metrics = {
+            "gross_revenue": int(round(gross_revenue)),
+            "platform_fee": int(round(platform_fee)),
+            "net_earnings": int(round(net_earnings)),
+            "total_hours": round(total_hours_hosted, 1),
+            "total_bookings": len(host_bookings),
+            "active_spaces_count": active_spaces_count,
+            "total_spaces_count": len(host_spaces),
+            "upcoming_count": len(upcoming_host_bookings),
+            "completed_count": len(completed_host_bookings),
+            "payout_vpa": current_user.upi_vpa_masked if current_user.upi_vpa_masked else "upi***@okbank"
+        }
+
+        return jsonify({
+            "success": True,
+            "bookings": [b.to_dict() for b in seeker_bookings],
+            "host_bookings": [b.to_dict() for b in host_bookings],
+            "host_spaces": [s.to_dict() for s in host_spaces],
+            "host_metrics": host_metrics,
+            "user": current_user.to_dict()
+        }), 200
+
     @app.route("/how-it-works")
     def how_it_works():
         return render_template("how_it_works.html")
@@ -1331,7 +1370,7 @@ def create_app():
 
         return jsonify({
             "success": True,
-            "message": f"Check-in verified via {handshake_method}! In-room access granted.",
+            "message": f"Check-in verified via {handshake_method}! Digital access pass activated.",
             "arrival_time": now.strftime("%I:%M:%S %p IST"),
             "handshake_method": handshake_method,
             "distance_meters": int(actual_distance),

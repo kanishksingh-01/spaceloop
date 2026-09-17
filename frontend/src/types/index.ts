@@ -66,8 +66,10 @@ export interface Booking {
   seeker_email?: string;
   start_time: string;
   end_time: string;
+  hours_booked?: number;
   total_price: number;
   deposit_held: number;
+  escrow_deposit_amount?: number;
   status: 'pending' | 'confirmed' | 'active' | 'completed' | 'cancelled';
   qr_code_hash?: string;
   checked_in_at?: string;

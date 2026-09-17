@@ -5,6 +5,7 @@ import { Space, User } from '../types';
 import { getSpaceById } from '../services/spaces';
 import { createBooking, precheckBooking } from '../services/bookings';
 import { AuthModal } from '../components/common/AuthModal';
+import { calculateRentalPricing, MIN_BOOKING_HOURS, MAX_BOOKING_HOURS } from '../services/pricing';
 
 interface SpaceDetailPageProps {
   currentUser: User | null;
@@ -62,13 +63,16 @@ export const SpaceDetailPage: React.FC<SpaceDetailPageProps> = ({ currentUser })
     ? space.photos
     : ['https://images.unsplash.com/photo-1513694203232-719a280e022f?auto=format&fit=crop&w=1200&q=80'];
 
-  const rentalTotal = space.hourly_rate * hours;
-  const deposit = 100; // Flat ₹100 UPI escrow
-  const grandTotal = rentalTotal + deposit;
+  const pricing = calculateRentalPricing(space.hourly_rate, hours);
 
   const handleBookNow = async () => {
     if (!currentUser) {
       setShowAuthModal(true);
+      return;
+    }
+
+    if (!pricing.isValidDuration) {
+      setBookingError(pricing.validationError || 'Please select a valid duration between 0.5 and 168 hours.');
       return;
     }
 
@@ -77,12 +81,12 @@ export const SpaceDetailPage: React.FC<SpaceDetailPageProps> = ({ currentUser })
     try {
       const now = new Date();
       const startTime = now.toISOString();
-      const end = new Date(now.getTime() + hours * 60 * 60 * 1000);
+      const end = new Date(now.getTime() + pricing.hours * 60 * 60 * 1000);
       const endTime = end.toISOString();
 
       const res = await createBooking({
         space_id: space.id,
-        hours: hours,
+        hours: pricing.hours,
         start_time: startTime,
         end_time: endTime,
         purpose: 'Study & Creative Work Session',
@@ -310,9 +314,14 @@ export const SpaceDetailPage: React.FC<SpaceDetailPageProps> = ({ currentUser })
                 <View className="p-3.5 bg-slate-950 rounded-xl border border-slate-800 space-y-2">
                   <View className="flex-row justify-between text-xs">
                     <Text className="text-slate-400">
-                      ₹{space.hourly_rate} × {hours} hours
+                      ₹{space.hourly_rate} × {pricing.hours} hours
                     </Text>
-                    <Text className="text-white font-medium">₹{rentalTotal}</Text>
+                    <Text className="text-white font-medium">₹{pricing.rentalSubtotal}</Text>
+                  </View>
+
+                  <View className="flex-row justify-between text-xs">
+                    <Text className="text-slate-400">Platform Convenience (5%)</Text>
+                    <Text className="text-slate-300 font-medium">₹{pricing.platformFee}</Text>
                   </View>
 
                   <View className="flex-row justify-between text-xs">
@@ -320,12 +329,12 @@ export const SpaceDetailPage: React.FC<SpaceDetailPageProps> = ({ currentUser })
                       <Text className="text-slate-400">UPI Security Deposit</Text>
                       <Text className="text-[10px] text-emerald-400 font-bold">(Refundable)</Text>
                     </View>
-                    <Text className="text-emerald-400 font-medium">₹{deposit}</Text>
+                    <Text className="text-emerald-400 font-medium">₹{pricing.escrowDeposit}</Text>
                   </View>
 
                   <View className="pt-2 border-t border-slate-800 flex-row justify-between text-sm">
                     <Text className="text-slate-200 font-bold">Total Amount Due</Text>
-                    <Text className="text-indigo-400 font-black">₹{grandTotal}</Text>
+                    <Text className="text-indigo-400 font-black">₹{pricing.grandTotal}</Text>
                   </View>
                 </View>
               </View>
@@ -333,15 +342,21 @@ export const SpaceDetailPage: React.FC<SpaceDetailPageProps> = ({ currentUser })
               {/* Book Button */}
               <Pressable
                 onPress={handleBookNow}
-                disabled={bookingLoading}
-                className="w-full py-3.5 bg-indigo-600 hover:bg-indigo-500 rounded-xl items-center justify-center transition shadow-lg shadow-indigo-600/40"
+                disabled={bookingLoading || !pricing.isValidDuration}
+                className={`w-full py-3.5 rounded-xl items-center justify-center transition shadow-lg ${
+                  bookingLoading || !pricing.isValidDuration
+                    ? 'bg-indigo-600/50 cursor-not-allowed shadow-none'
+                    : 'bg-indigo-600 hover:bg-indigo-500 shadow-indigo-600/40'
+                }`}
               >
                 <Text className="text-sm font-bold text-white">
                   {bookingLoading
                     ? 'Securing Reservation...'
+                    : !pricing.isValidDuration
+                    ? 'Invalid Duration'
                     : currentUser
-                    ? `⚡ Instant Book & Generate Pass (₹${grandTotal})`
-                    : `⚡ Sign in to Book (₹${grandTotal})`}
+                    ? `⚡ Instant Book & Generate Pass (₹${pricing.grandTotal})`
+                    : `⚡ Sign in to Book (₹${pricing.grandTotal})`}
                 </Text>
               </Pressable>
 
