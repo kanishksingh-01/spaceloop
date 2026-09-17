@@ -212,7 +212,48 @@ def create_app():
 
     @app.route("/list-space")
     def list_space_page():
-        return render_template("list_space.html")
+        edit_id = request.args.get("edit")
+        edit_space = None
+        if edit_id:
+            try:
+                sp = Space.query.get(int(edit_id))
+                if sp:
+                    edit_space = sp.to_dict()
+            except Exception:
+                edit_space = None
+        return render_template("list_space.html", edit_space=edit_space)
+
+    @app.route("/api/spaces/<int:space_id>/edit", methods=["POST"])
+    def api_edit_space(space_id):
+        """Updates an existing space listing with input sanitization."""
+        space = Space.query.get_or_404(space_id)
+        data = request.get_json(silent=True) or request.form or {}
+
+        if data.get("title"):
+            space.title = sanitize_string(data.get("title"), max_length=150)
+        if data.get("category"):
+            space.category = sanitize_string(data.get("category"), max_length=50)
+        if data.get("address"):
+            space.address = sanitize_string(data.get("address"), max_length=200)
+        if data.get("description"):
+            space.description = sanitize_string(data.get("description"), max_length=3000)
+        if data.get("price_hourly") is not None and str(data.get("price_hourly")).strip() != "":
+            space.price_hourly = float(validate_numeric(data.get("price_hourly"), min_val=5.0, max_val=5000.0, default=space.price_hourly))
+        if data.get("price_daily") is not None and str(data.get("price_daily")).strip() != "":
+            space.price_daily = float(validate_numeric(data.get("price_daily"), min_val=20.0, max_val=25000.0, default=space.price_daily))
+        if data.get("sqft") is not None and str(data.get("sqft")).strip() != "":
+            space.sqft = int(validate_numeric(data.get("sqft"), min_val=20, max_val=50000, default=space.sqft))
+        if data.get("max_capacity") is not None and str(data.get("max_capacity")).strip() != "":
+            space.max_capacity = int(validate_numeric(data.get("max_capacity"), min_val=1, max_val=500, default=space.max_capacity))
+        if data.get("amenities") and isinstance(data.get("amenities"), list):
+            space.amenities = [sanitize_string(a, max_length=80) for a in data.get("amenities") if isinstance(a, str)][:15]
+        if data.get("rules") and isinstance(data.get("rules"), list):
+            space.rules = [sanitize_string(r, max_length=150) for r in data.get("rules") if isinstance(r, str)][:10]
+
+        db.session.commit()
+        if request.is_json:
+            return jsonify({"success": True, "message": f"Space '{space.title}' updated successfully!", "space": space.to_dict()}), 200
+        return redirect(url_for("dashboard_page"))
 
     @app.route("/calculator")
     def calculator_page():
@@ -1169,6 +1210,29 @@ def create_app():
             "escrow_refund_status": "INSTANT_RELEASE_COMPLETE",
             "booking": booking.to_dict()
         })
+
+    @app.route("/api/booking/<int:booking_id>/cancel", methods=["POST"])
+    def api_cancel_booking(booking_id):
+        """Cancels a booking, updates state, and refunds escrow deposit."""
+        booking = Booking.query.get_or_404(booking_id)
+        if booking.status == "cancelled":
+            return jsonify({"success": False, "error": "This booking is already cancelled."}), 400
+        if booking.status == "completed" or booking.session_state == "checked_out":
+            return jsonify({"success": False, "error": "Cannot cancel an already completed reservation."}), 400
+        if booking.session_state == "checked_in":
+            return jsonify({"success": False, "error": "Active session in progress cannot be cancelled directly. Please complete checkout."}), 400
+
+        booking.status = "cancelled"
+        booking.session_state = "cancelled"
+        if booking.escrow_status == "held":
+            booking.escrow_status = "refunded"
+        db.session.commit()
+
+        return jsonify({
+            "success": True,
+            "message": f"Booking #{booking_id} cancelled successfully. ₹{int(booking.escrow_deposit_amount)} escrow deposit refunded.",
+            "booking": booking.to_dict()
+        }), 200
 
     return app
 

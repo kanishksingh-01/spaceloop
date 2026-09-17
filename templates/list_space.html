@@ -12,10 +12,14 @@
       <i class="fa-solid fa-wand-magic-sparkles"></i> AI Space Inspector
     </div>
     <h1 class="text-3xl font-extrabold text-white tracking-tight sm:text-4xl">
-      List Your Unused Space
+      {% if edit_space %}Edit Your Space Listing{% else %}List Your Unused Space{% endif %}
     </h1>
     <p class="mt-2 text-sm text-slate-400">
-      Upload a photo or enter rough notes. Our AI analyzes your space to auto-detect dimensions, verify lighting and acoustics, and recommend dynamic fair pricing.
+      {% if edit_space %}
+        Update your space pricing, category, dimensions, and operational notes.
+      {% else %}
+        Upload a photo or enter rough notes. Our AI analyzes your space to auto-detect dimensions, verify lighting and acoustics, and recommend dynamic fair pricing.
+      {% endif %}
     </p>
   </div>
 
@@ -313,8 +317,8 @@
           id="publishBtn" 
           class="bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold text-xs sm:text-sm px-6 py-2.5 rounded-xl shadow-lg shadow-emerald-600/20 transition flex items-center gap-2"
         >
-          <i class="fa-solid fa-cloud-arrow-up"></i>
-          <span>Publish Space Listing</span>
+          <i class="fa-solid {% if edit_space %}fa-pen-to-square{% else %}fa-cloud-arrow-up{% endif %}"></i>
+          <span>{% if edit_space %}Update Space Listing{% else %}Publish Space Listing{% endif %}</span>
         </button>
       </div>
 
@@ -462,8 +466,11 @@
   async function publishSpaceListing(e) {
     e.preventDefault();
     const btn = document.getElementById('publishBtn');
+    const isEdit = {% if edit_space %}true{% else %}false{% endif %};
+    const editSpaceId = {% if edit_space %}{{ edit_space.id }}{% else %}null{% endif %};
+    
     btn.disabled = true;
-    btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Publishing...`;
+    btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Saving...`;
 
     const title = document.getElementById('listingTitle').value.trim();
     const address = document.getElementById('listingAddress').value.trim() || "San Francisco, CA";
@@ -471,7 +478,7 @@
     if (!title) {
       alert("Please run the AI inspection or enter a listing title first!");
       btn.disabled = false;
-      btn.innerHTML = `<i class="fa-solid fa-cloud-arrow-up"></i> <span>Publish Space Listing</span>`;
+      btn.innerHTML = isEdit ? `<i class="fa-solid fa-pen-to-square"></i> <span>Update Space Listing</span>` : `<i class="fa-solid fa-cloud-arrow-up"></i> <span>Publish Space Listing</span>`;
       return;
     }
 
@@ -492,24 +499,56 @@
       ai_safety_notes: document.getElementById('aiSafetyInput').value || "Inspected for basic safety.",
     };
 
+    const targetUrl = isEdit ? `/api/spaces/${editSpaceId}/edit` : '/api/spaces';
+
     try {
-      const resp = await fetch('/api/spaces', {
+      const resp = await fetch(targetUrl, {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
         body: JSON.stringify(payload)
       });
       const data = await resp.json();
-      if (resp.ok && data.id) {
-        window.location.href = `/space/${data.id}`;
+      if (resp.ok && (data.id || data.success)) {
+        window.location.href = isEdit ? '/dashboard' : `/space/${data.id}`;
       } else {
-        alert(data.error || "Failed to publish space");
+        alert(data.error || "Failed to save space");
       }
     } catch (err) {
       alert("Error saving space. Please try again.");
     } finally {
       btn.disabled = false;
-      btn.innerHTML = `<i class="fa-solid fa-cloud-arrow-up"></i> <span>Publish Space Listing</span>`;
+      btn.innerHTML = isEdit ? `<i class="fa-solid fa-pen-to-square"></i> <span>Update Space Listing</span>` : `<i class="fa-solid fa-cloud-arrow-up"></i> <span>Publish Space Listing</span>`;
     }
   }
+
+  {% if edit_space %}
+  document.addEventListener('DOMContentLoaded', () => {
+    document.getElementById('listingTitle').value = {{ edit_space.title|tojson }};
+    document.getElementById('spaceCategorySelect').value = {{ edit_space.category|tojson }};
+    document.getElementById('listingAddress').value = {{ edit_space.address|tojson }};
+    document.getElementById('listingNeighborhood').value = {{ (edit_space.neighborhood or '')|tojson }};
+    document.getElementById('listingHourlyPrice').value = {{ edit_space.price_hourly|int }};
+    document.getElementById('listingDailyPrice').value = {{ edit_space.price_daily|int }};
+    document.getElementById('listingSqft').value = {{ edit_space.sqft or 200 }};
+    document.getElementById('listingCapacity').value = {{ edit_space.max_capacity or 4 }};
+    document.getElementById('listingDescription').value = {{ edit_space.description|tojson }};
+    {% if edit_space.photos and edit_space.photos|length > 0 %}
+      document.getElementById('spacePhotoUrl').value = {{ edit_space.photos[0]|tojson }};
+      previewPhotoUrl({{ edit_space.photos[0]|tojson }});
+    {% endif %}
+    {% if edit_space.ai_lighting %}
+      document.getElementById('aiLightingInput').value = {{ edit_space.ai_lighting|tojson }};
+    {% endif %}
+    {% if edit_space.ai_noise_level %}
+      document.getElementById('aiNoiseInput').value = {{ edit_space.ai_noise_level|tojson }};
+    {% endif %}
+    {% if edit_space.ai_power_access %}
+      document.getElementById('aiPowerInput').value = {{ edit_space.ai_power_access|tojson }};
+    {% endif %}
+    {% if edit_space.ai_safety_notes %}
+      document.getElementById('aiSafetyInput').value = {{ edit_space.ai_safety_notes|tojson }};
+    {% endif %}
+  });
+  {% endif %}
 </script>
 {% endblock %}
