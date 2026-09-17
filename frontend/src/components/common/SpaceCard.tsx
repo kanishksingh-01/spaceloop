@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import { View, Text, Pressable, Image } from 'react-native';
 import { Space } from '../../types';
 import { getCategoryFallbackImage } from '../../services/spaces';
 
@@ -9,134 +8,162 @@ interface SpaceCardProps {
 }
 
 export const SpaceCard: React.FC<SpaceCardProps> = ({ space, onPress }) => {
-  const [imgSrc, setImgSrc] = useState(
-    space.photos && space.photos.length > 0 ? space.photos[0] : getCategoryFallbackImage(space.category)
-  );
+  const [loaded, setLoaded] = useState(false);
+  const [error, setError] = useState(false);
+  const [triedFallback, setTriedFallback] = useState(false);
+
+  const initialPhoto =
+    space.photos && space.photos.length > 0
+      ? space.photos[0]
+      : getCategoryFallbackImage(space.category);
+
+  const [imgSrc, setImgSrc] = useState(initialPhoto);
 
   const rating = space.rating ?? 4.9;
-  const locationText = space.location || (space.neighborhood ? `${space.neighborhood}, ${space.city}` : space.city || 'Pune');
+  const locationText =
+    space.location ||
+    (space.neighborhood ? `${space.neighborhood}, ${space.city}` : space.city || 'Pune');
   const hourlyRate = Math.round(space.hourly_rate ?? space.price_hourly ?? 50);
-  const dailyRate = space.daily_rate ?? space.price_daily ? Math.round(space.daily_rate ?? space.price_daily ?? 0) : hourlyRate * 6;
   const matchScore = space.ai_match_score ? Math.round(space.ai_match_score) : 94;
 
+  const handleImageError = () => {
+    if (!triedFallback) {
+      setTriedFallback(true);
+      setImgSrc(getCategoryFallbackImage(space.category));
+    } else {
+      setError(true);
+    }
+  };
+
   return (
-    <div className="space-card group bg-slate-900/90 border border-slate-800 rounded-2xl overflow-hidden hover:border-indigo-500/50 transition-all duration-300 flex flex-col hover:shadow-xl hover:shadow-indigo-950/40">
-      {/* Image Card Header */}
+    <div className="space-card group flex flex-col bg-[#10152B]/90 hover:bg-[#151C38] border border-[#222B52] hover:border-[#4B599E] rounded-2xl overflow-hidden transition-all duration-300 shadow-[0_8px_24px_rgba(0,0,0,0.4)] hover:shadow-[0_16px_36px_rgba(30,40,90,0.3)] hover:-translate-y-1 flex flex-col">
+      {/* Photo Container */}
       <div
         onClick={() => onPress(space.id)}
-        className="relative aspect-[16/10] overflow-hidden bg-slate-950 cursor-pointer"
+        className="relative w-full aspect-[16/10] bg-[#0A0E21] overflow-hidden cursor-pointer"
       >
-        <img
-          src={imgSrc}
-          alt={space.title}
-          onError={() => setImgSrc(getCategoryFallbackImage(space.category))}
-          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-          loading="lazy"
-        />
-        <div className="absolute inset-0 bg-gradient-to-t from-slate-950/90 via-transparent to-black/30" />
+        {!loaded && !error && (
+          <div className="absolute inset-0 bg-[#161E3D] animate-pulse flex items-center justify-center">
+            <span className="text-[11px] font-medium text-[#5F70A3]">Loading preview...</span>
+          </div>
+        )}
 
-        {/* Category & Verified Badges (Top Left) */}
-        <div className="absolute top-3 left-3 flex items-center gap-1.5">
-          <span className="px-2.5 py-1 rounded-lg text-xs font-semibold backdrop-blur-md bg-slate-900/80 text-white border border-white/10 shadow-sm">
+        {error ? (
+          <div className="absolute inset-0 flex flex-col items-center justify-center bg-[#0D1226] text-[#606E9C] p-4 text-center">
+            <svg className="w-8 h-8 mb-1.5 opacity-60 stroke-current" fill="none" viewBox="0 0 24 24">
+              <rect width="18" height="18" x="3" y="3" rx="2" strokeWidth="2" />
+              <path d="m3 15 5-5 4 4 6-6" strokeWidth="2" strokeLinecap="round" />
+            </svg>
+            <span className="text-[11px] font-medium">SpaceLoop Verified Asset</span>
+          </div>
+        ) : (
+          <img
+            src={imgSrc}
+            alt={`${space.title} - ${space.category} in ${locationText}`}
+            loading="lazy"
+            decoding="async"
+            onLoad={() => setLoaded(true)}
+            onError={handleImageError}
+            className={`w-full h-full object-cover object-center transform transition-transform duration-500 ease-out group-hover:scale-[1.03] ${
+              loaded ? 'opacity-100' : 'opacity-0'
+            }`}
+          />
+        )}
+
+        {/* Subtle Bottom Vignette */}
+        <div className="absolute inset-0 bg-gradient-to-t from-[#10152B] via-transparent to-black/35 pointer-events-none" />
+
+        {/* Category Pill Tag (Top Left) */}
+        <div className="absolute top-3 left-3 z-10">
+          <span className="inline-flex items-center px-2.5 py-0.5 rounded bg-[#1B2347]/90 backdrop-blur-md border border-[#37447E]/70 text-[10px] font-bold tracking-wider text-[#B4C2FF] uppercase shadow-sm">
             {space.category}
           </span>
-          {(space.host_verified !== false) && (
-            <span
-              className="px-2 py-1 rounded-lg text-[10px] font-bold backdrop-blur-md bg-emerald-600/90 text-white shadow-sm flex items-center gap-1"
-              title="SpaceLoop Verified Host"
-            >
-              <i className="fa-solid fa-shield-check" /> Verified
-            </span>
-          )}
         </div>
 
-        {/* Match Score Pill (Top Right) */}
-        <div className="absolute top-3 right-3 match-badge-container">
-          <span className="px-2.5 py-1 rounded-lg text-xs font-bold backdrop-blur-md bg-emerald-500/90 text-white shadow-sm flex items-center gap-1">
-            <i className="fa-solid fa-sparkles text-[10px]" />
-            <span className="match-score-text">{matchScore}%</span> Match
+        {/* Match Score / Verified Pill (Top Right) */}
+        <div className="absolute top-3 right-3 z-10 flex items-center gap-1.5">
+          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-emerald-500/20 backdrop-blur-md border border-emerald-500/40 text-[10px] font-bold text-emerald-300 shadow-sm">
+            <span>✨</span>
+            <span className="match-score-text">{matchScore}% Match</span>
           </span>
         </div>
 
-        {/* Price overlay at bottom of photo */}
-        <div className="absolute bottom-3 left-3 right-3 flex items-end justify-between">
-          <div>
-            <span className="text-2xl font-extrabold text-white">₹{hourlyRate}</span>
-            <span className="text-xs text-slate-300 font-medium">/hour</span>
-            <span className="text-xs text-slate-400 ml-1.5">• ₹{dailyRate}/day</span>
-          </div>
-          <div className="text-xs text-slate-300 flex items-center gap-1 font-medium bg-black/40 px-2 py-0.5 rounded backdrop-blur-sm">
-            <i className="fa-solid fa-star text-amber-400 text-[11px]" /> {rating}
-          </div>
+        {/* Location Tag (Bottom Left) */}
+        <div className="absolute bottom-3 left-3 z-10">
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#0A0D1C]/85 backdrop-blur-md border border-[#2B3563] text-[11px] font-medium text-[#D1D7F5]">
+            <span className="text-[#818CF8]">📍</span>
+            <span>{locationText}</span>
+          </span>
+        </div>
+
+        {/* Rating Pill (Bottom Right) */}
+        <div className="absolute bottom-3 right-3 z-10">
+          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-black/60 backdrop-blur-sm text-[11px] font-medium text-amber-300">
+            <span>★</span>
+            <span>{rating}</span>
+          </span>
         </div>
       </div>
 
-      {/* Space Content Body */}
-      <div className="p-5 flex flex-col flex-grow">
-        <div className="flex items-center gap-2 text-xs text-slate-400 mb-1.5 flex-wrap">
-          <span className="flex items-center gap-1">
-            <i className="fa-solid fa-location-dot text-indigo-400" />
-            <span>{locationText}, {space.state || 'India'}</span>
-          </span>
+      {/* Card Content Body */}
+      <div className="flex flex-col flex-1 p-5">
+        <div className="flex items-start justify-between gap-3 mb-2">
+          <h3
+            onClick={() => onPress(space.id)}
+            className="text-base font-semibold text-white tracking-tight leading-snug line-clamp-1 group-hover:text-[#A5B4FC] transition-colors cursor-pointer"
+          >
+            {space.title}
+          </h3>
+          <div className="shrink-0 text-right">
+            <span className="text-base font-bold text-white tracking-tight">₹{hourlyRate}</span>
+            <span className="text-[11px] text-[#7A88B8] font-normal">/hr</span>
+          </div>
+        </div>
+
+        <p className="text-xs text-[#8A96C2] leading-relaxed line-clamp-2 mb-3">
+          {space.description}
+        </p>
+
+        {/* Space Meta specs */}
+        <div className="flex items-center gap-2 text-[11px] text-[#7A88B8] mb-3 flex-wrap">
           {space.distance_km !== undefined && (
-            <>
-              <span>•</span>
-              <span className="px-2 py-0.5 rounded-full text-[11px] font-bold bg-indigo-500/15 text-indigo-300 border border-indigo-500/30 flex items-center gap-1">
-                <i className="fa-solid fa-location-arrow text-[10px] text-indigo-400" /> {space.distance_km} km
-              </span>
-            </>
+            <span className="px-2 py-0.5 rounded bg-indigo-500/10 text-indigo-300 border border-indigo-500/20 font-medium flex items-center gap-1">
+              <span>⚡</span> {space.distance_km} km away
+            </span>
           )}
-          <span>•</span>
-          <span>{space.sqft || 250} sqft</span>
+          <span>{space.sqft || 240} sqft</span>
           <span>•</span>
           <span>Up to {space.max_capacity || 4} ppl</span>
         </div>
 
-        <h3
-          onClick={() => onPress(space.id)}
-          className="text-base font-bold text-white group-hover:text-indigo-300 transition line-clamp-1 mb-2 cursor-pointer"
-        >
-          {space.title}
-        </h3>
-
-        <p className="text-xs text-slate-400 line-clamp-2 mb-4 flex-grow leading-relaxed">
-          {space.description}
-        </p>
-
-        {/* AI Space Highlights */}
-        <div className="p-2.5 rounded-xl bg-slate-950/70 border border-slate-800/80 mb-4 space-y-1.5 text-xs">
-          <div className="flex items-center gap-2 text-slate-300">
-            <i className="fa-solid fa-sun text-amber-400 w-4 text-center" />
-            <span className="text-slate-400 truncate">Natural daylight window + neutral-white LED</span>
-          </div>
-          <div className="flex items-center gap-2 text-slate-300">
-            <i className="fa-solid fa-volume-xmark text-cyan-400 w-4 text-center" />
-            <span className="text-slate-400 truncate">Ultra Quiet (&lt;35 dB ambient)</span>
-          </div>
-        </div>
-
-        {/* Dynamic Match Reason (Shown on AI search) */}
+        {/* AI Match Reasoning if present */}
         {space.ai_match_reasoning && (
           <div className="mb-3 p-2 rounded-lg bg-indigo-950/40 border border-indigo-500/20 text-xs text-indigo-300">
-            <i className="fa-solid fa-check text-emerald-400 mr-1" />
+            <span className="text-emerald-400 mr-1">✓</span>
             <span>{space.ai_match_reasoning}</span>
           </div>
         )}
 
-        {/* Action Footer with Verification Indicator */}
-        <div className="pt-3 border-t border-slate-800/80 flex items-center justify-between gap-3">
-          <span className="text-[11px] text-slate-400 flex items-center gap-1">
-            <i className="fa-solid fa-circle-check text-emerald-400 text-xs" />
-            <span className="text-slate-300 font-medium">Verified</span>
-            <span className="text-slate-600">•</span>
-            <span className="text-slate-500 font-mono">OTI 99.2</span>
-          </span>
+        {/* Trust & CTA Row */}
+        <div className="mt-auto pt-3.5 border-t border-[#1F2749] flex items-center justify-between">
+          <div className="flex items-center gap-1.5 text-[11px] font-medium text-[#34D399]">
+            <svg className="w-3.5 h-3.5 fill-current" viewBox="0 0 20 20">
+              <path
+                fillRule="evenodd"
+                d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.857-9.809a.75.75 0 00-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 10-1.06 1.061l2.5 2.5a.75.75 0 001.137-.089l4-5.5z"
+                clipRule="evenodd"
+              />
+            </svg>
+            <span>DigiLocker Verified</span>
+          </div>
+
           <button
             type="button"
             onClick={() => onPress(space.id)}
-            className="px-3.5 py-1.5 rounded-lg bg-indigo-600/20 hover:bg-indigo-600 text-indigo-300 hover:text-white border border-indigo-500/30 text-xs font-semibold transition"
+            className="inline-flex items-center gap-1 text-xs font-semibold text-[#818CF8] hover:text-[#C7D2FE] transition-colors"
           >
-            View & Book Space
+            <span>View Space</span>
+            <span>→</span>
           </button>
         </div>
       </div>

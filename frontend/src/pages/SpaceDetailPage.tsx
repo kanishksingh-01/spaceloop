@@ -5,7 +5,7 @@ import { Space, User } from '../types';
 import { getSpaceById } from '../services/spaces';
 import { createBooking, precheckBooking } from '../services/bookings';
 import { AuthModal } from '../components/common/AuthModal';
-import { calculateRentalPricing, MIN_BOOKING_HOURS, MAX_BOOKING_HOURS } from '../services/pricing';
+import { calculateRentalPricing, formatTimeWindow, MIN_BOOKING_HOURS, MAX_BOOKING_HOURS } from '../services/pricing';
 
 interface SpaceDetailPageProps {
   currentUser: User | null;
@@ -17,7 +17,29 @@ export const SpaceDetailPage: React.FC<SpaceDetailPageProps> = ({ currentUser })
 
   const [space, setSpace] = useState<Space | null>(null);
   const [loading, setLoading] = useState(true);
-  const [hours, setHours] = useState(2);
+
+  // Flexible Booking Time & Duration States
+  const [bookingMode, setBookingMode] = useState<'now' | 'schedule'>('now');
+  const [selectedDate, setSelectedDate] = useState(() => {
+    const d = new Date();
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${y}-${m}-${day}`;
+  });
+  const [selectedTime, setSelectedTime] = useState(() => {
+    const d = new Date();
+    const currentMins = d.getMinutes();
+    const roundedMins = Math.ceil(currentMins / 15) * 15;
+    d.setMinutes(roundedMins + 15, 0, 0);
+    const hh = String(d.getHours()).padStart(2, '0');
+    const mm = String(d.getMinutes()).padStart(2, '0');
+    return `${hh}:${mm}`;
+  });
+  const [hours, setHours] = useState<number>(2);
+  const [customHoursInput, setCustomHoursInput] = useState<string>('2');
+  const [purpose, setPurpose] = useState<string>('Study & Creative Work Session');
+
   const [bookingLoading, setBookingLoading] = useState(false);
   const [bookingError, setBookingError] = useState<string | null>(null);
   const [showAuthModal, setShowAuthModal] = useState(false);
@@ -38,6 +60,51 @@ export const SpaceDetailPage: React.FC<SpaceDetailPageProps> = ({ currentUser })
     };
     loadSpace();
   }, [id]);
+
+  const pricing = React.useMemo(() => {
+    return calculateRentalPricing(space?.hourly_rate ?? 50, hours);
+  }, [space?.hourly_rate, hours]);
+
+  const computedStart = React.useMemo(() => {
+    if (bookingMode === 'now') {
+      return new Date(Date.now() + 15 * 60 * 1000);
+    }
+    const [year, month, day] = selectedDate.split('-').map(Number);
+    const [hour, minute] = selectedTime.split(':').map(Number);
+    const dt = new Date(year, (month || 1) - 1, day || 1, hour || 0, minute || 0);
+    return isNaN(dt.getTime()) ? new Date(Date.now() + 15 * 60 * 1000) : dt;
+  }, [bookingMode, selectedDate, selectedTime]);
+
+  const timeWindow = React.useMemo(() => {
+    return formatTimeWindow(computedStart, pricing.hours);
+  }, [computedStart, pricing.hours]);
+
+  const handleHoursChange = (newVal: number) => {
+    const clamped = Math.max(MIN_BOOKING_HOURS, Math.min(MAX_BOOKING_HOURS, Math.round(newVal * 10) / 10));
+    setHours(clamped);
+    setCustomHoursInput(String(clamped));
+  };
+
+  const handleCustomInput = (val: string) => {
+    setCustomHoursInput(val);
+    const parsed = parseFloat(val);
+    if (!isNaN(parsed) && parsed >= MIN_BOOKING_HOURS && parsed <= MAX_BOOKING_HOURS) {
+      setHours(Math.round(parsed * 10) / 10);
+    }
+  };
+
+  const setQuickDate = (offsetDays: number) => {
+    const d = new Date();
+    d.setDate(d.getDate() + offsetDays);
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    setSelectedDate(`${y}-${m}-${day}`);
+  };
+
+  const setQuickTime = (timeStr: string) => {
+    setSelectedTime(timeStr);
+  };
 
   if (loading) {
     return (
@@ -63,8 +130,6 @@ export const SpaceDetailPage: React.FC<SpaceDetailPageProps> = ({ currentUser })
     ? space.photos
     : ['https://images.unsplash.com/photo-1513694203232-719a280e022f?auto=format&fit=crop&w=1200&q=80'];
 
-  const pricing = calculateRentalPricing(space.hourly_rate, hours);
-
   const handleBookNow = async () => {
     if (!currentUser) {
       setShowAuthModal(true);
@@ -79,17 +144,16 @@ export const SpaceDetailPage: React.FC<SpaceDetailPageProps> = ({ currentUser })
     setBookingLoading(true);
     setBookingError(null);
     try {
-      const now = new Date();
-      const startTime = now.toISOString();
-      const end = new Date(now.getTime() + pricing.hours * 60 * 60 * 1000);
-      const endTime = end.toISOString();
+      const startIso = computedStart.toISOString();
+      const endObj = new Date(computedStart.getTime() + pricing.hours * 3600 * 1000);
+      const endIso = endObj.toISOString();
 
       const res = await createBooking({
         space_id: space.id,
         hours: pricing.hours,
-        start_time: startTime,
-        end_time: endTime,
-        purpose: 'Study & Creative Work Session',
+        start_time: startIso,
+        end_time: endIso,
+        purpose: purpose.trim() || 'Study & Creative Work Session',
       });
 
       const confirmedBookingId = res.booking_id || res.booking?.id;
@@ -281,37 +345,264 @@ export const SpaceDetailPage: React.FC<SpaceDetailPageProps> = ({ currentUser })
                 </View>
               )}
 
-              {/* Booking Controls */}
-              <View className="space-y-4 mb-6">
-                <View>
-                  <Text className="text-xs font-semibold text-slate-300 mb-1.5">
-                    Select Hours Needed
-                  </Text>
-                  <View className="flex-row items-center gap-2">
-                    {[1, 2, 4, 8].map((h) => (
-                      <Pressable
+                {/* 1. TIMING MODE: START NOW vs SCHEDULE AHEAD */}
+                <div className="mb-5">
+                  <label className="block text-xs font-semibold text-slate-300 mb-2">
+                    When do you need this space?
+                  </label>
+                  <div className="grid grid-cols-2 gap-2 p-1 bg-slate-950 rounded-xl border border-slate-800">
+                    <button
+                      type="button"
+                      onClick={() => setBookingMode('now')}
+                      className={`py-2 px-3 rounded-lg text-xs font-bold transition flex items-center justify-center gap-1.5 ${
+                        bookingMode === 'now'
+                          ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30'
+                          : 'text-slate-400 hover:text-white hover:bg-slate-900'
+                      }`}
+                    >
+                      <span>⚡ Start Now</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setBookingMode('schedule')}
+                      className={`py-2 px-3 rounded-lg text-xs font-bold transition flex items-center justify-center gap-1.5 ${
+                        bookingMode === 'schedule'
+                          ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30'
+                          : 'text-slate-400 hover:text-white hover:bg-slate-900'
+                      }`}
+                    >
+                      <span>📅 Schedule Ahead</span>
+                    </button>
+                  </div>
+                </div>
+
+                {/* 2. SCHEDULE PICKERS (shown when bookingMode === 'schedule') */}
+                {bookingMode === 'schedule' && (
+                  <div className="space-y-3 mb-5 p-3.5 bg-slate-950/80 rounded-xl border border-slate-800/90">
+                    {/* Date Picker */}
+                    <div>
+                      <div className="flex items-center justify-between mb-1.5">
+                        <label className="text-xs font-semibold text-slate-300">Booking Date</label>
+                        <div className="flex items-center gap-1">
+                          <button
+                            type="button"
+                            onClick={() => setQuickDate(0)}
+                            className="px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-[10px] font-medium text-slate-300"
+                          >
+                            Today
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setQuickDate(1)}
+                            className="px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-[10px] font-medium text-slate-300"
+                          >
+                            Tomorrow
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setQuickDate(2)}
+                            className="px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-[10px] font-medium text-slate-300"
+                          >
+                            +2 Days
+                          </button>
+                        </div>
+                      </div>
+                      <input
+                        type="date"
+                        value={selectedDate}
+                        onChange={(e) => setSelectedDate(e.target.value)}
+                        className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-indigo-500"
+                      />
+                    </div>
+
+                    {/* Time Picker */}
+                    <div>
+                      <div className="flex items-center justify-between mb-1.5">
+                        <label className="text-xs font-semibold text-slate-300">Start Time</label>
+                        <div className="flex items-center gap-1">
+                          <button
+                            type="button"
+                            onClick={() => setQuickTime('09:00')}
+                            className="px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-[10px] font-medium text-slate-300"
+                          >
+                            9 AM
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setQuickTime('12:00')}
+                            className="px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-[10px] font-medium text-slate-300"
+                          >
+                            12 PM
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setQuickTime('15:00')}
+                            className="px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-[10px] font-medium text-slate-300"
+                          >
+                            3 PM
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setQuickTime('18:00')}
+                            className="px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-[10px] font-medium text-slate-300"
+                          >
+                            6 PM
+                          </button>
+                        </div>
+                      </div>
+                      <input
+                        type="time"
+                        value={selectedTime}
+                        onChange={(e) => setSelectedTime(e.target.value)}
+                        className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-indigo-500"
+                      />
+                    </div>
+                  </div>
+                )}
+
+                {/* 3. DURATION SELECTOR (Chips + Stepper) */}
+                <div className="mb-5">
+                  <div className="flex items-center justify-between mb-2">
+                    <label className="text-xs font-semibold text-slate-300">
+                      Duration Needed
+                    </label>
+                    <span className="text-[11px] font-bold text-indigo-400">
+                      {pricing.hours} {pricing.hours === 1 ? 'hour' : 'hours'}
+                    </span>
+                  </div>
+
+                  {/* Quick Duration Chips */}
+                  <div className="grid grid-cols-5 gap-1.5 mb-2">
+                    {[0.5, 1, 2, 3, 4].map((h) => (
+                      <button
                         key={h}
-                        onPress={() => setHours(h)}
-                        className={`flex-1 py-2 rounded-xl border text-center transition ${
+                        type="button"
+                        onClick={() => handleHoursChange(h)}
+                        className={`py-1.5 rounded-lg border text-xs font-bold transition text-center ${
                           hours === h
-                            ? 'bg-indigo-600 border-indigo-400'
-                            : 'bg-slate-950 border-slate-800 hover:border-slate-700'
+                            ? 'bg-indigo-600 border-indigo-400 text-white'
+                            : 'bg-slate-950 border-slate-800 text-slate-300 hover:border-slate-700'
                         }`}
                       >
-                        <Text
-                          className={`text-xs font-bold text-center ${
-                            hours === h ? 'text-white' : 'text-slate-300'
-                          }`}
-                        >
-                          {h}h
-                        </Text>
-                      </Pressable>
+                        {h}h
+                      </button>
                     ))}
-                  </View>
-                </View>
+                  </div>
+                  <div className="grid grid-cols-4 gap-1.5 mb-3">
+                    {[6, 8, 12, 24].map((h) => (
+                      <button
+                        key={h}
+                        type="button"
+                        onClick={() => handleHoursChange(h)}
+                        className={`py-1.5 rounded-lg border text-xs font-bold transition text-center ${
+                          hours === h
+                            ? 'bg-indigo-600 border-indigo-400 text-white'
+                            : 'bg-slate-950 border-slate-800 text-slate-300 hover:border-slate-700'
+                        }`}
+                      >
+                        {h === 12 ? '12h (Day)' : h === 24 ? '24h (Overnight)' : `${h}h`}
+                      </button>
+                    ))}
+                  </div>
 
-                {/* Pricing Calculation Breakdown */}
-                <View className="p-3.5 bg-slate-950 rounded-xl border border-slate-800 space-y-2">
+                  {/* Precision Stepper & Custom Number Input */}
+                  <div className="flex items-center justify-between gap-2 p-2 bg-slate-950 rounded-xl border border-slate-800">
+                    <span className="text-[11px] text-slate-400 font-medium pl-1">Custom hours:</span>
+                    <div className="flex items-center gap-1.5">
+                      <button
+                        type="button"
+                        onClick={() => handleHoursChange(hours - 0.5)}
+                        disabled={hours <= 0.5}
+                        className="w-8 h-8 rounded-lg bg-slate-900 border border-slate-700 hover:bg-slate-800 text-white font-bold text-sm flex items-center justify-center transition disabled:opacity-40 disabled:cursor-not-allowed"
+                        title="Decrease by 30 mins"
+                      >
+                        -
+                      </button>
+                      <div className="flex items-center bg-slate-900 border border-slate-700 rounded-lg px-2 py-1">
+                        <input
+                          type="number"
+                          step="0.5"
+                          min="0.5"
+                          max="168"
+                          value={customHoursInput}
+                          onChange={(e) => handleCustomInput(e.target.value)}
+                          className="w-14 bg-transparent text-center text-xs font-bold text-white focus:outline-none"
+                        />
+                        <span className="text-[11px] text-slate-400 font-medium pr-1">hrs</span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => handleHoursChange(hours + 0.5)}
+                        disabled={hours >= 168}
+                        className="w-8 h-8 rounded-lg bg-slate-900 border border-slate-700 hover:bg-slate-800 text-white font-bold text-sm flex items-center justify-center transition disabled:opacity-40 disabled:cursor-not-allowed"
+                        title="Increase by 30 mins"
+                      >
+                        +
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                {/* 4. LIVE TIME WINDOW BADGE */}
+                <div className="mb-4 p-3 bg-gradient-to-r from-indigo-950/40 via-slate-950 to-indigo-950/40 border border-indigo-500/30 rounded-xl space-y-1.5">
+                  <div className="flex items-center justify-between text-[11px]">
+                    <span className="text-slate-400 flex items-center gap-1.5 font-medium">
+                      <span>🕒</span> <span>Start Time:</span>
+                    </span>
+                    <span className="text-white font-semibold">{timeWindow.startFormatted}</span>
+                  </div>
+                  <div className="flex items-center justify-between text-[11px]">
+                    <span className="text-slate-400 flex items-center gap-1.5 font-medium">
+                      <span>🏁</span> <span>End Time:</span>
+                    </span>
+                    <span className="text-white font-semibold">{timeWindow.endFormatted}</span>
+                  </div>
+                  <div className="pt-1.5 border-t border-slate-800/80 flex items-center justify-between text-[11px]">
+                    <span className="text-emerald-400 font-bold flex items-center gap-1">
+                      <span>✓</span> <span>Duration Confirmed</span>
+                    </span>
+                    <span className="text-indigo-300 font-bold">{timeWindow.durationFormatted}</span>
+                  </div>
+                </div>
+
+                {/* 5. INTENDED PURPOSE */}
+                <div className="mb-5">
+                  <label className="block text-xs font-semibold text-slate-300 mb-1.5">
+                    Intended Activity / Purpose
+                  </label>
+                  <div className="flex flex-wrap gap-1 mb-2">
+                    {[
+                      '💻 Coding Sprint',
+                      '📚 Quiet Study',
+                      '🎙️ Podcast Session',
+                      '📸 Content Creation',
+                      '📦 Storage',
+                    ].map((p) => (
+                      <button
+                        key={p}
+                        type="button"
+                        onClick={() => setPurpose(p)}
+                        className={`px-2 py-0.5 rounded-lg text-[10px] font-medium border transition ${
+                          purpose === p
+                            ? 'bg-indigo-600/30 border-indigo-500 text-white'
+                            : 'bg-slate-950 border-slate-800 text-slate-400 hover:text-white'
+                        }`}
+                      >
+                        {p}
+                      </button>
+                    ))}
+                  </div>
+                  <input
+                    type="text"
+                    value={purpose}
+                    onChange={(e) => setPurpose(e.target.value)}
+                    placeholder="e.g. Hackathon code sprint, exam preparation..."
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500"
+                  />
+                </div>
+
+                {/* 6. PRICING BREAKDOWN */}
+                <View className="p-3.5 bg-slate-950 rounded-xl border border-slate-800 space-y-2 mb-5">
                   <View className="flex-row justify-between text-xs">
                     <Text className="text-slate-400">
                       ₹{space.hourly_rate} × {pricing.hours} hours
@@ -337,32 +628,31 @@ export const SpaceDetailPage: React.FC<SpaceDetailPageProps> = ({ currentUser })
                     <Text className="text-indigo-400 font-black">₹{pricing.grandTotal}</Text>
                   </View>
                 </View>
-              </View>
 
-              {/* Book Button */}
-              <Pressable
-                onPress={handleBookNow}
-                disabled={bookingLoading || !pricing.isValidDuration}
-                className={`w-full py-3.5 rounded-xl items-center justify-center transition shadow-lg ${
-                  bookingLoading || !pricing.isValidDuration
-                    ? 'bg-indigo-600/50 cursor-not-allowed shadow-none'
-                    : 'bg-indigo-600 hover:bg-indigo-500 shadow-indigo-600/40'
-                }`}
-              >
-                <Text className="text-sm font-bold text-white">
-                  {bookingLoading
-                    ? 'Securing Reservation...'
-                    : !pricing.isValidDuration
-                    ? 'Invalid Duration'
-                    : currentUser
-                    ? `⚡ Instant Book & Generate Pass (₹${pricing.grandTotal})`
-                    : `⚡ Sign in to Book (₹${pricing.grandTotal})`}
-                </Text>
-              </Pressable>
+                {/* 7. BOOK BUTTON */}
+                <Pressable
+                  onPress={handleBookNow}
+                  disabled={bookingLoading || !pricing.isValidDuration}
+                  className={`w-full py-3.5 rounded-xl items-center justify-center transition shadow-lg ${
+                    bookingLoading || !pricing.isValidDuration
+                      ? 'bg-indigo-600/50 cursor-not-allowed shadow-none'
+                      : 'bg-indigo-600 hover:bg-indigo-500 shadow-indigo-600/40'
+                  }`}
+                >
+                  <Text className="text-sm font-bold text-white">
+                    {bookingLoading
+                      ? 'Securing Reservation...'
+                      : !pricing.isValidDuration
+                      ? 'Invalid Duration'
+                      : currentUser
+                      ? `⚡ Instant Book & Lock Slot (₹${pricing.grandTotal})`
+                      : `⚡ Sign in to Book (₹${pricing.grandTotal})`}
+                  </Text>
+                </Pressable>
 
-              <View className="mt-4 flex-row items-center justify-center gap-2">
-                <Text className="text-xs text-slate-500">🛡️ Protected by automated micro-escrow</Text>
-              </View>
+                <View className="mt-4 flex-row items-center justify-center gap-2">
+                  <Text className="text-xs text-slate-500">🛡️ Section 52 micro-lease & ₹100 automated escrow</Text>
+                </View>
             </View>
           </View>
         </View>

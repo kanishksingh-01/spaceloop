@@ -63,7 +63,7 @@ class User(db.Model, UserMixin):
 
     @property
     def is_host(self) -> bool:
-        return self.role in ("owner", "both") or self.is_admin
+        return self.role in ("host", "owner", "both") or self.is_admin
 
     @property
     def is_seeker(self) -> bool:
@@ -156,13 +156,13 @@ class Space(db.Model):
     price_daily = db.Column(db.Float, default=150.0)
     minimum_hours = db.Column(db.Integer, default=1)
     
-    # JSON-encoded fields
-    amenities_json = db.Column(db.Text, default="[]")  # e.g. ["Wi-Fi", "EV Charger", "Ground Floor Access"]
-    rules_json = db.Column(db.Text, default="[]")      # e.g. ["No smoking", "Quiet hours after 10 PM"]
-    photos_json = db.Column(db.Text, default="[]")     # URLs or file paths
+    # JSON-encoded fields (Uses native JSONB on PostgreSQL and JSON/Text on SQLite)
+    amenities_json = db.Column(db.JSON, default=list)  # e.g. ["Wi-Fi", "EV Charger", "Ground Floor Access"]
+    rules_json = db.Column(db.JSON, default=list)      # e.g. ["No smoking", "Quiet hours after 10 PM"]
+    photos_json = db.Column(db.JSON, default=list)     # URLs or file paths
     
     # AI-Extracted Attributes
-    ai_tags_json = db.Column(db.Text, default="[]")
+    ai_tags_json = db.Column(db.JSON, default=list)
     ai_dimensions_summary = db.Column(db.String(255), default="")
     ai_lighting = db.Column(db.String(100), default="Natural & Ambient")
     ai_noise_level = db.Column(db.String(100), default="Quiet (<45 dB)")
@@ -187,6 +187,8 @@ class Space(db.Model):
 
     @property
     def amenities(self):
+        if isinstance(self.amenities_json, list):
+            return self.amenities_json
         try:
             return json.loads(self.amenities_json) if self.amenities_json else []
         except Exception:
@@ -194,10 +196,20 @@ class Space(db.Model):
 
     @amenities.setter
     def amenities(self, val):
-        self.amenities_json = json.dumps(val or [])
+        if isinstance(val, list):
+            self.amenities_json = val
+        elif isinstance(val, str):
+            try:
+                self.amenities_json = json.loads(val)
+            except Exception:
+                self.amenities_json = [val] if val else []
+        else:
+            self.amenities_json = []
 
     @property
     def rules(self):
+        if isinstance(self.rules_json, list):
+            return self.rules_json
         try:
             return json.loads(self.rules_json) if self.rules_json else []
         except Exception:
@@ -205,10 +217,20 @@ class Space(db.Model):
 
     @rules.setter
     def rules(self, val):
-        self.rules_json = json.dumps(val or [])
+        if isinstance(val, list):
+            self.rules_json = val
+        elif isinstance(val, str):
+            try:
+                self.rules_json = json.loads(val)
+            except Exception:
+                self.rules_json = [val] if val else []
+        else:
+            self.rules_json = []
 
     @property
     def photos(self):
+        if isinstance(self.photos_json, list):
+            return self.photos_json
         try:
             return json.loads(self.photos_json) if self.photos_json else []
         except Exception:
@@ -216,10 +238,20 @@ class Space(db.Model):
 
     @photos.setter
     def photos(self, val):
-        self.photos_json = json.dumps(val or [])
+        if isinstance(val, list):
+            self.photos_json = val
+        elif isinstance(val, str):
+            try:
+                self.photos_json = json.loads(val)
+            except Exception:
+                self.photos_json = [val] if val else []
+        else:
+            self.photos_json = []
 
     @property
     def ai_tags(self):
+        if isinstance(self.ai_tags_json, list):
+            return self.ai_tags_json
         try:
             return json.loads(self.ai_tags_json) if self.ai_tags_json else []
         except Exception:
@@ -227,7 +259,15 @@ class Space(db.Model):
 
     @ai_tags.setter
     def ai_tags(self, val):
-        self.ai_tags_json = json.dumps(val or [])
+        if isinstance(val, list):
+            self.ai_tags_json = val
+        elif isinstance(val, str):
+            try:
+                self.ai_tags_json = json.loads(val)
+            except Exception:
+                self.ai_tags_json = [val] if val else []
+        else:
+            self.ai_tags_json = []
 
     @property
     def location(self):

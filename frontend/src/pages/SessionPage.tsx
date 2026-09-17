@@ -4,6 +4,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { checkInBooking, checkOutBooking } from '../services/bookings';
 import { request } from '../services/api';
 import { Booking } from '../types';
+import { formatTimeWindow } from '../services/pricing';
 
 export const SessionPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -221,7 +222,7 @@ export const SessionPage: React.FC = () => {
             <View className="flex-row items-center justify-between text-xs">
               <Text className="text-slate-400">Access Window:</Text>
               <Text className="text-white font-bold">
-                {booking.hours_booked || 2} Hours ({booking.start_time || 'Start'} → {booking.end_time || 'End'})
+                {formatTimeWindow(booking.start_time, booking.hours_booked || 2).fullWindow}
               </Text>
             </View>
             <View className="flex-row items-center justify-between text-xs">

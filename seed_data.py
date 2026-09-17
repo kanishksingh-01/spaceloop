@@ -348,8 +348,7 @@ def seed_database(force=False):
             "amenities": ["1 Gbps ACT Fibernet", "Dual Display Monitors", "Filter Coffee Machine", "Ergonomic Chairs", "Air Conditioning", "Terrace Breakout Area"],
             "rules": ["Pack in / pack out personal trash", "Lock door with keybox code on leaving", "Quiet hours after 10 PM"],
             "photos": [
-                "https://images.unsplash.com/photo-1497366811353-6870744d04b2?auto=format&fit=crop&w=1200&q=80",
-                "https://images.unsplash.com/photo-1527192491265-7e15c55b1ed2?auto=format&fit=crop&w=800&q=80"
+                "https://images.unsplash.com/photo-1522071820081-009f0129c71c?auto=format&fit=crop&w=1200&q=80"
             ],
             "ai_tags": ["1 Gbps Fiber", "Dual Monitors", "Terrace Lounge", "Keybox Access"],
             "ai_dimensions_summary": "16ft x 18ft (300 sqft) covered rooftop lounge",
@@ -458,7 +457,7 @@ def seed_database(force=False):
             "amenities": ["High-Speed Wi-Fi", "Silent Air Conditioning", "Bookshelf Reference Library", "RO Water Dispenser"],
             "rules": ["Strict silence in main room", "No food at study desks"],
             "photos": [
-                "https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&w=1200&q=80"
+                "https://images.unsplash.com/photo-1527192491265-7e15c55b1ed2?auto=format&fit=crop&w=1200&q=80"
             ],
             "ai_tags": ["DU North Campus", "Near Metro", "Silent Zone", "Air Conditioned"],
             "ai_dimensions_summary": "14ft x 16ft (220 sqft)",
@@ -495,7 +494,7 @@ def seed_database(force=False):
             "amenities": ["1 Gbps JioFiber", "2x 27-inch 4K Displays", "Coffee Machine", "Air Conditioning", "Ergonomic Chairs"],
             "rules": ["Unplug monitors after use", "Lock door with keybox code on departure"],
             "photos": [
-                "https://images.unsplash.com/photo-1527192491265-7e15c55b1ed2?auto=format&fit=crop&w=1200&q=80"
+                "https://images.unsplash.com/photo-1497366811353-6870744d04b2?auto=format&fit=crop&w=1200&q=80"
             ],
             "ai_tags": ["Powai", "Near IIT Bombay", "Dual 4K Displays", "Lake View"],
             "ai_dimensions_summary": "16ft x 19ft (300 sqft)",
@@ -531,8 +530,7 @@ def seed_database(force=False):
             "amenities": ["High-Speed Wi-Fi (300 Mbps)", "Whiteboard & Markers", "Air Cooler", "Drinking Water", "Dual Display Monitor"],
             "rules": ["No loud conversation", "Switch off appliances after use", "Clean desk before leaving"],
             "photos": [
-                "https://images.unsplash.com/photo-1513694203232-719a280e022f?auto=format&fit=crop&w=1200&q=80",
-                "https://images.unsplash.com/photo-1524758631624-e2822e304c36?auto=format&fit=crop&w=800&q=80"
+                "https://images.unsplash.com/photo-1497215728101-856f4ea42174?auto=format&fit=crop&w=1200&q=80"
             ],
             "ai_tags": ["Wagholi", "Near JSPM", "Study Pod", "Dual Monitor"],
             "ai_dimensions_summary": "14ft x 16ft (220 sqft)",
@@ -605,8 +603,7 @@ def seed_database(force=False):
             "amenities": ["2x Rode PodMic Broadcast Mics", "Focusrite Audio Interface", "Acoustic Foam Walls (<25 dB)", "High-Speed Wi-Fi", "Studio Monitor Headphones"],
             "rules": ["No food or unsealed beverages in recording booth", "Wipe down microphone pop filters upon departure"],
             "photos": [
-                "https://images.unsplash.com/photo-1590602847861-f357a9332bbc?auto=format&fit=crop&w=1200&q=80",
-                "https://images.unsplash.com/photo-1598488035139-bdbb2231ce04?auto=format&fit=crop&w=800&q=80"
+                "https://images.unsplash.com/photo-1598488035139-bdbb2231ce04?auto=format&fit=crop&w=1200&q=80"
             ],
             "ai_tags": ["Podcast Studio", "Soundproof", "Rode Microphones", "Indiranagar"],
             "ai_dimensions_summary": "12ft x 15ft (180 sqft) acoustic booth",
@@ -788,7 +785,7 @@ def seed_database(force=False):
             "amenities": ["1080p Projector & Screen", "Wall-to-Wall Whiteboard", "Modular Desks", "Wi-Fi (300 Mbps)", "Air Conditioning"],
             "rules": ["Reset modular desks to perimeter layout when leaving", "Wipe projector lens gently"],
             "photos": [
-                "https://images.unsplash.com/photo-1497215728101-856f4ea42174?auto=format&fit=crop&w=1200&q=80"
+                "https://images.unsplash.com/photo-1531403009284-440f080d1e12?auto=format&fit=crop&w=1200&q=80"
             ],
             "ai_tags": ["Kothrud", "Projector", "Team Sprint", "Modular Tables"],
             "ai_dimensions_summary": "14ft x 18ft (260 sqft)",
@@ -825,7 +822,7 @@ def seed_database(force=False):
             "amenities": ["Godox Softbox Lighting Kit", "3-Color Seamless Paper Rolls", "Chroma Key Green Screen", "Vanity Mirror", "High-Speed Wi-Fi", "Air Conditioning"],
             "rules": ["Do not walk on backdrops with outdoor shoes", "Turn off high-output studio lights after shoot"],
             "photos": [
-                "https://images.unsplash.com/photo-1598488035139-bdbb2231ce04?auto=format&fit=crop&w=1200&q=80"
+                "https://images.unsplash.com/photo-1590602847861-f357a9332bbc?auto=format&fit=crop&w=1200&q=80"
             ],
             "ai_tags": ["Photo Studio", "Bandra West", "Green Screen", "Creator Friendly"],
             "ai_dimensions_summary": "14ft x 18ft (250 sqft) studio with 10ft ceiling",

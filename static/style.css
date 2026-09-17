@@ -75,3 +75,80 @@ input[type=range]::-webkit-slider-thumb {
     line-height: 2.5rem;
   }
 }
+
+/* =========================================================================
+   LIGHT / WHITE THEME STYLES (Activated via <html class="light">)
+   ========================================================================= */
+
+html.light,
+html.light body {
+  background-color: #f8fafc !important;
+  color: #0f172a !important;
+}
+
+html.light .bg-slate-950 {
+  background-color: #f8fafc !important;
+}
+html.light .bg-slate-950\/90,
+html.light .bg-slate-950\/95 {
+  background-color: rgba(255, 255, 255, 0.92) !important;
+}
+html.light .bg-slate-900 {
+  background-color: #ffffff !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+html.light .bg-slate-900\/50,
+html.light .bg-slate-900\/60,
+html.light .bg-slate-900\/80 {
+  background-color: rgba(255, 255, 255, 0.9) !important;
+}
+html.light .bg-slate-800 {
+  background-color: #f1f5f9 !important;
+}
+html.light .border-slate-800,
+html.light .border-slate-700 {
+  border-color: #e2e8f0 !important;
+}
+html.light .text-white,
+html.light .text-slate-100,
+html.light .text-slate-200 {
+  color: #0f172a !important;
+}
+html.light .text-slate-300,
+html.light .text-slate-400 {
+  color: #475569 !important;
+}
+html.light .text-slate-500 {
+  color: #64748b !important;
+}
+
+/* Contrast Preservation */
+html.light .bg-indigo-600,
+html.light .bg-brand-600,
+html.light [class*="bg-gradient-to-"] {
+  color: #ffffff !important;
+}
+html.light [class*="bg-indigo-"] .text-white,
+html.light [class*="bg-brand-"] .text-white,
+html.light [class*="bg-gradient-to-"] .text-white,
+html.light button[class*="bg-gradient-to-"] * {
+  color: #ffffff !important;
+}
+
+/* Inputs */
+html.light input,
+html.light textarea,
+html.light select {
+  background-color: #ffffff !important;
+  color: #0f172a !important;
+  border-color: #cbd5e1 !important;
+}
+
+/* Glass panel */
+html.light .glass-panel {
+  background: rgba(255, 255, 255, 0.9) !important;
+  border: 1px solid rgba(226, 232, 240, 0.9) !important;
+  color: #0f172a !important;
+  box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.08) !important;
+}
+

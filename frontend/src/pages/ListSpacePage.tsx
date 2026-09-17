@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { View, Text, Pressable, TextInput, Image, ScrollView } from 'react-native';
 import { useNavigate } from 'react-router-dom';
 import { aiScanSpace, createSpace } from '../services/spaces';
-import { AuthModal } from '../components/common/AuthModal';
+import { HostAuthModal } from '../components/common/HostAuthModal';
 import { User } from '../types';
 
 interface ListSpacePageProps {
@@ -106,7 +106,7 @@ export const ListSpacePage: React.FC<ListSpacePageProps> = ({ currentUser }) => 
 
   const handlePublish = async () => {
     if (isPublishing) return;
-    if (!currentUser) {
+    if (!currentUser || !currentUser.is_host) {
       setShowAuthModal(true);
       return;
     }
@@ -366,9 +366,10 @@ export const ListSpacePage: React.FC<ListSpacePageProps> = ({ currentUser }) => 
       </View>
 
       {showAuthModal && (
-        <AuthModal
+        <HostAuthModal
           isOpen={showAuthModal}
           onClose={() => setShowAuthModal(false)}
+          currentUser={currentUser}
           onSuccess={() => {
             setShowAuthModal(false);
             handlePublish();

@@ -48,7 +48,7 @@ class AuthService:
 
         # Role restriction: NEVER allow registration to claim admin
         target_role = (role or "seeker").lower().strip()
-        if target_role not in ("seeker", "owner", "both"):
+        if target_role not in ("seeker", "host", "owner", "both"):
             target_role = "seeker"
 
         full_name = f"{first_name} {last_name}".strip()
