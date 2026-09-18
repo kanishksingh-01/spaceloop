@@ -505,7 +505,13 @@ def create_app():
     @app.errorhandler(404)
     def handle_404_error(error):
         if request.path.startswith("/api/") or request.is_json:
-            return jsonify({"success": False, "error": "Resource not found (404)"}), 404
+            return jsonify({
+                "success": False,
+                "error": "Resource not found (404)",
+                "requested_path": request.path,
+                "environ_path_info": request.environ.get("PATH_INFO"),
+                "environ_script_name": request.environ.get("SCRIPT_NAME")
+            }), 404
         # For non-API routes, let the client-side SPA router handle navigation if dist exists
         if os.path.exists(os.path.join(dist_dir, "index.html")):
             return _serve_spa_index()
