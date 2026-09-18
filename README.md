@@ -172,6 +172,21 @@ All seeded accounts have default password: **`password123`**
 
 ---
 
+## 🌐 Production Deployments
+
+### 1. Live on Vercel
+- **Live URL:** [https://spaceloop.vercel.app](https://spaceloop.vercel.app)
+- **Architecture:** React 18 SPA + Python Serverless REST API Edge Gateway
+
+### 2. Deploy to Render (1-Click Blueprint)
+
+[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/kanishksingh-01/spaceloop)
+
+- **Blueprint:** [`render.yaml`](render.yaml) pre-configured with Python 3.11, Gunicorn WSGI (`2 workers, 4 threads`), auto-seeding SQLite WAL database, and `/api/health` monitoring.
+- **Container Support:** Multi-stage [`Dockerfile`](Dockerfile) included for Docker-based container deployments.
+
+---
+
 ## 🧪 Automated Testing & Verification
 
 Run the comprehensive automated security and functional test suites:
