@@ -106,11 +106,15 @@ def create_app():
     @app.route("/api/index")
     @app.route("/api/index.py")
     def api_index_handler():
+        env_vars = {k: str(v) for k, v in request.environ.items() if not k.startswith("werkzeug.")}
         return jsonify({
             "status": "ok",
             "service": "SpaceLoop API",
             "version": "2.5.0",
-            "message": "SpaceLoop Vercel Serverless Function Active"
+            "path": request.path,
+            "args": dict(request.args),
+            "headers": dict(request.headers),
+            "environ": env_vars
         })
 
     # =========================================================================
