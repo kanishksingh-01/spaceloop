@@ -46,7 +46,7 @@ export interface Space {
   owner_verified?: boolean;
   title: string;
   description: string;
-  category: 'Study' | 'Workspace' | 'Studio' | 'Storage' | 'Meeting' | 'Creative' | 'Parking' | string;
+  category: 'Workspace' | 'Meeting' | 'Studio' | 'Podcast' | 'Workshop' | 'Retail' | 'Event' | 'Storage' | 'Study' | 'Parking' | 'Creative' | string;
   hourly_rate: number;
   price_hourly?: number;
   daily_rate?: number;

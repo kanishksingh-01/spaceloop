@@ -45,7 +45,7 @@
               type="text" 
               id="aiQueryInput"
               value="{{ search_query }}"
-              placeholder="Describe your ideal space (e.g. 'Quiet studio with power outlets for a 3-person podcast under $40/hr')..."
+              placeholder="Describe your ideal space (e.g. 'podcast studio for 2' or 'client meeting room near Koramangala')..."
               class="w-full bg-slate-950/80 border border-slate-700/80 rounded-xl pl-11 pr-4 py-3.5 text-sm sm:text-base text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition"
             >
           </div>
@@ -65,17 +65,23 @@
           <span class="text-slate-400 font-medium shrink-0 flex items-center gap-1">
             <i class="fa-regular fa-compass text-indigo-400"></i> Try prompts:
           </span>
-          <button type="button" onclick="applySearchPrompt('Quiet, sunlit space for a 3-person podcast recording under $40/hr')" class="px-2.5 py-1 rounded-lg bg-slate-800/80 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700/60 transition">
-            🎙️ Sunlit Podcast Studio under $40
+          <button type="button" onclick="applySearchPrompt('Quiet focus desk for 3 hours with fiber WiFi')" class="px-2.5 py-1 rounded-lg bg-slate-800/80 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700/60 transition">
+            💼 Remote Work
           </button>
-          <button type="button" onclick="applySearchPrompt('Dry secure garage storage for 15 boxes for 1 month')" class="px-2.5 py-1 rounded-lg bg-slate-800/80 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700/60 transition">
-            📦 Dry Garage Storage for Boxes
+          <button type="button" onclick="applySearchPrompt('Executive room for client meeting with 4K screen')" class="px-2.5 py-1 rounded-lg bg-slate-800/80 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700/60 transition">
+            👥 Client Meeting
           </button>
-          <button type="button" onclick="applySearchPrompt('Gated off-street parking with EV charger near SoMa')" class="px-2.5 py-1 rounded-lg bg-slate-800/80 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700/60 transition">
-            ⚡ EV Charger Parking
+          <button type="button" onclick="applySearchPrompt('Acoustic podcast studio with Shure mics for 2')" class="px-2.5 py-1 rounded-lg bg-slate-800/80 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700/60 transition">
+            🎙️ Podcast Studio
           </button>
-          <button type="button" onclick="applySearchPrompt('Evening cafe space for a 20-person book club meetup')" class="px-2.5 py-1 rounded-lg bg-slate-800/80 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700/60 transition">
-            ☕ Evening Cafe for Book Club
+          <button type="button" onclick="applySearchPrompt('Hardware maker workshop with 3D printer and soldering bay')" class="px-2.5 py-1 rounded-lg bg-slate-800/80 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700/60 transition">
+            🛠️ Maker Workshop
+          </button>
+          <button type="button" onclick="applySearchPrompt('Temporary pop-up retail stall in busy street')" class="px-2.5 py-1 rounded-lg bg-slate-800/80 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700/60 transition">
+            🛍️ Pop-Up Retail
+          </button>
+          <button type="button" onclick="applySearchPrompt('Quiet AC study pod with power sockets near campus')" class="px-2.5 py-1 rounded-lg bg-slate-800/80 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700/60 transition">
+            📚 Focused Study
           </button>
         </div>
 

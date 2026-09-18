@@ -27,8 +27,8 @@ export const HowItWorksPage: React.FC = () => {
         {/* For Seekers */}
         <View className="space-y-6">
           <View className="flex-row items-center gap-2">
-            <Text className="text-2xl">🎓</Text>
-            <Text className="text-xl font-bold text-white">For Students, Creators & Seekers</Text>
+            <Text className="text-2xl">⚡</Text>
+            <Text className="text-xl font-bold text-white">For Remote Workers, Creators, Teams & Seekers</Text>
           </View>
 
           <View className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -36,7 +36,7 @@ export const HowItWorksPage: React.FC = () => {
               <Text className="text-3xl font-black text-indigo-400 mb-2">01</Text>
               <Text className="text-base font-bold text-white mb-1">Natural Language AI Search</Text>
               <Text className="text-xs text-slate-400 leading-relaxed">
-                Describe your exact need, e.g. "quiet study nook in Wagholi with power strips under ₹50". Our LLM matches acoustics, proximity, and amenities.
+                Describe your exact need, e.g. "podcast studio for 2", "client meeting suite in Indiranagar", or "quiet focus desk under ₹70/hr". Our LLM matches acoustics, proximity, and amenities.
               </Text>
             </View>
 
@@ -62,7 +62,7 @@ export const HowItWorksPage: React.FC = () => {
         <View className="space-y-6">
           <View className="flex-row items-center gap-2">
             <Text className="text-2xl">🏠</Text>
-            <Text className="text-xl font-bold text-white">For Property Owners & Hosts</Text>
+            <Text className="text-xl font-bold text-white">For Property, Commercial & Home Hosts</Text>
           </View>
 
           <View className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -98,11 +98,11 @@ export const HowItWorksPage: React.FC = () => {
             Ready to Turn Dead Space into Living Value?
           </Text>
           <Text className="text-xs text-slate-300 max-w-md mb-6">
-            Join thousands of verified students, creators, and property owners across Pune, Delhi, and Bengaluru.
+            Join creators, professionals, teams, and property owners across Bengaluru, Pune, Delhi NCR, and Mumbai.
           </Text>
           <View className="flex-row gap-3">
             <Pressable
-              onPress={() => navigate('/')}
+              onPress={() => navigate('/explore')}
               className="px-6 py-3 bg-indigo-600 hover:bg-indigo-500 rounded-xl"
             >
               <Text className="text-xs font-bold text-white">Find a Space</Text>

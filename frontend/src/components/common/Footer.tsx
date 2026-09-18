@@ -35,10 +35,10 @@ export const Footer: React.FC = () => {
                 <span className="text-xl font-extrabold text-white tracking-tight">SpaceLoop</span>
               </div>
               <p className="text-sm text-slate-200 font-semibold italic">
-                &ldquo;Turning idle spaces into opportunities.&rdquo;
+                &ldquo;Work &bull; Create &bull; Meet &bull; Build &bull; Learn &bull; Host &bull; Grow&rdquo;
               </p>
               <p className="text-xs text-slate-400 max-w-sm leading-relaxed">
-                India's premier AI-powered micro-leasing platform connecting students and creators with verified study rooms, workspaces, and creative studios.
+                India's premier AI-powered micro-leasing platform connecting creators, remote workers, teams, and property owners with verified workspaces, meeting suites, studios, and workshops.
               </p>
               <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-semibold">
                 <i className="fa-solid fa-shield-halved text-[11px]" />

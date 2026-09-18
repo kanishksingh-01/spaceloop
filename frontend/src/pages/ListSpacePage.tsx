@@ -31,40 +31,87 @@ export const ListSpacePage: React.FC<ListSpacePageProps> = ({ currentUser }) => 
   const [scanResult, setScanResult] = useState<any | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [showAuthModal, setShowAuthModal] = useState(false);
+  const [selectedPersonas, setSelectedPersonas] = useState<string[]>([]);
+
+  const categoryOptions = [
+    'Workspace',
+    'Meeting',
+    'Studio',
+    'Podcast',
+    'Workshop',
+    'Retail',
+    'Storage',
+    'Study Pod',
+  ];
+
+  const personasList = [
+    'Remote Workers',
+    'Creators & Podcasters',
+    'Startups & Teams',
+    'Client Consultations',
+    'Hardware Builders',
+    'Pop-Up Vendors',
+    'Students & Learners',
+  ];
+
+  const togglePersona = (p: string) => {
+    setSelectedPersonas((prev) =>
+      prev.includes(p) ? prev.filter((item) => item !== p) : [...prev, p]
+    );
+  };
 
   const presets = [
     {
-      label: 'Wagholi Study Pod (Pune)',
+      label: 'Executive Glass Meeting Suite',
+      photo: 'https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&w=800&q=80',
+      category: 'Meeting',
+      title: 'Executive Glass Meeting & Client Suite',
+      location: 'Indiranagar',
+      address: '100 Feet Road, Indiranagar, Bengaluru',
+      city: 'Bengaluru',
+      rate: '120',
+      amenities: '4K Display, Polycom Mic, 1Gbps WiFi, Nespresso, Whiteboard',
+      notes: 'Soundproofed glass consultation room ideal for client meetings, investor pitches, and team syncs.',
+      personas: ['Startups & Teams', 'Client Consultations', 'Remote Workers'],
+    },
+    {
+      label: 'Acoustic Creator Podcast Cabin',
+      photo: 'https://images.unsplash.com/photo-1590674899484-d5640e854abe?auto=format&fit=crop&w=800&q=80',
+      category: 'Studio',
+      title: 'Acoustic Creator & Podcast Cabin',
+      location: 'Baner',
+      address: 'Pan Card Club Road, Baner, Pune',
+      city: 'Pune',
+      rate: '85',
+      amenities: 'Dual Shure MV7 Mics, Scarlett 2i2, Monitor Headphones, Acoustic Paneling',
+      notes: 'Sound-isolated recording booth for 2 with studio mics, zero echo, and pro audio interface.',
+      personas: ['Creators & Podcasters', 'Startups & Teams'],
+    },
+    {
+      label: 'Maker Workshop & Prototyping Bay',
+      photo: 'https://images.unsplash.com/photo-1581092160607-ee22621dd758?auto=format&fit=crop&w=800&q=80',
+      category: 'Workshop',
+      title: 'Hardware Prototyping & Soldering Bay',
+      location: 'Electronic City',
+      address: 'Phase 1, Electronic City, Bengaluru',
+      city: 'Bengaluru',
+      rate: '90',
+      amenities: '3D Printer, Soldering Station, Multimeter, ESD Mat, 20A Circuit',
+      notes: 'Ventilated maker workbench with ESD station and 3D printing equipment for hardware engineers.',
+      personas: ['Hardware Builders', 'Startups & Teams', 'Students & Learners'],
+    },
+    {
+      label: 'Quiet Study & Focus Nook',
       photo: 'https://images.unsplash.com/photo-1598488035139-bdbb2231ce04?auto=format&fit=crop&w=800&q=80',
       category: 'Study Pod',
-      title: 'Acoustic Study Pod near JSPM',
+      title: 'Acoustic Focus Nook near JSPM',
       location: 'Wagholi',
       address: 'Gate 2, JSPM Imperial College Road, Wagholi, Pune',
       city: 'Pune',
       rate: '45',
-      notes: 'Calm study nook with ergonomic chair, high-speed fiber Wi-Fi, and 20A grounded plug.',
-    },
-    {
-      label: 'Koramangala Storage (Bengaluru)',
-      photo: 'https://images.unsplash.com/photo-1588854337236-6889d631faa8?auto=format&fit=crop&w=800&q=80',
-      category: 'Storage',
-      title: 'Clean Ground Floor Garage Storage',
-      location: 'Koramangala',
-      address: '80 Feet Road, 4th Block, Bengaluru',
-      city: 'Bengaluru',
-      rate: '65',
-      notes: 'Dry, CCTV-monitored ground floor space with roll-up metal shutter for inventory.',
-    },
-    {
-      label: 'Hauz Khas Studio (Delhi)',
-      photo: 'https://images.unsplash.com/photo-1590674899484-d5640e854abe?auto=format&fit=crop&w=800&q=80',
-      category: 'Studio',
-      title: 'Sound-Treated Creator Studio',
-      location: 'Hauz Khas',
-      address: 'C-14 Hauz Khas Enclave, New Delhi',
-      city: 'Delhi',
-      rate: '95',
-      notes: 'Acoustic foam wall panelling, ring light, dedicated high-amperage audio circuit.',
+      amenities: 'Ergonomic Task Chair, Fiber WiFi, LED Reading Lamp, Power Outlets, AC',
+      notes: 'Silent air-conditioned nook for intensive study, thesis writing, or deep coding work.',
+      personas: ['Students & Learners', 'Remote Workers'],
     },
   ];
 
@@ -76,7 +123,11 @@ export const ListSpacePage: React.FC<ListSpacePageProps> = ({ currentUser }) => 
     setAddress(p.address);
     setCity(p.city);
     setHourlyRate(p.rate);
+    setAmenities(p.amenities);
     setNotes(p.notes);
+    if (p.personas) {
+      setSelectedPersonas(p.personas);
+    }
   };
 
   const handleAiScan = async () => {
@@ -133,9 +184,14 @@ export const ListSpacePage: React.FC<ListSpacePageProps> = ({ currentUser }) => 
         .map((a) => a.trim())
         .filter(Boolean);
 
+      let finalDesc = description || notes;
+      if (selectedPersonas.length > 0) {
+        finalDesc += `\n\nSuitable For: ${selectedPersonas.join(', ')}`;
+      }
+
       const res = await createSpace({
         title,
-        description: description || notes,
+        description: finalDesc,
         category,
         hourly_rate: Number(hourlyRate),
         price_hourly: Number(hourlyRate),
@@ -199,7 +255,7 @@ export const ListSpacePage: React.FC<ListSpacePageProps> = ({ currentUser }) => 
           <Text className="text-sm font-bold text-white mb-3">
             Quick Start: Select a Sample Listing Preset
           </Text>
-          <View className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <View className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
             {presets.map((p, idx) => (
               <Pressable
                 key={idx}
@@ -317,10 +373,33 @@ export const ListSpacePage: React.FC<ListSpacePageProps> = ({ currentUser }) => 
 
             <View>
               <Text className="text-xs font-medium text-slate-300 mb-1">Space Category</Text>
+              <View className="flex-row flex-wrap gap-1.5 mb-2">
+                {categoryOptions.map((cat) => (
+                  <Pressable
+                    key={cat}
+                    onPress={() => setCategory(cat)}
+                    className={`px-2.5 py-1 rounded-lg border text-[11px] transition ${
+                      category.toLowerCase() === cat.toLowerCase()
+                        ? 'bg-indigo-600 border-indigo-500 shadow-sm'
+                        : 'bg-slate-950 border-slate-800 hover:border-slate-700'
+                    }`}
+                  >
+                    <Text
+                      className={`text-[11px] font-semibold ${
+                        category.toLowerCase() === cat.toLowerCase()
+                          ? 'text-white'
+                          : 'text-slate-400'
+                      }`}
+                    >
+                      {cat}
+                    </Text>
+                  </Pressable>
+                ))}
+              </View>
               <TextInput
                 value={category}
                 onChangeText={setCategory}
-                placeholder="Study Pod / Storage / Studio / Parking"
+                placeholder="Study Pod / Workspace / Meeting / Studio..."
                 placeholderTextColor="#64748b"
                 className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-sm text-white focus:border-indigo-500"
               />
@@ -388,6 +467,33 @@ export const ListSpacePage: React.FC<ListSpacePageProps> = ({ currentUser }) => 
               placeholderTextColor="#64748b"
               className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-sm text-white focus:border-indigo-500"
             />
+          </View>
+
+          {/* Suitable For (Target Personas Multi-Select) */}
+          <View>
+            <Text className="text-xs font-medium text-slate-300 mb-1.5">
+              Suitable For (Multi-Select Personas)
+            </Text>
+            <View className="flex-row flex-wrap gap-2">
+              {personasList.map((p) => {
+                const isSelected = selectedPersonas.includes(p);
+                return (
+                  <Pressable
+                    key={p}
+                    onPress={() => togglePersona(p)}
+                    className={`px-3 py-1.5 rounded-xl border text-xs transition flex-row items-center gap-1.5 ${
+                      isSelected
+                        ? 'bg-indigo-600/30 border-indigo-500 shadow-sm'
+                        : 'bg-slate-950/80 border-slate-800 hover:border-slate-700'
+                    }`}
+                  >
+                    <Text className={`text-xs ${isSelected ? 'text-indigo-300 font-bold' : 'text-slate-400'}`}>
+                      {isSelected ? '✓ ' : '+ '} {p}
+                    </Text>
+                  </Pressable>
+                );
+              })}
+            </View>
           </View>
 
           {/* Notes / Description */}

@@ -86,7 +86,7 @@ export const Header: React.FC<HeaderProps> = ({
               </span>
             ) : (
               <span className="text-[10px] uppercase font-extrabold tracking-wider px-2 py-0.5 rounded-full bg-indigo-500/10 text-indigo-400 border border-indigo-500/30 flex items-center gap-1">
-                🎓 Seeker Portal
+                ⚡ Seeker Portal
               </span>
             )}
           </div>
@@ -408,7 +408,7 @@ export const Header: React.FC<HeaderProps> = ({
                 }}
                 className="w-full py-2.5 rounded-xl bg-indigo-600/20 text-indigo-300 border border-indigo-500/30 text-xs font-bold text-center"
               >
-                🎓 Switch to Seeker Portal
+                ⚡ Switch to Seeker Portal
               </button>
             ) : (
               <button
