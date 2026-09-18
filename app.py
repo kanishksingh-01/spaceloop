@@ -14,9 +14,12 @@ from dotenv import load_dotenv
 # Load local environment settings
 load_dotenv()
 
+from urllib.parse import parse_qs, urlencode
+from werkzeug.middleware.proxy_fix import ProxyFix
+
 from flask import (
     Flask, request, jsonify, render_template, redirect, url_for, session,
-    flash, send_from_directory, abort
+    flash, send_from_directory, abort, Response
 )
 from flask_login import login_user, logout_user, login_required, current_user
 from flask_wtf.csrf import generate_csrf
@@ -37,9 +40,47 @@ from backend.app.api.v1.bookings import api_v1_bookings
 from backend.app.api.v1.system import api_v1_system
 
 
+class VercelWSGIMiddleware:
+    """
+    Normalizes WSGI PATH_INFO and SCRIPT_NAME for requests routed
+    through Vercel's edge network using rewrites.
+    """
+    def __init__(self, wsgi_app):
+        self.wsgi_app = wsgi_app
+
+    def __call__(self, environ, start_response):
+        qs = environ.get("QUERY_STRING", "")
+        if "__path__=" in qs or "_vercel_path=" in qs or "slug=" in qs or "path=" in qs:
+            params = parse_qs(qs, keep_blank_values=True)
+            for key in ("__path__", "_vercel_path", "slug", "path"):
+                if key in params:
+                    extracted_path = params.pop(key)[0]
+                    if not extracted_path.startswith("/"):
+                        extracted_path = "/" + extracted_path
+                    environ["PATH_INFO"] = extracted_path
+                    environ["QUERY_STRING"] = urlencode(params, doseq=True)
+                    break
+        elif environ.get("PATH_INFO") in ("/api/index", "/api/index.py", "/api"):
+            matched = environ.get("HTTP_X_MATCHED_PATH")
+            if matched and not matched.startswith("/api/index") and matched != "/":
+                environ["PATH_INFO"] = matched
+            else:
+                raw_uri = environ.get("RAW_URI") or environ.get("REQUEST_URI", "")
+                if raw_uri:
+                    path_part = raw_uri.split("?")[0]
+                    if path_part and not path_part.startswith("/api/index") and path_part != "/":
+                        environ["PATH_INFO"] = path_part
+
+        return self.wsgi_app(environ, start_response)
+
+
 def create_app():
     app = Flask(__name__)
     app.config.from_object(Config)
+
+    # Wrap WSGI layer with ProxyFix and Vercel edge rewrite normalizer
+    app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_prefix=1)
+    app.wsgi_app = VercelWSGIMiddleware(app.wsgi_app)
 
     # 1. Database & Concurrency Configuration (SQLite WAL mode + 5000ms busy timeout)
     configure_engine_pragmas(db)
@@ -106,15 +147,28 @@ def create_app():
     @app.route("/api/index")
     @app.route("/api/index.py")
     def api_index_handler():
-        env_vars = {k: str(v) for k, v in request.environ.items() if not k.startswith("werkzeug.")}
+        target_path = request.args.get("__path__") or request.args.get("_vercel_path")
+        if target_path and target_path not in ("/api/index", "/api/index.py", "/"):
+            with app.test_client() as client:
+                query_params = {k: v for k, v in request.args.items() if k not in ("__path__", "_vercel_path")}
+                resp = client.open(
+                    target_path,
+                    method=request.method,
+                    headers=dict(request.headers),
+                    query_string=query_params,
+                    data=request.get_data(),
+                    content_type=request.content_type
+                )
+                return Response(
+                    resp.get_data(),
+                    status=resp.status_code,
+                    headers=[(k, v) for k, v in resp.headers if k.lower() not in ("content-length", "content-encoding")]
+                )
         return jsonify({
             "status": "ok",
             "service": "SpaceLoop API",
             "version": "2.5.0",
-            "path": request.path,
-            "args": dict(request.args),
-            "headers": dict(request.headers),
-            "environ": env_vars
+            "message": "SpaceLoop Vercel Serverless Function Active"
         })
 
     # =========================================================================
@@ -513,9 +567,7 @@ def create_app():
             return jsonify({
                 "success": False,
                 "error": "Resource not found (404)",
-                "requested_path": request.path,
-                "environ_path_info": request.environ.get("PATH_INFO"),
-                "environ_script_name": request.environ.get("SCRIPT_NAME")
+                "requested_path": request.path
             }), 404
         # For non-API routes, let the client-side SPA router handle navigation if dist exists
         if os.path.exists(os.path.join(dist_dir, "index.html")):
