@@ -4,6 +4,14 @@
 
 Built for **Hack2Ignite 2026**.
 
+- 🌐 **Live Demo (Render):** [https://spaceloop.onrender.com](https://spaceloop.onrender.com)
+- 📊 **Hack2Ignite 2026 Presentation Deck:** [`SpaceLoop_Hack2Ignite_2026_Presentation.pdf`](./SpaceLoop_Hack2Ignite_2026_Presentation.pdf) ([Google Drive Link](https://drive.google.com/file/d/1-PpdpkUV56jUQDEPmONum0FuDZKrPvla/view?usp=sharing))
+- 👥 **Team LOGIC LOOP** *(GH Raisoni International Skill Tech University, Pune)*:
+  - **Indrayani Mazumder** — AI/ML / Research & Integration
+  - **Kanishk Singh** — Backend Developer & Product Designer
+  - **Zara Quadri** — Frontend / UI-UX Developer
+  - **Aarya Maurya** — System Architect & Security
+
 ---
 
 ## 💡 The Problem
@@ -182,6 +190,7 @@ All seeded accounts have default password: **`password123`**
 
 [![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/kanishksingh-01/spaceloop)
 
+- **Live URL:** [https://spaceloop.onrender.com](https://spaceloop.onrender.com)
 - **Blueprint:** [`render.yaml`](render.yaml) pre-configured with Python 3.11, Gunicorn WSGI (`2 workers, 4 threads`), auto-seeding SQLite WAL database, and `/api/health` monitoring.
 - **Container Support:** Multi-stage [`Dockerfile`](Dockerfile) included for Docker-based container deployments.
 
