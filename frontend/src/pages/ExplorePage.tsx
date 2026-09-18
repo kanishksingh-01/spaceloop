@@ -24,11 +24,14 @@ export const ExplorePage: React.FC = () => {
 
   const categories = [
     { label: 'All Spaces', icon: 'fa-border-all', value: 'All' },
-    { label: 'Creative & Studio', icon: 'fa-camera', value: 'Studio', color: 'text-indigo-400' },
-    { label: 'Garage & Storage', icon: 'fa-boxes-stacked', value: 'Storage', color: 'text-amber-400' },
-    { label: 'Parking & EV', icon: 'fa-charging-station', value: 'Parking', color: 'text-emerald-400' },
-    { label: 'Pop-up Retail', icon: 'fa-store', value: 'Workspace', color: 'text-pink-400' },
-    { label: 'Off-Peak & Events', icon: 'fa-users', value: 'Meeting', color: 'text-cyan-400' },
+    { label: 'Workspaces', icon: 'fa-laptop-code', value: 'Workspace', color: 'text-indigo-400' },
+    { label: 'Meeting Rooms', icon: 'fa-handshake', value: 'Meeting', color: 'text-blue-400' },
+    { label: 'Creative & Studio', icon: 'fa-microphone-lines', value: 'Studio', color: 'text-purple-400' },
+    { label: 'Maker Workshops', icon: 'fa-screwdriver-wrench', value: 'Workshop', color: 'text-amber-400' },
+    { label: 'Pop-Up Retail', icon: 'fa-store', value: 'Retail', color: 'text-pink-400' },
+    { label: 'Storage Units', icon: 'fa-boxes-stacked', value: 'Storage', color: 'text-yellow-400' },
+    { label: 'Study Pods', icon: 'fa-book-open', value: 'Study', color: 'text-emerald-400' },
+    { label: 'Event Spaces', icon: 'fa-users', value: 'Event', color: 'text-cyan-400' },
   ];
 
   const quickHubs = [
@@ -143,7 +146,7 @@ export const ExplorePage: React.FC = () => {
             </h1>
 
             <p className="mt-3 text-sm sm:text-base text-slate-400 leading-relaxed max-w-2xl mx-auto">
-              Instantly discover and reserve quiet study pods, creative studios, micro-workspaces, and event spaces by the hour.
+              Instantly discover and reserve workspaces, client meeting rooms, creative studios, maker bays, and study pods by the hour.
             </p>
           </div>
 
@@ -165,7 +168,7 @@ export const ExplorePage: React.FC = () => {
                     type="text"
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    placeholder="Describe your ideal space (e.g. 'Quiet study space for 3 people under ₹60/hr')..."
+                    placeholder="Describe your ideal space (e.g. 'podcast studio for 2' or 'client meeting room near Koramangala')..."
                     className="w-full bg-slate-950/80 border border-slate-700/80 rounded-xl pl-11 pr-4 py-3 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition"
                   />
                 </div>
@@ -197,46 +200,68 @@ export const ExplorePage: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => {
-                    const p = 'Quiet study space for 3 people';
+                    const p = 'Quiet focus desk for 3 hours with fiber WiFi';
                     setSearchQuery(p);
                     handleAiSearch(p);
                   }}
                   className="px-2.5 py-1 rounded-lg bg-slate-800/80 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700/60 text-[11px] transition flex items-center gap-1.5"
                 >
-                  <span>📚</span> Quiet study space for 3 people
+                  <span>💼</span> Remote Work
                 </button>
                 <button
                   type="button"
                   onClick={() => {
-                    const p = 'Studio for a 2-hour shoot';
+                    const p = 'Executive room for client meeting with 4K screen';
                     setSearchQuery(p);
                     handleAiSearch(p);
                   }}
                   className="px-2.5 py-1 rounded-lg bg-slate-800/80 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700/60 text-[11px] transition flex items-center gap-1.5"
                 >
-                  <span>📸</span> Studio for a 2-hour shoot
+                  <span>👥</span> Client Meeting
                 </button>
                 <button
                   type="button"
                   onClick={() => {
-                    const p = 'Affordable workspace near me';
+                    const p = 'Acoustic podcast studio with Shure mics for 2';
                     setSearchQuery(p);
                     handleAiSearch(p);
                   }}
                   className="px-2.5 py-1 rounded-lg bg-slate-800/80 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700/60 text-[11px] transition flex items-center gap-1.5"
                 >
-                  <span>💼</span> Affordable workspace near me
+                  <span>🎙️</span> Podcast Studio
                 </button>
                 <button
                   type="button"
                   onClick={() => {
-                    const p = 'Space for a small event';
+                    const p = 'Hardware maker workshop with 3D printer and soldering bay';
                     setSearchQuery(p);
                     handleAiSearch(p);
                   }}
                   className="px-2.5 py-1 rounded-lg bg-slate-800/80 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700/60 text-[11px] transition flex items-center gap-1.5"
                 >
-                  <span>🎉</span> Space for a small event
+                  <span>🛠️</span> Maker Workshop
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const p = 'Temporary pop-up retail stall in busy street';
+                    setSearchQuery(p);
+                    handleAiSearch(p);
+                  }}
+                  className="px-2.5 py-1 rounded-lg bg-slate-800/80 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700/60 text-[11px] transition flex items-center gap-1.5"
+                >
+                  <span>🛍️</span> Pop-Up Retail
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const p = 'Quiet AC study pod with power sockets near campus';
+                    setSearchQuery(p);
+                    handleAiSearch(p);
+                  }}
+                  className="px-2.5 py-1 rounded-lg bg-slate-800/80 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700/60 text-[11px] transition flex items-center gap-1.5"
+                >
+                  <span>📚</span> Focused Study
                 </button>
               </div>
             </div>
@@ -345,6 +370,8 @@ export const ExplorePage: React.FC = () => {
                 <option value="60">Under ₹60/hr</option>
                 <option value="80">Under ₹80/hr</option>
                 <option value="100">Under ₹100/hr</option>
+                <option value="150">Under ₹150/hr</option>
+                <option value="200">Under ₹200/hr</option>
               </select>
             </div>
 

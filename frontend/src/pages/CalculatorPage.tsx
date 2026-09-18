@@ -22,12 +22,17 @@ export const CalculatorPage: React.FC = () => {
     } catch {
       // Mock calculation fallback
       const baseRates: Record<string, number> = {
-        'Study Pod': 45,
+        'Workspace': 65,
+        'Meeting Room': 110,
+        'Creative Studio': 85,
+        'Podcast Studio': 80,
+        'Maker Workshop': 75,
+        'Pop-Up Retail': 120,
         'Storage': 50,
-        'Studio': 80,
+        'Study Pod': 45,
         'Parking': 30,
       };
-      const rate = baseRates[spaceType] || 45;
+      const rate = baseRates[spaceType] || 50;
       const hoursPerMonth = 120;
       const monthly = rate * hoursPerMonth;
       setEstimate({
@@ -36,12 +41,23 @@ export const CalculatorPage: React.FC = () => {
         estimated_monthly_inr: monthly,
         estimated_hourly_inr: rate,
         occupancy_rate_pct: 65,
-        peer_comparison: 'Top 15% in Wagholi / Pune area',
+        peer_comparison: `Top 15% in ${city} area`,
       });
     } finally {
       setLoading(false);
     }
   };
+
+  const categoriesList = [
+    'Workspace',
+    'Meeting Room',
+    'Creative Studio',
+    'Podcast Studio',
+    'Maker Workshop',
+    'Pop-Up Retail',
+    'Storage',
+    'Study Pod',
+  ];
 
   useEffect(() => {
     calculate();
@@ -60,7 +76,7 @@ export const CalculatorPage: React.FC = () => {
             Calculate Your Idle Property's Value
           </Text>
           <Text className="text-sm text-slate-400 max-w-xl mx-auto">
-            Discover how much extra monthly income your empty bedroom, garage, or off-peak café can generate.
+            Discover how much extra monthly income your empty room, meeting suite, workshop, or studio can generate.
           </Text>
         </View>
       </View>
@@ -74,7 +90,7 @@ export const CalculatorPage: React.FC = () => {
             <View>
               <Text className="text-xs font-medium text-slate-300 mb-1.5">Category</Text>
               <View className="flex-row flex-wrap gap-2">
-                {['Study Pod', 'Storage', 'Studio', 'Parking'].map((cat) => (
+                {categoriesList.map((cat) => (
                   <Pressable
                     key={cat}
                     onPress={() => setSpaceType(cat)}

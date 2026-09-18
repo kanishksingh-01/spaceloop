@@ -9,7 +9,7 @@ export const LoopBot: React.FC = () => {
     {
       role: 'assistant',
       content:
-        "Hi! I'm LoopBot, your SpaceLoop AI assistant. Looking for temporary studio, storage, parking, or pop-up space? Or want tips on monetizing your own unused square footage? Ask away!",
+        "Hi! I'm LoopBot, your SpaceLoop AI concierge. Whether you need a focus desk, client meeting suite, podcast studio, maker workshop, or want to monetize idle square footage — ask away!",
     },
   ]);
   const [loading, setLoading] = useState(false);
@@ -169,24 +169,45 @@ export const LoopBot: React.FC = () => {
             <div className="px-4 py-2 bg-slate-950/50 border-t border-slate-800/60 flex items-center gap-2 overflow-x-auto text-xs whitespace-nowrap scrollbar-none">
               <button
                 type="button"
+                onClick={() => handleSend('Find a quiet workspace for 3 hours with fiber WiFi')}
+                className="px-2.5 py-1 rounded-full bg-slate-800 text-slate-300 hover:text-white hover:bg-slate-700 border border-slate-700 transition"
+              >
+                💼 Remote Work Desk
+              </button>
+              <button
+                type="button"
+                onClick={() => handleSend('Find a small room for a client meeting with presentation screen')}
+                className="px-2.5 py-1 rounded-full bg-slate-800 text-slate-300 hover:text-white hover:bg-slate-700 border border-slate-700 transition"
+              >
+                👥 Client Meeting
+              </button>
+              <button
+                type="button"
+                onClick={() => handleSend('Find an acoustic podcast studio for 2 people')}
+                className="px-2.5 py-1 rounded-full bg-slate-800 text-slate-300 hover:text-white hover:bg-slate-700 border border-slate-700 transition"
+              >
+                🎙️ Podcast Studio
+              </button>
+              <button
+                type="button"
+                onClick={() => handleSend('Find a maker workshop with 3D printer and soldering bay')}
+                className="px-2.5 py-1 rounded-full bg-slate-800 text-slate-300 hover:text-white hover:bg-slate-700 border border-slate-700 transition"
+              >
+                🛠️ Maker Workshop
+              </button>
+              <button
+                type="button"
+                onClick={() => handleSend('How much can I earn renting an unused garage or meeting room?')}
+                className="px-2.5 py-1 rounded-full bg-slate-800 text-slate-300 hover:text-white hover:bg-slate-700 border border-slate-700 transition"
+              >
+                💰 Monetize Space
+              </button>
+              <button
+                type="button"
                 onClick={() => handleSend('How do AI micro-lease agreements protect owners?')}
                 className="px-2.5 py-1 rounded-full bg-slate-800 text-slate-300 hover:text-white hover:bg-slate-700 border border-slate-700 transition"
               >
-                🛡️ Micro-Lease Protections
-              </button>
-              <button
-                type="button"
-                onClick={() => handleSend('How much can I earn renting an empty garage?')}
-                className="px-2.5 py-1 rounded-full bg-slate-800 text-slate-300 hover:text-white hover:bg-slate-700 border border-slate-700 transition"
-              >
-                💰 Garage Earnings
-              </button>
-              <button
-                type="button"
-                onClick={() => handleSend('Find me a podcast studio with natural light')}
-                className="px-2.5 py-1 rounded-full bg-slate-800 text-slate-300 hover:text-white hover:bg-slate-700 border border-slate-700 transition"
-              >
-                🎙️ Find Podcast Studio
+                🛡️ Micro-Lease Safety
               </button>
             </div>
 
