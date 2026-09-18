@@ -1,7 +1,5 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "buildCommand": "cd frontend && npm install && npm run build",
-  "outputDirectory": "frontend/dist",
   "rewrites": [
     {
       "source": "/api",
@@ -22,10 +20,6 @@
     {
       "source": "/switch-(.*)",
       "destination": "/api/index.py?_vercel_path=/switch-$1"
-    },
-    {
-      "source": "/legacy(.*)",
-      "destination": "/api/index.py?_vercel_path=/legacy$1"
     },
     {
       "source": "/space/:id/printable-qr",
