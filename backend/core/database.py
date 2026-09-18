@@ -95,5 +95,14 @@ def ensure_database_schema(app, db):
                                 u.last_name = parts[1] if len(parts) > 1 else ""
                         db.session.commit()
 
+                    # Auto-seed initial spaces and users if database is newly initialized and empty
+                    from models import Space
+                    if Space.query.first() is None:
+                        try:
+                            from seed_data import seed_database
+                            seed_database()
+                        except Exception as seed_err:
+                            print(f"[DB_SCHEMA_INIT] Auto-seed note: {seed_err}")
+
         except Exception as e:
             print(f"[DB_SCHEMA_INIT] Note: {e}")
