@@ -76,8 +76,8 @@ Property owners hesitate to rent because of tenancy laws and property liability.
 
 ```bash
 # 1. Clone repository
-git clone https://github.com/kanishksingh-01/hack2ignite-practice.git
-cd hack2ignite
+git clone https://github.com/kanishksingh-01/spaceloop.git
+cd spaceloop
 
 # 2. Activate virtual environment
 source venv/bin/activate   # Windows: venv\Scripts\activate

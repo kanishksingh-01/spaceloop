@@ -12,17 +12,25 @@ KNOWN_HUBS = {
     "north campus": (28.6900, 77.2100),
     "delhi university": (28.6900, 77.2100),
     "connaught place": (28.6315, 77.2167),
+    "safdarjung": (28.5672, 77.1950),
+    "cyber city": (28.4900, 77.0900),
     "noida": (28.6270, 77.3725),
     "sector 62": (28.6270, 77.3725),
     "koramangala": (12.9352, 77.6245),
     "bangalore": (12.9352, 77.6245),
     "bengaluru": (12.9352, 77.6245),
     "indiranagar": (12.9784, 77.6408),
+    "electronic city": (12.8452, 77.6602),
     "shivajinagar": (18.5204, 73.8567),
     "fc road": (18.5204, 73.8567),
     "pune": (18.5204, 73.8567),
     "wagholi": (18.5793, 73.9822),
+    "viman nagar": (18.5679, 73.9143),
+    "kothrud": (18.5074, 73.8077),
+    "aundh": (18.5601, 73.8031),
     "baner": (18.5590, 73.7868),
+    "downtown": (18.5590, 73.7868),
+    "bandra": (19.0596, 72.8295),
     "powai": (19.1334, 72.9133),
     "mumbai": (19.1334, 72.9133),
     "iit bombay": (19.1334, 72.9133)
@@ -73,7 +81,9 @@ def resolve_location_coordinates(loc_name="", lat=None, lng=None):
                     pass
 
         clean_lower = clean.lower()
-        for hub_key, coords in KNOWN_HUBS.items():
+        # Sort hubs by key length descending so specific hubs (e.g. 'hauz khas') match before 'delhi'
+        sorted_hubs = sorted(KNOWN_HUBS.items(), key=lambda item: len(item[0]), reverse=True)
+        for hub_key, coords in sorted_hubs:
             if hub_key in clean_lower or clean_lower in hub_key:
                 return coords[0], coords[1], hub_key.title()
 

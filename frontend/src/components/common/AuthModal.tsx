@@ -43,49 +43,6 @@ export const AuthModal: React.FC<AuthModalProps> = ({
 
   if (!isOpen) return null;
 
-  // Fill spoofed persona data into form fields so user can edit or inspect
-  const applySpoofedPersona = (persona: 'aarav' | 'sunita' | 'kabir') => {
-    setError(null);
-    setSuccessMsg(null);
-    setMethod('credentials');
-    if (persona === 'aarav') {
-      setName('Aarav Sharma');
-      setEmail('aarav@iitd.ac.in');
-      setPassword('password123');
-      setConfirmPassword('password123');
-      setRole('seeker');
-      setCollegeEmail('aarav@iitd.ac.in');
-      setCollegeName('IIT Delhi');
-      setStudentId('2023CSB108');
-    } else if (persona === 'sunita') {
-      setName('Sunita Deshmukh');
-      setEmail('sunita@spaceloop.in');
-      setPassword('password123');
-      setConfirmPassword('password123');
-      setRole('host');
-      setAadhaarNumber('888877771234');
-    } else if (persona === 'kabir') {
-      setName('Kabir Bose');
-      setEmail('admin@spaceloop.in');
-      setPassword('password123');
-      setConfirmPassword('password123');
-      setRole('host');
-    }
-  };
-
-  // Instant demo switch shortcut
-  const handleInstantDemoSwitch = async (roleName: 'seeker' | 'host' | 'admin') => {
-    setLoading(true);
-    setError(null);
-    try {
-      await demoSwitch(roleName);
-      if (onSuccess) onSuccess();
-      window.location.reload();
-    } catch (err: any) {
-      setError(err.message || 'Failed to switch demo persona');
-      setLoading(false);
-    }
-  };
 
   const handleCredentialsSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -199,16 +156,16 @@ export const AuthModal: React.FC<AuthModalProps> = ({
           <div>
             <div className="flex items-center gap-2 mb-1">
               <span className="px-2 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider bg-indigo-100 text-indigo-700 dark:bg-indigo-500/20 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-500/30">
-                🎓 Seeker & Student Authentication
+                🚀 Space Seeker Authentication
               </span>
             </div>
             <h2 className="text-xl font-bold text-slate-900 dark:text-white">
-              {mode === 'login' ? 'Seeker Sign In' : 'Join as a Space Seeker'}
+              {mode === 'login' ? 'Seeker Sign In' : 'Join SpaceLoop'}
             </h2>
             <p className="text-xs text-slate-500 dark:text-slate-400">
               {mode === 'login'
-                ? 'Sign in to reserve study spaces, unlock micro-pods, and manage your student bookings.'
-                : 'Create your Seeker account with Academic SSO or verified credentials.'}
+                ? 'Sign in to reserve workspaces, studios, micro-pods, and manage your bookings.'
+                : 'Create your Seeker account with verified credentials.'}
             </p>
           </div>
           <button
@@ -257,60 +214,6 @@ export const AuthModal: React.FC<AuthModalProps> = ({
             </div>
           )}
 
-          {/* Quick-Fill Spoofed Data Persona Pills */}
-          <div className="bg-slate-50 dark:bg-slate-950/60 p-3.5 rounded-2xl border border-slate-200 dark:border-slate-800">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-[11px] font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider">
-                ⚡ Quick Spoofed Personas (Auto-Fill)
-              </span>
-              <span className="text-[10px] text-slate-400">Click to fill form</span>
-            </div>
-            <div className="grid grid-cols-3 gap-2">
-              <button
-                type="button"
-                onClick={() => applySpoofedPersona('aarav')}
-                className="p-2 text-left rounded-xl bg-white dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 hover:border-indigo-500 hover:shadow-sm transition"
-              >
-                <div className="text-xs font-bold text-slate-900 dark:text-white truncate">🎓 Aarav</div>
-                <div className="text-[10px] text-slate-500 dark:text-slate-400 truncate">Student Seeker</div>
-              </button>
-              <button
-                type="button"
-                onClick={() => applySpoofedPersona('sunita')}
-                className="p-2 text-left rounded-xl bg-white dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 hover:border-indigo-500 hover:shadow-sm transition"
-              >
-                <div className="text-xs font-bold text-slate-900 dark:text-white truncate">🏡 Sunita</div>
-                <div className="text-[10px] text-slate-500 dark:text-slate-400 truncate">Host & Owner</div>
-              </button>
-              <button
-                type="button"
-                onClick={() => applySpoofedPersona('kabir')}
-                className="p-2 text-left rounded-xl bg-white dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 hover:border-indigo-500 hover:shadow-sm transition"
-              >
-                <div className="text-xs font-bold text-slate-900 dark:text-white truncate">🛡️ Kabir</div>
-                <div className="text-[10px] text-slate-500 dark:text-slate-400 truncate">Admin / Ops</div>
-              </button>
-            </div>
-            <div className="mt-2.5 flex items-center justify-between pt-2 border-t border-slate-200/60 dark:border-slate-800/60 text-[11px]">
-              <span className="text-slate-500 dark:text-slate-400">Or bypass form directly:</span>
-              <div className="flex gap-1.5">
-                <button
-                  type="button"
-                  onClick={() => handleInstantDemoSwitch('seeker')}
-                  className="px-2 py-0.5 rounded bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 font-semibold text-[10px] hover:bg-indigo-100"
-                >
-                  Login Seeker →
-                </button>
-                <button
-                  type="button"
-                  onClick={() => handleInstantDemoSwitch('host')}
-                  className="px-2 py-0.5 rounded bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 font-semibold text-[10px] hover:bg-emerald-100"
-                >
-                  Login Host →
-                </button>
-              </div>
-            </div>
-          </div>
 
           {/* Authentication Method Selector */}
           <div className="flex rounded-xl bg-slate-100 dark:bg-slate-950 p-1 border border-slate-200 dark:border-slate-800">
@@ -382,8 +285,8 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                             : 'border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400'
                         }`}
                       >
-                        <div>🎟️ Seeker (Student)</div>
-                        <div className="text-[10px] font-normal text-slate-400">Book study pods & desks</div>
+                        <div>🎟️ Space Seeker</div>
+                        <div className="text-[10px] font-normal text-slate-400">Book desks, studios & spaces</div>
                       </button>
                       <button
                         type="button"
@@ -411,7 +314,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                   required
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder="e.g. aarav@iitd.ac.in or sunita@spaceloop.in"
+                  placeholder="e.g. name@domain.com"
                   className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 text-sm text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500"
                 />
               </div>

@@ -65,9 +65,23 @@ class User(db.Model, UserMixin):
     def is_host(self) -> bool:
         return self.role in ("host", "owner", "both") or self.is_admin
 
+    @is_host.setter
+    def is_host(self, value: bool):
+        if value:
+            self.role = "both" if self.role in ("seeker", "both") else "host"
+        elif self.role == "both":
+            self.role = "seeker"
+
     @property
     def is_seeker(self) -> bool:
         return self.role in ("seeker", "both") or self.is_admin
+
+    @is_seeker.setter
+    def is_seeker(self, value: bool):
+        if value:
+            self.role = "both" if self.role in ("host", "both", "owner") else "seeker"
+        elif self.role == "both":
+            self.role = "host"
 
     @property
     def full_name(self) -> str:

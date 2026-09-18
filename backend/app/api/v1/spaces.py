@@ -2,6 +2,7 @@
 SpaceLoop Spaces REST Blueprint
 Handles space exploration, AI scanning, space registration, editing, and semantic matchmaking.
 """
+import re
 from flask import Blueprint, request, jsonify, redirect, url_for, flash
 from flask_login import login_required, current_user
 from models import db, Space, User
@@ -25,14 +26,14 @@ def get_spaces():
     raw_max_price = request.args.get("max_price")
 
     radius_km = None
-    if raw_radius and raw_radius != "All":
+    if raw_radius and str(raw_radius).lower() not in ("all", "any", ""):
         try:
             radius_km = float(raw_radius)
         except (ValueError, TypeError):
             radius_km = None
 
     max_price = None
-    if raw_max_price:
+    if raw_max_price and str(raw_max_price).lower() not in ("all", "any", ""):
         try:
             max_price = float(raw_max_price)
         except (ValueError, TypeError):
@@ -41,22 +42,51 @@ def get_spaces():
     lat, lng, resolved_loc_name = resolve_location_coordinates(loc, raw_lat, raw_lng)
 
     query = Space.query.filter_by(is_active=True)
-    if category and category.lower() != "all":
-        cat_clean = category.lower().replace(" pod", "").strip()
-        query = query.filter(db.or_(
-            Space.category.ilike(f"%{cat_clean}%"),
-            Space.title.ilike(f"%{cat_clean}%")
-        ))
-    if city and city.lower() != "all" and city.lower() != "all cities":
-        search_city = city.split("(")[0].strip() if "(" in city else city.strip()
-        query = query.filter(db.or_(
-            Space.city.ilike(f"%{city}%"),
-            Space.city.ilike(f"%{search_city}%"),
-            Space.address.ilike(f"%{city}%"),
-            Space.address.ilike(f"%{search_city}%"),
-            Space.neighborhood.ilike(f"%{city}%"),
-            Space.neighborhood.ilike(f"%{search_city}%")
-        ))
+
+    # 1. Category filtering with aliases
+    if category and category.lower() not in ("all", "any"):
+        cat_lower = category.lower().strip().replace(" pod", "")
+        cat_aliases = [cat_lower]
+        if "studio" in cat_lower or "creative" in cat_lower:
+            cat_aliases.extend(["studio", "creative", "podcast", "vocal", "photo", "audio"])
+        elif "work" in cat_lower:
+            cat_aliases.extend(["work", "workspace", "desk", "office", "hackathon", "incubator"])
+        elif "meet" in cat_lower:
+            cat_aliases.extend(["meet", "meeting", "conference", "board", "discussion", "sprint"])
+        elif "study" in cat_lower:
+            cat_aliases.extend(["study", "pod", "library", "quiet"])
+        elif "workshop" in cat_lower or "maker" in cat_lower:
+            cat_aliases.extend(["workshop", "maker", "hardware", "proto", "creative"])
+        elif "retail" in cat_lower or "store" in cat_lower:
+            cat_aliases.extend(["retail", "pop-up", "store", "stall", "boutique"])
+        elif "storage" in cat_lower:
+            cat_aliases.extend(["storage", "warehouse", "gear", "unit"])
+        elif "event" in cat_lower:
+            cat_aliases.extend(["event", "hall", "gathering"])
+
+        cat_filters = []
+        for alias in set(cat_aliases):
+            cat_filters.append(Space.category.ilike(f"%{alias}%"))
+            cat_filters.append(Space.title.ilike(f"%{alias}%"))
+        query = query.filter(db.or_(*cat_filters))
+
+    # 2. Location / Hub tokenized search
+    # If coordinates are resolved and radius is specified, distance calculation does precision filtering
+    # If no radius, or coordinates unresolved, tokenize location by comma/space
+    if loc and loc.lower() not in ("all", "all cities", "any"):
+        if not (lat is not None and lng is not None and radius_km is not None):
+            clean_loc = loc.split("(")[0].strip()
+            tokens = [t.strip() for t in re.split(r"[,/]+", clean_loc) if len(t.strip()) > 1]
+            if tokens:
+                loc_conditions = []
+                for token in tokens:
+                    loc_conditions.append(Space.city.ilike(f"%{token}%"))
+                    loc_conditions.append(Space.neighborhood.ilike(f"%{token}%"))
+                    loc_conditions.append(Space.address.ilike(f"%{token}%"))
+                    loc_conditions.append(Space.title.ilike(f"%{token}%"))
+                query = query.filter(db.or_(*loc_conditions))
+
+    # 3. Free text search
     if q:
         q_clean = q.lower().strip()
         query = query.filter(db.or_(
@@ -67,6 +97,8 @@ def get_spaces():
             Space.neighborhood.ilike(f"%{q_clean}%"),
             Space.address.ilike(f"%{q_clean}%")
         ))
+
+    # 4. Max price budget filter
     if max_price is not None:
         query = query.filter(Space.price_hourly <= max_price)
 

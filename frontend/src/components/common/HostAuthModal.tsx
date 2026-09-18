@@ -45,19 +45,6 @@ export const HostAuthModal: React.FC<HostAuthModalProps> = ({
 
   if (!isOpen) return null;
 
-  const applySpoofedHost = () => {
-    setError(null);
-    setSuccessMsg(null);
-    setName('Sunita Sharma');
-    setEmail('sunita@spaceloop.in');
-    setPassword('password123');
-    setConfirmPassword('password123');
-    setProvider('TPDDL (Tata Power Delhi)');
-    setCaNumber('10048219034');
-    setAddress('Hauz Khas Enclave, New Delhi, DL');
-    setUpiVpa('sunita.sharma@okhdfcbank');
-    setPanName('Sunita Sharma');
-  };
 
   const handleHostLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -153,17 +140,6 @@ export const HostAuthModal: React.FC<HostAuthModalProps> = ({
     }
   };
 
-  const handleQuickDemoHost = async () => {
-    setLoading(true);
-    try {
-      await demoSwitch('host');
-      if (onSuccess) onSuccess();
-      window.location.href = '/host/dashboard';
-    } catch (err: any) {
-      setError(err.message || 'Failed to switch to host demo persona');
-      setLoading(false);
-    }
-  };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md overflow-y-auto">
@@ -216,34 +192,6 @@ export const HostAuthModal: React.FC<HostAuthModalProps> = ({
             </div>
           )}
 
-          {/* Quick-Fill Spoofed Host Persona */}
-          <div className="p-3 bg-amber-500/10 border border-amber-500/20 rounded-2xl flex items-center justify-between">
-            <div className="flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-xl bg-amber-500/20 flex items-center justify-center text-amber-400 text-sm">
-                🏡
-              </div>
-              <div>
-                <div className="text-xs font-bold text-amber-300">Quick Host Persona (Sunita Sharma)</div>
-                <div className="text-[10px] text-slate-400">Autofill verified Discom (TPDDL) & UPI credentials</div>
-              </div>
-            </div>
-            <div className="flex items-center gap-1.5">
-              <button
-                type="button"
-                onClick={applySpoofedHost}
-                className="px-2.5 py-1 text-[11px] font-bold rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition"
-              >
-                Auto-Fill Form
-              </button>
-              <button
-                type="button"
-                onClick={handleQuickDemoHost}
-                className="px-2.5 py-1 text-[11px] font-bold rounded-lg bg-amber-600 hover:bg-amber-500 text-white shadow-sm transition"
-              >
-                1-Click Login
-              </button>
-            </div>
-          </div>
 
           {/* Mode Switch Tabs (if not upgrading seeker) */}
           {!isUpgradingSeeker && (
@@ -288,7 +236,7 @@ export const HostAuthModal: React.FC<HostAuthModalProps> = ({
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder="sunita@spaceloop.in"
+                  placeholder="e.g. name@domain.com"
                   className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-white text-xs focus:outline-none focus:border-amber-500 transition"
                   required
                 />
@@ -326,7 +274,7 @@ export const HostAuthModal: React.FC<HostAuthModalProps> = ({
                         setName(e.target.value);
                         setPanName(e.target.value);
                       }}
-                      placeholder="Sunita Sharma"
+                      placeholder="e.g. Host Full Name"
                       className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-800 text-white text-xs focus:border-amber-500"
                       required
                     />
@@ -337,7 +285,7 @@ export const HostAuthModal: React.FC<HostAuthModalProps> = ({
                       type="email"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
-                      placeholder="host@property.in"
+                      placeholder="e.g. name@domain.com"
                       className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-800 text-white text-xs focus:border-amber-500"
                       required
                     />
@@ -348,7 +296,7 @@ export const HostAuthModal: React.FC<HostAuthModalProps> = ({
                       type="password"
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
-                      placeholder="Min 8 chars, 1 digit, 1 upper"
+                      placeholder="Enter your password"
                       className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-800 text-white text-xs focus:border-amber-500"
                       required
                     />
