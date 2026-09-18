@@ -2,35 +2,31 @@
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "rewrites": [
     {
-      "source": "/api",
-      "destination": "/api/index.py?_vercel_path=/api"
-    },
-    {
       "source": "/api/(.*)",
-      "destination": "/api/index.py?_vercel_path=/api/$1"
+      "destination": "/api/index.py"
     },
     {
-      "source": "/auth",
-      "destination": "/api/index.py?_vercel_path=/auth"
+      "source": "/api",
+      "destination": "/api/index.py"
     },
     {
       "source": "/auth/(.*)",
-      "destination": "/api/index.py?_vercel_path=/auth/$1"
+      "destination": "/api/index.py"
+    },
+    {
+      "source": "/auth",
+      "destination": "/api/index.py"
     },
     {
       "source": "/switch-(.*)",
-      "destination": "/api/index.py?_vercel_path=/switch-$1"
+      "destination": "/api/index.py"
     },
     {
       "source": "/space/:id/printable-qr",
-      "destination": "/api/index.py?_vercel_path=/space/:id/printable-qr"
+      "destination": "/api/index.py"
     },
     {
-      "source": "/static/(.*)",
-      "destination": "/api/index.py?_vercel_path=/static/$1"
-    },
-    {
-      "source": "/(.*)",
+      "source": "/((?!api/|auth/|switch-|space/.*/printable-qr|assets/|static/).*)",
       "destination": "/index.html"
     }
   ]
