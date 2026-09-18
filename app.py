@@ -103,6 +103,16 @@ def create_app():
     def api_health():
         return jsonify({"status": "ok", "service": "SpaceLoop API", "version": "2.5.0"})
 
+    @app.route("/api/index")
+    @app.route("/api/index.py")
+    def api_index_handler():
+        return jsonify({
+            "status": "ok",
+            "service": "SpaceLoop API",
+            "version": "2.5.0",
+            "message": "SpaceLoop Vercel Serverless Function Active"
+        })
+
     # =========================================================================
     # UNIFIED FRONTEND ENTRY POINT (MODERN REACT SPA)
     # Serves Vite React SPA directly on root / and client routes
