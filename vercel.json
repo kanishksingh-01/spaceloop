@@ -2,8 +2,24 @@
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "rewrites": [
     {
-      "source": "/(.*)",
-      "destination": "/api/index"
+      "source": "/api/:path*",
+      "destination": "/api/index?slug=:path*"
+    },
+    {
+      "source": "/auth/:path*",
+      "destination": "/api/index?slug=auth/:path*"
+    },
+    {
+      "source": "/switch-:path*",
+      "destination": "/api/index?slug=switch-:path*"
+    },
+    {
+      "source": "/space/:id/printable-qr",
+      "destination": "/api/index?slug=space/:id/printable-qr"
+    },
+    {
+      "source": "/((?!api/|auth/|switch-|space/.*/printable-qr|assets/|static/).*)",
+      "destination": "/index.html"
     }
   ]
 }
