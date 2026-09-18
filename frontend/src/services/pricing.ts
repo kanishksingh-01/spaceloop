@@ -59,18 +59,40 @@ export function calculateRentalPricing(hourlyRate: number, requestedHours: numbe
   };
 }
 
+export function safeParseDate(input: Date | string | number | null | undefined): Date | null {
+  if (!input) return null;
+  if (input instanceof Date) return isNaN(input.getTime()) ? null : input;
+  if (typeof input === 'number') {
+    const d = new Date(input);
+    return isNaN(d.getTime()) ? null : d;
+  }
+  if (typeof input === 'string') {
+    const trimmed = input.trim();
+    if (!trimmed) return null;
+    let d = new Date(trimmed);
+    if (!isNaN(d.getTime())) return d;
+    // Handle python strftime format e.g. "Sep 18, 2026 at 05:18 AM"
+    d = new Date(trimmed.replace(/\s+at\s+/gi, ' '));
+    if (!isNaN(d.getTime())) return d;
+  }
+  return null;
+}
+
 export function formatTimeWindow(
-  startDate: Date | string,
-  hours: number
+  startDate: Date | string | number | null | undefined,
+  hours: number,
+  explicitEndDate?: Date | string | number | null | undefined
 ): {
   startFormatted: string;
   endFormatted: string;
   durationFormatted: string;
   fullWindow: string;
 } {
-  const start = typeof startDate === 'string' ? new Date(startDate) : startDate;
-  const validStart = isNaN(start.getTime()) ? new Date() : start;
-  const end = new Date(validStart.getTime() + (Number(hours) || 2) * 3600 * 1000);
+  const parsedStart = safeParseDate(startDate);
+  const validStart = parsedStart || new Date();
+  
+  const parsedEnd = safeParseDate(explicitEndDate);
+  const end = parsedEnd || new Date(validStart.getTime() + (Number(hours) || 2) * 3600 * 1000);
 
   const formatOpts: Intl.DateTimeFormatOptions = {
     weekday: 'short',
