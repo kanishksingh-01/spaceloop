@@ -11,8 +11,22 @@ class Config:
     # Use environment secret key; in production this must be kept confidential
     SECRET_KEY = os.environ.get("SECRET_KEY", "spaceloop-dev-secret-key-change-in-prod-2026")
     
-    _raw_db_url = os.environ.get("DATABASE_URL", "sqlite:///" + os.path.join(basedir, "app.db"))
-    if _raw_db_url.startswith("postgres://"):
+    is_serverless = bool(os.environ.get("VERCEL") or os.environ.get("AWS_LAMBDA_FUNCTION_NAME"))
+    _raw_db_url = os.environ.get("DATABASE_URL")
+    if not _raw_db_url:
+        if is_serverless:
+            tmp_db = "/tmp/app.db"
+            orig_db = os.path.join(basedir, "app.db")
+            if os.path.exists(orig_db) and not os.path.exists(tmp_db):
+                try:
+                    import shutil
+                    shutil.copy2(orig_db, tmp_db)
+                except Exception:
+                    pass
+            _raw_db_url = f"sqlite:///{tmp_db}"
+        else:
+            _raw_db_url = "sqlite:///" + os.path.join(basedir, "app.db")
+    elif _raw_db_url.startswith("postgres://"):
         _raw_db_url = _raw_db_url.replace("postgres://", "postgresql://", 1)
     SQLALCHEMY_DATABASE_URI = _raw_db_url
     SQLALCHEMY_TRACK_MODIFICATIONS = False
@@ -56,4 +70,11 @@ class Config:
     ).split(",")
 
     # Upload settings
-    UPLOAD_FOLDER = os.path.join(basedir, "static", "uploads")
+    if is_serverless:
+        UPLOAD_FOLDER = "/tmp/uploads"
+        try:
+            os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+        except Exception:
+            pass
+    else:
+        UPLOAD_FOLDER = os.path.join(basedir, "static", "uploads")
