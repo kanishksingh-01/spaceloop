@@ -35,26 +35,86 @@ export const ExplorePage: React.FC = () => {
   ];
 
   const quickHubs = [
-    { label: '📍 Wagholi, Pune', loc: 'Wagholi, Pune' },
-    { label: '📍 IIT Delhi / Hauz Khas', loc: 'Hauz Khas, New Delhi' },
-    { label: '📍 Koramangala, Bangalore', loc: 'Koramangala, Bangalore' },
-    { label: '📍 Shivajinagar / FC Road', loc: 'Shivajinagar, Pune' },
-    { label: '📍 DU North Campus', loc: 'North Campus, New Delhi' },
-    { label: '📍 Sector 62, Noida', loc: 'Sector 62, Noida' },
+    { label: '📍 Wagholi, Pune', loc: 'Wagholi, Pune', lat: 18.5793, lng: 73.9822 },
+    { label: '📍 IIT Delhi / Hauz Khas', loc: 'Hauz Khas, New Delhi', lat: 28.5450, lng: 77.1926 },
+    { label: '📍 Koramangala, Bangalore', loc: 'Koramangala, Bangalore', lat: 12.9352, lng: 77.6245 },
+    { label: '📍 Shivajinagar / FC Road', loc: 'Shivajinagar, Pune', lat: 18.5204, lng: 73.8567 },
+    { label: '📍 DU North Campus', loc: 'North Campus, New Delhi', lat: 28.6900, lng: 77.2100 },
+    { label: '📍 Sector 62, Noida', loc: 'Sector 62, Noida', lat: 28.6270, lng: 77.3725 },
   ];
 
-  // Fetch Spaces from API
-  const fetchSpaces = useCallback(async () => {
+  const resolveCoordinates = (name: string): { lat: number; lng: number } | null => {
+    const clean = name.toLowerCase().trim();
+    if (!clean) return null;
+    for (const hub of quickHubs) {
+      if (hub.loc.toLowerCase().includes(clean) || clean.includes(hub.loc.toLowerCase().split(',')[0].toLowerCase())) {
+        return { lat: hub.lat, lng: hub.lng };
+      }
+    }
+    if (clean.includes('pune') || clean.includes('wagholi') || clean.includes('viman') || clean.includes('kothrud') || clean.includes('aundh')) {
+      return { lat: 18.5793, lng: 73.9822 };
+    }
+    if (clean.includes('delhi') || clean.includes('hauz khas') || clean.includes('noida') || clean.includes('campus')) {
+      return { lat: 28.5450, lng: 77.1926 };
+    }
+    if (clean.includes('bangalore') || clean.includes('bengaluru') || clean.includes('koramangala') || clean.includes('indiranagar')) {
+      return { lat: 12.9352, lng: 77.6245 };
+    }
+    if (clean.includes('mumbai') || clean.includes('bandra') || clean.includes('powai')) {
+      return { lat: 19.1334, lng: 72.9133 };
+    }
+    return null;
+  };
+
+  const computeHaversineKm = (lat1: number, lon1: number, lat2: number, lon2: number): number => {
+    const R = 6371;
+    const dLat = ((lat2 - lat1) * Math.PI) / 180;
+    const dLon = ((lon2 - lon1) * Math.PI) / 180;
+    const a =
+      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+      Math.cos((lat1 * Math.PI) / 180) * Math.cos((lat2 * Math.PI) / 180) *
+      Math.sin(dLon / 2) * Math.sin(dLon / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    return Math.round(R * c * 10) / 10;
+  };
+
+  // Fetch Spaces from API with optional direct overrides
+  const fetchSpaces = useCallback(async (overrides?: {
+    category?: string;
+    loc?: string;
+    q?: string;
+    radius?: string;
+    maxPrice?: string;
+    lat?: number | null;
+    lng?: number | null;
+  }) => {
     setLoading(true);
     try {
-      const maxPriceVal = selectedMaxPrice ? Number(selectedMaxPrice) : undefined;
+      const cat = overrides?.category !== undefined ? overrides.category : activeCategory;
+      const loc = overrides?.loc !== undefined ? overrides.loc : locationInput;
+      const qVal = overrides?.q !== undefined ? overrides.q : searchQuery;
+      const rad = overrides?.radius !== undefined ? overrides.radius : selectedRadius;
+      const priceStr = overrides?.maxPrice !== undefined ? overrides.maxPrice : selectedMaxPrice;
+      let curLat = overrides?.lat !== undefined ? overrides.lat : userLat;
+      let curLng = overrides?.lng !== undefined ? overrides.lng : userLng;
+
+      if ((!curLat || !curLng) && loc) {
+        const coords = resolveCoordinates(loc);
+        if (coords) {
+          curLat = coords.lat;
+          curLng = coords.lng;
+        }
+      }
+
+      const maxPriceVal = priceStr ? Number(priceStr) : undefined;
       const data = await getSpaces({
-        category: activeCategory !== 'All' ? activeCategory : undefined,
-        city: locationInput.trim() || undefined,
-        q: searchQuery.trim() || undefined,
+        category: cat !== 'All' ? cat : undefined,
+        city: loc.trim() || undefined,
+        q: qVal.trim() || undefined,
+        radius: rad && rad !== 'All' ? rad : undefined,
         max_price: maxPriceVal,
-        lat: userLat || undefined,
-        lng: userLng || undefined,
+        lat: curLat || undefined,
+        lng: curLng || undefined,
       });
       setSpaces(data);
     } catch (err) {
@@ -62,11 +122,94 @@ export const ExplorePage: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, [activeCategory, locationInput, searchQuery, selectedMaxPrice, userLat, userLng]);
+  }, [activeCategory, locationInput, searchQuery, selectedMaxPrice, selectedRadius, userLat, userLng]);
 
   useEffect(() => {
     fetchSpaces();
   }, [activeCategory, selectedMaxPrice, selectedRadius]);
+
+  // Reactive display spaces with distance & filter calculation
+  const displaySpaces = useMemo(() => {
+    let result = [...spaces];
+
+    let refLat = userLat;
+    let refLng = userLng;
+    if ((!refLat || !refLng) && locationInput.trim()) {
+      const coords = resolveCoordinates(locationInput);
+      if (coords) {
+        refLat = coords.lat;
+        refLng = coords.lng;
+      }
+    }
+
+    if (refLat && refLng) {
+      result = result.map((sp) => {
+        if (sp.latitude && sp.longitude) {
+          const dist = computeHaversineKm(refLat!, refLng!, sp.latitude, sp.longitude);
+          return { ...sp, distance_km: sp.distance_km ?? dist };
+        }
+        return sp;
+      });
+
+      if (selectedRadius && selectedRadius !== 'All') {
+        const maxKm = Number(selectedRadius);
+        if (!isNaN(maxKm) && maxKm > 0) {
+          result = result.filter((sp) => sp.distance_km !== undefined && sp.distance_km <= maxKm);
+        }
+      }
+
+      result.sort((a, b) => (a.distance_km ?? 9999) - (b.distance_km ?? 9999));
+    }
+
+    if (selectedMaxPrice) {
+      const p = Number(selectedMaxPrice);
+      if (!isNaN(p)) {
+        result = result.filter((sp) => (sp.hourly_rate ?? sp.price_hourly ?? 50) <= p);
+      }
+    }
+
+    if (activeCategory && activeCategory !== 'All') {
+      const c = activeCategory.toLowerCase();
+      result = result.filter((sp) => {
+        const spCat = (sp.category || '').toLowerCase();
+        const spTitle = (sp.title || '').toLowerCase();
+        if (c === 'studio') return spCat.includes('studio') || spCat.includes('creative') || spTitle.includes('studio') || spTitle.includes('podcast');
+        if (c === 'workspace') return spCat.includes('workspace') || spCat.includes('work') || spTitle.includes('hackathon') || spTitle.includes('coding');
+        if (c === 'meeting') return spCat.includes('meeting') || spTitle.includes('discussion') || spTitle.includes('whiteboard') || spTitle.includes('sprint');
+        if (c === 'study') return spCat.includes('study') || spCat.includes('pod') || spTitle.includes('study') || spTitle.includes('library');
+        if (c === 'workshop') return spCat.includes('workshop') || spCat.includes('creative') || spTitle.includes('maker') || spTitle.includes('soldering');
+        if (c === 'retail') return spCat.includes('retail') || spTitle.includes('retail') || spTitle.includes('pop-up') || spTitle.includes('store');
+        if (c === 'storage') return spCat.includes('storage') || spTitle.includes('storage') || spTitle.includes('gear');
+        if (c === 'event') return spCat.includes('event') || spTitle.includes('event');
+        return spCat.includes(c) || spTitle.includes(c);
+      });
+    }
+
+    return result;
+  }, [spaces, userLat, userLng, locationInput, selectedRadius, selectedMaxPrice, activeCategory]);
+
+  const handleSelectQuickHub = (hub: (typeof quickHubs)[0]) => {
+    setLocationInput(hub.loc);
+    setUserLat(hub.lat);
+    setUserLng(hub.lng);
+    fetchSpaces({ loc: hub.loc, lat: hub.lat, lng: hub.lng });
+  };
+
+  const handleSelectCategory = (catVal: string) => {
+    setActiveCategory(catVal);
+    setAiMatchActive(false);
+    fetchSpaces({ category: catVal });
+  };
+
+  const handleRadiusChange = (rad: string) => {
+    setSelectedRadius(rad);
+    fetchSpaces({ radius: rad });
+  };
+
+  const handleMaxPriceChange = (price: string) => {
+    setSelectedMaxPrice(price);
+    fetchSpaces({ maxPrice: price });
+  };
 
   // AI Match handler
   const handleAiSearch = async (queryText?: string) => {
@@ -281,10 +424,7 @@ export const ExplorePage: React.FC = () => {
                 <button
                   key={cat.value}
                   type="button"
-                  onClick={() => {
-                    setActiveCategory(cat.value);
-                    setAiMatchActive(false);
-                  }}
+                  onClick={() => handleSelectCategory(cat.value)}
                   className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-medium transition whitespace-nowrap floating-interactive ${
                     isSelected
                       ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30'
@@ -300,7 +440,10 @@ export const ExplorePage: React.FC = () => {
 
           {/* Active Indicator */}
           <div className="flex items-center gap-3 text-xs text-slate-400">
-            <span>{spaces.length} spaces available</span>
+            <span>
+              {displaySpaces.length} {displaySpaces.length === 1 ? 'space' : 'spaces'} available
+              {selectedRadius ? ` within ${selectedRadius} km` : ''}
+            </span>
             <span className="w-1 h-1 rounded-full bg-slate-700" />
             <span className="flex items-center gap-1 text-emerald-400">
               <i className="fa-solid fa-shield-check" /> 100% Host Verified
@@ -345,7 +488,7 @@ export const ExplorePage: React.FC = () => {
               </label>
               <select
                 value={selectedRadius}
-                onChange={(e) => setSelectedRadius(e.target.value)}
+                onChange={(e) => handleRadiusChange(e.target.value)}
                 className="bg-slate-950 border border-slate-700/70 rounded-xl px-3 py-2 text-xs sm:text-sm text-white focus:outline-none focus:border-indigo-500 transition"
               >
                 <option value="">Any Distance</option>
@@ -363,7 +506,7 @@ export const ExplorePage: React.FC = () => {
               </label>
               <select
                 value={selectedMaxPrice}
-                onChange={(e) => setSelectedMaxPrice(e.target.value)}
+                onChange={(e) => handleMaxPriceChange(e.target.value)}
                 className="bg-slate-950 border border-slate-700/70 rounded-xl px-3 py-2 text-xs sm:text-sm text-white focus:outline-none focus:border-indigo-500 transition"
               >
                 <option value="">Any Budget</option>
@@ -406,10 +549,7 @@ export const ExplorePage: React.FC = () => {
               <button
                 key={idx}
                 type="button"
-                onClick={() => {
-                  setLocationInput(hub.loc);
-                  fetchSpaces();
-                }}
+                onClick={() => handleSelectQuickHub(hub)}
                 className="px-2 py-0.5 rounded-lg bg-slate-950/70 hover:bg-slate-800 text-slate-400 hover:text-white border border-slate-800 text-[11px] transition"
               >
                 {hub.label}
@@ -449,14 +589,14 @@ export const ExplorePage: React.FC = () => {
             <div className="w-8 h-8 border-3 border-indigo-500 border-t-transparent rounded-full animate-spin mb-3" />
             <span className="text-xs text-slate-400">Searching verified spaces...</span>
           </div>
-        ) : spaces.length === 0 ? (
+        ) : displaySpaces.length === 0 ? (
           <div className="py-20 text-center bg-slate-900/50 rounded-2xl border border-slate-800 p-8">
             <div className="w-16 h-16 rounded-full bg-slate-800 flex items-center justify-center mx-auto mb-4 text-2xl">
               📍
             </div>
             <h3 className="text-lg font-bold text-white mb-2">No spaces found matching this criteria</h3>
             <p className="text-xs text-slate-400 mb-6 max-w-sm mx-auto">
-              Try adjusting your location, selecting "All Spaces", or increasing your budget limit.
+              Try adjusting your location, selecting "All Spaces", or increasing your radius/budget limit.
             </p>
             <button
               onClick={resetAllFilters}
@@ -467,7 +607,7 @@ export const ExplorePage: React.FC = () => {
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {spaces.map((space) => (
+            {displaySpaces.map((space) => (
               <SpaceCard
                 key={space.id}
                 space={space}

@@ -64,6 +64,7 @@ export async function getSpaces(params?: {
   max_price?: number;
   lat?: number;
   lng?: number;
+  radius?: number | string;
 }): Promise<Space[]> {
   const query = new URLSearchParams();
   if (params?.category && params.category !== 'All') query.append('category', params.category);
@@ -72,6 +73,7 @@ export async function getSpaces(params?: {
   if (params?.max_price) query.append('max_price', params.max_price.toString());
   if (params?.lat) query.append('lat', params.lat.toString());
   if (params?.lng) query.append('lng', params.lng.toString());
+  if (params?.radius && params.radius !== 'All') query.append('radius', params.radius.toString());
 
   const qs = query.toString();
   const endpoint = `/api/spaces${qs ? `?${qs}` : ''}`;
