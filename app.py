@@ -105,13 +105,11 @@ def create_app():
 
     @app.route("/api/index.py")
     def api_index_entrypoint():
-        raw_uri = request.environ.get("RAW_URI") or request.environ.get("REQUEST_URI") or ""
+        keys = {k: str(v) for k, v in request.environ.items() if not k.startswith("werkzeug.")}
         return jsonify({
             "status": "ok",
-            "message": "SpaceLoop Vercel Serverless Function Active",
-            "path": request.path,
-            "raw_uri": raw_uri,
-            "matched_path": request.environ.get("HTTP_X_MATCHED_PATH")
+            "environ": keys,
+            "headers": dict(request.headers)
         })
 
     # =========================================================================
