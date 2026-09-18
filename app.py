@@ -116,7 +116,9 @@ def create_app():
     # UNIFIED FRONTEND ENTRY POINT (MODERN REACT SPA)
     # Serves Vite React SPA directly on root / and client routes
     # =========================================================================
-    dist_dir = os.path.join(os.path.dirname(__file__), "frontend", "dist")
+    dist_dir = os.path.join(os.path.dirname(__file__), "public")
+    if not os.path.exists(os.path.join(dist_dir, "index.html")):
+        dist_dir = os.path.join(os.path.dirname(__file__), "frontend", "dist")
 
     @app.route("/assets/<path:filename>")
     def serve_frontend_assets(filename):

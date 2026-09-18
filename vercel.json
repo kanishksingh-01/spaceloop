@@ -2,32 +2,8 @@
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "rewrites": [
     {
-      "source": "/api/(.*)",
-      "destination": "/api/index.py?__path__=/api/$1"
-    },
-    {
-      "source": "/api",
-      "destination": "/api/index.py?__path__=/api"
-    },
-    {
-      "source": "/auth/(.*)",
-      "destination": "/api/index.py?__path__=/auth/$1"
-    },
-    {
-      "source": "/auth",
-      "destination": "/api/index.py?__path__=/auth"
-    },
-    {
-      "source": "/switch-(.*)",
-      "destination": "/api/index.py?__path__=/switch-$1"
-    },
-    {
-      "source": "/space/:id/printable-qr",
-      "destination": "/api/index.py?__path__=/space/:id/printable-qr"
-    },
-    {
-      "source": "/((?!api/|auth/|switch-|space/.*/printable-qr|assets/|static/).*)",
-      "destination": "/index.html"
+      "source": "/(.*)",
+      "destination": "/api/index"
     }
   ]
 }
