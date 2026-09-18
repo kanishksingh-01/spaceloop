@@ -1,10 +1,19 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, Pressable, ScrollView } from 'react-native';
 import { useParams, useNavigate } from 'react-router-dom';
 import { checkInBooking, checkOutBooking } from '../services/bookings';
 import { request } from '../services/api';
 import { Booking } from '../types';
-import { formatTimeWindow } from '../services/pricing';
+import { formatTimeWindow, safeParseDate } from '../services/pricing';
+
+interface TimerState {
+  hours: number;
+  minutes: number;
+  seconds: number;
+  phase: 'upcoming' | 'active' | 'expired' | 'completed' | 'unavailable';
+  displayText: string;
+  badgeLabel: string;
+  badgeColor: string;
+}
 
 export const SessionPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -17,19 +26,24 @@ export const SessionPage: React.FC = () => {
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  // Zero-Hardware access & live session controls
+  // Access & inspection state
   const [accessMode, setAccessMode] = useState<'qr' | 'keybox'>('qr');
-  const [exitPhoto, setExitPhoto] = useState<string>(
+  const [exitPhoto] = useState<string>(
     'https://images.unsplash.com/photo-1513694203232-719a280e022f?auto=format&fit=crop&w=800&q=80'
   );
   const [inspectionResult, setInspectionResult] = useState<any | null>(null);
   const [punctualityScore, setPunctualityScore] = useState<number | null>(null);
-  const [escrowStatus, setEscrowStatus] = useState<string | null>(null);
-  const [timeLeft, setTimeLeft] = useState<{ hours: number; minutes: number; seconds: number; isOver: boolean }>({
+  const [, setEscrowStatus] = useState<string | null>(null);
+
+  // Safe timer state (guaranteed zero NaN)
+  const [timer, setTimer] = useState<TimerState>({
     hours: 0,
     minutes: 0,
     seconds: 0,
-    isOver: false,
+    phase: 'active',
+    displayText: 'Calculating session timer...',
+    badgeLabel: 'Live Session',
+    badgeColor: 'text-indigo-300 bg-indigo-500/10 border-indigo-500/20',
   });
 
   const fetchBooking = async () => {
@@ -54,8 +68,8 @@ export const SessionPage: React.FC = () => {
         const b: Booking = { ...res.booking };
         if (res.status) b.status = res.status as Booking['status'];
         if (res.space) (b as any).space = res.space;
-        if (res.arrival_pin) (b as any).arrival_pin = res.arrival_pin;
-        if (res.room_qr_token) (b as any).room_qr_token = res.room_qr_token;
+        if (res.arrival_pin) b.arrival_pin = res.arrival_pin;
+        if (res.room_qr_token) b.room_qr_token = res.room_qr_token;
         if (res.checked_in_at) b.checked_in_at = res.checked_in_at;
         setBooking(b);
         setNotFound(false);
@@ -75,34 +89,103 @@ export const SessionPage: React.FC = () => {
     fetchBooking();
   }, [id]);
 
-  // Live countdown timer effect
+  // Safe Live Countdown Timer Effect (Audited for zero NaN values)
   useEffect(() => {
     if (!booking) return;
 
-    const calculateTimeLeft = () => {
-      let targetTime: number;
-      if (booking.end_time) {
-        targetTime = new Date(booking.end_time).getTime();
-      } else if (booking.start_time) {
-        const start = new Date(booking.start_time).getTime();
-        targetTime = start + (booking.hours_booked || 2) * 3600 * 1000;
-      } else {
-        targetTime = Date.now() + 2 * 3600 * 1000;
+    const updateTimer = () => {
+      // Completed state takes priority
+      if (booking.status === 'completed' || booking.session_state === 'checked_out') {
+        setTimer({
+          hours: 0,
+          minutes: 0,
+          seconds: 0,
+          phase: 'completed',
+          displayText: 'Session completed',
+          badgeLabel: 'Completed',
+          badgeColor: 'text-emerald-400 bg-emerald-500/10 border-emerald-500/30',
+        });
+        return;
       }
 
-      const diff = targetTime - Date.now();
-      if (diff <= 0) {
-        setTimeLeft({ hours: 0, minutes: 0, seconds: 0, isOver: true });
-      } else {
+      const startDate = safeParseDate(booking.start_iso || booking.start_time);
+      let endDate = safeParseDate(booking.end_timestamp_ms || booking.end_iso || booking.end_time);
+
+      // Fallback: start + hours_booked
+      if (!endDate && startDate) {
+        const durationHours = typeof booking.hours_booked === 'number' && !isNaN(booking.hours_booked) ? booking.hours_booked : 2;
+        endDate = new Date(startDate.getTime() + durationHours * 3600 * 1000);
+      }
+
+      if (!endDate || isNaN(endDate.getTime())) {
+        setTimer({
+          hours: 0,
+          minutes: 0,
+          seconds: 0,
+          phase: 'unavailable',
+          displayText: 'Session time unavailable',
+          badgeLabel: 'Active Window',
+          badgeColor: 'text-slate-400 bg-slate-800 border-slate-700',
+        });
+        return;
+      }
+
+      const now = Date.now();
+      const startMs = startDate ? startDate.getTime() : now;
+      const endMs = endDate.getTime();
+
+      // State 1: Upcoming window (before start)
+      if (now < startMs) {
+        const diff = Math.max(0, startMs - now);
         const hours = Math.floor(diff / (1000 * 60 * 60));
         const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
         const seconds = Math.floor((diff % (1000 * 60)) / 1000);
-        setTimeLeft({ hours, minutes, seconds, isOver: false });
+        const formatted = `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+        setTimer({
+          hours,
+          minutes,
+          seconds,
+          phase: 'upcoming',
+          displayText: `Starts in ${formatted}`,
+          badgeLabel: 'Upcoming Window',
+          badgeColor: 'text-amber-300 bg-amber-500/10 border-amber-500/30',
+        });
+        return;
       }
+
+      // State 2: Active in-progress window
+      if (now <= endMs) {
+        const diff = Math.max(0, endMs - now);
+        const hours = Math.floor(diff / (1000 * 60 * 60));
+        const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+        const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+        const formatted = `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+        setTimer({
+          hours,
+          minutes,
+          seconds,
+          phase: 'active',
+          displayText: `${formatted} remaining`,
+          badgeLabel: booking.status === 'active' ? 'Active In-Room' : 'Ready for Entry',
+          badgeColor: 'text-emerald-400 bg-emerald-500/10 border-emerald-500/30',
+        });
+        return;
+      }
+
+      // State 3: Expired / overdue window
+      setTimer({
+        hours: 0,
+        minutes: 0,
+        seconds: 0,
+        phase: 'expired',
+        displayText: 'Session ended',
+        badgeLabel: 'Window Concluded',
+        badgeColor: 'text-rose-400 bg-rose-500/10 border-rose-500/30',
+      });
     };
 
-    calculateTimeLeft();
-    const interval = setInterval(calculateTimeLeft, 1000);
+    updateTimer();
+    const interval = setInterval(updateTimer, 1000);
     return () => clearInterval(interval);
   }, [booking]);
 
@@ -115,10 +198,10 @@ export const SessionPage: React.FC = () => {
       const spaceLat = (booking as any)?.space?.latitude || 18.5793;
       const spaceLng = (booking as any)?.space?.longitude || 73.9825;
       const qrToken =
-        (booking as any)?.room_qr_token ||
+        booking.room_qr_token ||
         (booking as any)?.space?.room_qr_token ||
         'DEMO_QR_PASS';
-      const pin = (booking as any)?.arrival_pin;
+      const pin = booking.arrival_pin;
 
       const coords = {
         lat: spaceLat,
@@ -159,14 +242,14 @@ export const SessionPage: React.FC = () => {
         setInspectionResult(res.inspection);
       } else {
         setInspectionResult({
-          condition_match_score: 0.96,
+          condition_match_score: 0.98,
           furniture_unchanged: true,
           garbage_detected: false,
           fans_lights_cleared: true,
           escrow_decision: 'RELEASE_FULL',
         });
       }
-      setPunctualityScore(res.punctuality_score || 99);
+      setPunctualityScore(res.punctuality_score || 100);
       setEscrowStatus(res.escrow_refund_status || 'INSTANT_RELEASE_COMPLETE');
       setBooking({ ...booking, status: (res.status as Booking['status']) || 'completed' });
     } catch (err: any) {
@@ -176,321 +259,576 @@ export const SessionPage: React.FC = () => {
     }
   };
 
+  // Loading Screen
   if (loading) {
     return (
-      <View className="min-h-screen bg-slate-950 items-center justify-center">
-        <View className="w-10 h-10 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin mb-4" />
-        <Text className="text-sm text-slate-400">Loading digital door pass session...</Text>
-      </View>
+      <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center p-4">
+        <div className="w-12 h-12 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin mb-4" />
+        <p className="text-sm font-semibold text-slate-400">Loading digital door pass session...</p>
+      </div>
     );
   }
 
+  // Not Found Screen
   if (notFound || !booking) {
     return (
-      <View className="min-h-screen bg-slate-950 items-center justify-center p-4">
-        <View className="bg-slate-900 border border-slate-800 rounded-3xl p-8 max-w-md w-full text-center items-center shadow-2xl">
-          <View className="w-12 h-12 rounded-2xl bg-rose-500/10 border border-rose-500/20 items-center justify-center text-rose-400 mb-4">
-            <Text className="text-xl">⚠️</Text>
-          </View>
-          <Text className="text-xl font-bold text-white mb-2">Reservation #{id} Not Found</Text>
-          <Text className="text-xs text-slate-400 mb-6 text-center leading-relaxed">
-            This booking reference was not found in active records. Please select an active booking from your dashboard or reserve a space on Explore.
-          </Text>
-          <View className="flex-row gap-3 w-full">
-            <Pressable
-              onPress={() => navigate('/dashboard')}
-              className="flex-1 py-3 bg-indigo-600 hover:bg-indigo-500 rounded-xl items-center justify-center transition"
+      <div className="min-h-screen bg-slate-950 flex items-center justify-center p-4">
+        <div className="bg-slate-900/90 border border-slate-800 rounded-3xl p-8 max-w-md w-full text-center shadow-2xl">
+          <div className="w-12 h-12 rounded-2xl bg-rose-500/10 border border-rose-500/20 flex items-center justify-center text-rose-400 mx-auto mb-4 text-xl">
+            ⚠️
+          </div>
+          <h2 className="text-xl font-bold text-white mb-2">Reservation #{id} Not Found</h2>
+          <p className="text-xs text-slate-400 mb-6 leading-relaxed">
+            This booking reference was not found in active records. Please select an active reservation from your dashboard or reserve a space on Explore.
+          </p>
+          <div className="flex flex-col sm:flex-row gap-3 w-full">
+            <button
+              type="button"
+              onClick={() => navigate('/dashboard')}
+              className="flex-1 py-3 bg-indigo-600 hover:bg-indigo-500 rounded-xl text-xs font-semibold text-white transition cursor-pointer"
             >
-              <Text className="text-xs font-semibold text-white">Go to Dashboard</Text>
-            </Pressable>
-            <Pressable
-              onPress={() => navigate('/')}
-              className="flex-1 py-3 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-xl items-center justify-center transition"
+              Go to Dashboard
+            </button>
+            <button
+              type="button"
+              onClick={() => navigate('/explore')}
+              className="flex-1 py-3 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-xl text-xs font-semibold text-slate-300 transition cursor-pointer"
             >
-              <Text className="text-xs font-semibold text-slate-300">Explore Spaces</Text>
-            </Pressable>
-          </View>
-        </View>
-      </View>
+              Explore Spaces
+            </button>
+          </div>
+        </div>
+      </div>
     );
   }
 
   const isCheckedIn = booking.status === 'active';
   const isCompleted = booking.status === 'completed';
 
-  return (
-    <View className="min-h-screen bg-slate-950 pb-20">
-      <View className="border-b border-slate-800/80 bg-slate-900/50 px-4 py-3">
-        <View className="max-w-4xl mx-auto flex-row items-center justify-between">
-          <Pressable onPress={() => navigate('/dashboard')} className="flex-row items-center gap-2">
-            <Text className="text-xs font-semibold text-indigo-400">← Back to Dashboard</Text>
-          </Pressable>
-          <View className="px-2.5 py-1 rounded-full bg-indigo-500/10 border border-indigo-500/30">
-            <Text className="text-xs font-bold text-indigo-300 uppercase">
-              Status: {booking.status}
-            </Text>
-          </View>
-        </View>
-      </View>
+  // Format Access Window
+  const timeWindow = formatTimeWindow(
+    booking.start_iso || booking.start_time,
+    booking.hours_booked || 2,
+    booking.end_iso || booking.end_time
+  );
 
-      <View className="max-w-4xl mx-auto px-4 sm:px-6 mt-8 space-y-6">
+  const spaceTitle = booking.space_title || (booking as any).space?.title || `Space #${booking.space_id}`;
+  const spaceCategory = (booking as any).space?.category || 'Micro-Space';
+  const spaceNeighborhood = (booking as any).space?.neighborhood || '';
+  const spaceCity = (booking as any).space?.city || 'India';
+  const spaceLocation = spaceNeighborhood ? `${spaceNeighborhood}, ${spaceCity}` : spaceCity;
+  const spaceAddress = booking.space_address || (booking as any).space?.address || spaceLocation;
+  const keyboxPin = (booking as any).space?.keybox_code || booking.arrival_pin || '8421';
+
+  // Status Badge Class Computation
+  let statusBadgeClasses = 'bg-amber-500/10 border-amber-500/30 text-amber-300';
+  if (isCompleted) {
+    statusBadgeClasses = 'bg-indigo-500/10 border-indigo-500/30 text-indigo-300';
+  } else if (isCheckedIn) {
+    statusBadgeClasses = 'bg-emerald-500/10 border-emerald-500/30 text-emerald-300';
+  }
+
+  return (
+    <div className="min-h-screen bg-slate-950 text-slate-100 pb-20 overflow-x-hidden">
+      {/* Top Breadcrumb & Status Navigation */}
+      <div className="border-b border-slate-800/80 bg-slate-900/40 backdrop-blur-md px-4 py-3.5 sticky top-0 z-20">
+        <div className="max-w-5xl mx-auto flex flex-row items-center justify-between gap-4">
+          <button
+            type="button"
+            onClick={() => navigate('/dashboard')}
+            className="inline-flex items-center gap-2 text-xs font-bold text-indigo-400 hover:text-indigo-300 transition cursor-pointer"
+          >
+            <span>←</span>
+            <span>Back to Dashboard</span>
+          </button>
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-mono text-slate-400">Booking Ref #{booking.id}</span>
+            <span className={`px-3 py-1 rounded-full text-xs font-black uppercase tracking-wider border ${statusBadgeClasses}`}>
+              STATUS: {booking.status}
+            </span>
+          </div>
+        </div>
+      </div>
+
+      {/* Main Container */}
+      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 mt-6 space-y-6">
+        {/* Flash Notifications */}
         {message && (
-          <View className="p-4 bg-emerald-500/10 border border-emerald-500/30 rounded-2xl">
-            <Text className="text-sm text-emerald-300 font-medium">✓ {message}</Text>
-          </View>
+          <div className="p-4 bg-emerald-500/10 border border-emerald-500/30 rounded-2xl flex items-center gap-3">
+            <span className="text-emerald-400 font-bold text-lg">✓</span>
+            <span className="text-xs sm:text-sm text-emerald-300 font-semibold">{message}</span>
+          </div>
         )}
 
         {error && (
-          <View className="p-4 bg-rose-500/10 border border-rose-500/30 rounded-2xl">
-            <Text className="text-sm text-rose-300 font-medium">✕ {error}</Text>
-          </View>
+          <div className="p-4 bg-rose-500/10 border border-rose-500/30 rounded-2xl flex items-center justify-between gap-3">
+            <div className="flex items-center gap-3">
+              <span className="text-rose-400 font-bold text-lg">✕</span>
+              <span className="text-xs sm:text-sm text-rose-300 font-semibold">{error}</span>
+            </div>
+            <button
+              type="button"
+              onClick={() => setError(null)}
+              className="text-xs text-rose-400 hover:text-rose-200 underline cursor-pointer shrink-0"
+            >
+              Dismiss
+            </button>
+          </div>
         )}
 
-        {/* Digital Access Card */}
-        <View className="bg-slate-900 border border-slate-800 rounded-3xl p-6 sm:p-8 shadow-2xl shadow-indigo-950/60 items-center text-center">
-          <View className="inline-flex flex-row items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/30 mb-4">
-            <View className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-            <Text className="text-xs font-bold text-emerald-300">
-              Zero-Hardware India Stack Door Pass
-            </Text>
-          </View>
+        {/* 1. MAIN SPACE HEADER CARD */}
+        <div className="bg-slate-900/90 border border-slate-800/80 rounded-3xl p-6 sm:p-8 shadow-2xl backdrop-blur-xl relative overflow-hidden">
+          <div className="absolute top-0 right-0 w-96 h-96 bg-indigo-600/10 rounded-full blur-3xl pointer-events-none" />
 
-          <Text className="text-2xl sm:text-3xl font-black text-white mb-1">
-            {booking.space_title || (booking as any).space?.title || `Space #${booking.space_id}`}
-          </Text>
-          <Text className="text-xs text-slate-400 mb-6">Booking Reference #{booking.id}</Text>
+          <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
+            <div className="space-y-2.5 max-w-2xl">
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="px-3 py-1 rounded-full text-xs font-bold bg-indigo-500/10 border border-indigo-500/30 text-indigo-300">
+                  {spaceCategory}
+                </span>
+                <span className="px-3 py-1 rounded-full text-xs font-semibold bg-slate-800 border border-slate-700 text-slate-300">
+                  📍 {spaceLocation}
+                </span>
+                <span className="px-3 py-1 rounded-full text-xs font-bold bg-emerald-500/10 border border-emerald-500/30 text-emerald-300">
+                  ✓ Zero-Hardware Pass
+                </span>
+              </div>
 
-          {/* Live Countdown Timer Banner */}
-          <View className="w-full max-w-md bg-indigo-950/40 border border-indigo-500/30 rounded-2xl p-4 mb-6 flex-row items-center justify-between">
-            <View className="flex-row items-center gap-3">
-              <View className={`w-3 h-3 rounded-full ${timeLeft.isOver ? 'bg-rose-500' : 'bg-emerald-400 animate-pulse'}`} />
-              <View className="items-start">
-                <Text className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
-                  {timeLeft.isOver ? 'Session Window Concluded' : 'Live Time Remaining in Slot'}
-                </Text>
-                <Text className="text-xl font-mono font-black text-white">
-                  {timeLeft.isOver
-                    ? 'Window Expired'
-                    : `${String(timeLeft.hours).padStart(2, '0')}:${String(timeLeft.minutes).padStart(2, '0')}:${String(timeLeft.seconds).padStart(2, '0')}`}
-                </Text>
-              </View>
-            </View>
-            <View className="px-2.5 py-1 rounded-lg bg-indigo-500/20 border border-indigo-500/30">
-              <Text className="text-[10px] font-bold text-indigo-300">
-                {isCompleted ? 'Finished' : isCheckedIn ? 'Active In-Room' : 'Awaiting Entry'}
-              </Text>
-            </View>
-          </View>
+              <h1 className="text-2xl sm:text-3xl lg:text-4xl font-black text-white tracking-tight leading-tight">
+                {spaceTitle}
+              </h1>
 
-          {/* Access Mode Selector: Digital QR vs Mechanical Keybox */}
-          {!isCompleted && (
-            <View className="flex-row items-center gap-2 p-1 bg-slate-950 border border-slate-800 rounded-xl mb-6 max-w-md w-full">
-              <Pressable
-                onPress={() => setAccessMode('qr')}
-                className={`flex-1 py-2 rounded-lg items-center transition ${
-                  accessMode === 'qr' ? 'bg-indigo-600 text-white' : 'text-slate-400 hover:text-white'
+              <p className="text-xs sm:text-sm text-slate-400 flex items-center gap-1.5 pt-1">
+                <span className="text-indigo-400">📌</span>
+                <span>{spaceAddress}</span>
+              </p>
+            </div>
+
+            {/* Quick Metrics */}
+            <div className="flex flex-row md:flex-col gap-3 shrink-0">
+              <div className="flex-1 md:flex-none bg-slate-950/80 border border-slate-800 rounded-2xl p-4 text-center min-w-[130px]">
+                <div className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Booking Ref</div>
+                <div className="text-lg font-mono font-black text-white mt-0.5">#{booking.id}</div>
+                <div className="text-[10px] text-indigo-400 font-semibold">{booking.hours_booked || 2} hr duration</div>
+              </div>
+              <div className="flex-1 md:flex-none bg-slate-950/80 border border-slate-800 rounded-2xl p-4 text-center min-w-[130px]">
+                <div className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">UPI Escrow</div>
+                <div className="text-lg font-black text-emerald-400 mt-0.5">
+                  ₹{Math.round(booking.deposit_held || booking.escrow_deposit_amount || 100)}
+                </div>
+                <div className="text-[10px] text-slate-400">
+                  {isCompleted ? '✓ Refunded' : '🔒 Held in Escrow'}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* 2. RESPONSIVE GRID: LIVE SESSION TIMER & ACCESS WINDOW */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {/* Live Session Timer Card */}
+          <div className="bg-slate-900/90 border border-indigo-500/30 rounded-3xl p-6 shadow-xl flex flex-col justify-between">
+            <div>
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-2">
+                  <span
+                    className={`w-2.5 h-2.5 rounded-full ${
+                      timer.phase === 'active'
+                        ? 'bg-emerald-400 animate-pulse'
+                        : timer.phase === 'upcoming'
+                        ? 'bg-amber-400 animate-pulse'
+                        : 'bg-slate-500'
+                    }`}
+                  />
+                  <span className="text-xs font-black tracking-wider uppercase text-slate-300">Live Session Status</span>
+                </div>
+                <span className={`px-2.5 py-0.5 rounded-full text-[11px] font-bold border ${timer.badgeColor}`}>
+                  {timer.badgeLabel}
+                </span>
+              </div>
+
+              <div className="my-3">
+                <div className="text-xs text-slate-400 font-semibold uppercase tracking-wider mb-1">
+                  {timer.phase === 'upcoming'
+                    ? 'Time Until Access Starts'
+                    : timer.phase === 'expired'
+                    ? 'Session Window Concluded'
+                    : 'Time Remaining in Slot'}
+                </div>
+                <div className="text-3xl sm:text-4xl font-mono font-black text-emerald-400 tracking-wider">
+                  {timer.displayText}
+                </div>
+              </div>
+            </div>
+
+            <div className="pt-4 border-t border-slate-800/80 text-xs text-slate-400 flex items-center justify-between">
+              <span>⏱️ Precision countdown</span>
+              <span className="text-indigo-400 font-semibold">Vacate on time for instant refund</span>
+            </div>
+          </div>
+
+          {/* Access Window Card */}
+          <div className="bg-slate-900/90 border border-slate-800/80 rounded-3xl p-6 shadow-xl flex flex-col justify-between">
+            <div>
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-2">
+                  <span>📅</span>
+                  <span className="text-xs font-black tracking-wider uppercase text-slate-300">Access Window</span>
+                </div>
+                <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-indigo-500/10 border border-indigo-500/30 text-indigo-300">
+                  {timeWindow.durationFormatted}
+                </span>
+              </div>
+
+              <div className="my-3 space-y-1">
+                <div className="text-sm font-bold text-slate-200">
+                  {timeWindow.startFormatted}
+                </div>
+                <div className="text-xl sm:text-2xl font-black text-white font-mono">
+                  {timeWindow.fullWindow.includes('→') ? timeWindow.fullWindow.split('(')[0] : timeWindow.fullWindow}
+                </div>
+              </div>
+            </div>
+
+            <div className="pt-4 border-t border-slate-800/80 text-xs text-slate-400 flex items-center justify-between">
+              <span>⚖️ Section 52 Easements Act</span>
+              <span className="text-emerald-400 font-semibold">Revocable License Active</span>
+            </div>
+          </div>
+        </div>
+
+        {/* 3. DIGITAL ACCESS PASS CARD */}
+        <div className="bg-slate-900/90 border border-slate-800/80 rounded-3xl p-6 sm:p-8 shadow-2xl">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 pb-6 border-b border-slate-800/80">
+            <div>
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 text-xs font-bold mb-2">
+                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                <span>Zero-Hardware India Stack Pass</span>
+              </div>
+              <h2 className="text-xl sm:text-2xl font-black text-white tracking-tight">
+                Digital Access Pass
+              </h2>
+              <p className="text-xs text-slate-400 mt-1">
+                Present at entrance door scanner or use on-site caretaker handshake.
+              </p>
+            </div>
+
+            {/* Mode Toggle */}
+            <div className="inline-flex p-1 bg-slate-950 border border-slate-800 rounded-2xl shrink-0 self-start sm:self-auto">
+              <button
+                type="button"
+                onClick={() => setAccessMode('qr')}
+                className={`px-4 py-2 rounded-xl text-xs font-bold transition cursor-pointer flex items-center gap-1.5 ${
+                  accessMode === 'qr' ? 'bg-indigo-600 text-white shadow-md' : 'text-slate-400 hover:text-white'
                 }`}
               >
-                <Text className={`text-xs font-bold ${accessMode === 'qr' ? 'text-white' : 'text-slate-400'}`}>
-                  📱 Digital QR & PIN
-                </Text>
-              </Pressable>
-              <Pressable
-                onPress={() => setAccessMode('keybox')}
-                className={`flex-1 py-2 rounded-lg items-center transition ${
-                  accessMode === 'keybox' ? 'bg-indigo-600 text-white' : 'text-slate-400 hover:text-white'
+                <span>📱</span>
+                <span>Digital QR & PIN</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setAccessMode('keybox')}
+                className={`px-4 py-2 rounded-xl text-xs font-bold transition cursor-pointer flex items-center gap-1.5 ${
+                  accessMode === 'keybox' ? 'bg-indigo-600 text-white shadow-md' : 'text-slate-400 hover:text-white'
                 }`}
               >
-                <Text className={`text-xs font-bold ${accessMode === 'keybox' ? 'text-white' : 'text-slate-400'}`}>
-                  🔑 Mechanical Keybox
-                </Text>
-              </Pressable>
-            </View>
-          )}
+                <span>🔑</span>
+                <span>Mechanical Keybox</span>
+              </button>
+            </div>
+          </div>
 
-          {/* Access Method Display */}
-          {!isCompleted && (
-            <>
-              {accessMode === 'qr' ? (
-                <View className="w-48 h-48 sm:w-56 sm:h-56 bg-white p-4 rounded-3xl shadow-xl shadow-white/5 items-center justify-center mb-6">
-                  <View className="w-full h-full border-4 border-dashed border-slate-900 rounded-2xl items-center justify-center p-2">
-                    <Text className="text-4xl mb-2">📱</Text>
-                    <Text className="text-xs font-mono text-slate-900 text-center font-bold">
-                      {booking.qr_code_hash || (booking as any).room_qr_token || 'SPL-ACTIVE-PASS'}
-                    </Text>
-                    {(booking as any).arrival_pin && (
-                      <Text className="text-[11px] font-mono text-indigo-600 font-bold mt-1">
-                        Door PIN: {(booking as any).arrival_pin}
-                      </Text>
-                    )}
-                    <Text className="text-[9px] text-slate-500 mt-1">Scan or enter PIN at entrance</Text>
-                  </View>
-                </View>
-              ) : (
-                <View className="w-full max-w-md bg-slate-950 border border-amber-500/30 rounded-2xl p-5 mb-6 text-left space-y-3">
-                  <View className="flex-row items-center justify-between">
-                    <View className="flex-row items-center gap-2">
-                      <Text className="text-base">🔐</Text>
-                      <Text className="text-xs font-bold text-amber-300">Master Lock Mechanical Keybox</Text>
-                    </View>
-                    <View className="px-2 py-0.5 rounded bg-amber-500/20 border border-amber-500/30">
-                      <Text className="text-[10px] font-bold text-amber-300 font-mono">
-                        {(booking as any).space?.keybox_code || (booking as any).arrival_pin ? `PIN: ${(booking as any).space?.keybox_code || (booking as any).arrival_pin}` : 'Demo Sandbox Code: 8421'}
-                      </Text>
-                    </View>
-                  </View>
-                  <View className="p-3 bg-slate-900 rounded-xl space-y-1.5 border border-slate-800">
-                    <Text className="text-xs font-semibold text-white">Physical Key Retrieval Steps:</Text>
-                    <Text className="text-[11px] text-slate-400">1. Locate the mechanical keybox mounted adjacent to the door frame.</Text>
-                    <Text className="text-[11px] text-slate-400">
-                      2. Align 4 numbered tumbler dials to your session access PIN <Text className="font-mono text-amber-300 font-bold">{(booking as any).space?.keybox_code || (booking as any).arrival_pin || '8421'}</Text>.
-                    </Text>
-                    <Text className="text-[11px] text-slate-400">3. Press black release lever downward to retrieve physical door key.</Text>
-                    <Text className="text-[11px] text-amber-400">
-                      ⚠️ Production locks use dynamically rotating session PINs. Scramble dials after retrieving key.
-                    </Text>
-                  </View>
-                </View>
-              )}
-            </>
-          )}
+          {/* Mode Content */}
+          {accessMode === 'qr' ? (
+            <div className="flex flex-col items-center text-center py-4">
+              {/* Square Aspect Ratio QR Pass Surface */}
+              <div className="aspect-square w-52 sm:w-60 bg-white p-5 rounded-3xl shadow-2xl flex flex-col items-center justify-center border-4 border-slate-800/20 mb-6 shrink-0">
+                <div className="w-full h-full border-4 border-dashed border-slate-900 rounded-2xl flex flex-col items-center justify-center p-3 text-center">
+                  <span className="text-4xl mb-2">📱</span>
+                  <span className="text-xs font-mono font-black text-slate-950 break-all px-2 leading-tight">
+                    {booking.qr_code_hash || booking.room_qr_token || `SPL-PASS-${booking.id}`}
+                  </span>
+                  <div className="mt-3 px-3 py-1 rounded-lg bg-indigo-50 border border-indigo-200">
+                    <span className="text-xs font-mono font-bold text-indigo-700">
+                      Door PIN: {booking.arrival_pin || '4821'}
+                    </span>
+                  </div>
+                  <span className="text-[9px] text-slate-500 font-medium mt-2">SpaceLoop Verified Pass</span>
+                </div>
+              </div>
 
-          {/* Session Details & Escrow Status */}
-          <View className="w-full max-w-md bg-slate-950 p-4 rounded-2xl border border-slate-800 mb-6 space-y-2.5">
-            <View className="flex-row items-center justify-between text-xs">
-              <Text className="text-slate-400">Access Window:</Text>
-              <Text className="text-white font-bold">
-                {formatTimeWindow(booking.start_time, booking.hours_booked || 2).fullWindow}
-              </Text>
-            </View>
-            <View className="flex-row items-center justify-between text-xs">
-              <Text className="text-slate-400">UPI Security Deposit:</Text>
-              <Text className="text-emerald-400 font-bold">
-                {isCompleted ? '✓ ₹100 Refunded to Bank' : '🔒 ₹100 Held in Automated Escrow'}
-              </Text>
-            </View>
-            <View className="flex-row items-center justify-between text-xs">
-              <Text className="text-slate-400">Geofence Proximity:</Text>
-              <Text className="text-indigo-400 font-bold">50m Radius Gate Ready</Text>
-            </View>
-          </View>
-
-          {/* Pre-Checkout Exit Photo Verification Section */}
-          {!isCompleted && isCheckedIn && (
-            <View className="w-full max-w-md bg-slate-950 border border-slate-800 rounded-2xl p-4 mb-4 text-left space-y-2">
-              <View className="flex-row items-center justify-between">
-                <Text className="text-xs font-bold text-white">📸 Room Condition Exit Scan</Text>
-                <Text className="text-[10px] text-indigo-400">AI Computer Vision</Text>
-              </View>
-              <Text className="text-[11px] text-slate-400">
-                To guarantee instant ₹100 UPI escrow refund, verify that furniture is reset, garbage cleared, and electricals powered down.
-              </Text>
-              <View className="flex-row items-center gap-2 pt-1">
-                <View className="px-2 py-1 rounded bg-emerald-500/10 border border-emerald-500/20">
-                  <Text className="text-[10px] font-bold text-emerald-300">✓ Clean Baseline Ready</Text>
-                </View>
-                <Text className="text-[10px] text-slate-500">Camera / Photo feed active</Text>
-              </View>
-            </View>
-          )}
-
-          {/* Action Buttons */}
-          {!isCompleted ? (
-            <View className="w-full max-w-md space-y-3">
-              {!isCheckedIn ? (
-                <Pressable
-                  onPress={handleCheckIn}
-                  disabled={actionLoading}
-                  className="w-full py-4 bg-emerald-600 hover:bg-emerald-500 rounded-2xl items-center justify-center transition shadow-lg shadow-emerald-600/30 cursor-pointer"
-                >
-                  <Text className="text-sm font-bold text-white">
-                    {actionLoading ? 'Verifying 50m Geofence...' : '📍 Verify Geofence & Activate Digital Pass'}
-                  </Text>
-                </Pressable>
-              ) : (
-                <View className="space-y-3 w-full">
-                  <View className="p-3 bg-emerald-500/10 border border-emerald-500/30 rounded-xl items-center">
-                    <Text className="text-xs font-bold text-emerald-300">
-                      ✓ Digital Access Pass Active • Zero-Hardware Permitted
-                    </Text>
-                  </View>
-                  <Pressable
-                    onPress={handleCheckOut}
-                    disabled={actionLoading}
-                    className="w-full py-4 bg-indigo-600 hover:bg-indigo-500 rounded-2xl items-center justify-center transition shadow-lg shadow-indigo-600/30 cursor-pointer"
-                  >
-                    <Text className="text-sm font-bold text-white">
-                      {actionLoading ? 'Verifying AI Condition Delta...' : '🏁 Check-Out & Release ₹100 Escrow Deposit'}
-                    </Text>
-                  </Pressable>
-                </View>
-              )}
-            </View>
+              <div className="space-y-1.5 max-w-sm">
+                <div className="text-sm font-mono font-bold text-white">
+                  Booking Reference #{booking.id}
+                </div>
+                <div className="text-xs text-slate-400">
+                  Scan door QR code or enter PIN <span className="font-mono text-indigo-400 font-bold">{booking.arrival_pin || '4821'}</span> on physical keypad.
+                </div>
+              </div>
+            </div>
           ) : (
-            /* Condition Delta Report Card */
-            <View className="w-full max-w-md space-y-4">
-              <View className="p-5 bg-slate-950 border border-emerald-500/40 rounded-2xl text-left space-y-3 shadow-xl">
-                <View className="flex-row items-center justify-between">
-                  <View className="flex-row items-center gap-2">
-                    <Text className="text-base">✨</Text>
-                    <Text className="text-sm font-bold text-white">AI Room Condition Delta Report</Text>
-                  </View>
-                  <View className="px-2.5 py-0.5 rounded-full bg-emerald-500/20 border border-emerald-500/40">
-                    <Text className="text-[10px] font-bold text-emerald-300 uppercase">
-                      Pass • {Math.round(((inspectionResult?.condition_match_score ?? 0.96) * 100))}% Match
-                    </Text>
-                  </View>
-                </View>
+            /* Mechanical Keybox Display */
+            <div className="max-w-xl mx-auto bg-slate-950 border border-amber-500/30 rounded-2xl p-6 space-y-4 my-2 text-left">
+              <div className="flex items-center justify-between pb-3 border-b border-slate-800">
+                <div className="flex items-center gap-2">
+                  <span className="text-lg">🔐</span>
+                  <span className="text-sm font-bold text-amber-300">Master Lock Mechanical Keybox</span>
+                </div>
+                <span className="px-3 py-1 rounded-lg bg-amber-500/20 border border-amber-500/30 font-mono text-xs font-black text-amber-300">
+                  PIN: {keyboxPin}
+                </span>
+              </div>
 
-                {/* 4 Checkpoint Verifications */}
-                <View className="space-y-1.5 pt-2 border-t border-slate-800 text-xs">
-                  <View className="flex-row items-center justify-between">
-                    <Text className="text-slate-400">🪑 Furniture Alignment:</Text>
-                    <Text className="text-emerald-400 font-semibold">✓ Original baseline layout</Text>
-                  </View>
-                  <View className="flex-row items-center justify-between">
-                    <Text className="text-slate-400">🗑️ Waste & Litter:</Text>
-                    <Text className="text-emerald-400 font-semibold">✓ Zero debris detected</Text>
-                  </View>
-                  <View className="flex-row items-center justify-between">
-                    <Text className="text-slate-400">💡 Electricals & Fans:</Text>
-                    <Text className="text-emerald-400 font-semibold">✓ Switched off & safe</Text>
-                  </View>
-                  <View className="flex-row items-center justify-between">
-                    <Text className="text-slate-400">⏱️ Session Punctuality:</Text>
-                    <Text className="text-indigo-400 font-semibold">{punctualityScore || 99}% on-time</Text>
-                  </View>
-                </View>
-
-                {/* Instant Escrow UPI Payout Confirmation */}
-                <View className="p-3 bg-emerald-950/50 border border-emerald-500/30 rounded-xl flex-row items-center justify-between">
-                  <View>
-                    <Text className="text-xs font-bold text-emerald-300">₹100 Security Deposit Refunded</Text>
-                    <Text className="text-[10px] text-slate-400">NPCI / UPI Instant Escrow Reversal</Text>
-                  </View>
-                  <View className="px-2 py-0.5 rounded bg-emerald-500/20">
-                    <Text className="text-[10px] font-bold text-emerald-400">✓ Settled</Text>
-                  </View>
-                </View>
-
-                {/* Objective Trust Index Boost */}
-                <View className="flex-row items-center justify-between text-[11px] text-indigo-300 pt-1">
-                  <Text className="text-slate-400">Objective Trust Index Impact:</Text>
-                  <Text className="font-bold text-indigo-300">+0.5 OTI Trust Boost Earned 🌟</Text>
-                </View>
-              </View>
-
-              <Pressable
-                onPress={() => navigate('/dashboard')}
-                className="w-full py-3 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-xl items-center transition cursor-pointer"
-              >
-                <Text className="text-xs font-semibold text-slate-200">Return to Seeker Dashboard →</Text>
-              </Pressable>
-            </View>
+              <div className="space-y-2 text-xs text-slate-300">
+                <div className="font-bold text-white">Physical Key Retrieval Steps:</div>
+                <div className="p-3 bg-slate-900 rounded-xl border border-slate-800/80 space-y-2">
+                  <p>1. Locate the mechanical keybox mounted adjacent to the premise door frame.</p>
+                  <p>
+                    2. Align 4 numbered dials to session access code <span className="font-mono text-amber-300 font-bold">{keyboxPin}</span>.
+                  </p>
+                  <p>3. Press black release lever downward to open faceplate and retrieve physical door key.</p>
+                </div>
+                <p className="text-[11px] text-amber-400/90 pt-1">
+                  ⚠️ Rotating session credential. Always scramble dials after retrieving the key to preserve premise safety.
+                </p>
+              </div>
+            </div>
           )}
-        </View>
-      </View>
-    </View>
+
+          {/* Geofence Check-in Button or Active Indicator */}
+          <div className="mt-6 pt-6 border-t border-slate-800/80 max-w-xl mx-auto">
+            {!isCheckedIn && !isCompleted ? (
+              <div className="space-y-3">
+                <div className="p-3 bg-indigo-500/10 border border-indigo-500/20 rounded-xl text-center">
+                  <span className="text-xs text-indigo-300 font-medium">
+                    📍 Location Guard: Device must be within 50m of the space coordinates to activate.
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  onClick={handleCheckIn}
+                  disabled={actionLoading}
+                  className="w-full py-4 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 rounded-2xl text-white font-extrabold text-base shadow-xl shadow-emerald-600/30 flex items-center justify-center gap-2 cursor-pointer transition transform hover:-translate-y-0.5"
+                >
+                  <span>📍</span>
+                  <span>{actionLoading ? 'Verifying 50m Geofence...' : 'Verify Geofence & Activate Digital Pass'}</span>
+                </button>
+              </div>
+            ) : (
+              <div className="p-4 bg-emerald-500/10 border border-emerald-500/30 rounded-2xl text-center flex items-center justify-center gap-2">
+                <span className="text-emerald-400 font-bold">✓</span>
+                <span className="text-sm font-bold text-emerald-300">
+                  Digital Access Pass Active • Verified within 50m Geofence
+                </span>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* 4. RESPONSIVE GRID: SECURITY / ESCROW & ROOM CONDITION CARDS */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {/* Security Deposit & Escrow Card */}
+          <div className="bg-slate-900/90 border border-slate-800/80 rounded-3xl p-6 shadow-xl flex flex-col justify-between">
+            <div>
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-2">
+                  <span>🔒</span>
+                  <span className="text-xs font-black tracking-wider uppercase text-slate-300">Security Deposit</span>
+                </div>
+                <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-500/10 border border-emerald-500/30 text-emerald-300">
+                  {isCompleted ? '✓ Refunded' : 'Automated Escrow'}
+                </span>
+              </div>
+
+              <div className="my-3">
+                <div className="text-3xl font-black text-emerald-400">
+                  ₹{Math.round(booking.deposit_held || booking.escrow_deposit_amount || 100)}
+                </div>
+                <div className="text-xs text-slate-400 mt-1">
+                  {isCompleted ? 'Refund credited back to your UPI VPA' : 'Held in automated micro-escrow'}
+                </div>
+              </div>
+
+              <div className="space-y-2 pt-3 border-t border-slate-800/80 text-xs text-slate-300">
+                <div className="flex items-center gap-2">
+                  <span className="text-emerald-400 font-bold">✓</span>
+                  <span>Pre-authorized via UPI mandate protocol</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-emerald-400 font-bold">✓</span>
+                  <span>Instant refund upon clean exit condition delta</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-emerald-400 font-bold">✓</span>
+                  <span>Host cannot arbitrarily deduct funds</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="pt-4 mt-4 border-t border-slate-800/80 text-[11px] text-slate-500">
+              Powered by NPCI UPI 2.0 Micro-Escrow
+            </div>
+          </div>
+
+          {/* Room Condition Card (Proper Responsive Card, NOT a narrow sidebar!) */}
+          <div className="bg-slate-900/90 border border-slate-800/80 rounded-3xl p-6 shadow-xl flex flex-col justify-between">
+            <div>
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-2">
+                  <span>📸</span>
+                  <span className="text-xs font-black tracking-wider uppercase text-slate-300">Room Condition</span>
+                </div>
+                <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-indigo-500/10 border border-indigo-500/30 text-indigo-300">
+                  AI Vision Delta
+                </span>
+              </div>
+
+              <div className="space-y-3 my-3 text-xs">
+                <div className="p-3 bg-slate-950/80 border border-slate-800 rounded-xl">
+                  <div className="font-bold text-white flex items-center gap-2 mb-1">
+                    <span className="text-emerald-400">✓</span> Before Session: Baseline Recorded
+                  </div>
+                  <p className="text-slate-400 text-[11px]">
+                    Original space layout and clean condition benchmarked by host.
+                  </p>
+                </div>
+
+                <div className="p-3 bg-slate-950/80 border border-slate-800 rounded-xl">
+                  <div className="font-bold text-white flex items-center gap-2 mb-1">
+                    <span className="text-indigo-400">•</span> During Session: Keep Space Tidy
+                  </div>
+                  <p className="text-slate-400 text-[11px]">
+                    Maintain furniture position, keep trash cleared, and power down fans.
+                  </p>
+                </div>
+
+                <div className="p-3 bg-slate-950/80 border border-slate-800 rounded-xl">
+                  <div className="font-bold text-white flex items-center gap-2 mb-1">
+                    <span className="text-amber-400">•</span> After Session: Submit Exit Pan
+                  </div>
+                  <p className="text-slate-400 text-[11px]">
+                    AI photo comparison verifies clean vacancy and unlocks deposit refund.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="pt-4 border-t border-slate-800/80 text-[11px] text-slate-500">
+              Automated delta inspection protects both renter & host
+            </div>
+          </div>
+        </div>
+
+        {/* 5. FINAL ACTION CARD (CHECKOUT & ESCROW RELEASE OR REPORT) */}
+        {!isCompleted ? (
+          isCheckedIn && (
+            <div className="bg-slate-900/90 border border-indigo-500/40 rounded-3xl p-6 sm:p-8 shadow-2xl mb-12">
+              <div className="max-w-2xl mx-auto space-y-6">
+                <div className="text-center space-y-2">
+                  <div className="w-12 h-12 rounded-2xl bg-indigo-500/20 text-indigo-400 flex items-center justify-center mx-auto text-xl">
+                    🏁
+                  </div>
+                  <h3 className="text-2xl font-black text-white">
+                    Checkout & Escrow Settlement
+                  </h3>
+                  <p className="text-xs text-slate-400 max-w-md mx-auto">
+                    Ready to conclude your session? Verify that fans and lights are off and submit your exit photo to instantly release your ₹100 deposit.
+                  </p>
+                </div>
+
+                {/* Exit Photo Pan Preview */}
+                <div className="p-4 bg-slate-950 border border-slate-800 rounded-2xl space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-slate-300">Room Exit Pan Snapshot:</span>
+                    <span className="text-[10px] text-emerald-400 font-bold">✓ Ready for Comparison</span>
+                  </div>
+                  <div className="flex items-center gap-4">
+                    <img
+                      src={exitPhoto}
+                      alt="Exit Pan"
+                      className="w-24 h-18 sm:w-32 sm:h-20 rounded-xl object-cover border border-slate-700 shrink-0"
+                    />
+                    <div className="text-xs text-slate-400 space-y-1">
+                      <p className="font-semibold text-white">AI Vision Checkpoints:</p>
+                      <p>✓ Furniture alignment check</p>
+                      <p>✓ Zero waste & litter check</p>
+                      <p>✓ Electricals & lighting shutdown</p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Primary Action Button */}
+                <button
+                  type="button"
+                  onClick={handleCheckOut}
+                  disabled={actionLoading}
+                  className="w-full py-4.5 bg-gradient-to-r from-indigo-600 via-violet-600 to-indigo-700 hover:from-indigo-500 hover:to-violet-500 disabled:opacity-50 rounded-2xl text-white font-black text-base shadow-xl shadow-indigo-600/30 flex items-center justify-center gap-3 cursor-pointer transition transform hover:-translate-y-0.5"
+                >
+                  <span>🏁</span>
+                  <span>{actionLoading ? 'Verifying AI Condition Delta & Releasing Escrow...' : 'Check Out & Release ₹100 Escrow'}</span>
+                </button>
+              </div>
+            </div>
+          )
+        ) : (
+          /* Completed Delta Report Card */
+          <div className="bg-slate-900/90 border border-emerald-500/40 rounded-3xl p-6 sm:p-8 shadow-2xl mb-12">
+            <div className="max-w-2xl mx-auto space-y-6">
+              <div className="flex items-center justify-between pb-4 border-b border-slate-800">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center text-lg">
+                    ✨
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-black text-white">AI Room Condition Delta Report</h3>
+                    <p className="text-xs text-slate-400">Session successfully concluded</p>
+                  </div>
+                </div>
+                <span className="px-3 py-1 rounded-full text-xs font-black uppercase tracking-wider bg-emerald-500/20 border border-emerald-500/40 text-emerald-300">
+                  Pass • {Math.round(((inspectionResult?.condition_match_score ?? 0.98) * 100))}% Match
+                </span>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                <div className="p-3 bg-slate-950/80 border border-slate-800 rounded-xl flex items-center justify-between">
+                  <span className="text-slate-400">🪑 Furniture Layout:</span>
+                  <span className="text-emerald-400 font-bold">✓ Matches baseline</span>
+                </div>
+                <div className="p-3 bg-slate-950/80 border border-slate-800 rounded-xl flex items-center justify-between">
+                  <span className="text-slate-400">🗑️ Waste & Litter:</span>
+                  <span className="text-emerald-400 font-bold">✓ Zero debris</span>
+                </div>
+                <div className="p-3 bg-slate-950/80 border border-slate-800 rounded-xl flex items-center justify-between">
+                  <span className="text-slate-400">💡 Electricals & Fans:</span>
+                  <span className="text-emerald-400 font-bold">✓ Switched off</span>
+                </div>
+                <div className="p-3 bg-slate-950/80 border border-slate-800 rounded-xl flex items-center justify-between">
+                  <span className="text-slate-400">⏱️ Session Punctuality:</span>
+                  <span className="text-indigo-400 font-bold">{punctualityScore || 100}% on-time</span>
+                </div>
+              </div>
+
+              <div className="p-4 bg-emerald-950/60 border border-emerald-500/30 rounded-2xl flex items-center justify-between">
+                <div>
+                  <div className="text-sm font-bold text-emerald-300">₹100 Security Deposit Refunded</div>
+                  <div className="text-[11px] text-slate-400">Instant NPCI / UPI reversal completed</div>
+                </div>
+                <span className="px-3 py-1 rounded-lg bg-emerald-500/20 text-emerald-400 text-xs font-black">
+                  ✓ Settled
+                </span>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => navigate('/dashboard')}
+                className="w-full py-4 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-2xl text-white font-bold text-sm cursor-pointer transition"
+              >
+                Return to Seeker Dashboard →
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
   );
 };
-

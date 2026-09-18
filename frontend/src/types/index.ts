@@ -86,15 +86,27 @@ export interface Booking {
   user_name?: string;
   start_time: string;
   end_time: string;
+  start_iso?: string;
+  end_iso?: string;
+  end_timestamp_ms?: number;
   hours_booked?: number;
   total_price: number;
   deposit_held: number;
   escrow_deposit_amount?: number;
   status: 'pending' | 'confirmed' | 'active' | 'completed' | 'cancelled';
+  session_state?: string;
+  arrival_pin?: string;
+  room_qr_token?: string;
   qr_code_hash?: string;
   checked_in_at?: string;
   checked_out_at?: string;
   created_at?: string;
+  space?: Space;
+  intended_purpose?: string;
+  micro_lease_agreement?: string;
+  condition_match_score?: number;
+  escrow_status?: string;
+  objective_punctuality_score?: number;
 }
 
 export interface AIMatchResponse {
