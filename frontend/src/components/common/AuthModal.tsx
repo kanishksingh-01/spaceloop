@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
 import { loginUser, registerUser, digilockerAuth, studentSsoAuth, demoSwitch } from '../../services/auth';
+import { User } from '../../types';
 
 interface AuthModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSuccess?: () => void;
+  onSuccess?: (user?: User) => void;
   initialMode?: 'login' | 'register';
   onSwitchToHost?: () => void;
 }
@@ -28,21 +29,20 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   const [confirmPassword, setConfirmPassword] = useState('');
   const [role, setRole] = useState<'seeker' | 'host'>('seeker');
 
-  // Academic SSO fields
-  const [collegeName, setCollegeName] = useState('IIT Delhi');
-  const [studentId, setStudentId] = useState('2023CSB108');
-  const [collegeEmail, setCollegeEmail] = useState('student@iitd.ac.in');
+  // Academic SSO fields - clean empty defaults
+  const [collegeName, setCollegeName] = useState('');
+  const [studentId, setStudentId] = useState('');
+  const [collegeEmail, setCollegeEmail] = useState('');
 
-  // DigiLocker fields
-  const [aadhaarNumber, setAadhaarNumber] = useState('999988884821');
-  const [otp, setOtp] = useState('123456');
+  // DigiLocker fields - clean empty defaults
+  const [aadhaarNumber, setAadhaarNumber] = useState('');
+  const [otp, setOtp] = useState('');
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
 
   if (!isOpen) return null;
-
 
   const handleCredentialsSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -56,8 +56,10 @@ export const AuthModal: React.FC<AuthModalProps> = ({
 
     setLoading(true);
     try {
+      let authedUser: User | undefined;
       if (mode === 'login') {
-        await loginUser(email, password);
+        const res = await loginUser(email, password);
+        authedUser = res?.user;
         setSuccessMsg('Signed in successfully!');
       } else {
         if (password !== confirmPassword) {
@@ -69,7 +71,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
         const firstName = nameParts[0] || 'User';
         const lastName = nameParts.slice(1).join(' ') || '';
 
-        await registerUser({
+        const res = await registerUser({
           first_name: firstName,
           last_name: lastName,
           email,
@@ -77,13 +79,12 @@ export const AuthModal: React.FC<AuthModalProps> = ({
           confirm_password: confirmPassword,
           role,
         });
+        authedUser = res?.user;
         setSuccessMsg('Account registered and verified!');
       }
 
-      if (onSuccess) onSuccess();
-      setTimeout(() => {
-        window.location.reload();
-      }, 500);
+      setLoading(false);
+      if (onSuccess) onSuccess(authedUser);
     } catch (err: any) {
       setError(err.message || 'Authentication failed. Please check your credentials.');
       setLoading(false);
@@ -102,17 +103,15 @@ export const AuthModal: React.FC<AuthModalProps> = ({
 
     setLoading(true);
     try {
-      await studentSsoAuth({
-        name: name || 'Student Scholar',
+      const res = await studentSsoAuth({
+        name: name || 'Academic Scholar',
         college_email: collegeEmail,
-        college_name: collegeName,
+        college_name: collegeName || 'University',
         student_id: studentId,
       });
       setSuccessMsg('University Student SSO verified!');
-      if (onSuccess) onSuccess();
-      setTimeout(() => {
-        window.location.reload();
-      }, 500);
+      setLoading(false);
+      if (onSuccess) onSuccess(res?.user);
     } catch (err: any) {
       setError(err.message || 'SSO verification failed.');
       setLoading(false);
@@ -131,17 +130,15 @@ export const AuthModal: React.FC<AuthModalProps> = ({
 
     setLoading(true);
     try {
-      await digilockerAuth({
+      const res = await digilockerAuth({
         name: name || 'DigiLocker Verified User',
         aadhaar_number: aadhaarNumber,
         otp,
         role,
       });
       setSuccessMsg('DigiLocker Aadhaar authentication verified!');
-      if (onSuccess) onSuccess();
-      setTimeout(() => {
-        window.location.reload();
-      }, 500);
+      setLoading(false);
+      if (onSuccess) onSuccess(res?.user);
     } catch (err: any) {
       setError(err.message || 'DigiLocker verification failed.');
       setLoading(false);
@@ -266,7 +263,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                       required
                       value={name}
                       onChange={(e) => setName(e.target.value)}
-                      placeholder="e.g. Aarav Sharma"
+                      placeholder="e.g. Full Name"
                       className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 text-sm text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500"
                     />
                   </div>
@@ -377,9 +374,9 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                 <input
                   type="text"
                   required
-                  value={name || 'Aarav Sharma'}
+                  value={name}
                   onChange={(e) => setName(e.target.value)}
-                  placeholder="Student Full Name"
+                  placeholder="Enter your full name"
                   className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
                 />
               </div>
@@ -408,7 +405,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                     required
                     value={studentId}
                     onChange={(e) => setStudentId(e.target.value)}
-                    placeholder="2023CSB108"
+                    placeholder="e.g. 2023CSB108"
                     className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
                   />
                 </div>
@@ -451,9 +448,9 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                 <input
                   type="text"
                   required
-                  value={name || 'Sunita Deshmukh'}
+                  value={name}
                   onChange={(e) => setName(e.target.value)}
-                  placeholder="Full Legal Name"
+                  placeholder="Enter full legal name"
                   className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
                 />
               </div>
@@ -468,7 +465,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                     required
                     value={aadhaarNumber}
                     onChange={(e) => setAadhaarNumber(e.target.value)}
-                    placeholder="999988884821"
+                    placeholder="Enter 12-digit Aadhaar number"
                     maxLength={14}
                     className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
                   />
@@ -478,11 +475,11 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                     DigiLocker OTP
                   </label>
                   <input
-                    type="text"
+                    type="password"
                     required
                     value={otp}
                     onChange={(e) => setOtp(e.target.value)}
-                    placeholder="123456"
+                    placeholder="6-digit OTP"
                     maxLength={6}
                     className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
                   />

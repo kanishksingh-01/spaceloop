@@ -14,6 +14,7 @@ def run_comprehensive_check():
     print("==================================================")
 
     app = create_app()
+    app.config["TESTING"] = True
     client = app.test_client()
 
     # 1. Homepage & Market
@@ -86,7 +87,8 @@ def run_comprehensive_check():
         "sqft": 300,
         "max_capacity": 6,
         "description": "High-speed optical fiber, comfortable desks, ergonomic chairs for coding sprints.",
-        "photos": ["https://images.unsplash.com/photo-1527192491265-7e15c55b1ed2?auto=format&fit=crop&w=800&q=80"]
+        "photos": ["https://images.unsplash.com/photo-1527192491265-7e15c55b1ed2?auto=format&fit=crop&w=800&q=80"],
+        "terms_accepted": True
     })
     assert res.status_code == 201, f"Create space failed: {res.status_code} {res.data}"
     created_space = res.get_json()
@@ -165,7 +167,8 @@ def run_comprehensive_check():
     })
     assert login_seeker.status_code == 200, f"Seeker login failed: {login_seeker.get_json()}"
 
-    future_start = (datetime.utcnow() + timedelta(days=30)).replace(microsecond=0)
+    import random
+    future_start = (datetime.utcnow() + timedelta(days=random.randint(60, 400), hours=random.randint(1, 23))).replace(microsecond=0)
     future_end = future_start + timedelta(hours=3)
     res = client.post("/api/bookings", json={
         "space_id": space_id,

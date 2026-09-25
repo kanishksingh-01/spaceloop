@@ -288,7 +288,7 @@ export const ExplorePage: React.FC = () => {
               Find Flexible Space Near You
             </h1>
 
-            <p className="mt-3 text-sm sm:text-base text-slate-400 leading-relaxed max-w-2xl mx-auto">
+            <p className="mt-3 text-sm sm:text-base text-slate-300 leading-relaxed max-w-2xl mx-auto">
               Instantly discover and reserve workspaces, client meeting rooms, creative studios, maker bays, and study pods by the hour.
             </p>
           </div>
@@ -312,7 +312,7 @@ export const ExplorePage: React.FC = () => {
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     placeholder="Describe your ideal space (e.g. 'podcast studio for 2' or 'client meeting room near Koramangala')..."
-                    className="w-full bg-slate-950/80 border border-slate-700/80 rounded-xl pl-11 pr-4 py-3 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition"
+                    className="w-full bg-slate-800 border border-slate-700/80 rounded-xl pl-11 pr-4 py-3 text-sm text-slate-100 placeholder-slate-400 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition"
                   />
                 </div>
 
@@ -461,14 +461,14 @@ export const ExplorePage: React.FC = () => {
             className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-3"
           >
             {/* Location Input with Geolocation Action */}
-            <div className="flex-grow flex items-center gap-2 bg-slate-950/80 border border-slate-700/70 rounded-xl px-3 py-2">
+            <div className="flex-grow flex items-center gap-2 bg-slate-800 border border-slate-700/80 rounded-xl px-3 py-2">
               <i className="fa-solid fa-location-dot text-indigo-400 shrink-0" />
               <input
                 type="text"
                 value={locationInput}
                 onChange={(e) => setLocationInput(e.target.value)}
                 placeholder="Enter location or college (e.g. Wagholi, Hauz Khas, Koramangala)..."
-                className="bg-transparent border-none text-xs sm:text-sm text-white placeholder-slate-500 focus:outline-none w-full"
+                className="bg-transparent border-none text-xs sm:text-sm text-slate-100 placeholder-slate-400 focus:outline-none w-full"
               />
               <button
                 type="button"
@@ -489,7 +489,7 @@ export const ExplorePage: React.FC = () => {
               <select
                 value={selectedRadius}
                 onChange={(e) => handleRadiusChange(e.target.value)}
-                className="bg-slate-950 border border-slate-700/70 rounded-xl px-3 py-2 text-xs sm:text-sm text-white focus:outline-none focus:border-indigo-500 transition"
+                className="bg-slate-800 border border-slate-700/80 rounded-xl px-3 py-2 text-xs sm:text-sm text-slate-100 focus:outline-none focus:border-indigo-500 transition"
               >
                 <option value="">Any Distance</option>
                 <option value="1">Within 1 km</option>
@@ -507,7 +507,7 @@ export const ExplorePage: React.FC = () => {
               <select
                 value={selectedMaxPrice}
                 onChange={(e) => handleMaxPriceChange(e.target.value)}
-                className="bg-slate-950 border border-slate-700/70 rounded-xl px-3 py-2 text-xs sm:text-sm text-white focus:outline-none focus:border-indigo-500 transition"
+                className="bg-slate-800 border border-slate-700/80 rounded-xl px-3 py-2 text-xs sm:text-sm text-slate-100 focus:outline-none focus:border-indigo-500 transition"
               >
                 <option value="">Any Budget</option>
                 <option value="60">Under ₹60/hr</option>

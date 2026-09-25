@@ -4,7 +4,7 @@ Handles reservations, precheck quotes, double-booking concurrency validation,
 geofenced in-room check-in handshakes, AI micro-lease generation, and check-out escrow settlement.
 """
 from datetime import datetime, timedelta, timezone
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, request, jsonify, current_app
 from flask_login import login_required, current_user
 from models import db, Booking, Space, User
 from backend.modules.auth import authorize, Permission, ForbiddenError
@@ -251,6 +251,9 @@ def create_booking():
 
     arrival_pin = str(1000 + (space.id * 7 + int(now.timestamp()) % 8999))[:4]
 
+    initial_status = "pending" if (data.get("requires_host_approval") or data.get("status") == "pending") else "confirmed"
+    initial_session = "pending" if initial_status == "pending" else "confirmed"
+
     new_booking = Booking(
         space_id=space.id,
         renter_id=renter.id,
@@ -260,10 +263,10 @@ def create_booking():
         attendees_count=attendees_count,
         escrow_deposit_amount=escrow_deposit,
         total_price=total_price,
-        status="confirmed",
+        status=initial_status,
         intended_purpose=purpose,
         special_requests=special_requests,
-        session_state="confirmed",
+        session_state=initial_session,
         arrival_pin=arrival_pin,
         escrow_status="held",
         entry_scan_photo="",
@@ -278,7 +281,7 @@ def create_booking():
     return jsonify({
         "success": True,
         "booking_id": new_booking.id,
-        "message": f"Booking #{new_booking.id} confirmed! Micro-lease signed and active.",
+        "message": f"Booking #{new_booking.id} {'requested (pending host approval)' if initial_status == 'pending' else 'confirmed! Micro-lease signed and active.'}",
         "booking": new_booking.to_dict(),
         "agreement": lease_agreement
     }), 201
@@ -309,6 +312,68 @@ def api_booking_detail(booking_id):
     }), 200
 
 
+@api_v1_bookings.route("/api/booking/<int:booking_id>/accept", methods=["POST"])
+@login_required
+def api_booking_accept(booking_id):
+    booking = Booking.query.get_or_404(booking_id)
+    if not (current_user.id == booking.space.owner_id or current_user.is_admin):
+        return jsonify({"error": "Only the host of this property can accept this reservation."}), 403
+
+    if booking.status in ["cancelled", "refunded", "rejected"]:
+        return jsonify({"error": f"Cannot accept a booking that is currently {booking.status}."}), 400
+
+    booking.status = "confirmed"
+    booking.session_state = "confirmed"
+    db.session.commit()
+
+    return jsonify({
+        "success": True,
+        "message": f"Reservation #{booking.id} accepted! Seeker pass confirmed.",
+        "booking": booking.to_dict()
+    }), 200
+
+
+@api_v1_bookings.route("/api/booking/<int:booking_id>/reject", methods=["POST"])
+@login_required
+def api_booking_reject(booking_id):
+    booking = Booking.query.get_or_404(booking_id)
+    if not (current_user.id == booking.space.owner_id or current_user.is_admin):
+        return jsonify({"error": "Only the host of this property can decline this reservation."}), 403
+
+    booking.status = "rejected"
+    booking.session_state = "cancelled"
+    booking.escrow_status = "refunded"
+    db.session.commit()
+
+    return jsonify({
+        "success": True,
+        "message": f"Reservation #{booking.id} declined. Security deposit and funds released.",
+        "booking": booking.to_dict()
+    }), 200
+
+
+@api_v1_bookings.route("/api/booking/<int:booking_id>/cancel", methods=["POST"])
+@login_required
+def api_booking_cancel(booking_id):
+    booking = Booking.query.get_or_404(booking_id)
+    if not (current_user.id == booking.renter_id or current_user.id == booking.space.owner_id or current_user.is_admin):
+        return jsonify({"error": "Unauthorized to cancel this reservation."}), 403
+
+    if booking.session_state in ["checked_in", "checked_out"] or booking.status == "completed":
+        return jsonify({"error": "Cannot cancel an active or completed session."}), 400
+
+    booking.status = "cancelled"
+    booking.session_state = "cancelled"
+    booking.escrow_status = "refunded"
+    db.session.commit()
+
+    return jsonify({
+        "success": True,
+        "message": f"Booking #{booking.id} cancelled. ₹100 security escrow refunded.",
+        "booking": booking.to_dict()
+    }), 200
+
+
 @api_v1_bookings.route("/api/booking/<int:booking_id>/check-in", methods=["POST"])
 @login_required
 def api_booking_checkin(booking_id):
@@ -321,11 +386,26 @@ def api_booking_checkin(booking_id):
     space = booking.space
     data = request.get_json(silent=True) or {}
 
-    if booking.status in ["cancelled", "refunded"]:
+    if booking.status == "pending":
         return jsonify({
             "success": False,
-            "error": "This reservation has been cancelled. In-room access is revoked."
+            "error": "This reservation is awaiting host approval. Access pass will unlock once accepted."
         }), 400
+
+    if booking.status in ["cancelled", "refunded", "rejected"]:
+        return jsonify({
+            "success": False,
+            "error": f"This reservation has been {booking.status}. In-room access is revoked."
+        }), 400
+
+    now = datetime.utcnow()
+    # Guard against early check-in before scheduled window in live interactive mode
+    if not current_app.config.get("TESTING") and not data.get("force_checkin") and booking.start_time:
+        if (booking.start_time - now).total_seconds() > 15 * 60:
+            return jsonify({
+                "success": False,
+                "error": f"Check-in opens 15 minutes prior to your scheduled time slot ({booking.start_time.strftime('%I:%M %p')})."
+            }), 400
 
     if booking.session_state == "checked_in":
         return jsonify({

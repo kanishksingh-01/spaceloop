@@ -8,6 +8,27 @@ export default {
   theme: {
     extend: {
       colors: {
+        canvas: '#020617',
+        surface: {
+          DEFAULT: '#0F172A',
+          elevated: '#0F172A',
+          nested: '#1E293B',
+        },
+        seeker: {
+          DEFAULT: '#4F46E5',
+          glow: '#6366F1',
+          pill: '#818CF8',
+        },
+        host: {
+          DEFAULT: '#F59E0B',
+          gold: '#FBBF24',
+        },
+        status: {
+          success: '#10B981',
+          warning: '#F59E0B',
+          danger: '#F43F5E',
+          ai: '#7C3AED',
+        },
         brand: {
           50: '#eef2ff',
           100: '#e0e7ff',
@@ -24,6 +45,7 @@ export default {
         }
       }
     },
+
   },
   plugins: [],
 }

@@ -94,6 +94,34 @@ export const SessionPage: React.FC = () => {
     if (!booking) return;
 
     const updateTimer = () => {
+      // Pending host approval state
+      if (booking.status === 'pending') {
+        setTimer({
+          hours: 0,
+          minutes: 0,
+          seconds: 0,
+          phase: 'upcoming',
+          displayText: 'Awaiting Host Approval',
+          badgeLabel: 'Pending Confirmation',
+          badgeColor: 'text-amber-400 bg-amber-500/10 border-amber-500/30',
+        });
+        return;
+      }
+
+      // Cancelled state
+      if (booking.status === 'cancelled') {
+        setTimer({
+          hours: 0,
+          minutes: 0,
+          seconds: 0,
+          phase: 'completed',
+          displayText: 'Reservation Cancelled',
+          badgeLabel: 'Cancelled',
+          badgeColor: 'text-rose-400 bg-rose-500/10 border-rose-500/30',
+        });
+        return;
+      }
+
       // Completed state takes priority
       if (booking.status === 'completed' || booking.session_state === 'checked_out') {
         setTimer({
@@ -599,20 +627,39 @@ export const SessionPage: React.FC = () => {
           <div className="mt-6 pt-6 border-t border-slate-800/80 max-w-xl mx-auto">
             {!isCheckedIn && !isCompleted ? (
               <div className="space-y-3">
-                <div className="p-3 bg-indigo-500/10 border border-indigo-500/20 rounded-xl text-center">
-                  <span className="text-xs text-indigo-300 font-medium">
-                    📍 Location Guard: Device must be within 50m of the space coordinates to activate.
-                  </span>
-                </div>
-                <button
-                  type="button"
-                  onClick={handleCheckIn}
-                  disabled={actionLoading}
-                  className="w-full py-4 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 rounded-2xl text-white font-extrabold text-base shadow-xl shadow-emerald-600/30 flex items-center justify-center gap-2 cursor-pointer transition transform hover:-translate-y-0.5"
-                >
-                  <span>📍</span>
-                  <span>{actionLoading ? 'Verifying 50m Geofence...' : 'Verify Geofence & Activate Digital Pass'}</span>
-                </button>
+                {booking.status === 'pending' ? (
+                  <div className="p-4 bg-amber-500/10 border border-amber-500/30 rounded-2xl text-center space-y-1.5">
+                    <div className="text-amber-400 font-bold text-sm flex items-center justify-center gap-1.5">
+                      <span>⏳</span> Awaiting Host Confirmation
+                    </div>
+                    <p className="text-xs text-slate-400">
+                      Your booking request has been sent to the property host. Once approved, your digital smart key will unlock and check-in will open.
+                    </p>
+                  </div>
+                ) : (
+                  <>
+                    <div className="p-3 bg-indigo-500/10 border border-indigo-500/20 rounded-xl text-center">
+                      <span className="text-xs text-indigo-300 font-medium">
+                        📍 Location Guard: Device must be within 50m of space coordinates to check in.
+                      </span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={handleCheckIn}
+                      disabled={actionLoading || timer.phase === 'upcoming'}
+                      className="w-full py-4 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 rounded-2xl text-white font-extrabold text-base shadow-xl shadow-emerald-600/30 flex items-center justify-center gap-2 cursor-pointer transition transform hover:-translate-y-0.5"
+                    >
+                      <span>📍</span>
+                      <span>
+                        {actionLoading
+                          ? 'Verifying 50m Geofence...'
+                          : timer.phase === 'upcoming'
+                          ? `Check-in Opens at Start Window (${timer.displayText})`
+                          : 'Verify Geofence & Activate Digital Pass'}
+                      </span>
+                    </button>
+                  </>
+                )}
               </div>
             ) : (
               <div className="p-4 bg-emerald-500/10 border border-emerald-500/30 rounded-2xl text-center flex items-center justify-center gap-2">

@@ -1,11 +1,13 @@
 """
 SpaceLoop Spaces REST Blueprint
-Handles space exploration, AI scanning, space registration, editing, and semantic matchmaking.
+Handles space exploration, AI scanning, space registration, editing, photo uploads, inquiries, and semantic matchmaking.
 """
+import os
 import re
-from flask import Blueprint, request, jsonify, redirect, url_for, flash
+import uuid
+from flask import Blueprint, request, jsonify, redirect, url_for, flash, current_app
 from flask_login import login_required, current_user
-from models import db, Space, User
+from models import db, Space, User, SpaceInquiry
 from backend.modules.auth import authorize, Permission, ForbiddenError, set_active_context
 from backend.core.geo import haversine_distance, resolve_location_coordinates
 from space_ai import analyze_space_features, match_spaces_with_ai
@@ -42,6 +44,10 @@ def get_spaces():
     lat, lng, resolved_loc_name = resolve_location_coordinates(loc, raw_lat, raw_lng)
 
     query = Space.query.filter_by(is_active=True)
+
+    # Exclude host's own properties when logged in as a host/seeker
+    if current_user.is_authenticated:
+        query = query.filter(Space.owner_id != current_user.id)
 
     # 1. Category filtering with aliases
     if category and category.lower() not in ("all", "any"):
@@ -139,14 +145,59 @@ def ai_scan_space():
     return jsonify(analysis)
 
 
+ALLOWED_EXTENSIONS = {"png", "jpg", "jpeg", "webp"}
+
+
+def allowed_file(filename):
+    return "." in filename and filename.rsplit(".", 1)[1].lower() in ALLOWED_EXTENSIONS
+
+
+@api_v1_spaces.route("/api/spaces/upload-photo", methods=["POST"])
+@login_required
+def upload_space_photo():
+    """Accepts multipart property photo upload (PNG, JPG, WEBP <= 5MB) and stores it in static/uploads/spaces/."""
+    file = None
+    if "photo" in request.files:
+        file = request.files["photo"]
+    elif "file" in request.files:
+        file = request.files["file"]
+
+    if not file or file.filename == "":
+        return jsonify({"success": False, "error": "No file selected. Please select an image to upload."}), 400
+
+    if not allowed_file(file.filename):
+        return jsonify({"success": False, "error": "Unsupported file format. Please upload JPG, PNG, or WEBP."}), 400
+
+    file_bytes = file.read()
+    if len(file_bytes) > 5 * 1024 * 1024:
+        return jsonify({"success": False, "error": "Image file exceeds the 5MB size limit."}), 400
+
+    file.seek(0)
+    ext = file.filename.rsplit(".", 1)[1].lower()
+    unique_filename = f"space_{uuid.uuid4().hex[:12]}.{ext}"
+
+    upload_dir = os.path.join(current_app.root_path, "static", "uploads", "spaces")
+    os.makedirs(upload_dir, exist_ok=True)
+    dest_path = os.path.join(upload_dir, unique_filename)
+    file.save(dest_path)
+
+    photo_url = f"/static/uploads/spaces/{unique_filename}"
+    return jsonify({
+        "success": True,
+        "url": photo_url,
+        "photo_url": photo_url,
+        "filename": unique_filename
+    }), 201
+
+
 @api_v1_spaces.route("/api/spaces", methods=["POST"])
 @login_required
 def create_space():
-    """Creates a new space listing bound to the authenticated host. Requires Host authentication."""
-    if not current_user.is_host:
+    """Creates a new space listing bound to the authenticated host. Requires verified host KYC and accepted T&C."""
+    if not current_user.is_host or not getattr(current_user, "is_host_verified", False):
         return jsonify({
             "success": False,
-            "error": "Host authentication and property verification required to list spaces. Please complete Host Property KYC."
+            "error": "Host authentication and property verification required to list spaces. Please complete Host Property KYC (Discom Utility CA + UPI Penny Drop)."
         }), 403
 
     try:
@@ -155,7 +206,20 @@ def create_space():
         return jsonify({"error": str(e)}), 403
 
     data = request.get_json(silent=True) or {}
-    
+
+    # Mandatory Terms & Conditions acceptance check
+    terms_agreed = bool(
+        data.get("terms_accepted") or
+        data.get("agree_terms") or
+        data.get("terms_and_conditions_agreed") or
+        data.get("easements_accepted")
+    )
+    if not terms_agreed:
+        return jsonify({
+            "success": False,
+            "error": "You must review and agree to the SpaceLoop Terms & Conditions and Section 52 Easements Act compliance before publishing your listing."
+        }), 400
+
     title = sanitize_string(data.get("title"), max_length=150)
     category = sanitize_string(data.get("category", "Studio"), max_length=50)
     address = sanitize_string(data.get("address"), max_length=200)
@@ -240,6 +304,7 @@ def create_space():
 
 
 @api_v1_spaces.route("/api/spaces/<int:space_id>/edit", methods=["POST"])
+@api_v1_spaces.route("/api/spaces/<int:space_id>", methods=["PUT", "PATCH"])
 @login_required
 def api_edit_space(space_id):
     space = Space.query.get_or_404(space_id)
@@ -256,23 +321,58 @@ def api_edit_space(space_id):
         space.category = sanitize_string(data.get("category"), max_length=50)
     if data.get("address"):
         space.address = sanitize_string(data.get("address"), max_length=200)
+    if data.get("neighborhood") or data.get("location"):
+        space.neighborhood = sanitize_string(data.get("neighborhood") or data.get("location"), max_length=100)
+    if data.get("city"):
+        space.city = sanitize_string(data.get("city"), max_length=100)
+    if data.get("state"):
+        space.state = sanitize_string(data.get("state"), max_length=50)
+    if data.get("zip_code"):
+        space.zip_code = sanitize_string(data.get("zip_code"), max_length=20)
     if data.get("description"):
         space.description = sanitize_string(data.get("description"), max_length=3000)
+
     if data.get("price_hourly") is not None and str(data.get("price_hourly")).strip() != "":
         space.price_hourly = float(validate_numeric(data.get("price_hourly"), min_val=5.0, max_val=5000.0, default=space.price_hourly))
+    if data.get("hourly_rate") is not None and str(data.get("hourly_rate")).strip() != "":
+        space.price_hourly = float(validate_numeric(data.get("hourly_rate"), min_val=5.0, max_val=5000.0, default=space.price_hourly))
+
     if data.get("price_daily") is not None and str(data.get("price_daily")).strip() != "":
         space.price_daily = float(validate_numeric(data.get("price_daily"), min_val=20.0, max_val=25000.0, default=space.price_daily))
+    elif space.price_hourly:
+        space.price_daily = round(space.price_hourly * 5.0, 2)
+
     if data.get("sqft") is not None and str(data.get("sqft")).strip() != "":
         space.sqft = int(validate_numeric(data.get("sqft"), min_val=20, max_val=50000, default=space.sqft))
     if data.get("max_capacity") is not None and str(data.get("max_capacity")).strip() != "":
         space.max_capacity = int(validate_numeric(data.get("max_capacity"), min_val=1, max_val=500, default=space.max_capacity))
-    if data.get("amenities") and isinstance(data.get("amenities"), list):
-        space.amenities = [sanitize_string(a, max_length=80) for a in data.get("amenities") if isinstance(a, str)][:15]
-    if data.get("rules") and isinstance(data.get("rules"), list):
-        space.rules = [sanitize_string(r, max_length=150) for r in data.get("rules") if isinstance(r, str)][:10]
+    if data.get("minimum_hours") is not None and str(data.get("minimum_hours")).strip() != "":
+        space.minimum_hours = int(validate_numeric(data.get("minimum_hours"), min_val=1, max_val=24, default=space.minimum_hours))
+
+    if data.get("amenities"):
+        if isinstance(data.get("amenities"), list):
+            space.amenities = [sanitize_string(a, max_length=80) for a in data.get("amenities") if isinstance(a, str)][:15]
+        elif isinstance(data.get("amenities"), str):
+            space.amenities = [sanitize_string(a.strip(), max_length=80) for a in data.get("amenities").split(",") if a.strip()][:15]
+
+    if data.get("rules"):
+        if isinstance(data.get("rules"), list):
+            space.rules = [sanitize_string(r, max_length=150) for r in data.get("rules") if isinstance(r, str)][:10]
+        elif isinstance(data.get("rules"), str):
+            space.rules = [sanitize_string(r.strip(), max_length=150) for r in data.get("rules").split(",") if r.strip()][:10]
+
+    if data.get("photos"):
+        raw_photos = data.get("photos")
+        if isinstance(raw_photos, list):
+            clean_p = [p[:1000] for p in raw_photos if isinstance(p, str) and (validate_image_url(p) or p.startswith("/static/"))]
+            if clean_p:
+                space.photos = clean_p[:6]
+
+    if "is_active" in data:
+        space.is_active = bool(data.get("is_active"))
 
     db.session.commit()
-    if request.is_json:
+    if request.is_json or request.method in ("PUT", "PATCH"):
         return jsonify({"success": True, "message": f"Space '{space.title}' updated successfully!", "space": space.to_dict()}), 200
     return redirect(url_for("dashboard_page"))
 
@@ -294,6 +394,97 @@ def toggle_space_status(space_id):
     return redirect(request.referrer or url_for("dashboard_page"))
 
 
+# =========================================================================
+# SPACE INQUIRIES ENDPOINT (Seeker Questions -> Host Dashboard)
+# =========================================================================
+@api_v1_spaces.route("/api/inquiries", methods=["GET", "POST"])
+def api_inquiries():
+    """Handles inquiry submissions from space detail page and queries for seeker/host views."""
+    if not current_user.is_authenticated:
+        return jsonify({"success": False, "error": "Authentication required to submit or view inquiries."}), 401
+
+    if request.method == "POST":
+        data = request.get_json(silent=True) or {}
+        raw_space_id = data.get("space_id")
+        question = sanitize_string(data.get("question", ""), max_length=500).strip()
+        if not question:
+            return jsonify({"success": False, "error": "Please provide your inquiry question."}), 400
+
+        space = None
+        if raw_space_id:
+            try:
+                space = Space.query.get(int(raw_space_id))
+            except Exception:
+                space = None
+
+        # Build context-aware automated pre-answer
+        ai_ans = ""
+        if space:
+            q_lower = question.lower()
+            if "parking" in q_lower:
+                ai_ans = f"Host notes for {space.title}: On-site/street parking available according to building rules."
+            elif "wifi" in q_lower or "speed" in q_lower:
+                ai_ans = f"{space.title} offers verified high-speed Wi-Fi included in hourly reservation."
+            elif "power" in q_lower or "backup" in q_lower or "outlet" in q_lower:
+                ai_ans = f"Premise has verified power outlets ({space.ai_power_access or 'standard'})."
+            else:
+                ai_ans = f"Inquiry forwarded directly to Host ({space.owner.name if space.owner else 'Host Partner'}). They usually respond within 15 minutes."
+
+        inquiry = SpaceInquiry(
+            space_id=space.id if space else None,
+            user_id=current_user.id,
+            question=question,
+            ai_answer=ai_ans or "Inquiry dispatched to property host."
+        )
+        db.session.add(inquiry)
+        db.session.commit()
+
+        return jsonify({
+            "success": True,
+            "message": "Inquiry sent directly to host!",
+            "inquiry": inquiry.to_dict()
+        }), 201
+
+    # GET inquiries: inquiries for spaces owned by current host + inquiries asked by current seeker
+    owned_spaces = Space.query.filter_by(owner_id=current_user.id).all()
+    owned_ids = [s.id for s in owned_spaces]
+
+    query_filter = SpaceInquiry.user_id == current_user.id
+    if owned_ids:
+        query_filter = db.or_(query_filter, SpaceInquiry.space_id.in_(owned_ids))
+
+    inquiries = SpaceInquiry.query.filter(query_filter).order_by(SpaceInquiry.created_at.desc()).all()
+    return jsonify({
+        "success": True,
+        "inquiries": [i.to_dict() for i in inquiries]
+    }), 200
+
+
+@api_v1_spaces.route("/api/inquiries/<int:inquiry_id>/reply", methods=["POST"])
+def api_reply_inquiry(inquiry_id):
+    if not current_user.is_authenticated:
+        return jsonify({"success": False, "error": "Authentication required."}), 401
+    
+    inquiry = SpaceInquiry.query.get_or_404(inquiry_id)
+    space = Space.query.get(inquiry.space_id)
+    if not space or space.owner_id != current_user.id:
+        return jsonify({"success": False, "error": "Only the property owner can reply to this inquiry."}), 403
+
+    data = request.get_json(silent=True) or {}
+    reply_text = sanitize_string(data.get("reply", ""), max_length=1000)
+    if not reply_text:
+        return jsonify({"success": False, "error": "Reply text cannot be empty."}), 400
+
+    inquiry.response = reply_text
+    db.session.commit()
+
+    return jsonify({
+        "success": True,
+        "message": "Reply saved successfully.",
+        "inquiry": inquiry.to_dict()
+    }), 200
+
+
 @api_v1_spaces.route("/api/spaces/ai-match", methods=["POST"])
 @rate_limit_ai
 def ai_match_spaces():
@@ -313,7 +504,12 @@ def ai_match_spaces():
 
     lat, lng, resolved_loc_name = resolve_location_coordinates(loc, raw_lat, raw_lng)
 
-    all_spaces = [s.to_dict() for s in Space.query.filter_by(is_active=True).all()]
+    query = Space.query.filter_by(is_active=True)
+    # Exclude host's own spaces from AI recommendations
+    if current_user.is_authenticated:
+        query = query.filter(Space.owner_id != current_user.id)
+
+    all_spaces = [s.to_dict() for s in query.all()]
     candidate_spaces = []
 
     for s in all_spaces:

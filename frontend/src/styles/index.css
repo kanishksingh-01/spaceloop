@@ -2,27 +2,113 @@
 @tailwind components;
 @tailwind utilities;
 
+:root {
+  /* =========================================================================
+     SL-SYS-COLOR-2026-V1 DESIGN SYSTEM TOKENS
+     ========================================================================= */
+
+  /* Canvas & Surface Layers */
+  --canvas: #020617;              /* Deep Midnight Root Canvas */
+  --surface: #0f172a;             /* Elevated Surface Card/Modal */
+  --surface-nested: #1e293b;      /* Nested Controls & Form Inputs */
+  --border-subtle: rgba(255, 255, 255, 0.08); /* 8% White Border */
+  --border-card: rgba(255, 255, 255, 0.10);
+  --border-hover: rgba(99, 102, 241, 0.35);
+
+  /* Glassmorphism */
+  --glass-bg: rgba(15, 23, 42, 0.75);
+  --glass-blur: 16px;
+
+  /* Typography / Text Contrast Hierarchy */
+  --text-h1: #ffffff;             /* Primary Headings */
+  --text-h2: #ffffff;
+  --text-h3: #f8fafc;             /* Subheadings / Section Titles */
+  --text-body: #cbd5e1;           /* Body Text - Slate 300 (Never dark gray) */
+  --text-meta: #94a3b8;           /* Metadata, Badges, Labels, Placeholders */
+  --text-muted: #64748b;          /* Subtle / Tertiary */
+
+  /* Role-Based Primary CTAs */
+  --seeker-primary: #4f46e5;      /* Indigo-600 */
+  --seeker-text: #ffffff;         /* Crisp White */
+  --seeker-glow: #6366f1;         /* Indigo-500 */
+  --seeker-pill: #818cf8;         /* Indigo-400 */
+  --seeker-gradient-from: #4f46e5;
+  --seeker-gradient-to: #8b5cf6;
+
+  --host-primary: #f59e0b;        /* Amber-500 */
+  --host-text: #0f172a;           /* Slate-900 (High-contrast dark on solar gold) */
+  --host-gold: #fbbf24;           /* Solar Gold */
+  --host-gradient-from: #d97706;  /* Amber-600 */
+  --host-gradient-to: #ea580c;    /* Orange-600 */
+
+  /* Status Colors */
+  --status-success: #10b981;      /* Emerald-500 (Verified / Ready) */
+  --status-active-from: #059669;
+  --status-active-to: #0d9488;
+  --status-warning: #f59e0b;      /* Amber-500 (Caution / Review) */
+  --status-danger: #f43f5e;       /* Rose-500 (Alert / Revoked) */
+  --status-ai: #7c3aed;           /* Violet-600 (AI Concierge / Matchmaker) */
+}
+
 html, body, #root {
   height: 100%;
   margin: 0;
   padding: 0;
-  background-color: #020617; /* slate-950 */
-  color: #f8fafc; /* slate-50 */
+  background-color: var(--canvas);
+  color: var(--text-h3);
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   transition: background-color 0.25s ease, color 0.25s ease;
 }
 
+/* Base Form Controls & Inputs */
+input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
+textarea,
+select {
+  background-color: var(--surface-nested);
+  color: #f8fafc;
+  border: 1px solid var(--border-subtle);
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: var(--text-meta);
+}
+
 /* Glassmorphism utility helpers */
 .glass-panel {
-  background: rgba(15, 23, 42, 0.75);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border: 1px solid rgba(99, 102, 241, 0.2);
+  background: var(--glass-bg);
+  backdrop-filter: blur(var(--glass-blur));
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+  border: 1px solid var(--border-subtle);
+}
+
+/* Role CTA utilities */
+.btn-seeker-primary {
+  background-color: var(--seeker-primary);
+  color: var(--seeker-text);
+  box-shadow: 0 4px 14px 0 rgba(79, 70, 229, 0.35);
+  transition: all 200ms ease;
+}
+.btn-seeker-primary:hover {
+  background-color: var(--seeker-glow);
+  box-shadow: 0 6px 20px 0 rgba(99, 102, 241, 0.45);
+}
+
+.btn-host-primary {
+  background-color: var(--host-primary);
+  color: var(--host-text);
+  font-weight: 700;
+  box-shadow: 0 4px 14px 0 rgba(245, 158, 11, 0.30);
+  transition: all 200ms ease;
+}
+.btn-host-primary:hover {
+  background-color: var(--host-gold);
+  box-shadow: 0 6px 20px 0 rgba(251, 191, 36, 0.45);
 }
 
 /* =========================================================================
    SUBTLE FLOATING & GENTLE ELEVATION SYSTEM
-   Soft, diffused depth with 2-4px smooth hover elevation across dark surfaces
+   Soft, diffused depth with 2-3px smooth hover elevation across dark surfaces
    ========================================================================= */
 
 /* 1. Base Floating Container (gentle depth above background) */
@@ -72,5 +158,141 @@ html, body, #root {
   transform: translateY(-3px);
   box-shadow: 0 14px 30px -4px rgba(0, 0, 0, 0.55), 0 4px 12px -2px rgba(0, 0, 0, 0.35);
 }
+
+/* =========================================================================
+   LIGHT THEME ("Ocean Breeze") STYLES
+   Activated when <html class="light"> is applied
+   ========================================================================= */
+
+html.light,
+html.light body,
+html.light #root {
+  background-color: #f8fafc;
+  color: #0f172a;
+}
+
+html.light .bg-slate-950,
+html.light .bg-canvas {
+  background-color: #f8fafc;
+}
+
+html.light .bg-slate-950\/95,
+html.light .bg-slate-950\/90,
+html.light .bg-slate-950\/85,
+html.light .bg-slate-950\/80 {
+  background-color: rgba(248, 250, 252, 0.95);
+}
+
+html.light .bg-slate-900,
+html.light .bg-surface {
+  background-color: #ffffff;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05);
+}
+
+html.light .bg-slate-900\/90,
+html.light .bg-slate-900\/80,
+html.light .bg-slate-900\/60,
+html.light .bg-slate-900\/50,
+html.light .bg-slate-900\/40 {
+  background-color: rgba(255, 255, 255, 0.95);
+}
+
+html.light .bg-slate-800,
+html.light .bg-slate-850,
+html.light .bg-surface-nested {
+  background-color: #f1f5f9;
+}
+
+html.light .bg-slate-800\/80,
+html.light .bg-slate-800\/90 {
+  background-color: #f1f5f9;
+}
+
+/* Light Mode Borders */
+html.light .border-slate-800,
+html.light .border-slate-800\/80,
+html.light .border-slate-800\/90,
+html.light .border-slate-700,
+html.light .border-slate-700\/80,
+html.light .border-slate-700\/70,
+html.light .border-slate-700\/60 {
+  border-color: #e2e8f0;
+}
+
+/* Typography in Light Mode */
+html.light .text-white,
+html.light .text-slate-100 {
+  color: #0f172a;
+}
+
+html.light .text-slate-200 {
+  color: #1e293b;
+}
+
+html.light .text-slate-300 {
+  color: #334155;
+}
+
+html.light .text-slate-400 {
+  color: #64748b;
+}
+
+html.light .text-slate-500 {
+  color: #94a3b8;
+}
+
+/* Maintain High-Contrast CTA button text */
+html.light .btn-seeker-primary,
+html.light .bg-indigo-600,
+html.light .bg-gradient-to-r.from-indigo-600,
+html.light [class*="bg-indigo-600"] {
+  color: #ffffff;
+}
+
+html.light .btn-seeker-primary *,
+html.light .bg-indigo-600 *,
+html.light .bg-gradient-to-r.from-indigo-600 *,
+html.light [class*="bg-indigo-600"] * {
+  color: #ffffff;
+}
+
+/* Form Inputs in Light Mode */
+html.light input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
+html.light textarea,
+html.light select {
+  background-color: #ffffff;
+  color: #0f172a;
+  border-color: #cbd5e1;
+}
+
+html.light input::placeholder,
+html.light textarea::placeholder {
+  color: #94a3b8;
+}
+
+/* Glass panel */
+html.light .glass-panel {
+  background: rgba(255, 255, 255, 0.90);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(226, 232, 240, 0.85);
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05);
+}
+
+/* Floating shadow adjustments in Light Mode */
+html.light .floating-card,
+html.light .space-card {
+  box-shadow: 0 4px 16px -2px rgba(0, 0, 0, 0.07), 0 2px 4px -1px rgba(0, 0, 0, 0.04);
+}
+
+html.light .floating-card:hover,
+html.light .space-card:hover {
+  box-shadow: 0 12px 24px -4px rgba(0, 0, 0, 0.12), 0 4px 8px -2px rgba(0, 0, 0, 0.05);
+}
+
+html.light .floating-panel {
+  box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.10), 0 4px 10px -2px rgba(0, 0, 0, 0.04);
+}
+
 
 

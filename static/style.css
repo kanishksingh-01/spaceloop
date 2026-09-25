@@ -3,10 +3,57 @@
 :root {
   --font-sans: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
   --font-mono: 'JetBrains Mono', monospace;
+
+  /* SL-SYS-COLOR-2026-V1 DESIGN SYSTEM TOKENS */
+  --canvas: #020617;
+  --surface: #0f172a;
+  --surface-nested: #1e293b;
+  --border-subtle: rgba(255, 255, 255, 0.08);
+  --border-card: rgba(255, 255, 255, 0.10);
+  --glass-bg: rgba(15, 23, 42, 0.75);
+  --glass-blur: 16px;
+
+  /* Typography / Text Hierarchy */
+  --text-h1: #ffffff;
+  --text-h2: #ffffff;
+  --text-h3: #f8fafc;
+  --text-body: #cbd5e1;
+  --text-meta: #94a3b8;
+  --text-muted: #64748b;
+
+  /* Role-Based Primary CTAs */
+  --seeker-primary: #4f46e5;
+  --seeker-text: #ffffff;
+  --seeker-glow: #6366f1;
+  --host-primary: #f59e0b;
+  --host-text: #0f172a;
+  --host-gold: #fbbf24;
+
+  /* Status */
+  --status-success: #10b981;
+  --status-warning: #f59e0b;
+  --status-danger: #f43f5e;
+  --status-ai: #7c3aed;
 }
 
 body {
   font-family: var(--font-sans);
+  background-color: var(--canvas);
+  color: var(--text-h3);
+}
+
+/* Base Form Inputs */
+input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
+textarea,
+select {
+  background-color: var(--surface-nested);
+  color: #f8fafc;
+  border: 1px solid var(--border-subtle);
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: var(--text-meta);
 }
 
 /* Custom Scrollbars */
@@ -27,9 +74,10 @@ body {
 
 /* Glassmorphism helpers */
 .glass-panel {
-  background: rgba(15, 23, 42, 0.75);
-  backdrop-filter: blur(16px);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: var(--glass-bg);
+  backdrop-filter: blur(var(--glass-blur));
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+  border: 1px solid var(--border-subtle);
 }
 
 .glow-indigo {
@@ -77,78 +125,110 @@ input[type=range]::-webkit-slider-thumb {
 }
 
 /* =========================================================================
-   LIGHT / WHITE THEME STYLES (Activated via <html class="light">)
+   SUBTLE FLOATING & GENTLE ELEVATION SYSTEM
+   ========================================================================= */
+
+.floating-container {
+  box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.38), 0 2px 6px -1px rgba(0, 0, 0, 0.22);
+  transition: transform 250ms cubic-bezier(0.16, 1, 0.3, 1), box-shadow 250ms cubic-bezier(0.16, 1, 0.3, 1), border-color 250ms ease;
+  will-change: transform, box-shadow;
+}
+
+.floating-card,
+.floating-interactive {
+  box-shadow: 0 4px 18px -2px rgba(0, 0, 0, 0.35), 0 2px 6px -1px rgba(0, 0, 0, 0.2);
+  transform: translateY(0);
+  transition: transform 250ms cubic-bezier(0.16, 1, 0.3, 1), box-shadow 250ms cubic-bezier(0.16, 1, 0.3, 1), border-color 250ms ease;
+  will-change: transform, box-shadow;
+}
+
+.floating-card:hover,
+.floating-interactive:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 12px 28px -4px rgba(0, 0, 0, 0.52), 0 4px 10px -2px rgba(0, 0, 0, 0.32);
+}
+
+.floating-panel {
+  box-shadow: 0 8px 32px -4px rgba(0, 0, 0, 0.48), 0 3px 8px -2px rgba(0, 0, 0, 0.28);
+  transform: translateY(0);
+  transition: transform 250ms cubic-bezier(0.16, 1, 0.3, 1), box-shadow 250ms cubic-bezier(0.16, 1, 0.3, 1), border-color 250ms ease;
+  will-change: transform, box-shadow;
+}
+
+.floating-panel:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 16px 36px -4px rgba(0, 0, 0, 0.58), 0 6px 14px -2px rgba(0, 0, 0, 0.36);
+}
+
+.space-card {
+  box-shadow: 0 4px 18px -2px rgba(0, 0, 0, 0.38), 0 2px 6px -1px rgba(0, 0, 0, 0.22);
+  transform: translateY(0);
+  transition: transform 250ms cubic-bezier(0.16, 1, 0.3, 1), box-shadow 250ms cubic-bezier(0.16, 1, 0.3, 1), border-color 250ms ease, background-color 250ms ease;
+  will-change: transform, box-shadow;
+}
+
+.space-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 14px 30px -4px rgba(0, 0, 0, 0.55), 0 4px 12px -2px rgba(0, 0, 0, 0.35);
+}
+
+/* =========================================================================
+   LIGHT THEME ("Ocean Breeze")
    ========================================================================= */
 
 html.light,
 html.light body {
-  background-color: #f8fafc !important;
-  color: #0f172a !important;
+  background-color: #f8fafc;
+  color: #0f172a;
 }
 
 html.light .bg-slate-950 {
-  background-color: #f8fafc !important;
+  background-color: #f8fafc;
 }
-html.light .bg-slate-950\/90,
-html.light .bg-slate-950\/95 {
-  background-color: rgba(255, 255, 255, 0.92) !important;
-}
+
 html.light .bg-slate-900 {
-  background-color: #ffffff !important;
+  background-color: #ffffff;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
 }
-html.light .bg-slate-900\/50,
-html.light .bg-slate-900\/60,
-html.light .bg-slate-900\/80 {
-  background-color: rgba(255, 255, 255, 0.9) !important;
-}
+
 html.light .bg-slate-800 {
-  background-color: #f1f5f9 !important;
+  background-color: #f1f5f9;
 }
+
 html.light .border-slate-800,
 html.light .border-slate-700 {
-  border-color: #e2e8f0 !important;
+  border-color: #e2e8f0;
 }
+
 html.light .text-white,
-html.light .text-slate-100,
+html.light .text-slate-100 {
+  color: #0f172a;
+}
+
 html.light .text-slate-200 {
-  color: #0f172a !important;
+  color: #1e293b;
 }
-html.light .text-slate-300,
+
+html.light .text-slate-300 {
+  color: #334155;
+}
+
 html.light .text-slate-400 {
-  color: #475569 !important;
-}
-html.light .text-slate-500 {
-  color: #64748b !important;
+  color: #64748b;
 }
 
-/* Contrast Preservation */
-html.light .bg-indigo-600,
-html.light .bg-brand-600,
-html.light [class*="bg-gradient-to-"] {
-  color: #ffffff !important;
-}
-html.light [class*="bg-indigo-"] .text-white,
-html.light [class*="bg-brand-"] .text-white,
-html.light [class*="bg-gradient-to-"] .text-white,
-html.light button[class*="bg-gradient-to-"] * {
-  color: #ffffff !important;
-}
-
-/* Inputs */
-html.light input,
+html.light input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
 html.light textarea,
 html.light select {
-  background-color: #ffffff !important;
-  color: #0f172a !important;
-  border-color: #cbd5e1 !important;
+  background-color: #ffffff;
+  color: #0f172a;
+  border-color: #cbd5e1;
 }
 
-/* Glass panel */
 html.light .glass-panel {
-  background: rgba(255, 255, 255, 0.9) !important;
-  border: 1px solid rgba(226, 232, 240, 0.9) !important;
-  color: #0f172a !important;
-  box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.08) !important;
+  background: rgba(255, 255, 255, 0.90);
+  border: 1px solid rgba(226, 232, 240, 0.85);
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05);
 }
+
 
