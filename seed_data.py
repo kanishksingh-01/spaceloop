@@ -310,6 +310,7 @@ def seed_database(force=False):
         }
     ]
 
+    seed_pwd = os.environ.get("SEED_USER_PASSWORD", "password123")
     for u_data in demo_users:
         existing = User.query.filter_by(email=u_data["email"]).first()
         if not existing:
@@ -319,11 +320,11 @@ def seed_database(force=False):
             u_data["is_active"] = True
             u_data["is_email_verified"] = True
             u = User(**u_data)
-            u.set_password("password123")
+            u.set_password(seed_pwd)
             db.session.add(u)
         else:
             if not existing.password_hash:
-                existing.set_password("password123")
+                existing.set_password(seed_pwd)
             existing.is_active = True
             existing.is_email_verified = True
             if "is_admin" in u_data:

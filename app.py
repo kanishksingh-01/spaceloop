@@ -30,7 +30,7 @@ from backend.app.extensions import login_manager, csrf, limiter
 from backend.core.database import configure_engine_pragmas, ensure_database_schema
 from backend.core.cors import configure_cors
 from backend.core.geo import resolve_location_coordinates
-from backend.modules.auth import AuthService, set_active_context
+from backend.modules.auth import AuthService, set_active_context, EmailService
 from security import apply_security_headers, sanitize_string
 
 # Import Modular Blueprints
@@ -130,7 +130,8 @@ def create_app():
     app.register_blueprint(api_v1_bookings)
     app.register_blueprint(api_v1_system)
 
-    # 9. Automatically exempt JSON /api/ endpoints from web form CSRF checks
+    # 9. Register API CSRF Defense
+    # HTML forms use WTForms CSRF token; JSON APIs with ambient cookies require custom header verification
     for endpoint, view_func in app.view_functions.items():
         try:
             for rule in app.url_map.iter_rules(endpoint):
@@ -139,6 +140,30 @@ def create_app():
                     break
         except Exception:
             pass
+
+    @app.before_request
+    def verify_api_csrf_header():
+        """
+        Anti-CSRF Defense for Ambient Cookie APIs (Finding 6).
+        Browsers cannot attach custom headers on cross-origin requests without preflight.
+        Requires X-Requested-With, X-SpaceLoop-Client, or X-CSRFToken on state-changing API calls.
+        """
+        if request.path.startswith("/api/") and request.method in ("POST", "PUT", "DELETE", "PATCH"):
+            if request.path in ("/api/health",):
+                return None
+            # If session is authenticated with ambient cookie, enforce custom header
+            if session.get("_user_id") and not app.config.get("TESTING"):
+                has_anti_csrf = bool(
+                    request.headers.get("X-Requested-With") or
+                    request.headers.get("X-SpaceLoop-Client") or
+                    request.headers.get("X-CSRFToken") or
+                    request.headers.get("Authorization")
+                )
+                if not has_anti_csrf:
+                    return jsonify({
+                        "success": False,
+                        "error": "Cross-Site Request Forgery validation failed: Missing anti-CSRF custom header."
+                    }), 403
 
     @app.route("/api/health")
     def api_health():
@@ -422,15 +447,6 @@ def create_app():
         spaces = Space.query.filter_by(is_active=True).all()
         return render_template("inquiries.html", inquiries=inquiries, spaces=spaces, user=current_user.to_dict())
 
-    @app.route("/switch-user/<int:user_id>", methods=["POST", "GET"], endpoint="switch_user")
-    @csrf.exempt
-    def switch_user(user_id):
-        user = User.query.get(user_id)
-        if user:
-            login_user(user)
-            set_active_context(user, "host" if user.is_host and not user.is_seeker else "seeker")
-            return redirect(request.referrer or url_for("index"))
-        return redirect(url_for("index"))
 
     @app.route("/api/dev/toggle-ai-simulation", methods=["POST", "GET"], endpoint="toggle_ai_simulation")
     def toggle_ai_simulation():
@@ -442,10 +458,11 @@ def create_app():
         return redirect(request.referrer or url_for("index"))
 
     # =========================================================================
-    # AUTHENTICATION & DEMO SWITCHER ROUTES
+    # AUTHENTICATION ROUTES
     # =========================================================================
     @app.route("/login")
     @app.route("/auth/login", methods=["GET", "POST"], endpoint="auth_login")
+    @limiter.limit(Config.AUTH_LOGIN_RATE_LIMIT)
     def auth_login():
         if request.method == "POST":
             data = request.get_json(silent=True) or request.form or {}
@@ -467,6 +484,7 @@ def create_app():
         return render_template("auth/login.html")
 
     @app.route("/auth/register", methods=["GET", "POST"], endpoint="auth_register")
+    @limiter.limit(Config.AUTH_REGISTER_RATE_LIMIT)
     def auth_register():
         if request.method == "POST":
             data = request.get_json(silent=True) or request.form or {}
@@ -497,15 +515,19 @@ def create_app():
         return redirect(url_for("index"))
 
     @app.route("/auth/forgot-password", methods=["GET", "POST"], endpoint="auth_forgot_password")
+    @limiter.limit(Config.AUTH_PASSWORD_RESET_RATE_LIMIT)
     def auth_forgot_password():
         if request.method == "POST":
             email = request.form.get("email", "")
             _, msg, raw_token = AuthService.request_password_reset(email)
+            if raw_token:
+                EmailService.send_password_reset(email, raw_token)
             flash(msg, "info")
             return redirect(url_for("auth_login"))
         return render_template("auth/forgot_password.html")
 
     @app.route("/auth/reset-password/<token>", methods=["GET", "POST"], endpoint="auth_reset_password")
+    @limiter.limit(Config.AUTH_PASSWORD_RESET_RATE_LIMIT)
     def auth_reset_password(token):
         if request.method == "POST":
             new_pw = request.form.get("password", "")
@@ -527,30 +549,6 @@ def create_app():
     def auth_access_denied():
         return render_template("auth/access_denied.html"), 403
 
-    @app.route("/auth/demo-switch/<role>", methods=["GET", "POST"])
-    @csrf.exempt
-    def demo_switch_handler(role):
-        """Demo switcher for presentation and reviewer walkthroughs."""
-        clean_role = role.lower().strip()
-        if clean_role in ("host", "owner"):
-            user = User.query.filter_by(email="sunita@spaceloop.in").first()
-        elif clean_role == "admin":
-            user = User.query.filter_by(email="admin@spaceloop.in").first()
-        else:
-            user = User.query.filter_by(email="aarav@iitd.ac.in").first()
-
-        if not user:
-            user = User.query.first()
-
-        if user:
-            login_user(user)
-            set_active_context(user, "host" if user.is_host and not user.is_seeker else "seeker")
-            if request.is_json or request.headers.get("Accept", "").find("application/json") != -1:
-                return jsonify({"success": True, "role": clean_role, "user": user.to_dict()}), 200
-            return redirect(request.referrer or url_for("root_spa"))
-
-        return jsonify({"success": False, "error": "Demo persona not found"}), 404
-
     @app.route("/switch-role", methods=["GET", "POST"], endpoint="switch_role")
     @login_required
     def switch_role():
@@ -563,7 +561,7 @@ def create_app():
     # =========================================================================
     @app.errorhandler(404)
     def handle_404_error(error):
-        if request.path.startswith("/api/") or request.is_json:
+        if request.path.startswith("/api/") or request.is_json or request.method != "GET":
             return jsonify({
                 "success": False,
                 "error": "Resource not found (404)",
@@ -571,7 +569,8 @@ def create_app():
             }), 404
         # For non-API routes, let the client-side SPA router handle navigation if dist exists
         if os.path.exists(os.path.join(dist_dir, "index.html")):
-            return _serve_spa_index()
+            if not request.path.startswith(("/switch-user", "/auth/demo-switch")):
+                return _serve_spa_index()
         return render_template("404.html", user=current_user.to_dict() if current_user.is_authenticated else None), 404
 
     @app.errorhandler(500)

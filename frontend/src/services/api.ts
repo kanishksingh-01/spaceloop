@@ -13,6 +13,8 @@ export class ApiError extends Error {
 export async function request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
   const headers: Record<string, string> = {
     'Accept': 'application/json',
+    'X-Requested-With': 'XMLHttpRequest',
+    'X-SpaceLoop-Client': 'ReactSPA',
     ...(options.headers as Record<string, string> || {}),
   };
 

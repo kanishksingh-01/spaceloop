@@ -21,6 +21,48 @@ import { VerifyPage } from './pages/VerifyPage';
 import { HowItWorksPage } from './pages/HowItWorksPage';
 import { ErrorBoundary } from './components/common/ErrorBoundary';
 
+interface ProtectedRouteProps {
+  currentUser: User | null;
+  initializing: boolean;
+  onRequireAuth: () => void;
+  children: React.ReactElement;
+}
+
+const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
+  currentUser,
+  initializing,
+  onRequireAuth,
+  children,
+}) => {
+  if (initializing) {
+    return (
+      <div className="flex-1 flex items-center justify-center py-20">
+        <div className="w-8 h-8 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
+  if (!currentUser) {
+    return (
+      <div className="flex-1 flex flex-col items-center justify-center py-24 px-4 text-center max-w-lg mx-auto">
+        <div className="w-16 h-16 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400 text-2xl mb-5 shadow-inner">
+          <i className="fa-solid fa-lock" />
+        </div>
+        <h2 className="text-xl font-bold text-white mb-2">Authentication Required</h2>
+        <p className="text-slate-400 text-sm mb-6">
+          This portal contains private user records, bookings, or property controls. Please sign in to verify your identity.
+        </p>
+        <button
+          onClick={onRequireAuth}
+          className="px-6 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-medium text-sm transition-all shadow-lg shadow-indigo-600/20"
+        >
+          Sign In to Access
+        </button>
+      </div>
+    );
+  }
+  return children;
+};
+
 export const App: React.FC = () => {
   const [currentUser, setCurrentUser] = useState<User | null>(() => {
     if (typeof window !== 'undefined') {
@@ -80,7 +122,18 @@ export const App: React.FC = () => {
               <Route path="/boutique" element={<ExplorePage />} />
               <Route path="/space/:id" element={<SpaceDetailPage currentUser={currentUser} />} />
               <Route path="/session/:id" element={<SessionPage />} />
-              <Route path="/dashboard" element={<DashboardPage currentUser={currentUser} />} />
+              <Route
+                path="/dashboard"
+                element={
+                  <ProtectedRoute
+                    currentUser={currentUser}
+                    initializing={initializing}
+                    onRequireAuth={() => setAuthModalOpen(true)}
+                  >
+                    <DashboardPage currentUser={currentUser} />
+                  </ProtectedRoute>
+                }
+              />
               <Route path="/how-it-works" element={<HowItWorksPage />} />
 
               {/* Host Dedicated Routes */}
@@ -102,7 +155,18 @@ export const App: React.FC = () => {
                   />
                 }
               />
-              <Route path="/list-space" element={<ListSpacePage currentUser={currentUser} />} />
+              <Route
+                path="/list-space"
+                element={
+                  <ProtectedRoute
+                    currentUser={currentUser}
+                    initializing={initializing}
+                    onRequireAuth={() => setHostAuthModalOpen(true)}
+                  >
+                    <ListSpacePage currentUser={currentUser} />
+                  </ProtectedRoute>
+                }
+              />
               <Route path="/calculator" element={<CalculatorPage />} />
               <Route path="/verify" element={<VerifyPage />} />
 

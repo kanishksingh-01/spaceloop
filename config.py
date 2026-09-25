@@ -8,8 +8,27 @@ load_dotenv(os.path.join(basedir, ".env"))
 
 
 class Config:
-    # Use environment secret key; in production this must be kept confidential
-    SECRET_KEY = os.environ.get("SECRET_KEY", "spaceloop-dev-secret-key-change-in-prod-2026")
+    # Security: Secret Key enforcement (Finding 4)
+    _env_secret = os.environ.get("SECRET_KEY")
+    _is_prod = (
+        os.environ.get("FLASK_ENV") == "production" or
+        os.environ.get("ENV") == "production" or
+        bool(os.environ.get("RENDER")) or
+        bool(os.environ.get("VERCEL"))
+    )
+    if not _env_secret or _env_secret == "spaceloop-dev-secret-key-change-in-prod-2026":
+        if _is_prod:
+            import secrets
+            import logging
+            logging.getLogger("spaceloop.security").warning(
+                "CRITICAL: Production deployment detected without explicit strong SECRET_KEY! "
+                "Generating secure ephemeral key to prevent cookie forgery."
+            )
+            SECRET_KEY = secrets.token_hex(32)
+        else:
+            SECRET_KEY = "spaceloop-dev-secret-key-change-in-prod-2026"
+    else:
+        SECRET_KEY = _env_secret
     
     is_serverless = bool(os.environ.get("VERCEL") or os.environ.get("AWS_LAMBDA_FUNCTION_NAME"))
     _raw_db_url = os.environ.get("DATABASE_URL")
@@ -31,10 +50,12 @@ class Config:
     SQLALCHEMY_DATABASE_URI = _raw_db_url
     SQLALCHEMY_TRACK_MODIFICATIONS = False
 
-    # Security: Cookie & Session hardening
+    # Security: Cookie & Session hardening (Findings 11 & 12)
     SESSION_COOKIE_HTTPONLY = True
     SESSION_COOKIE_SAMESITE = "Lax"
-    SESSION_COOKIE_SECURE = os.environ.get("FLASK_ENV") == "production"
+    SESSION_COOKIE_SECURE = (
+        os.environ.get("SESSION_COOKIE_SECURE", "false").lower() in ("true", "1") or _is_prod
+    )
     PERMANENT_SESSION_LIFETIME = timedelta(days=7)
     SESSION_REFRESH_EACH_REQUEST = True
 

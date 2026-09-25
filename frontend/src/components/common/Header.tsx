@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { User } from '../../types';
-import { logoutUser, demoSwitch } from '../../services/auth';
+import { logoutUser } from '../../services/auth';
 
 interface HeaderProps {
   currentUser: User | null;

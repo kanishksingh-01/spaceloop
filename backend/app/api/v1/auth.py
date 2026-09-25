@@ -1,10 +1,14 @@
 import re
+import secrets
 from flask import Blueprint, request, jsonify
 from flask_login import current_user, login_user, logout_user, login_required
 from models import db, User
+from config import Config
+from backend.app.extensions import limiter
 from backend.modules.auth.service import AuthService
 from backend.modules.auth.session import set_active_context
 from backend.modules.auth.audit import record_audit
+from backend.modules.auth.email_service import EmailService
 from space_ai import (
     verify_aadhaar_otp,
     verify_academic_credentials,
@@ -16,94 +20,6 @@ from space_ai import (
 from security import sanitize_string
 
 api_v1_auth = Blueprint("api_v1_auth", __name__, url_prefix="/api/v1/auth")
-
-
-def authenticate_or_provision_user(email: str, password: str, is_host: bool = False) -> tuple[User | None, str]:
-    """
-    Authenticates user credentials.
-    - System/test accounts (@spaceloop.in, @du.ac.in, etc.) follow strict security and error verification.
-    - Personal email accounts (e.g. @gmail.com, custom domains) are seamlessly auto-provisioned or
-      authenticated with verified privileges so host/seeker onboarding is frictionless for judges and testers.
-    """
-    clean_email = (email or "").strip().lower()
-    if not clean_email or "@" not in clean_email or "." not in clean_email:
-        return None, "Please provide a valid email address."
-
-    # Check if this is a system / test fixture account
-    is_system_or_test = clean_email.endswith(("@spaceloop.in", "@du.ac.in", "@iitd.ac.in", "@example.com"))
-
-    if is_system_or_test:
-        user, error = AuthService.authenticate_user(email, password)
-        if not user and email:
-            candidate = User.query.filter(db.func.lower(User.email) == clean_email).first()
-            if candidate and candidate.is_active and password in ("password123", "Host@1234", "Student@1234", "Admin@1234", "demo1234"):
-                user = candidate
-                error = ""
-        if not user or not user.is_active:
-            return None, error or ("Invalid host credentials." if is_host else "Invalid email or password.")
-        if is_host and not user.is_host:
-            return None, "This account is registered as a Seeker only. Please complete Host Property KYC to unlock the Host Portal."
-        return user, ""
-
-    # PERSONAL EMAIL ONBOARDING FLOW
-    user = User.query.filter(db.func.lower(User.email) == clean_email).first()
-    if user:
-        if user.check_password(password) or password in ("password123", "Host@1234", "Student@1234", "Admin@1234", "demo1234", "SpaceLoop@123"):
-            if is_host and not user.is_host:
-                user.role = "both"
-                user.is_host_verified = True
-                if not getattr(user, "discom_provider", None):
-                    user.discom_provider = "BESCOM"
-                    user.discom_ca_masked = "CA-9874****"
-                    user.upi_verified = True
-                    user.upi_vpa_masked = f"{clean_email.split('@')[0]}@okhdfcbank"
-                    user.bank_beneficiary_name = user.name or "Host Partner"
-                db.session.commit()
-            return user, ""
-        else:
-            # Update password for personal email tester
-            if len(password) >= 4:
-                user.set_password(password)
-                if is_host:
-                    user.role = "both"
-                    user.is_host_verified = True
-                user.is_active = True
-                db.session.commit()
-                return user, ""
-            return None, "Invalid password."
-
-    # Personal email does not exist -> auto-provision as verified host/seeker
-    username = clean_email.split("@")[0]
-    clean_name = re.sub(r"[._0-9]+", " ", username).strip().title()
-    name_parts = clean_name.split()
-    first_name = name_parts[0] if name_parts else "Space"
-    last_name = " ".join(name_parts[1:]) if len(name_parts) > 1 else ("Host" if is_host else "User")
-    full_name = f"{first_name} {last_name}".strip()
-
-    user = User(
-        name=full_name,
-        first_name=first_name,
-        last_name=last_name,
-        email=clean_email,
-        role="both" if is_host else "seeker",
-        is_active=True,
-        is_email_verified=True,
-        is_admin=False,
-        objective_trust_score=98.5
-    )
-    user.set_password(password if len(password) >= 4 else "SpaceLoop@123")
-    if is_host:
-        user.role = "both"
-        user.is_host_verified = True
-        user.discom_provider = "BESCOM"
-        user.discom_ca_masked = "CA-9874****"
-        user.upi_verified = True
-        user.upi_vpa_masked = f"{clean_email.split('@')[0]}@okhdfcbank"
-        user.bank_beneficiary_name = full_name
-
-    db.session.add(user)
-    db.session.commit()
-    return user, ""
 
 
 def safe_user_profile(user):
@@ -160,13 +76,13 @@ def get_me():
 
 
 @api_v1_auth.route("/login", methods=["POST"])
+@limiter.limit(Config.AUTH_LOGIN_RATE_LIMIT)
 def api_login():
     data = request.get_json(silent=True) or {}
     email = sanitize_string(data.get("email", ""), max_length=120)
     password = data.get("password", "")
 
-    user, error = authenticate_or_provision_user(email, password, is_host=False)
-
+    user, error = AuthService.authenticate_user(email, password)
     if not user or not user.is_active:
         return jsonify({"success": False, "error": error or "Invalid email or password."}), 401
 
@@ -181,6 +97,7 @@ def api_login():
 
 
 @api_v1_auth.route("/register", methods=["POST"])
+@limiter.limit(Config.AUTH_REGISTER_RATE_LIMIT)
 def api_register():
     data = request.get_json(silent=True) or {}
     first_name = sanitize_string(data.get("first_name", ""), max_length=60)
@@ -222,14 +139,14 @@ def api_register():
 # DEDICATED SEEKER AUTHENTICATION ENDPOINTS
 # =========================================================================
 @api_v1_auth.route("/seeker/login", methods=["POST"])
+@limiter.limit(Config.AUTH_LOGIN_RATE_LIMIT)
 def api_seeker_login():
     """Dedicated Seeker Login for workspace searchers."""
     data = request.get_json(silent=True) or {}
     email = sanitize_string(data.get("email", ""), max_length=120)
     password = data.get("password", "")
 
-    user, error = authenticate_or_provision_user(email, password, is_host=False)
-
+    user, error = AuthService.authenticate_user(email, password)
     if not user or not user.is_active:
         return jsonify({"success": False, "error": error or "Invalid seeker credentials."}), 401
 
@@ -245,6 +162,7 @@ def api_seeker_login():
 
 
 @api_v1_auth.route("/seeker/register", methods=["POST"])
+@limiter.limit(Config.AUTH_REGISTER_RATE_LIMIT)
 def api_seeker_register():
     """Dedicated Seeker Registration."""
     data = request.get_json(silent=True) or {}
@@ -285,16 +203,22 @@ def api_seeker_register():
 # DEDICATED HOST AUTHENTICATION & VERIFICATION ENDPOINTS
 # =========================================================================
 @api_v1_auth.route("/host/login", methods=["POST"])
+@limiter.limit(Config.AUTH_LOGIN_RATE_LIMIT)
 def api_host_login():
     """Dedicated Host Login with host permission verification."""
     data = request.get_json(silent=True) or {}
     email = sanitize_string(data.get("email", ""), max_length=120)
     password = data.get("password", "")
 
-    user, error = authenticate_or_provision_user(email, password, is_host=True)
-
+    user, error = AuthService.authenticate_user(email, password)
     if not user or not user.is_active:
         return jsonify({"success": False, "error": error or "Invalid host credentials."}), 401
+
+    if not user.is_host:
+        return jsonify({
+            "success": False,
+            "error": "This account is registered as a Seeker only. Please complete Host Property KYC to unlock the Host Portal."
+        }), 403
 
     login_user(user, remember=bool(data.get("remember", False)))
     set_active_context(user, "host")
@@ -308,6 +232,7 @@ def api_host_login():
 
 
 @api_v1_auth.route("/host/register", methods=["POST"])
+@limiter.limit(Config.AUTH_REGISTER_RATE_LIMIT)
 def api_host_register():
     """Dedicated Host Registration with Discom Utility & UPI Penny Drop verification."""
     data = request.get_json(silent=True) or {}
@@ -348,25 +273,17 @@ def api_host_register():
         confirm_password=confirm_password,
         role="host"
     )
-    if not user:
-        clean_email = email.lower().strip()
-        existing = User.query.filter(db.func.lower(User.email) == clean_email).first()
-        if existing:
-            user = existing
-            user.role = "both"
-            user.is_host = True
-            if password and len(password) >= 4:
-                user.set_password(password)
-        else:
-            return jsonify({"success": False, "error": error}), 400
 
-    # 4. Attach verified host attributes
+    if not user:
+        return jsonify({"success": False, "error": error}), 400
+
+    # Persist verified infrastructure credentials
     user.is_host_verified = True
-    user.discom_provider = discom_res["discom_provider"]
-    user.discom_ca_masked = discom_res["discom_ca_masked"]
+    user.discom_provider = discom_res["provider"]
+    user.discom_ca_masked = discom_res["ca_number_masked"]
     user.upi_verified = True
     user.upi_vpa_masked = upi_res["upi_vpa_masked"]
-    user.bank_beneficiary_name = upi_res["bank_beneficiary_name"]
+    user.bank_beneficiary_name = upi_res["beneficiary_name"]
     user.objective_trust_score = 98.5
     db.session.commit()
 
@@ -375,7 +292,7 @@ def api_host_register():
 
     return jsonify({
         "success": True,
-        "message": "Host registered & verified successfully! Discom and UPI account linked.",
+        "message": "Host registered and verified via Discom CA & UPI Penny Drop",
         "portal": "host",
         "discom": discom_res,
         "upi": upi_res,
@@ -385,10 +302,9 @@ def api_host_register():
 
 @api_v1_auth.route("/host/upgrade", methods=["POST"])
 @login_required
+@limiter.limit("20 per minute")
 def api_host_upgrade():
-    """
-    Elevates an existing authenticated seeker to a verified Host upon completing Discom and UPI penny drop KYC.
-    """
+    """Elevates authenticated Seeker to Verified Host."""
     data = request.get_json(silent=True) or {}
     ca_number = sanitize_string(data.get("ca_number") or data.get("discom_ca") or "", max_length=50)
     provider = sanitize_string(data.get("provider") or data.get("discom_provider") or "BESCOM", max_length=80)
@@ -396,21 +312,29 @@ def api_host_upgrade():
     upi_vpa = sanitize_string(data.get("upi_vpa", ""), max_length=80)
     pan_name = sanitize_string(data.get("pan_name") or data.get("bank_beneficiary_name") or current_user.name, max_length=100)
 
+    # 1. Verify property electricity bill (Discom)
     discom_res = verify_host_electricity_bill(ca_number, provider, address, pan_name)
     if not discom_res.get("success"):
         return jsonify({"success": False, "error": f"Discom KYC failed: {discom_res.get('error')}"}), 400
 
+    # 2. Verify payout UPI account (Penny drop)
     upi_res = verify_upi_penny_drop(upi_vpa, pan_name)
     if not upi_res.get("success"):
         return jsonify({"success": False, "error": f"Payout verification failed: {upi_res.get('error')}"}), 400
 
-    current_user.role = "both" if current_user.is_seeker else "host"
+    # Elevate role
+    if current_user.role == "seeker":
+        current_user.role = "both"
+    elif current_user.role not in ("host", "owner", "both"):
+        current_user.role = "both"
+
     current_user.is_host_verified = True
-    current_user.discom_provider = discom_res["discom_provider"]
-    current_user.discom_ca_masked = discom_res["discom_ca_masked"]
+    current_user.discom_provider = discom_res["provider"]
+    current_user.discom_ca_masked = discom_res["ca_number_masked"]
     current_user.upi_verified = True
     current_user.upi_vpa_masked = upi_res["upi_vpa_masked"]
-    current_user.bank_beneficiary_name = upi_res["bank_beneficiary_name"]
+    current_user.bank_beneficiary_name = upi_res["beneficiary_name"]
+    current_user.objective_trust_score = max(getattr(current_user, "objective_trust_score", 90.0) or 90.0, 98.0)
     db.session.commit()
 
     set_active_context(current_user, "host")
@@ -426,23 +350,38 @@ def api_host_upgrade():
 
 
 @api_v1_auth.route("/digilocker", methods=["POST"])
+@limiter.limit("10 per minute")
 def api_digilocker_login():
     """
-    Legitimate DigiLocker / Aadhaar verification auth method.
-    Verifies Aadhaar OTP, creates or authenticates user with verified credentials.
+    DigiLocker / Aadhaar verification auth method.
+    Verifies Aadhaar OTP, creates account with cryptographic random unusable password,
+    or links credential to already authenticated user.
     """
     data = request.get_json(silent=True) or {}
     name = sanitize_string(data.get("name", "DigiLocker User"), max_length=100)
-    aadhaar_num = sanitize_string(data.get("aadhaar_number", "999988884821"), max_length=20)
-    otp = sanitize_string(data.get("otp", "123456"), max_length=10)
+    aadhaar_num = sanitize_string(data.get("aadhaar_number", ""), max_length=20)
+    otp = sanitize_string(data.get("otp", ""), max_length=10)
     role = sanitize_string(data.get("role", "seeker"), max_length=20)
 
     aadhaar_res = verify_aadhaar_otp(name, aadhaar_num, otp)
     if not aadhaar_res.get("success"):
         return jsonify({"success": False, "error": aadhaar_res.get("error")}), 400
 
-    # Look for existing user with this token or email
     masked = aadhaar_res["masked_aadhaar"]
+
+    # If user is already authenticated, link to existing profile
+    if current_user.is_authenticated:
+        current_user.is_aadhaar_verified = True
+        current_user.aadhaar_masked = masked
+        current_user.aadhaar_token_hash = aadhaar_res["token_hash"]
+        db.session.commit()
+        return jsonify({
+            "success": True,
+            "message": "DigiLocker Aadhaar credential linked to your account",
+            "user": safe_user_profile(current_user)
+        }), 200
+
+    # Look for existing user with this synthetic token email
     synthetic_email = f"aadhaar_{masked.replace('-', '')}@spaceloop.in".lower()
     user = User.query.filter_by(email=synthetic_email).first()
 
@@ -463,7 +402,8 @@ def api_digilocker_login():
             is_host_verified=(role in ("host", "owner")),
             objective_trust_score=98.0
         )
-        user.set_password("DigiLockerAuth2026!")
+        # Cryptographically secure random unusable password: cannot be brute-forced via normal login
+        user.set_password(secrets.token_urlsafe(32))
         db.session.add(user)
         db.session.commit()
     else:
@@ -481,20 +421,35 @@ def api_digilocker_login():
 
 
 @api_v1_auth.route("/student-sso", methods=["POST"])
+@limiter.limit("10 per minute")
 def api_student_sso_login():
     """
-    Legitimate University Academic SSO authentication method.
+    University Academic SSO authentication method.
     Verifies college domain credential and authenticates student.
+    Uses cryptographically random unusable password for newly provisioned accounts.
     """
     data = request.get_json(silent=True) or {}
-    college_email = sanitize_string(data.get("college_email", "student@iitd.ac.in"), max_length=120).lower()
+    college_email = sanitize_string(data.get("college_email", ""), max_length=120).lower()
     student_name = sanitize_string(data.get("name", "Student Scholar"), max_length=100)
-    college_name = sanitize_string(data.get("college_name", "IIT Delhi"), max_length=150)
-    student_id = sanitize_string(data.get("student_id", "2023CSB108"), max_length=50)
+    college_name = sanitize_string(data.get("college_name", ""), max_length=150)
+    student_id = sanitize_string(data.get("student_id", ""), max_length=50)
 
     acad_res = verify_academic_credentials(college_email, student_id, college_name)
     if not acad_res.get("success"):
         return jsonify({"success": False, "error": acad_res.get("error")}), 400
+
+    # If user is already authenticated, link university verification
+    if current_user.is_authenticated:
+        current_user.is_student_verified = True
+        current_user.college_name = acad_res["college_name"]
+        current_user.college_email = acad_res["college_email"]
+        current_user.student_id_masked = acad_res["student_id_masked"]
+        db.session.commit()
+        return jsonify({
+            "success": True,
+            "message": "Academic credentials linked to your account",
+            "user": safe_user_profile(current_user)
+        }), 200
 
     user = User.query.filter(db.func.lower(User.email) == college_email).first()
     if not user:
@@ -513,7 +468,8 @@ def api_student_sso_login():
             student_id_masked=acad_res["student_id_masked"],
             objective_trust_score=97.5
         )
-        user.set_password("StudentSSO2026!")
+        # Cryptographically secure random unusable password: cannot be brute-forced via normal login
+        user.set_password(secrets.token_urlsafe(32))
         db.session.add(user)
         db.session.commit()
     else:
@@ -530,32 +486,43 @@ def api_student_sso_login():
     }), 200
 
 
-@api_v1_auth.route("/demo-switch/<role>", methods=["GET", "POST"])
-def api_demo_switch(role):
+@api_v1_auth.route("/forgot-password", methods=["POST"])
+@limiter.limit(Config.AUTH_PASSWORD_RESET_RATE_LIMIT)
+def api_forgot_password():
     """
-    Switches to genuine demo seed user account (Aarav, Sunita, Kabir).
+    Requests a password reset token and dispatches it via EmailService.
+    Always returns generic 200 response to prevent account enumeration.
     """
-    clean_role = role.lower().strip()
-    if clean_role == "host":
-        user = User.query.filter_by(email="sunita@spaceloop.in").first()
-    elif clean_role == "admin":
-        user = User.query.filter_by(email="admin@spaceloop.in").first()
-    else:
-        user = User.query.filter_by(email="aarav@iitd.ac.in").first()
+    data = request.get_json(silent=True) or {}
+    email = sanitize_string(data.get("email", ""), max_length=120)
+    success, msg, raw_token = AuthService.request_password_reset(email)
+    if raw_token:
+        EmailService.send_password_reset(email, raw_token)
+    return jsonify({
+        "success": True,
+        "message": msg
+    }), 200
 
-    if not user:
-        user = User.query.first()
 
-    if user:
-        login_user(user)
-        set_active_context(user, "host" if user.is_host else "seeker")
-        return jsonify({
-            "success": True,
-            "role": clean_role,
-            "user": safe_user_profile(user)
-        }), 200
+@api_v1_auth.route("/reset-password", methods=["POST"])
+@limiter.limit(Config.AUTH_PASSWORD_RESET_RATE_LIMIT)
+def api_reset_password():
+    """
+    Resets user password with valid single-use token and password complexity verification.
+    """
+    data = request.get_json(silent=True) or {}
+    token = sanitize_string(data.get("token", ""), max_length=100)
+    password = data.get("password", "")
+    confirm_password = data.get("confirm_password", "")
 
-    return jsonify({"success": False, "error": "Demo persona not found"}), 404
+    success, msg = AuthService.reset_password(token, password, confirm_password)
+    if not success:
+        return jsonify({"success": False, "error": msg}), 400
+
+    return jsonify({
+        "success": True,
+        "message": msg
+    }), 200
 
 
 @api_v1_auth.route("/logout", methods=["POST"])
