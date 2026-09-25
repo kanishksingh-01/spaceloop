@@ -38,6 +38,17 @@ from security import sanitize_string
 api_v1_auth = Blueprint("api_v1_auth", __name__, url_prefix="/api/v1/auth")
 
 
+def _record_client_device_session(user_id: int, data: dict = None):
+    try:
+        from backend.modules.trust_safety import record_device_session
+        ip = request.headers.get("X-Forwarded-For", request.remote_addr or "")
+        ua = request.headers.get("User-Agent", "")
+        dev_tok = data.get("device_token") if data else None
+        record_device_session(user_id=user_id, user_agent=ua, ip_address=ip, device_token=dev_tok)
+    except Exception:
+        pass
+
+
 def safe_user_profile(user):
     raw_oti = getattr(user, "objective_trust_score", 98.5) or 98.5
     oti_score = round(raw_oti if raw_oti <= 100.0 else raw_oti / 10.0, 1)
@@ -125,6 +136,7 @@ def api_login():
 
     login_user(user, remember=bool(data.get("remember", False)))
     set_active_context(user, "host" if user.is_host and not user.is_seeker else "seeker")
+    _record_client_device_session(user.id, data)
 
     return jsonify({
         "success": True,
@@ -214,6 +226,7 @@ def api_seeker_login():
 
     login_user(user, remember=bool(data.get("remember", False)))
     set_active_context(user, "seeker")
+    _record_client_device_session(user.id, data)
 
     return jsonify({
         "success": True,
@@ -309,6 +322,7 @@ def api_host_login():
 
     login_user(user, remember=bool(data.get("remember", False)))
     set_active_context(user, "host")
+    _record_client_device_session(user.id, data)
 
     return jsonify({
         "success": True,

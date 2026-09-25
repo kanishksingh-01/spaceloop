@@ -19,6 +19,7 @@ import { SessionPage } from './pages/SessionPage';
 import { CalculatorPage } from './pages/CalculatorPage';
 import { VerifyPage } from './pages/VerifyPage';
 import { HowItWorksPage } from './pages/HowItWorksPage';
+import { TrustSafetyPage } from './pages/TrustSafetyPage';
 import { ErrorBoundary } from './components/common/ErrorBoundary';
 
 interface ProtectedRouteProps {
@@ -169,6 +170,30 @@ export const App: React.FC = () => {
               />
               <Route path="/calculator" element={<CalculatorPage />} />
               <Route path="/verify" element={<VerifyPage />} />
+              <Route
+                path="/admin/trust-safety"
+                element={
+                  <ProtectedRoute
+                    currentUser={currentUser}
+                    initializing={initializing}
+                    onRequireAuth={() => setAuthModalOpen(true)}
+                  >
+                    <TrustSafetyPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/trust-safety"
+                element={
+                  <ProtectedRoute
+                    currentUser={currentUser}
+                    initializing={initializing}
+                    onRequireAuth={() => setAuthModalOpen(true)}
+                  >
+                    <TrustSafetyPage />
+                  </ProtectedRoute>
+                }
+              />
 
               {/* Fallback */}
               <Route path="*" element={<LandingPage currentUser={currentUser} />} />
