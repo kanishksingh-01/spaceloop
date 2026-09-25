@@ -42,6 +42,18 @@ export default {
           emerald: '#10b981',
           amber: '#f59e0b',
           violet: '#8b5cf6'
+        },
+        ocean: {
+          primary: '#0B3D91',
+          secondary: '#3BA7F2',
+          aqua: '#7FE7D6',
+          bg: '#E8F6FF',
+          surface: '#FFFFFF',
+          nested: '#F0F8FF',
+          text: '#0B2545',
+          body: '#1E293B',
+          muted: '#475569',
+          border: '#D0E6F7',
         }
       }
     },

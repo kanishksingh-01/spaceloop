@@ -160,139 +160,494 @@ textarea::placeholder {
 }
 
 /* =========================================================================
-   LIGHT THEME ("Ocean Breeze") STYLES
+   LIGHT THEME ("Ocean Breeze") DESIGN TOKENS & SCOPED STYLES
+   Mandatory Hex Codes:
+     PRIMARY BLUE:     #0B3D91
+     SECONDARY BLUE:   #3BA7F2
+     TERTIARY AQUA:    #7FE7D6
+     LIGHT BACKGROUND: #E8F6FF
    Activated when <html class="light"> is applied
    ========================================================================= */
 
+html.light {
+  /* Canvas & Surface Layers */
+  --canvas: #E8F6FF;
+  --surface: #FFFFFF;
+  --surface-nested: #F0F8FF;
+  --border-subtle: #D0E6F7;
+  --border-card: #C5E0F4;
+  --border-hover: #3BA7F2;
+
+  /* Glassmorphism */
+  --glass-bg: rgba(255, 255, 255, 0.92);
+  --glass-blur: 16px;
+
+  /* Typography / High-Contrast Hierarchy */
+  --text-h1: #0B2545;
+  --text-h2: #0B2545;
+  --text-h3: #0B3D91;
+  --text-body: #1E293B;
+  --text-meta: #475569;
+  --text-muted: #64748B;
+
+  /* Role-Based Primary CTAs */
+  --seeker-primary: #0B3D91;
+  --seeker-text: #FFFFFF;
+  --seeker-glow: #3BA7F2;
+  --seeker-pill: #7FE7D6;
+  --seeker-gradient-from: #0B3D91;
+  --seeker-gradient-to: #3BA7F2;
+
+  --host-primary: #D97706;
+  --host-text: #FFFFFF;
+  --host-gold: #F59E0B;
+  --host-gradient-from: #D97706;
+  --host-gradient-to: #EA580C;
+
+  /* Status Colors */
+  --status-success: #059669;
+  --status-active-from: #059669;
+  --status-active-to: #0D9488;
+  --status-warning: #D97706;
+  --status-danger: #E11D48;
+  --status-ai: #0B3D91;
+
+  /* Standard Design Tokens */
+  --background: #E8F6FF;
+  --foreground: #0B2545;
+  --card: #FFFFFF;
+  --card-foreground: #0B2545;
+  --primary: #0B3D91;
+  --primary-foreground: #FFFFFF;
+  --secondary: #3BA7F2;
+  --muted: #F0F8FF;
+  --muted-foreground: #475569;
+  --accent: #7FE7D6;
+  --border: #D0E6F7;
+  --input: #FFFFFF;
+  --ring: #3BA7F2;
+}
+
+/* Base Canvas & Viewport */
 html.light,
 html.light body,
 html.light #root {
-  background-color: #f8fafc;
-  color: #0f172a;
+  background-color: #E8F6FF !important;
+  color: #0B2545 !important;
 }
 
+/* Background Replacements */
 html.light .bg-slate-950,
 html.light .bg-canvas {
-  background-color: #f8fafc;
+  background-color: #E8F6FF !important;
 }
 
 html.light .bg-slate-950\/95,
 html.light .bg-slate-950\/90,
 html.light .bg-slate-950\/85,
-html.light .bg-slate-950\/80 {
-  background-color: rgba(248, 250, 252, 0.95);
+html.light .bg-slate-950\/80,
+html.light .bg-slate-950\/70 {
+  background-color: rgba(255, 255, 255, 0.94) !important;
 }
 
 html.light .bg-slate-900,
 html.light .bg-surface {
-  background-color: #ffffff;
-  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05);
+  background-color: #FFFFFF !important;
 }
 
 html.light .bg-slate-900\/90,
 html.light .bg-slate-900\/80,
+html.light .bg-slate-900\/70,
 html.light .bg-slate-900\/60,
 html.light .bg-slate-900\/50,
-html.light .bg-slate-900\/40 {
-  background-color: rgba(255, 255, 255, 0.95);
+html.light .bg-slate-900\/40,
+html.light .bg-slate-900\/30 {
+  background-color: #FFFFFF !important;
 }
 
-html.light .bg-slate-800,
 html.light .bg-slate-850,
+html.light .bg-slate-800,
 html.light .bg-surface-nested {
-  background-color: #f1f5f9;
+  background-color: #F0F8FF !important;
 }
 
+html.light .bg-slate-800\/90,
 html.light .bg-slate-800\/80,
-html.light .bg-slate-800\/90 {
-  background-color: #f1f5f9;
+html.light .bg-slate-800\/60,
+html.light .bg-slate-800\/50,
+html.light .bg-slate-800\/40 {
+  background-color: #F0F8FF !important;
+}
+
+/* Interactive Hover States */
+html.light .hover\:bg-slate-850:hover,
+html.light .hover\:bg-slate-800:hover,
+html.light .hover\:bg-slate-800\/60:hover,
+html.light .hover\:bg-slate-700:hover {
+  background-color: #E1F3FE !important;
+}
+
+/* Gradients in Light Mode */
+html.light .bg-gradient-to-b.from-slate-900.via-slate-950.to-slate-950,
+html.light .bg-gradient-to-b.from-slate-900 {
+  background: linear-gradient(180deg, #FFFFFF 0%, #F0F8FF 40%, #E8F6FF 100%) !important;
+}
+
+html.light .bg-gradient-to-b.from-slate-950.to-slate-900 {
+  background: linear-gradient(180deg, #E8F6FF 0%, #D8EBF8 100%) !important;
+}
+
+html.light .bg-gradient-to-tr.from-indigo-950\/80.via-slate-900\/90.to-violet-950\/80,
+html.light .bg-gradient-to-tr.from-indigo-950 {
+  background: linear-gradient(135deg, #0B3D91 0%, #1754B5 50%, #0B3D91 100%) !important;
+  color: #FFFFFF !important;
+}
+
+html.light .bg-gradient-to-tr.from-indigo-950\/80.via-slate-900\/90.to-violet-950\/80 *,
+html.light .bg-gradient-to-tr.from-indigo-950 * {
+  color: #FFFFFF !important;
+}
+
+/* Ambient Glow Blobs in Light Mode */
+html.light [class*="blur-"][class*="bg-indigo-600"],
+html.light [class*="blur-"][class*="bg-violet-600"] {
+  background-color: rgba(59, 167, 242, 0.10) !important;
 }
 
 /* Light Mode Borders */
 html.light .border-slate-800,
-html.light .border-slate-800\/80,
 html.light .border-slate-800\/90,
+html.light .border-slate-800\/80,
+html.light .border-slate-800\/60,
 html.light .border-slate-700,
 html.light .border-slate-700\/80,
 html.light .border-slate-700\/70,
-html.light .border-slate-700\/60 {
-  border-color: #e2e8f0;
+html.light .border-slate-700\/60,
+html.light .border-slate-600 {
+  border-color: #D0E6F7 !important;
+}
+
+html.light .hover\:border-indigo-500\/40:hover,
+html.light .hover\:border-indigo-500\/50:hover,
+html.light .hover\:border-indigo-500:hover {
+  border-color: #3BA7F2 !important;
+}
+
+html.light .border-indigo-500\/20,
+html.light .border-indigo-500\/25,
+html.light .border-indigo-500\/30 {
+  border-color: #C5E0F4 !important;
 }
 
 /* Typography in Light Mode */
 html.light .text-white,
 html.light .text-slate-100 {
-  color: #0f172a;
+  color: #0B2545;
 }
 
 html.light .text-slate-200 {
-  color: #1e293b;
+  color: #0B2545;
 }
 
 html.light .text-slate-300 {
-  color: #334155;
+  color: #1E293B;
 }
 
 html.light .text-slate-400 {
-  color: #64748b;
+  color: #475569;
 }
 
 html.light .text-slate-500 {
-  color: #94a3b8;
+  color: #64748B;
 }
 
-/* Maintain High-Contrast CTA button text */
+/* Brand Text Highlights */
+html.light .text-indigo-400,
+html.light .text-indigo-300 {
+  color: #0B3D91;
+}
+
+html.light .hover\:text-indigo-300:hover,
+html.light .hover\:text-indigo-400:hover {
+  color: #3BA7F2;
+}
+
+html.light .text-amber-400,
+html.light .text-amber-300 {
+  color: #D97706;
+}
+
+/* Hero Headline Gradient in Light Mode */
+html.light .text-transparent.bg-clip-text.bg-gradient-to-r.from-indigo-400 {
+  background: linear-gradient(90deg, #0B3D91 0%, #3BA7F2 100%) !important;
+  -webkit-background-clip: text !important;
+  color: transparent !important;
+}
+
+/* Pill Badges & Accents in Light Mode */
+html.light .bg-indigo-500\/10 {
+  background-color: #E8F6FF !important;
+  color: #0B3D91 !important;
+  border-color: #C5E0F4 !important;
+}
+
+html.light .bg-indigo-500\/20,
+html.light .bg-indigo-600\/20,
+html.light .bg-indigo-600\/10 {
+  background-color: #E1F3FE !important;
+  color: #0B3D91 !important;
+  border-color: #C5E0F4 !important;
+}
+
+html.light .bg-emerald-500\/10,
+html.light .bg-emerald-500\/20 {
+  background-color: rgba(127, 231, 214, 0.25) !important;
+  color: #047857 !important;
+  border-color: rgba(127, 231, 214, 0.50) !important;
+}
+
+html.light .bg-amber-500\/10,
+html.light .bg-amber-500\/20 {
+  background-color: #FEF3C7 !important;
+  color: #B45309 !important;
+  border-color: #FDE68A !important;
+}
+
+/* High-Contrast Safeguards: White Text inside Solid Colored Buttons & Badges */
 html.light .btn-seeker-primary,
 html.light .bg-indigo-600,
+html.light .bg-indigo-700,
+html.light [class*="bg-indigo-600"],
+html.light [class*="bg-indigo-700"],
 html.light .bg-gradient-to-r.from-indigo-600,
-html.light [class*="bg-indigo-600"] {
-  color: #ffffff;
+html.light [class*="from-indigo-600"],
+html.light .btn-host-primary,
+html.light [class*="bg-amber-600"],
+html.light [class*="bg-orange-600"],
+html.light [class*="from-amber-600"],
+html.light .bg-emerald-600,
+html.light .bg-rose-600,
+html.light .bg-red-600 {
+  color: #FFFFFF !important;
 }
 
 html.light .btn-seeker-primary *,
 html.light .bg-indigo-600 *,
+html.light .bg-indigo-700 *,
+html.light [class*="bg-indigo-600"] *,
+html.light [class*="bg-indigo-700"] *,
 html.light .bg-gradient-to-r.from-indigo-600 *,
-html.light [class*="bg-indigo-600"] * {
-  color: #ffffff;
+html.light [class*="from-indigo-600"] *,
+html.light .btn-host-primary *,
+html.light [class*="bg-amber-600"] *,
+html.light [class*="bg-orange-600"] *,
+html.light [class*="from-amber-600"] *,
+html.light .bg-emerald-600 *,
+html.light .bg-rose-600 *,
+html.light .bg-red-600 * {
+  color: #FFFFFF !important;
+}
+
+/* Image Card Badges Overlays: Must retain high contrast over unpredictable photos */
+html.light .space-card .bg-slate-950\/80,
+html.light .space-card .bg-slate-950\/85,
+html.light .space-card .bg-slate-900\/90,
+html.light .space-card .bg-black\/60,
+html.light [class*="aspect-"] .bg-slate-950\/80,
+html.light [class*="aspect-"] .bg-slate-950\/85,
+html.light [class*="aspect-"] .bg-slate-900\/90,
+html.light [class*="aspect-"] .bg-black\/60 {
+  background-color: rgba(11, 37, 69, 0.85) !important;
+  color: #FFFFFF !important;
+  border-color: rgba(208, 230, 247, 0.40) !important;
+}
+
+html.light .space-card .bg-slate-950\/80 *,
+html.light .space-card .bg-slate-950\/85 *,
+html.light .space-card .bg-slate-900\/90 *,
+html.light .space-card .bg-black\/60 *,
+html.light [class*="aspect-"] .bg-slate-950\/80 *,
+html.light [class*="aspect-"] .bg-slate-950\/85 *,
+html.light [class*="aspect-"] .bg-slate-900\/90 *,
+html.light [class*="aspect-"] .bg-black\/60 * {
+  color: #FFFFFF !important;
+}
+
+html.light [class*="aspect-"] .bg-indigo-600\/90 {
+  background-color: #0B3D91 !important;
+  color: #FFFFFF !important;
+}
+
+/* Ocean Breeze Primary Action Buttons */
+html.light .btn-seeker-primary,
+html.light .bg-gradient-to-r.from-indigo-600.via-violet-600.to-indigo-700 {
+  background: #0B3D91 !important;
+  color: #FFFFFF !important;
+  box-shadow: 0 4px 14px 0 rgba(11, 61, 145, 0.25) !important;
+}
+
+html.light .btn-seeker-primary:hover,
+html.light .bg-gradient-to-r.from-indigo-600.via-violet-600.to-indigo-700:hover {
+  background: #072C6B !important;
+  box-shadow: 0 6px 20px 0 rgba(11, 61, 145, 0.35) !important;
+}
+
+/* Host Primary Action Buttons in Light Mode */
+html.light .btn-host-primary,
+html.light .bg-gradient-to-r.from-amber-600.to-orange-600 {
+  background: linear-gradient(135deg, #D97706 0%, #EA580C 100%) !important;
+  color: #FFFFFF !important;
+  box-shadow: 0 4px 14px 0 rgba(217, 119, 6, 0.25) !important;
+}
+
+html.light .btn-host-primary:hover,
+html.light .bg-gradient-to-r.from-amber-600.to-orange-600:hover {
+  background: linear-gradient(135deg, #B45309 0%, #C2410C 100%) !important;
+  box-shadow: 0 6px 20px 0 rgba(217, 119, 6, 0.35) !important;
 }
 
 /* Form Inputs in Light Mode */
 html.light input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
 html.light textarea,
 html.light select {
-  background-color: #ffffff;
-  color: #0f172a;
-  border-color: #cbd5e1;
+  background-color: #FFFFFF !important;
+  color: #0B2545 !important;
+  border: 1px solid #D0E6F7 !important;
 }
 
 html.light input::placeholder,
 html.light textarea::placeholder {
-  color: #94a3b8;
+  color: #64748B !important;
 }
 
-/* Glass panel */
+html.light input:focus,
+html.light textarea:focus,
+html.light select:focus {
+  border-color: #3BA7F2 !important;
+  outline: none !important;
+  box-shadow: 0 0 0 3px rgba(59, 167, 242, 0.20) !important;
+}
+
+/* Preserve transparent inputs nested in styled search pill containers */
+html.light input.bg-transparent,
+html.light textarea.bg-transparent {
+  background-color: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+
+/* Ensure dropdown options have full contrast in both themes */
+html.light select option {
+  background-color: #FFFFFF !important;
+  color: #0B2545 !important;
+}
+
+html.dark select option {
+  background-color: #0F172A !important;
+  color: #F8FAFC !important;
+}
+
+/* Discovery Banner & Quick Hub Chips */
+html.light .from-indigo-950\/60.via-slate-900.to-indigo-950\/60 {
+  background: linear-gradient(90deg, #F0F8FF 0%, #FFFFFF 50%, #F0F8FF 100%) !important;
+  border-color: #D0E6F7 !important;
+}
+
+html.light .bg-slate-950\/70 {
+  background-color: #FFFFFF !important;
+  color: #0B2545 !important;
+  border-color: #D0E6F7 !important;
+}
+
+html.light .bg-slate-950\/70:hover {
+  background-color: #E8F6FF !important;
+  color: #0B3D91 !important;
+}
+
+/* Glass Panels in Light Mode */
 html.light .glass-panel {
-  background: rgba(255, 255, 255, 0.90);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border: 1px solid rgba(226, 232, 240, 0.85);
-  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05);
+  background: rgba(255, 255, 255, 0.92) !important;
+  backdrop-filter: blur(16px) !important;
+  -webkit-backdrop-filter: blur(16px) !important;
+  border: 1px solid #D0E6F7 !important;
+  box-shadow: 0 10px 25px -5px rgba(11, 61, 145, 0.06) !important;
 }
 
-/* Floating shadow adjustments in Light Mode */
+/* Ocean Breeze Floating Shadows & Cards */
+html.light .floating-container,
 html.light .floating-card,
-html.light .space-card {
-  box-shadow: 0 4px 16px -2px rgba(0, 0, 0, 0.07), 0 2px 4px -1px rgba(0, 0, 0, 0.04);
+html.light .space-card,
+html.light .floating-interactive {
+  background-color: #FFFFFF;
+  border-color: #D0E6F7;
+  box-shadow: 0 4px 20px -2px rgba(11, 61, 145, 0.08), 0 2px 6px -1px rgba(11, 61, 145, 0.04);
 }
 
 html.light .floating-card:hover,
-html.light .space-card:hover {
-  box-shadow: 0 12px 24px -4px rgba(0, 0, 0, 0.12), 0 4px 8px -2px rgba(0, 0, 0, 0.05);
+html.light .space-card:hover,
+html.light .floating-interactive:hover {
+  border-color: #3BA7F2;
+  box-shadow: 0 12px 28px -4px rgba(11, 61, 145, 0.14), 0 4px 10px -2px rgba(11, 61, 145, 0.06);
 }
 
 html.light .floating-panel {
-  box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.10), 0 4px 10px -2px rgba(0, 0, 0, 0.04);
+  background-color: #FFFFFF;
+  border-color: #D0E6F7;
+  box-shadow: 0 10px 32px -4px rgba(11, 61, 145, 0.12), 0 4px 12px -2px rgba(11, 61, 145, 0.05);
 }
+
+/* AI Matchmaker Box in SpaceCard */
+html.light .bg-indigo-950\/40 {
+  background-color: #F0F8FF !important;
+  border-color: #D0E6F7 !important;
+}
+
+html.light .bg-indigo-950\/40 p {
+  color: #1E293B !important;
+}
+
+/* Header Specific in Light Mode */
+html.light header {
+  background-color: rgba(255, 255, 255, 0.95) !important;
+  border-bottom: 1px solid #D0E6F7 !important;
+  box-shadow: 0 1px 4px 0 rgba(11, 61, 145, 0.05) !important;
+}
+
+html.light header .text-white {
+  color: #0B2545 !important;
+}
+
+html.light header nav button.text-slate-300 {
+  color: #475569 !important;
+}
+
+html.light header nav button.text-slate-300:hover {
+  color: #0B3D91 !important;
+  background-color: #F0F8FF !important;
+}
+
+/* Footer Specific in Light Mode */
+html.light footer {
+  background-color: #FFFFFF !important;
+  border-top: 1px solid #D0E6F7 !important;
+}
+
+html.light footer .text-white {
+  color: #0B2545 !important;
+}
+
+html.light footer .text-slate-400 {
+  color: #475569 !important;
+}
+
+/* Modal Dialog Backdrops & Surfaces in Light Mode */
+html.light .fixed.inset-0.bg-black\/80,
+html.light .fixed.inset-0.bg-black\/70,
+html.light .fixed.inset-0.bg-black\/60 {
+  background-color: rgba(11, 37, 69, 0.45) !important;
+  backdrop-filter: blur(8px) !important;
+}
+
 
 
 

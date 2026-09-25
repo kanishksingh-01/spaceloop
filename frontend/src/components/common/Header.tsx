@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { User } from '../../types';
 import { logoutUser } from '../../services/auth';
+import { useTheme } from '../../context/ThemeContext';
 
 interface HeaderProps {
   currentUser: User | null;
@@ -17,32 +18,8 @@ export const Header: React.FC<HeaderProps> = ({
   const navigate = useNavigate();
   const location = useLocation();
   const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
-  const [theme, setTheme] = useState<'dark' | 'light'>(() => {
-    if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('spaceloop-theme');
-      if (saved === 'light' || saved === 'dark') return saved;
-      return document.documentElement.classList.contains('light') ? 'light' : 'dark';
-    }
-    return 'dark';
-  });
+  const { theme, toggleTheme } = useTheme();
 
-  React.useEffect(() => {
-    if (typeof document !== 'undefined') {
-      if (theme === 'light') {
-        document.documentElement.classList.add('light');
-        document.documentElement.classList.remove('dark');
-        localStorage.setItem('spaceloop-theme', 'light');
-      } else {
-        document.documentElement.classList.add('dark');
-        document.documentElement.classList.remove('light');
-        localStorage.setItem('spaceloop-theme', 'dark');
-      }
-    }
-  }, [theme]);
-
-  const toggleTheme = () => {
-    setTheme((prev) => (prev === 'dark' ? 'light' : 'dark'));
-  };
 
   const isHostPortal =
     location.pathname.startsWith('/host') ||
