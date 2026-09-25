@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { Space, User } from '../types';
 import { getSpaces } from '../services/spaces';
 import CursorGrid from '../components/common/CursorGrid';
+import { useTheme } from '../context/ThemeContext';
 
 interface LandingPageProps {
   currentUser?: User | null;
@@ -11,6 +12,7 @@ interface LandingPageProps {
 
 export const LandingPage: React.FC<LandingPageProps> = ({ currentUser }) => {
   const navigate = useNavigate();
+  const { theme } = useTheme();
   const [featuredSpaces, setFeaturedSpaces] = useState<Space[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -36,7 +38,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ currentUser }) => {
         <div style={{ width: '100%', height: '100%', position: 'absolute', inset: 0, overflow: 'hidden', pointerEvents: 'none' }}>
           <CursorGrid
             cellSize={70}
-            color="#D946EF"
+            color={theme === 'dark' ? '#D946EF' : '#3BA7F2'}
             radius={140}
             falloff="smooth"
             holdTime={400}
