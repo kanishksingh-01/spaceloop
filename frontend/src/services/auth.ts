@@ -176,20 +176,20 @@ export async function logoutUser(): Promise<{ success: boolean }> {
   });
 }
 
-export async function demoSwitch(role: 'seeker' | 'host' | 'admin' | 'guest'): Promise<{ success: boolean; role?: string; user?: User }> {
-  try {
-    const res = await request<{ success: boolean; user?: User }>(`/api/v1/auth/demo-switch/${role}`, {
-      method: 'POST',
-    });
-    if (res?.user) {
-      localStorage.setItem('spaceloop_user', JSON.stringify(res.user));
-    }
-    return { success: res.success, role, user: res.user };
-  } catch (err) {
-    const resp = await fetch(`/auth/demo-switch/${role}`, {
-      method: 'GET',
-      credentials: 'include',
-    });
-    return { success: resp.ok, role };
-  }
+export async function forgotPassword(email: string): Promise<{ success: boolean; message: string }> {
+  return request('/api/v1/auth/forgot-password', {
+    method: 'POST',
+    body: JSON.stringify({ email }),
+  });
+}
+
+export async function resetPassword(
+  token: string,
+  password: string,
+  confirm_password: string
+): Promise<{ success: boolean; message: string }> {
+  return request('/api/v1/auth/reset-password', {
+    method: 'POST',
+    body: JSON.stringify({ token, password, confirm_password }),
+  });
 }

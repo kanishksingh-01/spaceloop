@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { loginUser, registerUser, digilockerAuth, studentSsoAuth, demoSwitch } from '../../services/auth';
+import { loginUser, registerUser, digilockerAuth, studentSsoAuth } from '../../services/auth';
 import { User } from '../../types';
 
 interface AuthModalProps {

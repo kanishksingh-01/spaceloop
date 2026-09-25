@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { hostLogin, hostRegister, hostUpgrade, demoSwitch } from '../../services/auth';
+import { hostLogin, hostRegister, hostUpgrade } from '../../services/auth';
 import { User } from '../../types';
 
 interface HostAuthModalProps {
