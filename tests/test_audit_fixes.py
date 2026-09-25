@@ -182,10 +182,11 @@ class TestAuditSecurityFixes(unittest.TestCase):
         with self.app.app_context():
             u = User.query.filter_by(email=reset_email).first()
             if not u:
-                u = User(name="Reset User", email=reset_email, role="seeker", is_active=True)
+                u = User(name="Reset User", email=reset_email, role="seeker", is_active=True, is_email_verified=True)
                 u.set_password("OldPassword123!")
                 db.session.add(u)
             else:
+                u.is_email_verified = True
                 u.set_password("OldPassword123!")
             db.session.commit()
 

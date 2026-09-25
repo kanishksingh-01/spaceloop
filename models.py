@@ -52,6 +52,10 @@ class User(db.Model, UserMixin):
     total_completed_hours = db.Column(db.Float, default=0.0)
     dispute_count = db.Column(db.Integer, default=0)
 
+    # Multi-Factor Authentication (MFA / TOTP RFC 6238)
+    mfa_enabled = db.Column(db.Boolean, default=False, nullable=False)
+    totp_secret = db.Column(db.String(256), nullable=True)  # Fernet encrypted at rest
+
     # Relationships
     spaces = db.relationship("Space", backref="owner", lazy=True, cascade="all, delete-orphan")
     bookings = db.relationship("Booking", backref="renter", lazy=True, cascade="all, delete-orphan")
@@ -59,6 +63,7 @@ class User(db.Model, UserMixin):
     inquiries = db.relationship("SpaceInquiry", backref="user", lazy=True, cascade="all, delete-orphan")
     password_reset_tokens = db.relationship("PasswordResetToken", backref="user", lazy=True, cascade="all, delete-orphan")
     email_verification_tokens = db.relationship("EmailVerificationToken", backref="user", lazy=True, cascade="all, delete-orphan")
+    mfa_recovery_codes = db.relationship("MFARecoveryCode", backref="user", lazy=True, cascade="all, delete-orphan")
     audit_logs = db.relationship("AuditLog", backref="user", lazy=True, cascade="all, delete-orphan")
 
     @property
@@ -108,6 +113,7 @@ class User(db.Model, UserMixin):
             "is_admin": self.is_admin,
             "is_active": self.is_active,
             "is_email_verified": self.is_email_verified,
+            "mfa_enabled": bool(self.mfa_enabled),
             "last_login_at": self.last_login_at.isoformat() if self.last_login_at else None,
             "bio": self.bio,
             "phone": self.phone,
@@ -548,6 +554,7 @@ class EmailVerificationToken(db.Model):
     token_hash = db.Column(db.String(64), nullable=False, index=True)
     expires_at = db.Column(db.DateTime, nullable=False)
     used = db.Column(db.Boolean, default=False)
+    pending_email = db.Column(db.String(120), nullable=True)  # Used for email change verification
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
     def is_valid(self) -> bool:
@@ -575,3 +582,17 @@ class AuditLog(db.Model):
             "details": self.details,
             "created_at": self.created_at.isoformat() if self.created_at else None,
         }
+
+
+class MFARecoveryCode(db.Model):
+    __tablename__ = "mfa_recovery_codes"
+
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    code_hash = db.Column(db.String(64), nullable=False, index=True)  # SHA-256 hash of single-use recovery code
+    used = db.Column(db.Boolean, default=False, nullable=False)
+    used_at = db.Column(db.DateTime, nullable=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+
+    def is_valid(self) -> bool:
+        return not self.used

@@ -38,3 +38,31 @@ def admin_required(fn):
     Convenience decorator strictly requiring administrative rights.
     """
     return permission_required(Permission.ADMIN_ACCESS)(fn)
+
+
+def email_verified_required(fn):
+    """
+    Decorator to ensure authenticated user has a verified email address.
+    Returns 403 Forbidden with email_verification_required: True if unverified.
+    """
+    @wraps(fn)
+    def wrapper(*args, **kwargs):
+        if not current_user.is_authenticated:
+            if request.is_json or request.path.startswith("/api/"):
+                return jsonify({"error": "Authentication required", "authenticated": False}), 401
+            return redirect(url_for("auth_login", next=request.url))
+
+        if not getattr(current_user, "is_email_verified", False):
+            if request.is_json or request.path.startswith("/api/"):
+                return jsonify({
+                    "success": False,
+                    "error": "Please verify your email address before accessing this feature.",
+                    "email_verification_required": True,
+                    "email": current_user.email
+                }), 403
+            flash("Please verify your email address before continuing.", "warning")
+            return redirect(url_for("auth_access_denied"))
+
+        return fn(*args, **kwargs)
+    return wrapper
+

@@ -1,14 +1,30 @@
 import re
 import secrets
-from flask import Blueprint, request, jsonify
+from datetime import datetime
+from flask import Blueprint, request, jsonify, redirect
 from flask_login import current_user, login_user, logout_user, login_required
-from models import db, User
+from models import db, User, MFARecoveryCode
 from config import Config
 from backend.app.extensions import limiter
 from backend.modules.auth.service import AuthService
 from backend.modules.auth.session import set_active_context
 from backend.modules.auth.audit import record_audit
 from backend.modules.auth.email_service import EmailService
+from backend.modules.auth.email_validation import validate_email_address
+from backend.modules.auth.mfa import (
+    generate_totp_secret,
+    encrypt_totp_secret,
+    decrypt_totp_secret,
+    get_totp_provisioning_uri,
+    generate_qr_data_uri,
+    verify_totp_code,
+    generate_recovery_codes,
+    hash_recovery_code,
+    generate_mfa_challenge_token,
+    verify_mfa_challenge_token,
+    generate_mfa_setup_token,
+    verify_mfa_setup_token,
+)
 from space_ai import (
     verify_aadhaar_otp,
     verify_academic_credentials,
@@ -58,6 +74,7 @@ def safe_user_profile(user):
         "phone": getattr(user, "phone", "") or "",
         "college_name": getattr(user, "college_name", "") or "",
         "is_email_verified": user.is_email_verified,
+        "mfa_enabled": bool(getattr(user, "mfa_enabled", False)),
         "created_at": user.created_at.isoformat() if user.created_at else None
     }
 
@@ -85,6 +102,26 @@ def api_login():
     user, error = AuthService.authenticate_user(email, password)
     if not user or not user.is_active:
         return jsonify({"success": False, "error": error or "Invalid email or password."}), 401
+
+    if not user.is_email_verified:
+        record_audit("AUTH_LOGIN_BLOCKED_UNVERIFIED_EMAIL", user_id=user.id, details={"email": user.email})
+        return jsonify({
+            "success": False,
+            "error": "Please verify your email address before logging in.",
+            "email_verification_required": True,
+            "email": user.email
+        }), 403
+
+    if getattr(user, "mfa_enabled", False):
+        mfa_token = generate_mfa_challenge_token(user.id)
+        record_audit("AUTH_MFA_CHALLENGE_ISSUED", user_id=user.id)
+        return jsonify({
+            "success": True,
+            "mfa_required": True,
+            "mfa_token": mfa_token,
+            "email": user.email,
+            "message": "Two-factor authentication required. Please enter your authenticator code."
+        }), 200
 
     login_user(user, remember=bool(data.get("remember", False)))
     set_active_context(user, "host" if user.is_host and not user.is_seeker else "seeker")
@@ -125,12 +162,15 @@ def api_register():
     if not user:
         return jsonify({"success": False, "error": error}), 400
 
-    login_user(user)
-    set_active_context(user, "host" if user.is_host else "seeker")
+    # Dispatch email verification link
+    EmailService.send_email_verification(user.email, raw_token)
 
+    # Note: User session is NOT established until email ownership is verified.
     return jsonify({
         "success": True,
-        "message": "Registration successful",
+        "email_verification_required": True,
+        "email": user.email,
+        "message": "Registration successful. Please verify your email address before logging in.",
         "user": safe_user_profile(user)
     }), 201
 
@@ -149,6 +189,28 @@ def api_seeker_login():
     user, error = AuthService.authenticate_user(email, password)
     if not user or not user.is_active:
         return jsonify({"success": False, "error": error or "Invalid seeker credentials."}), 401
+
+    if not user.is_email_verified:
+        record_audit("AUTH_LOGIN_BLOCKED_UNVERIFIED_EMAIL", user_id=user.id, details={"email": user.email, "portal": "seeker"})
+        return jsonify({
+            "success": False,
+            "error": "Please verify your email address before logging in.",
+            "email_verification_required": True,
+            "email": user.email,
+            "portal": "seeker"
+        }), 403
+
+    if getattr(user, "mfa_enabled", False):
+        mfa_token = generate_mfa_challenge_token(user.id)
+        record_audit("AUTH_MFA_CHALLENGE_ISSUED", user_id=user.id)
+        return jsonify({
+            "success": True,
+            "mfa_required": True,
+            "mfa_token": mfa_token,
+            "email": user.email,
+            "portal": "seeker",
+            "message": "Two-factor authentication required. Please enter your authenticator code."
+        }), 200
 
     login_user(user, remember=bool(data.get("remember", False)))
     set_active_context(user, "seeker")
@@ -188,12 +250,15 @@ def api_seeker_register():
     if not user:
         return jsonify({"success": False, "error": error}), 400
 
-    login_user(user)
-    set_active_context(user, "seeker")
+    # Dispatch email verification link
+    EmailService.send_email_verification(user.email, raw_token)
 
+    # Note: User session is NOT established until email ownership is verified.
     return jsonify({
         "success": True,
-        "message": "Seeker account created successfully",
+        "email_verification_required": True,
+        "email": user.email,
+        "message": "Seeker account created. Please verify your email address before logging in.",
         "portal": "seeker",
         "user": safe_user_profile(user)
     }), 201
@@ -214,11 +279,33 @@ def api_host_login():
     if not user or not user.is_active:
         return jsonify({"success": False, "error": error or "Invalid host credentials."}), 401
 
+    if not user.is_email_verified:
+        record_audit("AUTH_LOGIN_BLOCKED_UNVERIFIED_EMAIL", user_id=user.id, details={"email": user.email, "portal": "host"})
+        return jsonify({
+            "success": False,
+            "error": "Please verify your email address before logging in.",
+            "email_verification_required": True,
+            "email": user.email,
+            "portal": "host"
+        }), 403
+
     if not user.is_host:
         return jsonify({
             "success": False,
             "error": "This account is registered as a Seeker only. Please complete Host Property KYC to unlock the Host Portal."
         }), 403
+
+    if getattr(user, "mfa_enabled", False):
+        mfa_token = generate_mfa_challenge_token(user.id)
+        record_audit("AUTH_MFA_CHALLENGE_ISSUED", user_id=user.id)
+        return jsonify({
+            "success": True,
+            "mfa_required": True,
+            "mfa_token": mfa_token,
+            "email": user.email,
+            "portal": "host",
+            "message": "Two-factor authentication required. Please enter your authenticator code."
+        }), 200
 
     login_user(user, remember=bool(data.get("remember", False)))
     set_active_context(user, "host")
@@ -287,12 +374,15 @@ def api_host_register():
     user.objective_trust_score = 98.5
     db.session.commit()
 
-    login_user(user)
-    set_active_context(user, "host")
+    # Dispatch email verification link
+    EmailService.send_email_verification(user.email, raw_token)
 
+    # Note: User session is NOT established until email ownership is verified.
     return jsonify({
         "success": True,
-        "message": "Host registered and verified via Discom CA & UPI Penny Drop",
+        "email_verification_required": True,
+        "email": user.email,
+        "message": "Host registered. Please verify your email address before logging in.",
         "portal": "host",
         "discom": discom_res,
         "upi": upi_res,
@@ -532,3 +622,293 @@ def api_logout():
     logout_user()
     record_audit("AUTH_LOGOUT", user_id=user_id)
     return jsonify({"success": True, "message": "Logged out successfully"}), 200
+
+
+# =========================================================================
+# MULTI-FACTOR AUTHENTICATION (MFA / TOTP RFC 6238) ENDPOINTS
+# =========================================================================
+
+@api_v1_auth.route("/mfa/setup", methods=["POST"])
+@login_required
+@limiter.limit("10 per minute")
+def api_mfa_setup():
+    """
+    Initiates TOTP MFA enrollment.
+    Strictly enforces email verification before generating any TOTP secrets.
+    """
+    if not current_user.is_email_verified:
+        return jsonify({
+            "success": False,
+            "error": "Email verification is required before enrolling in Multi-Factor Authentication. Please verify your email address first.",
+            "email_verification_required": True,
+            "email": current_user.email
+        }), 403
+
+    if current_user.mfa_enabled:
+        return jsonify({
+            "success": False,
+            "error": "Multi-Factor Authentication is already enabled for this account."
+        }), 400
+
+    secret = generate_totp_secret()
+    otpauth_uri = get_totp_provisioning_uri(secret, current_user.email)
+    qr_code = generate_qr_data_uri(otpauth_uri)
+    setup_token = generate_mfa_setup_token(current_user.id, secret)
+
+    return jsonify({
+        "success": True,
+        "secret": secret,
+        "qr_code": qr_code,
+        "otpauth_uri": otpauth_uri,
+        "setup_token": setup_token
+    }), 200
+
+
+@api_v1_auth.route("/mfa/verify-setup", methods=["POST"])
+@login_required
+@limiter.limit("5 per minute")
+def api_mfa_verify_setup():
+    """
+    Verifies the first TOTP code to finalize MFA enrollment.
+    Only enables MFA and persists encrypted secret and hashed recovery codes after confirmation.
+    """
+    data = request.get_json(silent=True) or {}
+    setup_token = data.get("setup_token", "")
+    code = data.get("code", "")
+
+    if not setup_token or not code:
+        return jsonify({"success": False, "error": "Setup token and 6-digit verification code are required."}), 400
+
+    user_id, secret = verify_mfa_setup_token(setup_token)
+    if not user_id or user_id != current_user.id or not secret:
+        return jsonify({"success": False, "error": "MFA setup session has expired or is invalid. Please restart setup."}), 400
+
+    if not verify_totp_code(secret, code):
+        return jsonify({
+            "success": False,
+            "error": "Invalid 6-digit verification code. Please check your authenticator app and system clock, then try again."
+        }), 400
+
+    # Verification successful: store encrypted secret and activate MFA
+    current_user.mfa_enabled = True
+    current_user.totp_secret = encrypt_totp_secret(secret)
+
+    # Generate 10 single-use recovery codes
+    recovery_codes = generate_recovery_codes(10)
+    MFARecoveryCode.query.filter_by(user_id=current_user.id).delete()
+    for rc in recovery_codes:
+        db.session.add(MFARecoveryCode(
+            user_id=current_user.id,
+            code_hash=hash_recovery_code(rc),
+            used=False
+        ))
+
+    db.session.commit()
+    record_audit("AUTH_MFA_ENROLLED", user_id=current_user.id)
+
+    return jsonify({
+        "success": True,
+        "message": "Multi-Factor Authentication enabled successfully.",
+        "recovery_codes": recovery_codes,
+        "user": safe_user_profile(current_user)
+    }), 200
+
+
+@api_v1_auth.route("/mfa/verify", methods=["POST"])
+@limiter.limit("5 per minute")
+def api_mfa_verify_login():
+    """
+    Validates MFA challenge via 6-digit TOTP code or single-use recovery code.
+    Upon successful verification, establishes authenticated session.
+    """
+    data = request.get_json(silent=True) or {}
+    mfa_token = data.get("mfa_token", "")
+    code = data.get("code", "")
+    recovery_code = data.get("recovery_code", "")
+
+    if not mfa_token:
+        return jsonify({"success": False, "error": "MFA session token is missing."}), 400
+
+    user_id = verify_mfa_challenge_token(mfa_token)
+    if not user_id:
+        return jsonify({"success": False, "error": "MFA challenge session expired or invalid. Please log in again."}), 400
+
+    user = User.query.get(user_id)
+    if not user or not user.is_active or not user.mfa_enabled:
+        return jsonify({"success": False, "error": "Account not eligible for MFA challenge."}), 400
+
+    method_used = ""
+    if code:
+        raw_secret = decrypt_totp_secret(user.totp_secret)
+        if not raw_secret or not verify_totp_code(raw_secret, code):
+            return jsonify({"success": False, "error": "Invalid 6-digit authentication code."}), 400
+        method_used = "totp"
+    elif recovery_code:
+        chash = hash_recovery_code(recovery_code)
+        rec_entry = MFARecoveryCode.query.filter_by(user_id=user.id, code_hash=chash, used=False).first()
+        if not rec_entry:
+            return jsonify({"success": False, "error": "Invalid or already used backup recovery code."}), 400
+        rec_entry.used = True
+        rec_entry.used_at = datetime.utcnow()
+        db.session.commit()
+        method_used = "recovery_code"
+    else:
+        return jsonify({"success": False, "error": "Please provide a 6-digit TOTP code or backup recovery code."}), 400
+
+    login_user(user, remember=bool(data.get("remember", False)))
+    context = data.get("portal") or ("host" if user.is_host and not user.is_seeker else "seeker")
+    set_active_context(user, context)
+    record_audit(f"AUTH_MFA_LOGIN_SUCCESS_{method_used.upper()}", user_id=user.id)
+
+    return jsonify({
+        "success": True,
+        "message": "Authenticated successfully with two-factor authentication.",
+        "portal": context,
+        "user": safe_user_profile(user)
+    }), 200
+
+
+@api_v1_auth.route("/mfa/disable", methods=["POST"])
+@login_required
+@limiter.limit("5 per minute")
+def api_mfa_disable():
+    """
+    Disables MFA for the authenticated user.
+    Requires password confirmation PLUS either a valid TOTP code or recovery code.
+    Purges secret and all recovery codes upon deactivation.
+    """
+    data = request.get_json(silent=True) or {}
+    password = data.get("password", "")
+    code = data.get("code", "")
+    recovery_code = data.get("recovery_code", "")
+
+    if not current_user.mfa_enabled:
+        return jsonify({"success": False, "error": "Multi-Factor Authentication is not enabled on this account."}), 400
+
+    if not password or not current_user.check_password(password):
+        return jsonify({"success": False, "error": "Incorrect account password."}), 401
+
+    if code:
+        raw_secret = decrypt_totp_secret(current_user.totp_secret)
+        if not raw_secret or not verify_totp_code(raw_secret, code):
+            return jsonify({"success": False, "error": "Invalid 6-digit authentication code."}), 400
+    elif recovery_code:
+        chash = hash_recovery_code(recovery_code)
+        rec_entry = MFARecoveryCode.query.filter_by(user_id=current_user.id, code_hash=chash, used=False).first()
+        if not rec_entry:
+            return jsonify({"success": False, "error": "Invalid or already used backup recovery code."}), 400
+        rec_entry.used = True
+        rec_entry.used_at = datetime.utcnow()
+    else:
+        return jsonify({
+            "success": False,
+            "error": "A valid 6-digit TOTP code or backup recovery code is required to confirm deactivation."
+        }), 400
+
+    current_user.mfa_enabled = False
+    current_user.totp_secret = None
+    MFARecoveryCode.query.filter_by(user_id=current_user.id).delete()
+    db.session.commit()
+    record_audit("AUTH_MFA_DISABLED", user_id=current_user.id)
+
+    return jsonify({
+        "success": True,
+        "message": "Multi-Factor Authentication disabled successfully.",
+        "user": safe_user_profile(current_user)
+    }), 200
+
+
+@api_v1_auth.route("/resend-verification", methods=["POST"])
+@limiter.limit("3 per minute")
+def api_resend_verification():
+    """
+    Resends email verification link.
+    Supports authenticated users OR unauthenticated requests with {"email": "..."}.
+    Enforces anti-enumeration defense by returning an identical generic response.
+    """
+    generic_msg = "If this email address is registered and unverified, a verification link has been sent. Please check your inbox."
+    target_user = None
+
+    if current_user.is_authenticated:
+        if current_user.is_email_verified:
+            return jsonify({"success": True, "message": "Email is already verified."}), 200
+        target_user = current_user
+    else:
+        data = request.get_json(silent=True) or request.form or {}
+        raw_email = sanitize_string(data.get("email", ""), max_length=120)
+        if not raw_email:
+            return jsonify({"success": False, "error": "Email address is required."}), 400
+
+        is_valid, normalized_email, _ = validate_email_address(raw_email, check_disposable=False)
+        if is_valid:
+            target_user = User.query.filter(db.func.lower(User.email) == normalized_email).first()
+
+    if target_user and not target_user.is_email_verified and target_user.is_active:
+        raw_token, _ = AuthService.create_email_verification_token(target_user.id)
+        EmailService.send_email_verification(target_user.email, raw_token)
+        record_audit("AUTH_VERIFICATION_RESENT", user_id=target_user.id, details={"email": target_user.email})
+
+    return jsonify({
+        "success": True,
+        "message": generic_msg
+    }), 200
+
+
+@api_v1_auth.route("/verify-email", methods=["GET", "POST"])
+@limiter.limit("10 per minute")
+def api_verify_email():
+    """
+    Validates email verification token and marks account verified.
+    Supports JSON POST {"token": "..."} and GET ?token=...
+    """
+    token = ""
+    if request.method == "POST":
+        data = request.get_json(silent=True) or {}
+        token = data.get("token") or request.form.get("token") or ""
+    else:
+        token = request.args.get("token", "")
+
+    token = sanitize_string(token, max_length=100)
+    if not token:
+        return jsonify({"success": False, "error": "Verification token is required."}), 400
+
+    success, message, user = AuthService.verify_email_token(token)
+    if not success:
+        if request.accept_mimetypes.accept_html and not request.is_json:
+            return redirect(f"/auth/verify-email/{token}")
+        return jsonify({"success": False, "error": message}), 400
+
+    if request.accept_mimetypes.accept_html and not request.is_json:
+        return redirect(f"/auth/verify-email/{token}")
+
+    return jsonify({
+        "success": True,
+        "message": message,
+        "user": safe_user_profile(user) if user else None
+    }), 200
+
+
+@api_v1_auth.route("/change-email", methods=["POST"])
+@login_required
+@limiter.limit("5 per minute")
+def api_change_email():
+    """
+    Initiates email change for authenticated user.
+    Keeps current email active and verified until the new email address confirms ownership.
+    """
+    data = request.get_json(silent=True) or {}
+    new_email = sanitize_string(data.get("new_email", ""), max_length=120)
+    password = data.get("password", "")
+
+    if not password or not current_user.check_password(password):
+        return jsonify({"success": False, "error": "Current password is required to change email."}), 401
+
+    success, msg, raw_token = AuthService.request_email_change(current_user.id, new_email)
+    if not success:
+        return jsonify({"success": False, "error": msg}), 400
+
+    EmailService.send_email_verification(new_email.strip().lower(), raw_token)
+    return jsonify({
+        "success": True,
+        "message": f"Verification email sent to {new_email}. Please check your inbox to confirm the change."
+    }), 200

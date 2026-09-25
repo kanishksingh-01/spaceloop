@@ -20,9 +20,15 @@ class DevelopmentEmailAdapter(BaseEmailAdapter):
     """
     Local development and testing adapter.
     Logs email dispatch securely without sending network packets.
+    In production environments, message bodies containing tokens are masked from logs.
     """
     def send_email(self, to_email: str, subject: str, body: str) -> bool:
-        logger.info(f"[DEV EMAIL ADAPTER] To: {to_email} | Subject: {subject}\n{body}")
+        is_prod = os.environ.get("FLASK_ENV") == "production" or bool(os.environ.get("RENDER"))
+        if is_prod:
+            logger.info(f"[EMAIL ADAPTER] To: {to_email} | Subject: {subject} [body suppressed in prod]")
+        else:
+            logger.info(f"[DEV EMAIL ADAPTER] To: {to_email} | Subject: {subject}\n{body}")
+
         # Retain last dispatched email in memory for test assertions
         DevelopmentEmailAdapter.last_sent = {
             "to": to_email,
@@ -118,3 +124,6 @@ class EmailService:
             f"This link expires in 24 hours."
         )
         return cls.get_adapter().send_email(to_email, subject, body)
+
+    # Alias for API consistency
+    send_verification_email = send_email_verification

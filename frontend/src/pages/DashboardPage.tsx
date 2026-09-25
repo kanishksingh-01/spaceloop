@@ -5,6 +5,7 @@ import { User, Booking, Space } from '../types';
 import { request } from '../services/api';
 import { cancelBooking } from '../services/bookings';
 import { toggleSpaceStatus, getInquiries } from '../services/spaces';
+import { setupMfa, verifyMfaSetup, disableMfa, resendEmailVerification } from '../services/auth';
 
 interface DashboardPageProps {
   currentUser: User | null;
@@ -12,7 +13,42 @@ interface DashboardPageProps {
 
 export const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState<'seeker' | 'host'>('seeker');
+  const [userState, setUserState] = useState<User | null>(currentUser);
+  const [activeTab, setActiveTab] = useState<'seeker' | 'host' | 'security'>('seeker');
+
+  useEffect(() => {
+    setUserState(currentUser);
+  }, [currentUser]);
+
+  // MFA Enrollment Modal State
+  const [showMfaEnrollModal, setShowMfaEnrollModal] = useState(false);
+  const [mfaEnrollStep, setMfaEnrollStep] = useState<'scan' | 'recovery'>('scan');
+  const [mfaSetupData, setMfaSetupData] = useState<{
+    secret: string;
+    qr_code: string;
+    otpauth_uri: string;
+    setup_token: string;
+  } | null>(null);
+  const [mfaEnrollCode, setMfaEnrollCode] = useState('');
+  const [mfaEnrollRecoveryCodes, setMfaEnrollRecoveryCodes] = useState<string[]>([]);
+  const [mfaEnrollLoading, setMfaEnrollLoading] = useState(false);
+  const [mfaEnrollError, setMfaEnrollError] = useState<string | null>(null);
+  const [mfaCopyStatus, setMfaCopyStatus] = useState<string | null>(null);
+
+  // Email Verification State
+  const [resendingEmail, setResendingEmail] = useState(false);
+  const [emailNotice, setEmailNotice] = useState<string | null>(null);
+
+  // MFA Disable Modal State
+  const [showDisableMfaModal, setShowDisableMfaModal] = useState(false);
+  const [disablePassword, setDisablePassword] = useState('');
+  const [disableCode, setDisableCode] = useState('');
+  const [disableRecoveryCode, setDisableRecoveryCode] = useState('');
+  const [disableUseRecovery, setDisableUseRecovery] = useState(false);
+  const [disableLoading, setDisableLoading] = useState(false);
+  const [disableError, setDisableError] = useState<string | null>(null);
+  const [disableSuccess, setDisableSuccess] = useState<string | null>(null);
+
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [hostBookings, setHostBookings] = useState<Booking[]>([]);
   const [hostSpaces, setHostSpaces] = useState<Space[]>([]);
@@ -143,6 +179,119 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => 
     }
   };
 
+  const handleResendEmail = async () => {
+    setResendingEmail(true);
+    setEmailNotice(null);
+    try {
+      const res = await resendEmailVerification();
+      setEmailNotice(res.message || 'Verification link sent to your email.');
+    } catch (err: any) {
+      setEmailNotice(err.message || 'Failed to send verification email.');
+    } finally {
+      setResendingEmail(false);
+    }
+  };
+
+  const handleStartMfaEnrollment = async () => {
+    setMfaEnrollError(null);
+    setMfaEnrollCode('');
+    setMfaEnrollRecoveryCodes([]);
+    setMfaEnrollStep('scan');
+
+    // Email verification gate check
+    if (!userState?.is_email_verified) {
+      setMfaEnrollError('Email verification is required before enrolling in Multi-Factor Authentication. Please verify your email first.');
+      setShowMfaEnrollModal(true);
+      return;
+    }
+
+    setMfaEnrollLoading(true);
+    setShowMfaEnrollModal(true);
+    try {
+      const res = await setupMfa();
+      if (!res.success) {
+        setMfaEnrollError(res.error || 'Failed to initialize MFA setup.');
+        setMfaEnrollLoading(false);
+        return;
+      }
+      setMfaSetupData(res);
+      setMfaEnrollLoading(false);
+    } catch (err: any) {
+      setMfaEnrollError(err.message || 'Failed to start MFA setup.');
+      setMfaEnrollLoading(false);
+    }
+  };
+
+  const handleConfirmMfaEnrollment = async () => {
+    if (!mfaSetupData?.setup_token) return;
+    if (!mfaEnrollCode.trim() || mfaEnrollCode.trim().length !== 6) {
+      setMfaEnrollError('Please enter the 6-digit code from your authenticator app.');
+      return;
+    }
+    setMfaEnrollLoading(true);
+    setMfaEnrollError(null);
+    try {
+      const res = await verifyMfaSetup(mfaSetupData.setup_token, mfaEnrollCode.trim());
+      if (!res.success) {
+        setMfaEnrollError(res.error || 'Invalid verification code.');
+        setMfaEnrollLoading(false);
+        return;
+      }
+      setMfaEnrollRecoveryCodes(res.recovery_codes || []);
+      setMfaEnrollStep('recovery');
+      if (res.user) {
+        setUserState(res.user);
+      } else if (userState) {
+        setUserState({ ...userState, mfa_enabled: true });
+      }
+      setMfaEnrollLoading(false);
+    } catch (err: any) {
+      setMfaEnrollError(err.message || 'MFA enrollment verification failed.');
+      setMfaEnrollLoading(false);
+    }
+  };
+
+  const handleConfirmDisableMfa = async () => {
+    if (!disablePassword) {
+      setDisableError('Please enter your account password.');
+      return;
+    }
+    if (!disableUseRecovery && (!disableCode.trim() || disableCode.trim().length !== 6)) {
+      setDisableError('Please enter your 6-digit TOTP code.');
+      return;
+    }
+    if (disableUseRecovery && !disableRecoveryCode.trim()) {
+      setDisableError('Please enter your backup recovery code.');
+      return;
+    }
+    setDisableLoading(true);
+    setDisableError(null);
+    try {
+      const res = await disableMfa({
+        password: disablePassword,
+        code: !disableUseRecovery ? disableCode.trim() : undefined,
+        recovery_code: disableUseRecovery ? disableRecoveryCode.trim() : undefined,
+      });
+      setDisableSuccess('Two-Factor Authentication disabled successfully.');
+      if (res.user) {
+        setUserState(res.user);
+      } else if (userState) {
+        setUserState({ ...userState, mfa_enabled: false });
+      }
+      setTimeout(() => {
+        setShowDisableMfaModal(false);
+        setDisablePassword('');
+        setDisableCode('');
+        setDisableRecoveryCode('');
+        setDisableSuccess(null);
+      }, 1000);
+    } catch (err: any) {
+      setDisableError(err.message || 'Failed to disable MFA. Check your credentials.');
+    } finally {
+      setDisableLoading(false);
+    }
+  };
+
   return (
     <View className="min-h-screen bg-slate-950 pb-20">
       {/* Header Profile Summary */}
@@ -176,6 +325,14 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => 
               <View className="flex-row items-center gap-2 mt-1 flex-wrap">
                 <Text className="text-[11px] text-emerald-400 font-medium">
                   ✓ DigiLocker Verified
+                </Text>
+                <Text className="text-[11px] text-slate-500">•</Text>
+                <Text className={`text-[11px] font-medium ${userState?.is_email_verified ? 'text-emerald-400' : 'text-amber-400'}`}>
+                  {userState?.is_email_verified ? '✓ Email Verified' : '⚠️ Email Unverified'}
+                </Text>
+                <Text className="text-[11px] text-slate-500">•</Text>
+                <Text className={`text-[11px] font-medium ${userState?.mfa_enabled ? 'text-emerald-400' : 'text-slate-400'}`}>
+                  {userState?.mfa_enabled ? '🔐 2FA Active' : '🔓 2FA Off'}
                 </Text>
                 <Text className="text-[11px] text-slate-500">•</Text>
                 <Pressable
@@ -306,6 +463,23 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => 
               }`}
             >
               🎟️ My Bookings (Seeker)
+            </Text>
+          </Pressable>
+
+          <Pressable
+            onPress={() => setActiveTab('security')}
+            className={`px-4 py-2 rounded-xl border text-xs font-bold transition ${
+              activeTab === 'security'
+                ? 'bg-indigo-600 border-indigo-400 text-white'
+                : 'bg-slate-900 border-slate-800 text-slate-400 hover:text-white'
+            }`}
+          >
+            <Text
+              className={`text-xs font-bold ${
+                activeTab === 'security' ? 'text-white' : 'text-slate-400'
+              }`}
+            >
+              🛡️ Security & Two-Factor Authentication
             </Text>
           </Pressable>
 
@@ -641,7 +815,453 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => 
             </View>
           </View>
         )}
+
+        {/* Tab 3: Security & Multi-Factor Authentication Settings */}
+        {activeTab === 'security' && (
+          <View className="space-y-6">
+            {/* Header info */}
+            <View className="flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+              <View>
+                <Text className="text-xl font-bold text-white">Account Security & Authentication</Text>
+                <Text className="text-xs text-slate-400 mt-0.5">
+                  Manage your Multi-Factor Authentication (MFA), email verification gate, and security credentials.
+                </Text>
+              </View>
+              <View className="flex-row items-center gap-2">
+                <View className={`px-3 py-1 rounded-full border ${userState?.mfa_enabled ? 'bg-emerald-500/20 border-emerald-500/40' : 'bg-slate-800 border-slate-700'}`}>
+                  <Text className={`text-xs font-bold ${userState?.mfa_enabled ? 'text-emerald-300' : 'text-slate-400'}`}>
+                    {userState?.mfa_enabled ? '🔐 MFA Protected' : '🔓 Single-Factor Only'}
+                  </Text>
+                </View>
+              </View>
+            </View>
+
+            {/* Email Verification Card */}
+            <View className="p-6 bg-slate-900 border border-slate-800 rounded-3xl space-y-4">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                <div className="flex items-center gap-4">
+                  <div className={`w-12 h-12 rounded-2xl flex items-center justify-center text-xl shrink-0 ${userState?.is_email_verified ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/30' : 'bg-amber-500/10 text-amber-400 border border-amber-500/30'}`}>
+                    {userState?.is_email_verified ? '✓' : '✉️'}
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-base font-bold text-white">Email Address Verification</span>
+                      <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${userState?.is_email_verified ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30' : 'bg-amber-500/20 text-amber-300 border border-amber-500/30'}`}>
+                        {userState?.is_email_verified ? 'Verified' : 'Unverified'}
+                      </span>
+                    </div>
+                    <div className="text-xs text-slate-400 mt-0.5 font-mono">{userState?.email || 'No email registered'}</div>
+                  </div>
+                </div>
+
+                {!userState?.is_email_verified && (
+                  <button
+                    onClick={handleResendEmail}
+                    disabled={resendingEmail}
+                    className="px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs transition shrink-0"
+                  >
+                    {resendingEmail ? 'Sending Link...' : 'Send Verification Email →'}
+                  </button>
+                )}
+              </div>
+
+              {emailNotice && (
+                <div className="p-3.5 bg-slate-950 border border-indigo-500/30 rounded-xl text-xs text-indigo-300">
+                  {emailNotice}
+                </div>
+              )}
+
+              {!userState?.is_email_verified && (
+                <div className="p-3.5 bg-amber-500/10 border border-amber-500/30 rounded-2xl flex items-start gap-2.5">
+                  <span className="text-amber-400 text-sm mt-0.5">⚠️</span>
+                  <div className="text-xs text-amber-300">
+                    <strong>Email Verification Gate:</strong> Multi-Factor Authentication requires a verified email address to prevent account lockouts and protect recovery paths. Please verify your email before enrolling in TOTP MFA.
+                  </div>
+                </div>
+              )}
+            </View>
+
+            {/* TOTP Multi-Factor Authentication Card */}
+            <View className="p-6 bg-slate-900 border border-slate-800 rounded-3xl space-y-5">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                <div className="flex items-center gap-4">
+                  <div className={`w-12 h-12 rounded-2xl flex items-center justify-center text-xl shrink-0 ${userState?.mfa_enabled ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/30' : 'bg-indigo-500/10 text-indigo-400 border border-indigo-500/30'}`}>
+                    🔐
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-base font-bold text-white">Two-Factor Authentication (TOTP)</span>
+                      <span className={`px-2.5 py-0.5 rounded text-[10px] font-bold ${userState?.mfa_enabled ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30' : 'bg-slate-800 text-slate-400 border border-slate-700'}`}>
+                        {userState?.mfa_enabled ? 'Active (RFC 6238)' : 'Disabled'}
+                      </span>
+                    </div>
+                    <div className="text-xs text-slate-400 mt-0.5">
+                      Standard Time-based One-Time Passwords compatible with Google Authenticator, Microsoft Authenticator, and 1Password.
+                    </div>
+                  </div>
+                </div>
+
+                {userState?.mfa_enabled ? (
+                  <button
+                    onClick={() => {
+                      setShowDisableMfaModal(true);
+                      setDisableError(null);
+                      setDisableSuccess(null);
+                      setDisablePassword('');
+                      setDisableCode('');
+                      setDisableRecoveryCode('');
+                    }}
+                    className="px-4 py-2 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/30 text-rose-300 font-bold text-xs transition shrink-0"
+                  >
+                    Disable Two-Factor Authentication
+                  </button>
+                ) : (
+                  <button
+                    onClick={handleStartMfaEnrollment}
+                    className="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs transition shadow-lg shadow-indigo-600/25 shrink-0"
+                  >
+                    Enable Two-Factor Authentication →
+                  </button>
+                )}
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2">
+                <div className="p-4 bg-slate-950/80 border border-slate-800 rounded-2xl">
+                  <div className="text-base mb-1">📱</div>
+                  <div className="text-xs font-bold text-white mb-1">Authenticator App Support</div>
+                  <div className="text-[11px] text-slate-400 leading-relaxed">
+                    Uses standard RFC 6238 TOTP protocols. Works offline with Google Authenticator, Microsoft Authenticator, and Bitwarden.
+                  </div>
+                </div>
+                <div className="p-4 bg-slate-950/80 border border-slate-800 rounded-2xl">
+                  <div className="text-base mb-1">🛡️</div>
+                  <div className="text-xs font-bold text-white mb-1">Encrypted At Rest</div>
+                  <div className="text-[11px] text-slate-400 leading-relaxed">
+                    TOTP secrets are encrypted with Fernet symmetric cryptography and are never returned in public user profiles or APIs.
+                  </div>
+                </div>
+                <div className="p-4 bg-slate-950/80 border border-slate-800 rounded-2xl">
+                  <div className="text-base mb-1">🔑</div>
+                  <div className="text-xs font-bold text-white mb-1">Single-Use Backup Codes</div>
+                  <div className="text-[11px] text-slate-400 leading-relaxed">
+                    10 single-use recovery codes are issued upon enrollment so you never lose access if your mobile device is unavailable.
+                  </div>
+                </div>
+              </div>
+            </View>
+          </View>
+        )}
       </View>
+
+      {/* MFA ENROLLMENT MODAL */}
+      {showMfaEnrollModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm overflow-y-auto">
+          <div className="bg-slate-900 border border-indigo-500/30 text-white w-full max-w-lg rounded-3xl floating-panel overflow-hidden my-6 transition-all">
+            <div className="p-6 border-b border-slate-800 flex items-center justify-between">
+              <div>
+                <span className="px-2 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
+                  🔐 Security Enrollment
+                </span>
+                <h3 className="text-lg font-bold text-white mt-1">
+                  {mfaEnrollStep === 'recovery' ? 'Backup Recovery Codes' : 'Two-Factor Authentication Setup'}
+                </h3>
+              </div>
+              <button
+                onClick={() => {
+                  setShowMfaEnrollModal(false);
+                  setMfaEnrollError(null);
+                  setMfaCopyStatus(null);
+                }}
+                className="w-8 h-8 rounded-full flex items-center justify-center text-slate-400 hover:text-white hover:bg-slate-800 transition"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="p-6 space-y-4">
+              {mfaEnrollError && (
+                <div className="p-3.5 bg-rose-500/10 border border-rose-500/30 rounded-2xl flex items-start gap-2.5">
+                  <span className="text-rose-400 text-sm">⚠️</span>
+                  <p className="text-xs text-rose-300 font-medium">{mfaEnrollError}</p>
+                </div>
+              )}
+
+              {/* Email Verification Gate Notice */}
+              {!userState?.is_email_verified ? (
+                <div className="space-y-4 py-2">
+                  <div className="w-14 h-14 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400 text-2xl mx-auto shadow-inner">
+                    ✉️
+                  </div>
+                  <div className="text-center">
+                    <h4 className="text-base font-bold text-white mb-1">Email Verification Required</h4>
+                    <p className="text-xs text-slate-400 max-w-sm mx-auto">
+                      In accordance with SpaceLoop security standards, MFA enrollment is blocked until your email address (<span className="text-white font-mono">{userState?.email}</span>) is verified.
+                    </p>
+                  </div>
+
+                  <div className="pt-2 flex flex-col gap-2">
+                    <button
+                      onClick={handleResendEmail}
+                      disabled={resendingEmail}
+                      className="w-full py-3 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs transition"
+                    >
+                      {resendingEmail ? 'Sending Link...' : 'Send Verification Email Link →'}
+                    </button>
+                    <button
+                      onClick={() => setShowMfaEnrollModal(false)}
+                      className="w-full py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold transition"
+                    >
+                      Close
+                    </button>
+                  </div>
+                </div>
+              ) : mfaEnrollStep === 'scan' ? (
+                <div className="space-y-4">
+                  {mfaEnrollLoading && !mfaSetupData ? (
+                    <div className="py-12 flex flex-col items-center justify-center">
+                      <div className="w-8 h-8 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin mb-3" />
+                      <p className="text-xs text-slate-400">Generating cryptographic TOTP key...</p>
+                    </div>
+                  ) : mfaSetupData ? (
+                    <>
+                      <div className="text-center">
+                        <p className="text-xs text-slate-400">
+                          Scan the QR code below with your authenticator app (Google Authenticator, Microsoft Authenticator, 1Password, or Authy):
+                        </p>
+                      </div>
+
+                      <div className="flex justify-center py-2">
+                        <img
+                          src={mfaSetupData.qr_code}
+                          alt="SpaceLoop MFA QR Code"
+                          className="w-48 h-48 rounded-2xl p-2 bg-white shadow-xl"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-[11px] font-bold text-slate-400 mb-1 text-center">
+                          Or enter this secret key manually into your app:
+                        </label>
+                        <div className="flex items-center gap-2 p-2.5 bg-slate-950 border border-slate-800 rounded-xl">
+                          <code className="text-xs font-mono text-indigo-300 flex-1 text-center tracking-wider select-all break-all">
+                            {mfaSetupData.secret}
+                          </code>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              navigator.clipboard.writeText(mfaSetupData.secret);
+                              setMfaCopyStatus('Copied!');
+                              setTimeout(() => setMfaCopyStatus(null), 2000);
+                            }}
+                            className="px-2.5 py-1 rounded-lg bg-indigo-600/30 hover:bg-indigo-600/50 text-indigo-300 text-[10px] font-bold shrink-0 transition"
+                          >
+                            {mfaCopyStatus || 'Copy'}
+                          </button>
+                        </div>
+                      </div>
+
+                      <div>
+                        <label className="block text-xs font-bold text-white mb-1.5 text-center">
+                          Enter the 6-digit code from your app to verify setup:
+                        </label>
+                        <input
+                          type="text"
+                          maxLength={6}
+                          autoFocus
+                          value={mfaEnrollCode}
+                          onChange={(e) => setMfaEnrollCode(e.target.value.replace(/\D/g, ''))}
+                          placeholder="000000"
+                          className="w-full text-center tracking-[0.4em] text-2xl font-mono px-4 py-3 rounded-xl border border-slate-700 bg-slate-950 text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                        />
+                      </div>
+
+                      <div className="pt-2 flex items-center gap-3">
+                        <button
+                          type="button"
+                          onClick={() => setShowMfaEnrollModal(false)}
+                          className="flex-1 py-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-xs transition"
+                        >
+                          Cancel
+                        </button>
+                        <button
+                          type="button"
+                          onClick={handleConfirmMfaEnrollment}
+                          disabled={mfaEnrollLoading || mfaEnrollCode.length !== 6}
+                          className="flex-1 py-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white font-bold text-xs transition shadow-lg shadow-indigo-600/25"
+                        >
+                          {mfaEnrollLoading ? 'Activating...' : 'Verify & Enable MFA →'}
+                        </button>
+                      </div>
+                    </>
+                  ) : null}
+                </div>
+              ) : (
+                /* Recovery Codes Display Step */
+                <div className="space-y-4">
+                  <div className="p-3.5 bg-amber-500/10 border border-amber-500/30 rounded-2xl flex items-start gap-2.5">
+                    <span className="text-amber-400 text-base">⚠️</span>
+                    <div className="text-xs text-amber-300">
+                      <strong>Save your backup codes now:</strong> If you lose access to your authenticator app, these single-use recovery codes are the only way to recover your account. Each code can be used at most once. They will not be displayed again.
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2.5 p-4 bg-slate-950 border border-slate-800 rounded-2xl">
+                    {mfaEnrollRecoveryCodes.map((rc, idx) => (
+                      <div key={idx} className="flex items-center gap-2 font-mono text-xs text-indigo-300 py-1 px-2 rounded bg-slate-900 border border-slate-800/80">
+                        <span className="text-slate-500 text-[10px] w-4">{idx + 1}.</span>
+                        <span className="font-bold tracking-wider">{rc}</span>
+                      </div>
+                    ))}
+                  </div>
+
+                  <div className="pt-2 flex flex-col sm:flex-row items-center gap-3">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        navigator.clipboard.writeText(mfaEnrollRecoveryCodes.join('\n'));
+                        setMfaCopyStatus('All 10 codes copied to clipboard!');
+                        setTimeout(() => setMfaCopyStatus(null), 3000);
+                      }}
+                      className="w-full sm:flex-1 py-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs transition"
+                    >
+                      {mfaCopyStatus || '📋 Copy All 10 Codes'}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowMfaEnrollModal(false);
+                      }}
+                      className="w-full sm:flex-1 py-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs transition shadow-lg shadow-indigo-600/25"
+                    >
+                      I Have Saved My Codes ✓
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MFA DISABLE MODAL */}
+      {showDisableMfaModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm overflow-y-auto">
+          <div className="bg-slate-900 border border-rose-500/30 text-white w-full max-w-md rounded-3xl floating-panel overflow-hidden my-6 transition-all">
+            <div className="p-6 border-b border-slate-800 flex items-center justify-between">
+              <div>
+                <span className="px-2 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider bg-rose-500/20 text-rose-300 border border-rose-500/30">
+                  ⚠️ Security Deactivation
+                </span>
+                <h3 className="text-lg font-bold text-white mt-1">
+                  Disable Two-Factor Authentication
+                </h3>
+              </div>
+              <button
+                onClick={() => {
+                  setShowDisableMfaModal(false);
+                  setDisableError(null);
+                  setDisableSuccess(null);
+                }}
+                className="w-8 h-8 rounded-full flex items-center justify-center text-slate-400 hover:text-white hover:bg-slate-800 transition"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="p-6 space-y-4">
+              {disableError && (
+                <div className="p-3.5 bg-rose-500/10 border border-rose-500/30 rounded-2xl flex items-start gap-2.5">
+                  <span className="text-rose-400 text-sm">⚠️</span>
+                  <p className="text-xs text-rose-300 font-medium">{disableError}</p>
+                </div>
+              )}
+
+              {disableSuccess && (
+                <div className="p-3.5 bg-emerald-500/10 border border-emerald-500/30 rounded-2xl flex items-start gap-2.5">
+                  <span className="text-emerald-400 text-sm">✓</span>
+                  <p className="text-xs text-emerald-300 font-medium">{disableSuccess}</p>
+                </div>
+              )}
+
+              <p className="text-xs text-slate-400">
+                To disable two-factor authentication, verify your account password and either your current 6-digit TOTP code or a single-use backup recovery code.
+              </p>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-300 mb-1">Account Password</label>
+                <input
+                  type="password"
+                  value={disablePassword}
+                  onChange={(e) => setDisablePassword(e.target.value)}
+                  placeholder="••••••••"
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-white text-xs focus:outline-none focus:border-rose-500 transition"
+                  required
+                />
+              </div>
+
+              {!disableUseRecovery ? (
+                <div>
+                  <label className="block text-xs font-bold text-slate-300 mb-1">
+                    6-Digit Authenticator Code
+                  </label>
+                  <input
+                    type="text"
+                    maxLength={6}
+                    value={disableCode}
+                    onChange={(e) => setDisableCode(e.target.value.replace(/\D/g, ''))}
+                    placeholder="000000"
+                    className="w-full text-center tracking-[0.3em] font-mono text-lg px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-white focus:outline-none focus:border-rose-500 transition"
+                  />
+                </div>
+              ) : (
+                <div>
+                  <label className="block text-xs font-bold text-slate-300 mb-1">
+                    Single-Use Backup Recovery Code
+                  </label>
+                  <input
+                    type="text"
+                    value={disableRecoveryCode}
+                    onChange={(e) => setDisableRecoveryCode(e.target.value.toUpperCase())}
+                    placeholder="XXXX-XXXX"
+                    className="w-full text-center font-mono text-sm px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-white focus:outline-none focus:border-rose-500 transition uppercase"
+                  />
+                </div>
+              )}
+
+              <div className="flex items-center justify-between text-xs pt-1">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setDisableUseRecovery(!disableUseRecovery);
+                    setDisableError(null);
+                  }}
+                  className="text-indigo-400 hover:underline font-medium"
+                >
+                  {disableUseRecovery ? '← Use 6-digit TOTP code' : '🔑 Use a backup recovery code instead'}
+                </button>
+              </div>
+
+              <div className="pt-2 flex items-center gap-3">
+                <button
+                  type="button"
+                  onClick={() => setShowDisableMfaModal(false)}
+                  className="flex-1 py-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-xs transition"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={handleConfirmDisableMfa}
+                  disabled={disableLoading || !disablePassword || (!disableUseRecovery ? disableCode.length !== 6 : !disableRecoveryCode.trim())}
+                  className="flex-1 py-3 rounded-xl bg-rose-600 hover:bg-rose-500 disabled:opacity-50 text-white font-bold text-xs transition shadow-lg shadow-rose-600/25"
+                >
+                  {disableLoading ? 'Verifying...' : 'Confirm Deactivation'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </View>
   );
 };

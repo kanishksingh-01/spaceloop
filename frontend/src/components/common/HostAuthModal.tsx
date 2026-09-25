@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { hostLogin, hostRegister, hostUpgrade } from '../../services/auth';
+import { hostLogin, hostRegister, hostUpgrade, verifyMfaLogin, resendEmailVerification } from '../../services/auth';
 import { User } from '../../types';
 
 interface HostAuthModalProps {
@@ -19,6 +19,20 @@ export const HostAuthModal: React.FC<HostAuthModalProps> = ({
 }) => {
   const isUpgradingSeeker = Boolean(currentUser && !currentUser.is_host);
   const [activeTab, setActiveTab] = useState<'login' | 'register'>(isUpgradingSeeker ? 'register' : 'login');
+
+  // MFA State
+  const [mfaRequired, setMfaRequired] = useState(false);
+  const [mfaToken, setMfaToken] = useState('');
+  const [mfaCode, setMfaCode] = useState('');
+  const [mfaRecoveryCode, setMfaRecoveryCode] = useState('');
+  const [useRecoveryCode, setUseRecoveryCode] = useState(false);
+
+  // Email Verification State
+  const [verificationSent, setVerificationSent] = useState(false);
+  const [registeredEmail, setRegisteredEmail] = useState('');
+  const [unverifiedEmail, setUnverifiedEmail] = useState<string | null>(null);
+  const [resending, setResending] = useState(false);
+  const [resendStatus, setResendStatus] = useState<string | null>(null);
 
   // Credentials
   const [name, setName] = useState(currentUser?.name || '');
@@ -46,10 +60,26 @@ export const HostAuthModal: React.FC<HostAuthModalProps> = ({
   if (!isOpen) return null;
 
 
+  const handleResendEmail = async (targetEmail: string) => {
+    if (!targetEmail) return;
+    setResending(true);
+    setResendStatus(null);
+    try {
+      const res = await resendEmailVerification(targetEmail);
+      setResendStatus(res.message || 'Verification link sent! Check your inbox.');
+    } catch (e: any) {
+      setResendStatus(e.message || 'Failed to resend verification link.');
+    } finally {
+      setResending(false);
+    }
+  };
+
   const handleHostLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
     setSuccessMsg(null);
+    setUnverifiedEmail(null);
+    setResendStatus(null);
 
     if (!email || !password) {
       setError('Please enter both host email and password.');
@@ -59,13 +89,58 @@ export const HostAuthModal: React.FC<HostAuthModalProps> = ({
     setLoading(true);
     try {
       const res = await hostLogin(email, password);
+      if (res?.mfa_required && res?.mfa_token) {
+        setMfaRequired(true);
+        setMfaToken(res.mfa_token);
+        setLoading(false);
+        return;
+      }
       setSuccessMsg('Host session authenticated! Redirecting to Host Portal...');
       if (onSuccess) onSuccess(res?.user);
       setTimeout(() => {
         window.location.href = '/host/dashboard';
       }, 500);
     } catch (err: any) {
-      setError(err.message || 'Host login failed. Ensure your account has verified host privileges.');
+      if (err?.data?.email_verification_required || (err?.status === 403 && err.message?.toLowerCase().includes('verify your email'))) {
+        setUnverifiedEmail(err?.data?.email || email);
+        setError('Please verify your email address before logging in.');
+      } else {
+        setError(err.message || 'Host login failed. Ensure your account has verified host privileges.');
+      }
+      setLoading(false);
+    }
+  };
+
+  const handleHostMfaSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError(null);
+    setSuccessMsg(null);
+
+    if (!useRecoveryCode && (!mfaCode.trim() || mfaCode.trim().length !== 6)) {
+      setError('Please enter the 6-digit verification code from your authenticator app.');
+      return;
+    }
+
+    if (useRecoveryCode && !mfaRecoveryCode.trim()) {
+      setError('Please enter your backup recovery code.');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const res = await verifyMfaLogin({
+        mfa_token: mfaToken,
+        code: !useRecoveryCode ? mfaCode.trim() : undefined,
+        recovery_code: useRecoveryCode ? mfaRecoveryCode.trim() : undefined,
+        portal: 'host',
+      });
+      setSuccessMsg('Host Two-Factor Authentication verified! Redirecting to Host Portal...');
+      if (onSuccess) onSuccess(res?.user);
+      setTimeout(() => {
+        window.location.href = '/host/dashboard';
+      }, 500);
+    } catch (err: any) {
+      setError(err.message || 'MFA verification failed. Please check your code and try again.');
       setLoading(false);
     }
   };
@@ -129,6 +204,14 @@ export const HostAuthModal: React.FC<HostAuthModalProps> = ({
           upi_vpa: upiVpa,
           pan_name: panName || name,
         });
+
+        if (res?.email_verification_required) {
+          setVerificationSent(true);
+          setRegisteredEmail(email);
+          setSuccessMsg('Host account created! Please verify your email before logging in.');
+          setLoading(false);
+          return;
+        }
         resUser = res?.user;
         setSuccessMsg('Host account created & verified! Redirecting to Host Portal...');
       }
@@ -182,13 +265,41 @@ export const HostAuthModal: React.FC<HostAuthModalProps> = ({
 
         <div className="p-6 space-y-5 max-h-[80vh] overflow-y-auto">
           {/* Status Banners */}
-          {error && (
+          {unverifiedEmail && (
+            <div className="p-3.5 bg-amber-500/10 border border-amber-500/30 rounded-2xl flex flex-col gap-2">
+              <div className="flex items-start gap-2">
+                <span className="text-amber-400 text-sm">✉️</span>
+                <div>
+                  <p className="text-xs text-amber-300 font-medium">
+                    Please verify your email address before logging into the Host Portal.
+                  </p>
+                  <p className="text-[11px] text-slate-400 mt-0.5">
+                    We sent a verification link to <strong className="text-white">{unverifiedEmail}</strong>.
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-center gap-3 pt-1">
+                <button
+                  type="button"
+                  disabled={resending}
+                  onClick={() => handleResendEmail(unverifiedEmail)}
+                  className="px-3 py-1 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 text-[11px] font-bold transition disabled:opacity-50"
+                >
+                  {resending ? 'Sending link...' : 'Resend verification link'}
+                </button>
+                {resendStatus && (
+                  <span className="text-[11px] text-emerald-400 font-medium">{resendStatus}</span>
+                )}
+              </div>
+            </div>
+          )}
+          {error && !unverifiedEmail && (
             <div className="p-3.5 bg-rose-500/10 border border-rose-500/30 rounded-2xl flex items-start gap-2">
               <span className="text-rose-400 text-sm">⚠️</span>
               <p className="text-xs text-rose-300 font-medium">{error}</p>
             </div>
           )}
-          {successMsg && (
+          {successMsg && !verificationSent && (
             <div className="p-3.5 bg-emerald-500/10 border border-emerald-500/30 rounded-2xl flex items-start gap-2">
               <span className="text-emerald-400 text-sm">✓</span>
               <p className="text-xs text-emerald-300 font-medium">{successMsg}</p>
@@ -196,11 +307,145 @@ export const HostAuthModal: React.FC<HostAuthModalProps> = ({
           )}
 
 
-          {/* Mode Switch Tabs (if not upgrading seeker) */}
-          {!isUpgradingSeeker && (
-            <div className="flex p-1 bg-slate-950/80 rounded-2xl border border-slate-800">
+          {verificationSent ? (
+            <div className="space-y-5 text-center py-4">
+              <div className="w-16 h-16 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400 text-3xl mx-auto shadow-inner">
+                ✉️
+              </div>
+              <div>
+                <h3 className="text-xl font-bold text-white">Check Your Host Email</h3>
+                <p className="text-xs text-slate-300 mt-2 max-w-sm mx-auto leading-relaxed">
+                  We've sent a verification link to <strong className="text-amber-400 font-semibold">{registeredEmail}</strong>. Please click the link to verify your host account.
+                </p>
+              </div>
+
+              {resendStatus && (
+                <div className="p-3 bg-amber-500/10 border border-amber-500/30 rounded-xl text-xs text-amber-300">
+                  {resendStatus}
+                </div>
+              )}
+
+              <div className="p-4 bg-slate-950 rounded-xl border border-slate-800 text-left text-xs text-slate-400 space-y-1.5">
+                <p className="font-semibold text-slate-300">Important:</p>
+                <p>• Your property KYC credentials are saved and will activate upon verification.</p>
+                <p>• The verification link expires in 24 hours.</p>
+              </div>
+
+              <div className="space-y-2 pt-2">
+                <button
+                  type="button"
+                  disabled={resending}
+                  onClick={() => handleResendEmail(registeredEmail)}
+                  className="w-full py-2.5 rounded-xl border border-amber-500/40 bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 font-bold text-xs transition disabled:opacity-50"
+                >
+                  {resending ? 'Sending...' : 'Resend Verification Email'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setVerificationSent(false);
+                    setActiveTab('login');
+                    setError(null);
+                    setSuccessMsg(null);
+                    setResendStatus(null);
+                  }}
+                  className="w-full py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-xs transition"
+                >
+                  Back to Host Sign In
+                </button>
+              </div>
+            </div>
+          ) : mfaRequired ? (
+            <form onSubmit={handleHostMfaSubmit} className="space-y-4">
+              <div className="text-center py-2">
+                <div className="w-14 h-14 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400 text-2xl mx-auto mb-3 shadow-inner">
+                  🔐
+                </div>
+                <h3 className="text-lg font-bold text-white">
+                  Host Two-Factor Authentication
+                </h3>
+                <p className="text-xs text-slate-400 mt-1 max-w-sm mx-auto">
+                  {useRecoveryCode
+                    ? 'Enter one of your single-use backup recovery codes to access the Host Portal.'
+                    : 'Enter the 6-digit verification code generated by your authenticator app to access the Host Portal.'}
+                </p>
+              </div>
+
+              {!useRecoveryCode ? (
+                <div>
+                  <label className="block text-xs font-semibold text-slate-300 mb-1.5 text-center">
+                    6-Digit Security Code
+                  </label>
+                  <input
+                    type="text"
+                    maxLength={6}
+                    autoFocus
+                    value={mfaCode}
+                    onChange={(e) => setMfaCode(e.target.value.replace(/\D/g, ''))}
+                    placeholder="000000"
+                    className="w-full text-center tracking-[0.4em] text-2xl font-mono px-4 py-3 rounded-xl border border-slate-700 bg-slate-950 text-white focus:outline-none focus:ring-2 focus:ring-amber-500"
+                  />
+                </div>
+              ) : (
+                <div>
+                  <label className="block text-xs font-semibold text-slate-300 mb-1.5 text-center">
+                    Single-Use Recovery Code (e.g. A1B2-C3D4)
+                  </label>
+                  <input
+                    type="text"
+                    autoFocus
+                    value={mfaRecoveryCode}
+                    onChange={(e) => setMfaRecoveryCode(e.target.value.toUpperCase())}
+                    placeholder="XXXX-XXXX"
+                    className="w-full text-center font-mono text-base uppercase px-4 py-3 rounded-xl border border-slate-700 bg-slate-950 text-white focus:outline-none focus:ring-2 focus:ring-amber-500"
+                  />
+                </div>
+              )}
+
+              <div className="flex items-center justify-between text-xs pt-1">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setUseRecoveryCode(!useRecoveryCode);
+                    setError(null);
+                  }}
+                  className="text-amber-400 hover:underline font-medium"
+                >
+                  {useRecoveryCode
+                    ? '← Use 6-digit authenticator code'
+                    : '🔑 Use a backup recovery code instead'}
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMfaRequired(false);
+                    setMfaToken('');
+                    setMfaCode('');
+                    setMfaRecoveryCode('');
+                    setError(null);
+                  }}
+                  className="text-slate-400 hover:text-white font-medium"
+                >
+                  Cancel
+                </button>
+              </div>
+
               <button
-                type="button"
+                type="submit"
+                disabled={loading || (!useRecoveryCode ? mfaCode.length !== 6 : !mfaRecoveryCode.trim())}
+                className="w-full py-3 rounded-xl bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-500 hover:to-orange-500 disabled:opacity-50 text-white font-bold text-sm transition shadow-lg shadow-amber-600/25"
+              >
+                {loading ? 'Verifying Code...' : 'Verify & Enter Host Portal →'}
+              </button>
+            </form>
+          ) : (
+            <>
+              {/* Mode Switch Tabs (if not upgrading seeker) */}
+              {!isUpgradingSeeker && (
+                <div className="flex p-1 bg-slate-950/80 rounded-2xl border border-slate-800">
+                  <button
+                    type="button"
                 onClick={() => {
                   setActiveTab('login');
                   setError(null);
@@ -430,6 +675,8 @@ export const HostAuthModal: React.FC<HostAuthModalProps> = ({
               </button>
             </form>
           )}
+        </>
+      )}
 
           {/* Cross-Link to Seeker Auth */}
           <div className="pt-3 border-t border-slate-800 text-center">

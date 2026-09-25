@@ -24,6 +24,8 @@ export interface User {
   avatar_url?: string;
   phone?: string;
   college_name?: string;
+  is_email_verified?: boolean;
+  mfa_enabled?: boolean;
 }
 
 export type PortalMode = 'seeker' | 'host';
