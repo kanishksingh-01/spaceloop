@@ -1,7 +1,7 @@
 from datetime import datetime, timedelta
 import re
-from email_validator import validate_email, EmailNotValidError
 from models import db, User, PasswordResetToken, EmailVerificationToken
+from backend.modules.auth.email_validation import validate_email_address
 from backend.modules.auth.password import (
     validate_password_complexity,
     hash_password,
@@ -18,23 +18,24 @@ class AuthService:
     def register_user(first_name: str, last_name: str, email: str, password: str, confirm_password: str, role: str = "seeker") -> tuple[User | None, str, str]:
         """
         Validates and registers a new SpaceLoop user.
+        Enforces RFC 5322 syntax and strictly rejects disposable/temporary email providers.
+        Account is created unverified (is_email_verified=False).
         Returns: (user, raw_verification_token, error_message)
         """
         first_name = (first_name or "").strip()
         last_name = (last_name or "").strip()
-        email = (email or "").strip().lower()
+        email = (email or "").strip()
 
         if not first_name:
             return None, "", "First name is required."
 
-        # Validate email
-        try:
-            valid = validate_email(email, check_deliverability=False)
-            email = valid.normalized
-        except EmailNotValidError as e:
-            return None, "", f"Invalid email format: {str(e)}"
+        # Validate syntax & check disposable email provider blocklist
+        is_valid, normalized_email, err = validate_email_address(email, check_disposable=True)
+        if not is_valid:
+            return None, "", err
+        email = normalized_email
 
-        # Check existing user
+        # Check existing user (case-insensitive)
         if User.query.filter(db.func.lower(User.email) == email).first():
             return None, "", "An account with this email already exists."
 
@@ -68,15 +69,8 @@ class AuthService:
         db.session.add(user)
         db.session.flush()  # assign user.id
 
-        # Generate email verification token (24h expiry)
-        raw_token, token_hash = generate_secure_token()
-        verif_token = EmailVerificationToken(
-            user_id=user.id,
-            token_hash=token_hash,
-            expires_at=datetime.utcnow() + timedelta(days=1)
-        )
-        db.session.add(verif_token)
-        db.session.commit()
+        # Generate single-use verification token (24h expiry)
+        raw_token, _ = AuthService.create_email_verification_token(user.id)
 
         record_audit("AUTH_REGISTER_SUCCESS", user_id=user.id, details={"email": email, "role": target_role})
         return user, raw_token, ""
@@ -177,24 +171,103 @@ class AuthService:
         return True, "Your password has been successfully reset. Please log in."
 
     @staticmethod
-    def verify_email(raw_token: str) -> tuple[bool, str]:
+    def create_email_verification_token(user_id: int, pending_email: str | None = None) -> tuple[str, str]:
         """
-        Validates token and marks email verified.
-        Returns: (success, message)
+        Invalidates any prior unused verification tokens for this user
+        and issues a fresh high-entropy single-use token expiring in 24 hours.
+        Returns: (raw_token, token_hash)
         """
-        token_hash = hash_token(raw_token)
+        # Invalidate previous unused tokens for this user
+        EmailVerificationToken.query.filter_by(user_id=user_id, used=False).update({"used": True})
+
+        raw_token, token_hash = generate_secure_token()
+        verif_token = EmailVerificationToken(
+            user_id=user_id,
+            token_hash=token_hash,
+            expires_at=datetime.utcnow() + timedelta(days=1),
+            used=False,
+            pending_email=pending_email
+        )
+        db.session.add(verif_token)
+        db.session.commit()
+        return raw_token, token_hash
+
+    @staticmethod
+    def verify_email_token(raw_token: str) -> tuple[bool, str, User | None]:
+        """
+        Validates token, handles email changes if pending_email is set,
+        marks account as verified, and burns token (single-use).
+        Returns: (success, message, user)
+        """
+        if not raw_token or not isinstance(raw_token, str):
+            return False, "Verification token is required.", None
+
+        token_hash = hash_token(raw_token.strip())
         token_entry = EmailVerificationToken.query.filter_by(token_hash=token_hash, used=False).first()
 
         if not token_entry or not token_entry.is_valid():
-            return False, "This verification link is invalid or has expired."
+            return False, "This verification link is invalid or has expired.", None
 
         user = User.query.get(token_entry.user_id)
-        if not user:
-            return False, "User not found."
+        if not user or not user.is_active:
+            return False, "Associated user account is unavailable.", None
+
+        # If this was an email change request
+        if token_entry.pending_email:
+            new_email = token_entry.pending_email.strip().lower()
+            # Ensure email did not get registered by someone else in the interim
+            collision = User.query.filter(db.func.lower(User.email) == new_email, User.id != user.id).first()
+            if collision:
+                return False, "This email address is now associated with another account.", None
+            user.email = new_email
 
         user.is_email_verified = True
         token_entry.used = True
+
+        # Invalidate any remaining unused tokens for this user
+        EmailVerificationToken.query.filter(
+            EmailVerificationToken.user_id == user.id,
+            EmailVerificationToken.id != token_entry.id,
+            EmailVerificationToken.used == False
+        ).update({"used": True})
+
         db.session.commit()
 
-        record_audit("AUTH_EMAIL_VERIFIED", user_id=user.id)
-        return True, "Your email address has been successfully verified."
+        record_audit("AUTH_EMAIL_VERIFIED", user_id=user.id, details={"email": user.email})
+        return True, "Your email address has been successfully verified.", user
+
+    @staticmethod
+    def verify_email(raw_token: str) -> tuple[bool, str]:
+        """
+        Convenience wrapper returning (success, message).
+        Maintains backward compatibility with legacy endpoints and tests.
+        """
+        success, message, _ = AuthService.verify_email_token(raw_token)
+        return success, message
+
+    @staticmethod
+    def request_email_change(user_id: int, new_email: str) -> tuple[bool, str, str]:
+        """
+        Initiates an email change flow for an authenticated user.
+        Validates syntax, ensures not disposable, checks uniqueness,
+        and generates a verification token associated with pending_email.
+        Returns: (success, message, raw_token)
+        """
+        is_valid, normalized_email, err = validate_email_address(new_email, check_disposable=True)
+        if not is_valid:
+            return False, err, ""
+
+        user = User.query.get(user_id)
+        if not user or not user.is_active:
+            return False, "User not found or inactive.", ""
+
+        if user.email.lower() == normalized_email:
+            return False, "New email address must be different from current email.", ""
+
+        existing = User.query.filter(db.func.lower(User.email) == normalized_email, User.id != user_id).first()
+        if existing:
+            return False, "An account with this email address already exists.", ""
+
+        raw_token, _ = AuthService.create_email_verification_token(user_id=user.id, pending_email=normalized_email)
+        record_audit("AUTH_EMAIL_CHANGE_REQUESTED", user_id=user.id, details={"pending_email": normalized_email})
+        return True, "Verification email sent to your new email address.", raw_token

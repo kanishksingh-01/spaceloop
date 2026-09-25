@@ -470,6 +470,18 @@ def create_app():
             password = data.get("password", "")
             user, err = AuthService.authenticate_user(email, password)
             if user:
+                if not user.is_email_verified:
+                    err_msg = "Please verify your email address before logging in."
+                    if request.is_json:
+                        return jsonify({
+                            "success": False,
+                            "error": err_msg,
+                            "email_verification_required": True,
+                            "email": user.email
+                        }), 403
+                    flash(err_msg, "warning")
+                    return render_template("auth/login.html"), 403
+
                 login_user(user)
                 if request.is_json:
                     return jsonify({"success": True, "user": user.to_dict()})
@@ -488,7 +500,7 @@ def create_app():
     def auth_register():
         if request.method == "POST":
             data = request.get_json(silent=True) or request.form or {}
-            user, _, err = AuthService.register_user(
+            user, raw_token, err = AuthService.register_user(
                 first_name=sanitize_string(data.get("first_name", "Guest")),
                 last_name=sanitize_string(data.get("last_name", "")),
                 email=sanitize_string(data.get("email", "")),
@@ -497,10 +509,18 @@ def create_app():
                 role=data.get("role", "seeker")
             )
             if user:
-                login_user(user)
+                EmailService.send_email_verification(user.email, raw_token)
+                msg = "Registration successful! Please check your email to verify your account before logging in."
                 if request.is_json:
-                    return jsonify({"success": True, "user": user.to_dict()}), 201
-                return redirect(url_for("index"))
+                    return jsonify({
+                        "success": True,
+                        "email_verification_required": True,
+                        "email": user.email,
+                        "message": msg,
+                        "user": user.to_dict()
+                    }), 201
+                flash(msg, "info")
+                return redirect(url_for("auth_login"))
             if request.is_json:
                 return jsonify({"success": False, "error": err}), 400
             flash(err, "danger")

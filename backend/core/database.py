@@ -71,7 +71,9 @@ def ensure_database_schema(app, db):
                     ("on_time_vacate_rate", "FLOAT"),
                     ("cleanliness_match_rate", "FLOAT"),
                     ("total_completed_hours", "FLOAT"),
-                    ("dispute_count", "INTEGER")
+                    ("dispute_count", "INTEGER"),
+                    ("mfa_enabled", "BOOLEAN DEFAULT 0"),
+                    ("totp_secret", "VARCHAR(256)")
                 ]
 
                 with db.engine.connect() as conn:
@@ -83,26 +85,36 @@ def ensure_database_schema(app, db):
                             except Exception:
                                 pass
 
-                    # Ensure public_id is populated for all existing users
-                    from models import User
-                    users_without_pid = User.query.filter((User.public_id == None) | (User.public_id == "")).all()
-                    if users_without_pid:
-                        for u in users_without_pid:
-                            u.public_id = str(uuid.uuid4())
-                            if not u.first_name and u.name:
-                                parts = u.name.strip().split(" ", 1)
-                                u.first_name = parts[0]
-                                u.last_name = parts[1] if len(parts) > 1 else ""
-                        db.session.commit()
-
-                    # Auto-seed initial spaces and users if database is newly initialized and empty
-                    from models import Space
-                    if Space.query.first() is None:
+            if "email_verification_tokens" in table_names:
+                evt_cols = {col["name"]: col for col in inspector.get_columns("email_verification_tokens")}
+                if "pending_email" not in evt_cols:
+                    with db.engine.connect() as conn:
                         try:
-                            from seed_data import seed_database
-                            seed_database()
-                        except Exception as seed_err:
-                            print(f"[DB_SCHEMA_INIT] Auto-seed note: {seed_err}")
+                            conn.execute(db.text("ALTER TABLE email_verification_tokens ADD COLUMN pending_email VARCHAR(120)"))
+                            conn.commit()
+                        except Exception:
+                            pass
+
+            # Ensure public_id is populated for all existing users
+            from models import User
+            users_without_pid = User.query.filter((User.public_id == None) | (User.public_id == "")).all()
+            if users_without_pid:
+                for u in users_without_pid:
+                    u.public_id = str(uuid.uuid4())
+                    if not u.first_name and u.name:
+                        parts = u.name.strip().split(" ", 1)
+                        u.first_name = parts[0]
+                        u.last_name = parts[1] if len(parts) > 1 else ""
+                db.session.commit()
+
+            # Auto-seed initial spaces and users if database is newly initialized and empty
+            from models import Space
+            if Space.query.first() is None:
+                try:
+                    from seed_data import seed_database
+                    seed_database()
+                except Exception as seed_err:
+                    print(f"[DB_SCHEMA_INIT] Auto-seed note: {seed_err}")
 
         except Exception as e:
             print(f"[DB_SCHEMA_INIT] Note: {e}")
