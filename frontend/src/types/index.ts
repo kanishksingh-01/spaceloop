@@ -71,6 +71,8 @@ export interface Space {
   distance_km?: number;
   ai_match_score?: number;
   ai_match_reasoning?: string;
+  availability_status?: string;
+  match_reasons?: string[];
   pros?: string[];
   cons?: string[];
   created_at?: string;

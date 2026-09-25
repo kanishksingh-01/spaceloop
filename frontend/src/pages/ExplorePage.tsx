@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { View, Text, Pressable } from 'react-native';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Space } from '../types';
-import { getSpaces, aiMatchSpaces } from '../services/spaces';
+import { getSpaces, searchSpacesHybrid, aiMatchSpaces } from '../services/spaces';
 import { SpaceCard } from '../components/common/SpaceCard';
 
 export const ExplorePage: React.FC = () => {
@@ -19,6 +19,8 @@ export const ExplorePage: React.FC = () => {
   const [activeCategory, setActiveCategory] = useState(searchParams.get('category') || 'All');
   const [isAiSearching, setIsAiSearching] = useState(false);
   const [aiMatchActive, setAiMatchActive] = useState(false);
+  const [extractedConstraints, setExtractedConstraints] = useState<Record<string, any>>({});
+  const [searchSummary, setSearchSummary] = useState<string>('');
   const [userLat, setUserLat] = useState<number | null>(null);
   const [userLng, setUserLng] = useState<number | null>(null);
 
@@ -216,6 +218,8 @@ export const ExplorePage: React.FC = () => {
     const q = (queryText !== undefined ? queryText : searchQuery).trim();
     if (!q) {
       setAiMatchActive(false);
+      setExtractedConstraints({});
+      setSearchSummary('');
       fetchSpaces();
       return;
     }
@@ -223,13 +227,36 @@ export const ExplorePage: React.FC = () => {
     setIsAiSearching(true);
     setLoading(true);
     try {
-      const result = await aiMatchSpaces(q, userLat || undefined, userLng || undefined);
+      let curLat = userLat;
+      let curLng = userLng;
+      if ((!curLat || !curLng) && locationInput.trim()) {
+        const coords = resolveCoordinates(locationInput);
+        if (coords) {
+          curLat = coords.lat;
+          curLng = coords.lng;
+        }
+      }
+
+      const result = await searchSpacesHybrid({
+        query: q,
+        location: locationInput.trim() || undefined,
+        category: activeCategory !== 'All' ? activeCategory : undefined,
+        radius: selectedRadius && selectedRadius !== 'All' ? selectedRadius : undefined,
+        max_price: selectedMaxPrice ? Number(selectedMaxPrice) : undefined,
+        lat: curLat || undefined,
+        lng: curLng || undefined,
+      });
+
       setSpaces(result.spaces || []);
+      setExtractedConstraints(result.extracted_constraints || {});
+      setSearchSummary(result.match_summary || '');
       setAiMatchActive(true);
     } catch (err) {
-      console.warn('AI Match fallback to standard search:', err);
+      console.warn('Hybrid AI search fallback to standard search:', err);
       const fallback = await getSpaces({ q });
       setSpaces(fallback);
+      setExtractedConstraints({});
+      setSearchSummary(`Showing results for "${q}"`);
       setAiMatchActive(true);
     } finally {
       setIsAiSearching(false);
@@ -263,6 +290,8 @@ export const ExplorePage: React.FC = () => {
     setSelectedMaxPrice('');
     setActiveCategory('All');
     setAiMatchActive(false);
+    setExtractedConstraints({});
+    setSearchSummary('');
     setUserLat(null);
     setUserLng(null);
     setSearchParams({});
@@ -343,68 +372,68 @@ export const ExplorePage: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => {
-                    const p = 'Quiet focus desk for 3 hours with fiber WiFi';
+                    const p = 'quiet place for 6 people near Kharadi for a 4-hour team meeting';
                     setSearchQuery(p);
                     handleAiSearch(p);
                   }}
-                  className="px-2.5 py-1 rounded-lg bg-slate-800/80 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700/60 text-[11px] transition flex items-center gap-1.5"
+                  className="px-2.5 py-1 rounded-lg bg-indigo-950/70 hover:bg-indigo-900/80 text-indigo-200 hover:text-white border border-indigo-500/40 text-[11px] font-medium transition flex items-center gap-1.5"
                 >
-                  <span>💼</span> Remote Work
+                  <span>✨</span> Kharadi Team Meeting
                 </button>
                 <button
                   type="button"
                   onClick={() => {
-                    const p = 'Executive room for client meeting with 4K screen';
+                    const p = 'quiet room for 4 people';
                     setSearchQuery(p);
                     handleAiSearch(p);
                   }}
                   className="px-2.5 py-1 rounded-lg bg-slate-800/80 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700/60 text-[11px] transition flex items-center gap-1.5"
                 >
-                  <span>👥</span> Client Meeting
+                  <span>📚</span> Quiet Room (4 ppl)
                 </button>
                 <button
                   type="button"
                   onClick={() => {
-                    const p = 'Acoustic podcast studio with Shure mics for 2';
+                    const p = 'workspace near Kharadi';
                     setSearchQuery(p);
                     handleAiSearch(p);
                   }}
                   className="px-2.5 py-1 rounded-lg bg-slate-800/80 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700/60 text-[11px] transition flex items-center gap-1.5"
                 >
-                  <span>🎙️</span> Podcast Studio
+                  <span>💼</span> Workspace in Kharadi
                 </button>
                 <button
                   type="button"
                   onClick={() => {
-                    const p = 'Hardware maker workshop with 3D printer and soldering bay';
+                    const p = 'place for a small team meeting';
                     setSearchQuery(p);
                     handleAiSearch(p);
                   }}
                   className="px-2.5 py-1 rounded-lg bg-slate-800/80 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700/60 text-[11px] transition flex items-center gap-1.5"
                 >
-                  <span>🛠️</span> Maker Workshop
+                  <span>👥</span> Small Team Meeting
                 </button>
                 <button
                   type="button"
                   onClick={() => {
-                    const p = 'Temporary pop-up retail stall in busy street';
+                    const p = 'studio for a photography session';
                     setSearchQuery(p);
                     handleAiSearch(p);
                   }}
                   className="px-2.5 py-1 rounded-lg bg-slate-800/80 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700/60 text-[11px] transition flex items-center gap-1.5"
                 >
-                  <span>🛍️</span> Pop-Up Retail
+                  <span>📸</span> Photography Studio
                 </button>
                 <button
                   type="button"
                   onClick={() => {
-                    const p = 'Quiet AC study pod with power sockets near campus';
+                    const p = 'office space under ₹1000 per hour';
                     setSearchQuery(p);
                     handleAiSearch(p);
                   }}
                   className="px-2.5 py-1 rounded-lg bg-slate-800/80 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700/60 text-[11px] transition flex items-center gap-1.5"
                 >
-                  <span>📚</span> Focused Study
+                  <span>💰</span> Under ₹1000/hr
                 </button>
               </div>
             </div>
@@ -560,26 +589,69 @@ export const ExplorePage: React.FC = () => {
 
         {/* AI Matching Banner */}
         {aiMatchActive && (
-          <div className="mb-6 p-4 rounded-xl bg-gradient-to-r from-indigo-950/60 via-slate-900 to-indigo-950/60 border border-indigo-500/30 flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-lg bg-indigo-600/30 text-indigo-300 flex items-center justify-center">
-                <i className="fa-solid fa-sparkles text-sm" />
+          <div className="mb-6 p-4 rounded-xl bg-gradient-to-r from-indigo-950/60 via-slate-900 to-indigo-950/60 border border-indigo-500/30 flex flex-col gap-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-lg bg-indigo-600/30 text-indigo-300 flex items-center justify-center shrink-0">
+                  <i className="fa-solid fa-sparkles text-sm" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-semibold text-white">Hybrid Semantic Match Active</h3>
+                  <p className="text-xs text-slate-400">
+                    {searchSummary || 'Ranked by semantic intent and verified physical constraints'}
+                  </p>
+                </div>
               </div>
-              <div>
-                <h3 className="text-sm font-semibold text-white">AI Compatibility Ranking Active</h3>
-                <p className="text-xs text-slate-400">Sorted by best fit for your requirements</p>
-              </div>
+              <button
+                onClick={() => {
+                  setAiMatchActive(false);
+                  setSearchQuery('');
+                  setExtractedConstraints({});
+                  setSearchSummary('');
+                  fetchSpaces();
+                }}
+                className="text-xs text-indigo-400 hover:text-indigo-300 font-medium px-3 py-1.5 rounded-lg bg-indigo-950 border border-indigo-800/60 shrink-0"
+              >
+                Clear AI Filter
+              </button>
             </div>
-            <button
-              onClick={() => {
-                setAiMatchActive(false);
-                setSearchQuery('');
-                fetchSpaces();
-              }}
-              className="text-xs text-indigo-400 hover:text-indigo-300 font-medium px-3 py-1.5 rounded-lg bg-indigo-950 border border-indigo-800/60"
-            >
-              Clear AI Filter
-            </button>
+
+            {/* Extracted Structured Constraint Badges */}
+            {Object.keys(extractedConstraints).length > 0 && (
+              <div className="flex items-center gap-2 flex-wrap pt-2.5 border-t border-slate-800/70 text-xs">
+                <span className="text-[11px] text-slate-400 font-medium shrink-0">Extracted constraints:</span>
+                {extractedConstraints.location && (
+                  <span className="px-2.5 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 text-[11px] font-medium flex items-center gap-1">
+                    <span>📍</span> {extractedConstraints.location}
+                  </span>
+                )}
+                {extractedConstraints.capacity && (
+                  <span className="px-2.5 py-0.5 rounded-full bg-blue-500/20 text-blue-300 border border-blue-500/30 text-[11px] font-medium flex items-center gap-1">
+                    <span>👥</span> {extractedConstraints.capacity}+ people
+                  </span>
+                )}
+                {extractedConstraints.space_type && (
+                  <span className="px-2.5 py-0.5 rounded-full bg-purple-500/20 text-purple-300 border border-purple-500/30 text-[11px] font-medium flex items-center gap-1">
+                    <span>🏷️</span> {extractedConstraints.space_type}
+                  </span>
+                )}
+                {extractedConstraints.hours && (
+                  <span className="px-2.5 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30 text-[11px] font-medium flex items-center gap-1">
+                    <span>⏱️</span> {extractedConstraints.hours} hr duration
+                  </span>
+                )}
+                {extractedConstraints.max_price && (
+                  <span className="px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 text-[11px] font-medium flex items-center gap-1">
+                    <span>💰</span> Under ₹{extractedConstraints.max_price}/hr
+                  </span>
+                )}
+                {Array.isArray(extractedConstraints.amenities) && extractedConstraints.amenities.map((am: string, i: number) => (
+                  <span key={i} className="px-2.5 py-0.5 rounded-full bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 text-[11px] font-medium">
+                    {am}
+                  </span>
+                ))}
+              </div>
+            )}
           </div>
         )}
 

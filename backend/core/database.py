@@ -95,6 +95,17 @@ def ensure_database_schema(app, db):
                         except Exception:
                             pass
 
+            if "spaces" in table_names:
+                space_cols = {col["name"]: col for col in inspector.get_columns("spaces")}
+                if "embedding_json" not in space_cols:
+                    with db.engine.connect() as conn:
+                        try:
+                            col_type = "JSON" if "postgres" in str(db.engine.url).lower() else "TEXT"
+                            conn.execute(db.text(f"ALTER TABLE spaces ADD COLUMN embedding_json {col_type}"))
+                            conn.commit()
+                        except Exception:
+                            pass
+
             # Ensure public_id is populated for all existing users
             from models import User
             users_without_pid = User.query.filter((User.public_id == None) | (User.public_id == "")).all()
@@ -115,6 +126,22 @@ def ensure_database_schema(app, db):
                     seed_database()
                 except Exception as seed_err:
                     print(f"[DB_SCHEMA_INIT] Auto-seed note: {seed_err}")
+
+            # Ensure active spaces have embeddings indexed
+            try:
+                unembedded = Space.query.filter((Space.embedding_json == None) | (Space.embedding_json == "")).all()
+                if unembedded:
+                    from backend.modules.search.embedding import build_searchable_representation, generate_embedding
+                    for sp in unembedded:
+                        try:
+                            txt = build_searchable_representation(sp)
+                            sp.embedding = generate_embedding(txt)
+                        except Exception:
+                            pass
+                    db.session.commit()
+            except Exception as emb_err:
+                db.session.rollback()
+                print(f"[DB_SCHEMA_INIT] Embedding index note: {emb_err}")
 
         except Exception as e:
             print(f"[DB_SCHEMA_INIT] Note: {e}")

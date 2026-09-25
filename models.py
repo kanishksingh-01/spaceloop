@@ -216,6 +216,9 @@ class Space(db.Model):
 
     is_active = db.Column(db.Boolean, default=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    # Semantic Vector Search (dense vector embedding stored as JSON array, pgvector compatible)
+    embedding_json = db.Column(db.JSON, nullable=True)
 
     # Relationships
     bookings = db.relationship("Booking", backref="space", lazy=True, cascade="all, delete-orphan")
@@ -330,6 +333,36 @@ class Space(db.Model):
         if not self.reviews:
             return 4.9  # Default new space rating
         return round(sum(r.rating for r in self.reviews) / len(self.reviews), 1)
+
+    @property
+    def embedding(self) -> list[float] | None:
+        if isinstance(self.embedding_json, list):
+            return self.embedding_json
+        if isinstance(self.embedding_json, str):
+            try:
+                return json.loads(self.embedding_json)
+            except Exception:
+                return None
+        return None
+
+    @embedding.setter
+    def embedding(self, val):
+        if isinstance(val, list):
+            self.embedding_json = val
+        elif isinstance(val, str):
+            try:
+                self.embedding_json = json.loads(val)
+            except Exception:
+                self.embedding_json = None
+        else:
+            self.embedding_json = None
+
+    def update_embedding(self, commit: bool = True):
+        from backend.modules.search.embedding import build_searchable_representation, generate_embedding
+        txt = build_searchable_representation(self)
+        self.embedding = generate_embedding(txt)
+        if commit:
+            db.session.commit()
 
     def to_dict(self):
         return {
