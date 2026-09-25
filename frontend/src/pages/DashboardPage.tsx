@@ -149,27 +149,29 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => 
       <View className="bg-slate-900 border-b border-slate-800 px-4 py-8">
         <View className="max-w-7xl mx-auto flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <View className="flex-row items-center gap-4">
-            <Image
-              source={{
-                uri:
-                  currentUser?.avatar_url ||
-                  'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80',
-              }}
-              className="w-16 h-16 rounded-2xl object-cover border-2 border-indigo-500/40"
-            />
+            {currentUser?.avatar_url ? (
+              <Image
+                source={{ uri: currentUser.avatar_url }}
+                className="w-16 h-16 rounded-2xl object-cover border-2 border-indigo-500/40"
+              />
+            ) : (
+              <div className="w-16 h-16 rounded-2xl bg-indigo-950/80 border-2 border-indigo-500/40 flex items-center justify-center text-indigo-300 font-bold text-2xl uppercase shadow-inner">
+                {(currentUser?.name || currentUser?.email || 'U').charAt(0)}
+              </div>
+            )}
             <View>
               <View className="flex-row items-center gap-2">
                 <Text className="text-xl font-bold text-white">
-                  {currentUser?.name || 'Aarav Sharma'}
+                  {currentUser?.name || currentUser?.email?.split('@')[0] || 'Member'}
                 </Text>
                 <View className="px-2 py-0.5 rounded-md bg-indigo-500/20 border border-indigo-500/30">
                   <Text className="text-[10px] font-bold text-indigo-300 uppercase">
-                    {currentUser?.role || 'Seeker'}
+                    {currentUser?.role || (currentUser?.is_host ? 'Host' : 'Seeker')}
                   </Text>
                 </View>
               </View>
               <Text className="text-xs text-slate-400 mt-0.5">
-                {currentUser?.email || 'aarav@iitd.ac.in'}
+                {currentUser?.email || 'No email registered'}
               </Text>
               <View className="flex-row items-center gap-2 mt-1 flex-wrap">
                 <Text className="text-[11px] text-emerald-400 font-medium">

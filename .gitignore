@@ -19,3 +19,6 @@ spaceloop/node_modules/
 NIRIKSHAK/frontend/node_modules/
 _backup_frontend_pre_migration/
 instance/
+.restore_points/
+static/uploads/spaces/*
+!static/uploads/spaces/.gitkeep

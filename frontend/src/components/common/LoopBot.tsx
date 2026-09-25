@@ -94,7 +94,7 @@ export const LoopBot: React.FC = () => {
         <button
           type="button"
           onClick={() => setIsOpen(true)}
-          className="flex items-center gap-2.5 bg-gradient-to-r from-indigo-600 via-violet-600 to-indigo-700 text-white px-3.5 py-2.5 sm:px-4 sm:py-3 rounded-full floating-panel hover:-translate-y-1 transition-all duration-200 border border-indigo-400/30 cursor-pointer"
+          className="flex items-center gap-2.5 bg-gradient-to-r from-violet-600 via-indigo-600 to-violet-700 text-white px-3.5 py-2.5 sm:px-4 sm:py-3 rounded-full floating-panel hover:-translate-y-1 transition-all duration-200 border border-violet-400/30 cursor-pointer shadow-lg shadow-violet-600/25"
         >
           <div className="relative">
             <i className="fa-solid fa-robot text-sm sm:text-base" />
@@ -224,7 +224,7 @@ export const LoopBot: React.FC = () => {
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 placeholder="Ask about spaces, rules, or earnings..."
-                className="flex-grow bg-slate-900 border border-slate-700/80 rounded-xl px-3.5 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500 transition"
+                className="flex-grow bg-slate-800 border border-slate-700/80 rounded-xl px-3.5 py-2.5 text-sm text-slate-100 placeholder-slate-400 focus:outline-none focus:border-indigo-500 transition"
               />
               <button
                 type="submit"

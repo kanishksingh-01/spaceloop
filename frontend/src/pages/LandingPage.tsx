@@ -76,7 +76,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ currentUser }) => {
           </h1>
 
           {/* Subtitle */}
-          <p className="mt-6 text-base sm:text-xl text-slate-400 leading-relaxed max-w-3xl mx-auto">
+          <p className="mt-6 text-base sm:text-xl text-slate-300 leading-relaxed max-w-3xl mx-auto">
             Discover and book verified spaces for remote work, client meetings, creative studios, workshops, and study — by the hour. Powered by natural-language AI matching, instant micro-leases, and zero-hardware QR access.
           </p>
 
@@ -95,30 +95,30 @@ export const LandingPage: React.FC<LandingPageProps> = ({ currentUser }) => {
             <button
               type="button"
               onClick={() => navigate(currentUser ? '/list-space' : '/dashboard')}
-              className="w-full sm:w-auto px-8 py-4 rounded-2xl bg-slate-900/90 hover:bg-slate-800 text-slate-200 hover:text-white font-bold text-base border border-slate-700/80 shadow-lg flex items-center justify-center gap-3 transition transform hover:-translate-y-0.5"
+              className="w-full sm:w-auto px-8 py-4 rounded-2xl bg-slate-900/90 hover:bg-amber-500/10 text-amber-300 hover:text-amber-200 font-bold text-base border border-amber-500/30 hover:border-amber-400 shadow-lg flex items-center justify-center gap-3 transition transform hover:-translate-y-0.5"
             >
-              <i className="fa-solid fa-warehouse text-indigo-400" />
+              <i className="fa-solid fa-warehouse text-amber-400" />
               <span>Become a Host</span>
             </button>
           </div>
 
           {/* Quick Stats Metric Ribbon */}
           <div className="mt-16 pt-10 border-t border-slate-800/80 grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6 max-w-4xl mx-auto">
-            <div className="p-4 rounded-2xl bg-slate-900/50 border border-slate-800/80 floating-interactive text-center">
+            <div className="p-4 rounded-2xl bg-slate-900/80 border border-slate-800/80 floating-interactive text-center">
               <div className="text-2xl sm:text-3xl font-black text-white">
                 ₹45<span className="text-indigo-400 text-lg">/hr</span>
               </div>
               <div className="text-xs text-slate-400 mt-1 font-medium">Starting Hourly Rates</div>
             </div>
-            <div className="p-4 rounded-2xl bg-slate-900/50 border border-slate-800/80 floating-interactive text-center">
+            <div className="p-4 rounded-2xl bg-slate-900/80 border border-slate-800/80 floating-interactive text-center">
               <div className="text-2xl sm:text-3xl font-black text-white">100%</div>
               <div className="text-xs text-slate-400 mt-1 font-medium">Discom Meter Verified</div>
             </div>
-            <div className="p-4 rounded-2xl bg-slate-900/50 border border-slate-800/80 floating-interactive text-center">
+            <div className="p-4 rounded-2xl bg-slate-900/80 border border-slate-800/80 floating-interactive text-center">
               <div className="text-2xl sm:text-3xl font-black text-white">30s</div>
               <div className="text-xs text-slate-400 mt-1 font-medium">Instant AI Micro-Lease</div>
             </div>
-            <div className="p-4 rounded-2xl bg-slate-900/50 border border-slate-800/80 floating-interactive text-center">
+            <div className="p-4 rounded-2xl bg-slate-900/80 border border-slate-800/80 floating-interactive text-center">
               <div className="text-2xl sm:text-3xl font-black text-white">₹100</div>
               <div className="text-xs text-slate-400 mt-1 font-medium">UPI Escrow Auto-Release</div>
             </div>
@@ -134,7 +134,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ currentUser }) => {
               End-to-End Workflow
             </span>
             <h2 className="text-3xl sm:text-4xl font-black text-white mt-4">How SpaceLoop Works</h2>
-            <p className="text-slate-400 text-sm sm:text-base mt-2">
+            <p className="text-slate-300 text-sm sm:text-base mt-2">
               A seamless 6-step lifecycle engineered for friction-free urban space sharing.
             </p>
           </div>
@@ -146,7 +146,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ currentUser }) => {
                 1
               </div>
               <h3 className="text-lg font-bold text-white mb-2">Discover</h3>
-              <p className="text-xs text-slate-400 leading-relaxed">
+              <p className="text-xs text-slate-300 leading-relaxed">
                 Search in natural English (e.g. "podcast studio for 2", "client meeting room near Indiranagar", or "quiet focus desk under ₹70/hr"). Our AI understands exact intent.
               </p>
             </div>
@@ -157,7 +157,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ currentUser }) => {
                 2
               </div>
               <h3 className="text-lg font-bold text-white mb-2">Match</h3>
-              <p className="text-xs text-slate-400 leading-relaxed">
+              <p className="text-xs text-slate-300 leading-relaxed">
                 Candidate spaces are ranked based on suitability score, distance radius, amenities, and Objective Telemetry Index (OTI).
               </p>
             </div>
@@ -168,7 +168,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ currentUser }) => {
                 3
               </div>
               <h3 className="text-lg font-bold text-white mb-2">Book</h3>
-              <p className="text-xs text-slate-400 leading-relaxed">
+              <p className="text-xs text-slate-300 leading-relaxed">
                 Select hourly or daily slots with instant confirmation. ₹100 UPI escrow hold secures the premise with zero paperwork.
               </p>
             </div>
@@ -179,7 +179,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ currentUser }) => {
                 4
               </div>
               <h3 className="text-lg font-bold text-white mb-2">Sign</h3>
-              <p className="text-xs text-slate-400 leading-relaxed">
+              <p className="text-xs text-slate-300 leading-relaxed">
                 Instant digital micro-lease automatically compiled under the Indian Easements Act (1882) protecting both parties legally.
               </p>
             </div>
@@ -190,7 +190,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ currentUser }) => {
                 5
               </div>
               <h3 className="text-lg font-bold text-white mb-2">Access</h3>
-              <p className="text-xs text-slate-400 leading-relaxed">
+              <p className="text-xs text-slate-300 leading-relaxed">
                 Zero-hardware entry via phone GPS geofence handshake (within 50m) or host door QR scan. Live in-room countdown timer.
               </p>
             </div>
@@ -201,7 +201,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ currentUser }) => {
                 6
               </div>
               <h3 className="text-lg font-bold text-white mb-2">Complete</h3>
-              <p className="text-xs text-slate-400 leading-relaxed">
+              <p className="text-xs text-slate-300 leading-relaxed">
                 Snap a quick exit photo. AI checks cleanliness, lights off, and punctuality, immediately releasing the ₹100 UPI deposit.
               </p>
             </div>
@@ -219,7 +219,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ currentUser }) => {
                 <i className="fa-solid fa-briefcase" /> For Creators, Remote Workers & Teams
               </div>
               <h3 className="text-2xl sm:text-3xl font-black text-white mb-4">Professional Space on Demand</h3>
-              <p className="text-slate-400 text-xs sm:text-sm leading-relaxed mb-6">
+              <p className="text-slate-300 text-xs sm:text-sm leading-relaxed mb-6">
                 Say goodbye to crowded cafes and rigid commercial leases. Book client meeting rooms, ergonomic focus desks, podcast & photo studios, workshop bays, or private study pods whenever you need them.
               </p>
 
@@ -258,7 +258,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ currentUser }) => {
                 <i className="fa-solid fa-house-chimney-user" /> For Property & Space Owners
               </div>
               <h3 className="text-2xl sm:text-3xl font-black text-white mb-4">Turn Idle Capacity into Revenue</h3>
-              <p className="text-slate-400 text-xs sm:text-sm leading-relaxed mb-6">
+              <p className="text-slate-300 text-xs sm:text-sm leading-relaxed mb-6">
                 Have an unused meeting room, garage workshop, creative studio, off-peak cafe space, or spare room? Monetize unused square footage by the hour with zero operational friction.
               </p>
 
@@ -302,7 +302,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ currentUser }) => {
               Enterprise Security & Compliance
             </span>
             <h2 className="text-3xl sm:text-4xl font-black text-white mt-4">Trust & Safety by Design</h2>
-            <p className="text-slate-400 text-sm sm:text-base mt-2">
+            <p className="text-slate-300 text-sm sm:text-base mt-2">
               Engineered for national-level trust with the India Stack and verifiable telemetry.
             </p>
           </div>
@@ -313,7 +313,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ currentUser }) => {
                 <i className="fa-solid fa-id-card" />
               </div>
               <h3 className="text-base font-bold text-white mb-2">DigiLocker Dual KYC</h3>
-              <p className="text-xs text-slate-400 leading-relaxed">
+              <p className="text-xs text-slate-300 leading-relaxed">
                 Seekers verify via OTP-backed DigiLocker Aadhaar tokens and institutional (.ac.in) domains. DPDP Act 2023 compliant: zero plaintext Aadhaar stored.
               </p>
             </div>
@@ -323,7 +323,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ currentUser }) => {
                 <i className="fa-solid fa-bolt" />
               </div>
               <h3 className="text-base font-bold text-white mb-2">Discom Premise Proof</h3>
-              <p className="text-xs text-slate-400 leading-relaxed">
+              <p className="text-xs text-slate-300 leading-relaxed">
                 Hosts confirm physical legal possession by matching electricity utility bills (BESCOM, TPDDL) and instant UPI Penny Drop bank account verification.
               </p>
             </div>
@@ -333,7 +333,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ currentUser }) => {
                 <i className="fa-solid fa-scale-balanced" />
               </div>
               <h3 className="text-base font-bold text-white mb-2">Legal Micro-Lease</h3>
-              <p className="text-xs text-slate-400 leading-relaxed">
+              <p className="text-xs text-slate-300 leading-relaxed">
                 Every booking compiles a digital license agreement under the Indian Easements Act (1882), establishing licensee status with zero tenancy risk.
               </p>
             </div>
@@ -350,7 +350,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ currentUser }) => {
                 Live Marketplace
               </span>
               <h2 className="text-3xl font-black text-white mt-3">Featured Micro-Spaces</h2>
-              <p className="text-slate-400 text-xs sm:text-sm mt-1">
+              <p className="text-slate-300 text-xs sm:text-sm mt-1">
                 Explore top-rated verified spaces across Delhi, Bengaluru, Pune, and Mumbai.
               </p>
             </div>
@@ -402,7 +402,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ currentUser }) => {
                     <h3 className="text-base font-bold text-white group-hover:text-indigo-300 transition line-clamp-1 mb-2">
                       {space.title}
                     </h3>
-                    <p className="text-xs text-slate-400 line-clamp-2 leading-relaxed mb-4">
+                    <p className="text-xs text-slate-300 line-clamp-2 leading-relaxed mb-4">
                       {space.description}
                     </p>
 

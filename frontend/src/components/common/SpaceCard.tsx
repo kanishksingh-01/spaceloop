@@ -123,7 +123,7 @@ export const SpaceCard: React.FC<SpaceCardProps> = ({ space, onPress }) => {
           </div>
         </div>
 
-        <p className="text-xs text-slate-400 leading-relaxed line-clamp-2 mb-3">
+        <p className="text-xs text-slate-300 leading-relaxed line-clamp-2 mb-3">
           {space.description}
         </p>
 

@@ -503,6 +503,7 @@ class SpaceInquiry(db.Model):
     user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=True)
     question = db.Column(db.Text, nullable=False)
     ai_answer = db.Column(db.Text, default="")
+    response = db.Column(db.Text, default="")
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
     __table_args__ = (
@@ -519,6 +520,8 @@ class SpaceInquiry(db.Model):
             "user_name": self.user.name if self.user else "Verified Seeker",
             "question": self.question,
             "ai_answer": self.ai_answer,
+            "ai_response": self.ai_answer,
+            "response": self.response or "",
             "created_at": self.created_at.strftime("%b %d, %Y at %I:%M %p") if self.created_at else "",
         }
 

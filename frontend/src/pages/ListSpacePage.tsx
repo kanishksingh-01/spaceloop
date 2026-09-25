@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, Pressable, TextInput, Image, ScrollView } from 'react-native';
 import { useNavigate } from 'react-router-dom';
-import { aiScanSpace, createSpace } from '../services/spaces';
+import { aiScanSpace, createSpace, uploadSpacePhoto } from '../services/spaces';
 import { HostAuthModal } from '../components/common/HostAuthModal';
 import { User } from '../types';
 
@@ -14,16 +14,18 @@ export const ListSpacePage: React.FC<ListSpacePageProps> = ({ currentUser }) => 
 
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
-  const [category, setCategory] = useState('Study Pod');
-  const [hourlyRate, setHourlyRate] = useState('45');
-  const [location, setLocation] = useState('Wagholi');
-  const [address, setAddress] = useState('Near JSPM Imperial College, Wagholi, Pune');
-  const [city, setCity] = useState('Pune');
-  const [photoUrl, setPhotoUrl] = useState(
-    'https://images.unsplash.com/photo-1598488035139-bdbb2231ce04?auto=format&fit=crop&w=800&q=80'
-  );
-  const [amenities, setAmenities] = useState('Wi-Fi, Power Outlets, Whiteboard, Quiet Zone');
-  const [notes, setNotes] = useState('Sunlit room with good air ventilation, ideal for exam prep or focused coding.');
+  const [category, setCategory] = useState('Workspace');
+  const [hourlyRate, setHourlyRate] = useState('');
+  const [location, setLocation] = useState('');
+  const [address, setAddress] = useState('');
+  const [city, setCity] = useState('');
+  const [photoUrl, setPhotoUrl] = useState('');
+  const [amenities, setAmenities] = useState('');
+  const [notes, setNotes] = useState('');
+
+  const [termsAccepted, setTermsAccepted] = useState(false);
+  const [showTermsModal, setShowTermsModal] = useState(false);
+  const [uploadingPhoto, setUploadingPhoto] = useState(false);
 
   const [isScanning, setIsScanning] = useState(false);
   const [isPublishing, setIsPublishing] = useState(false);
@@ -166,14 +168,51 @@ export const ListSpacePage: React.FC<ListSpacePageProps> = ({ currentUser }) => 
     }
   };
 
+  const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > 5 * 1024 * 1024) {
+      setError('Selected image exceeds 5MB size limit. Please upload a smaller image.');
+      return;
+    }
+    if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) {
+      setError('Please select a valid image format (PNG, JPEG, or WEBP).');
+      return;
+    }
+
+    setUploadingPhoto(true);
+    setError(null);
+    try {
+      const res = await uploadSpacePhoto(file);
+      if (res && res.photo_url) {
+        setPhotoUrl(res.photo_url);
+        setScanMessage('Photo uploaded successfully! You can run AI scan or continue with space details.');
+      }
+    } catch (err: any) {
+      setError(err.message || 'Failed to upload photo. Please check your network or try again.');
+    } finally {
+      setUploadingPhoto(false);
+    }
+  };
+
   const handlePublish = async () => {
     if (isPublishing) return;
     if (!currentUser || !currentUser.is_host) {
       setShowAuthModal(true);
       return;
     }
-    if (!title || !hourlyRate || !location) {
-      setError('Please fill in title, rate, and locality');
+    if (!currentUser.is_host_verified) {
+      setError('Host verification required. Please complete Discom property verification in the Host Portal.');
+      setShowAuthModal(true);
+      return;
+    }
+    if (!termsAccepted) {
+      setError('You must review and accept the SpaceLoop Host Terms & Conditions before publishing.');
+      return;
+    }
+    if (!title.trim() || !hourlyRate || !location.trim()) {
+      setError('Please provide a listing title, hourly rate, and neighborhood/locality.');
       return;
     }
     setIsPublishing(true);
@@ -190,17 +229,18 @@ export const ListSpacePage: React.FC<ListSpacePageProps> = ({ currentUser }) => 
       }
 
       const res = await createSpace({
-        title,
+        title: title.trim(),
         description: finalDesc,
         category,
         hourly_rate: Number(hourlyRate),
         price_hourly: Number(hourlyRate),
-        location,
-        neighborhood: location,
-        address,
-        city,
-        photos: [photoUrl],
+        location: location.trim(),
+        neighborhood: location.trim(),
+        address: address.trim() || location.trim(),
+        city: city.trim() || 'Pune',
+        photos: photoUrl ? [photoUrl] : [],
         amenities: amenityArray,
+        terms_accepted: true,
         latitude: city === 'Pune' ? 18.5793 : city === 'Delhi' ? 28.5494 : 12.9352,
         longitude: city === 'Pune' ? 73.9825 : city === 'Delhi' ? 77.2001 : 77.6245,
       });
@@ -209,7 +249,7 @@ export const ListSpacePage: React.FC<ListSpacePageProps> = ({ currentUser }) => 
       if (spaceId) {
         navigate(`/space/${spaceId}`);
       } else {
-        navigate('/dashboard');
+        navigate('/host/dashboard');
       }
     } catch (err: any) {
       setError(err.message || 'Failed to list space');
@@ -276,34 +316,59 @@ export const ListSpacePage: React.FC<ListSpacePageProps> = ({ currentUser }) => 
             Space Parameters & AI Scan
           </Text>
 
-          {/* Photo URL & AI Scanner Button */}
-          <View className="space-y-2">
-            <Text className="text-xs font-medium text-slate-300">Space Photo URL</Text>
-            <View className="flex-col sm:flex-row gap-2">
+          {/* Photo Upload & URL & AI Scanner Button */}
+          <View className="space-y-3">
+            <div className="flex items-center justify-between">
+              <Text className="text-xs font-medium text-slate-300">Space Photo (Local Upload or URL)</Text>
+              <span className="text-[10px] text-slate-400">JPG, PNG, WEBP (Max 5MB)</span>
+            </div>
+            <div className="flex flex-col sm:flex-row items-center gap-2.5">
+              <label className={`cursor-pointer px-4 py-2.5 rounded-xl border border-dashed border-indigo-500/50 bg-indigo-950/30 hover:bg-indigo-900/40 text-xs font-semibold text-indigo-300 flex items-center justify-center gap-2 transition ${uploadingPhoto ? 'opacity-50 pointer-events-none' : ''}`}>
+                <input
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp"
+                  onChange={handlePhotoUpload}
+                  className="hidden"
+                />
+                <i className={`fa-solid ${uploadingPhoto ? 'fa-circle-notch fa-spin' : 'fa-cloud-arrow-up'}`} />
+                <span>{uploadingPhoto ? 'Uploading...' : 'Upload Photo'}</span>
+              </label>
+
+              <span className="text-xs text-slate-500 font-bold hidden sm:inline">OR</span>
+
               <TextInput
                 value={photoUrl}
                 onChangeText={setPhotoUrl}
-                placeholder="Paste an image URL..."
+                placeholder="Paste an image URL directly..."
                 placeholderTextColor="#64748b"
-                className="flex-1 bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-sm text-white focus:border-indigo-500"
+                className="flex-1 bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-sm text-white focus:border-indigo-500 w-full"
               />
               <Pressable
                 onPress={handleAiScan}
-                disabled={isScanning}
-                className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-500 rounded-xl items-center justify-center transition shadow-md"
+                disabled={isScanning || !photoUrl}
+                className={`px-5 py-2.5 rounded-xl items-center justify-center transition shadow-md w-full sm:w-auto ${
+                  isScanning || !photoUrl ? 'bg-indigo-900/50 opacity-50' : 'bg-indigo-600 hover:bg-indigo-500'
+                }`}
               >
                 <Text className="text-xs font-bold text-white">
                   {isScanning ? 'Inspecting...' : '⚡ Scan with AI'}
                 </Text>
               </Pressable>
-            </View>
+            </div>
           </View>
 
           {/* Image Preview */}
           {photoUrl && (
-            <View className="w-full h-48 rounded-xl overflow-hidden bg-slate-950 border border-slate-800">
+            <div className="relative w-full h-52 rounded-xl overflow-hidden bg-slate-950 border border-slate-800 group">
               <Image source={{ uri: photoUrl }} className="w-full h-full object-cover" />
-            </View>
+              <button
+                type="button"
+                onClick={() => setPhotoUrl('')}
+                className="absolute top-2.5 right-2.5 px-3 py-1.5 rounded-lg bg-black/75 hover:bg-rose-600 text-white text-xs font-bold transition flex items-center gap-1.5 shadow"
+              >
+                <i className="fa-solid fa-trash text-[10px]" /> Remove
+              </button>
+            </div>
           )}
 
           {/* AI Space Inspector Analysis Card */}
@@ -510,6 +575,35 @@ export const ListSpacePage: React.FC<ListSpacePageProps> = ({ currentUser }) => 
             />
           </View>
 
+          {/* Terms & Conditions Mandatory Checkbox & Modal Link */}
+          <div className="p-4 bg-slate-950/80 rounded-2xl border border-slate-800 space-y-2">
+            <div className="flex items-start gap-3">
+              <input
+                type="checkbox"
+                id="terms_agree_checkbox"
+                checked={termsAccepted}
+                onChange={(e) => setTermsAccepted(e.target.checked)}
+                className="mt-1 w-4 h-4 rounded border-slate-700 text-emerald-500 focus:ring-emerald-400 bg-slate-900 cursor-pointer"
+              />
+              <label htmlFor="terms_agree_checkbox" className="text-xs text-slate-300 leading-relaxed cursor-pointer">
+                I have read and agree to the{' '}
+                <button
+                  type="button"
+                  onClick={() => setShowTermsModal(true)}
+                  className="text-indigo-400 hover:text-indigo-300 font-bold underline inline-flex items-center gap-1"
+                >
+                  SpaceLoop Host Terms & Conditions <i className="fa-solid fa-arrow-up-right-from-square text-[10px]" />
+                </button>
+                , including Section 52 Indian Easements Act revocable micro-lease compliance, electrical safety standards, and ₹100 refundable escrow resolution.
+              </label>
+            </div>
+            {!termsAccepted && (
+              <p className="text-[11px] text-amber-400/90 pl-7">
+                * You must accept the terms before publishing your listing.
+              </p>
+            )}
+          </div>
+
           {/* Publish Error Display Near Button */}
           {error && (
             <View className="p-4 bg-rose-500/10 border border-rose-500/30 rounded-2xl">
@@ -520,10 +614,10 @@ export const ListSpacePage: React.FC<ListSpacePageProps> = ({ currentUser }) => 
           {/* Publish Button */}
           <Pressable
             onPress={handlePublish}
-            disabled={isPublishing}
+            disabled={isPublishing || !termsAccepted}
             className={`w-full py-4 rounded-2xl items-center justify-center transition shadow-xl ${
-              isPublishing
-                ? 'bg-emerald-600/60 cursor-not-allowed shadow-none'
+              isPublishing || !termsAccepted
+                ? 'bg-emerald-600/40 opacity-60 cursor-not-allowed shadow-none'
                 : 'bg-emerald-600 hover:bg-emerald-500 shadow-emerald-600/30'
             }`}
           >
@@ -533,6 +627,87 @@ export const ListSpacePage: React.FC<ListSpacePageProps> = ({ currentUser }) => 
           </Pressable>
         </View>
       </View>
+
+      {/* Terms & Conditions Review Modal */}
+      {showTermsModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md overflow-y-auto">
+          <div className="bg-slate-900 border border-indigo-500/30 text-white w-full max-w-2xl rounded-3xl overflow-hidden my-6 transition-all shadow-2xl">
+            <div className="p-6 border-b border-slate-800 bg-gradient-to-r from-slate-900 via-indigo-950/40 to-slate-900 flex items-center justify-between">
+              <div>
+                <span className="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
+                  Legal Compliance
+                </span>
+                <h3 className="text-lg font-bold text-white mt-1">SpaceLoop Host Terms & Conditions</h3>
+              </div>
+              <button
+                onClick={() => setShowTermsModal(false)}
+                type="button"
+                className="w-8 h-8 rounded-full flex items-center justify-center text-slate-400 hover:text-white hover:bg-slate-800 transition"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="p-6 space-y-4 max-h-[70vh] overflow-y-auto text-xs text-slate-300 leading-relaxed">
+              <div className="p-3.5 bg-slate-950 rounded-xl border border-slate-800">
+                <h4 className="font-bold text-white text-sm mb-1 flex items-center gap-1.5">
+                  <i className="fa-solid fa-scale-balanced text-indigo-400" /> 1. Section 52, Indian Easements Act, 1882
+                </h4>
+                <p>
+                  All bookings on SpaceLoop constitute a temporary, revocable micro-license to use the specified physical square footage for lawful workspace, study, or creative activities during booked hours only. This agreement does not create any tenancy, leasehold estate, or landlord-tenant relationship under rent control laws.
+                </p>
+              </div>
+
+              <div className="p-3.5 bg-slate-950 rounded-xl border border-slate-800">
+                <h4 className="font-bold text-white text-sm mb-1 flex items-center gap-1.5">
+                  <i className="fa-solid fa-shield-halved text-emerald-400" /> 2. Security Deposit & Micro-Escrow
+                </h4>
+                <p>
+                  A mandatory ₹100 refundable micro-escrow is pre-authorized by SpaceLoop on every booking. Upon completed checkout and condition delta verification, the escrow hold is automatically released back to the seeker within 60 minutes. In the rare event of verified property damage, the escrow is held for host resolution.
+                </p>
+              </div>
+
+              <div className="p-3.5 bg-slate-950 rounded-xl border border-slate-800">
+                <h4 className="font-bold text-white text-sm mb-1 flex items-center gap-1.5">
+                  <i className="fa-solid fa-bolt text-amber-400" /> 3. Electrical & Premise Safety Protocol
+                </h4>
+                <p>
+                  Hosts warrant that all listed electrical points and appliances meet standard safety codes. Seekers are required to perform an electrical turn-off inspection checklist upon checkout.
+                </p>
+              </div>
+
+              <div className="p-3.5 bg-slate-950 rounded-xl border border-slate-800">
+                <h4 className="font-bold text-white text-sm mb-1 flex items-center gap-1.5">
+                  <i className="fa-solid fa-id-card text-sky-400" /> 4. Discom & Identity Verification
+                </h4>
+                <p>
+                  Hosts agree that only listings backed by verified Discom electricity accounts and verified UPI payout VPAs will be published to the public search index. SpaceLoop retains the right to delist unverified properties.
+                </p>
+              </div>
+            </div>
+
+            <div className="p-4 border-t border-slate-800 bg-slate-950 flex items-center justify-end gap-3">
+              <button
+                type="button"
+                onClick={() => setShowTermsModal(false)}
+                className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-400 hover:text-white transition"
+              >
+                Close
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setTermsAccepted(true);
+                  setShowTermsModal(false);
+                }}
+                className="px-5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow-lg shadow-emerald-600/30 transition flex items-center gap-1.5"
+              >
+                <i className="fa-solid fa-check" /> I Understand & Accept Terms
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {showAuthModal && (
         <HostAuthModal

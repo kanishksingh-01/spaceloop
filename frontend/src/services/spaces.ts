@@ -159,6 +159,13 @@ export async function getInquiries(): Promise<{ success: boolean; inquiries: any
   });
 }
 
+export async function replyInquiry(inquiryId: number, reply: string): Promise<{ success: boolean; inquiry: any }> {
+  return request(`/api/inquiries/${inquiryId}/reply`, {
+    method: 'POST',
+    body: JSON.stringify({ reply }),
+  });
+}
+
 export async function createSpace(payload: Partial<Space> & Record<string, any>): Promise<{ success: boolean; space_id: number; id?: number }> {
   const hourly = Number(payload.hourly_rate ?? payload.price_hourly ?? 50);
   const dataToSend = {
@@ -177,5 +184,21 @@ export async function createSpace(payload: Partial<Space> & Record<string, any>)
 export async function toggleSpaceStatus(spaceId: number): Promise<{ success: boolean; is_active: boolean }> {
   return request(`/api/spaces/${spaceId}/toggle-status`, {
     method: 'POST',
+  });
+}
+
+export async function uploadSpacePhoto(file: File): Promise<{ success: boolean; photo_url: string }> {
+  const formData = new FormData();
+  formData.append('photo', file);
+  return request('/api/spaces/upload-photo', {
+    method: 'POST',
+    body: formData,
+  });
+}
+
+export async function editSpace(spaceId: number, payload: Partial<Space> & Record<string, any>): Promise<{ success: boolean; space: Space }> {
+  return request(`/api/spaces/${spaceId}`, {
+    method: 'PUT',
+    body: JSON.stringify(payload),
   });
 }

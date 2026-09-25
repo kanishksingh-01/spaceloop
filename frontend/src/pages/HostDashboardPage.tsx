@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { User, Booking, Space } from '../types';
 import { request } from '../services/api';
-import { toggleSpaceStatus, getInquiries } from '../services/spaces';
+import { toggleSpaceStatus, getInquiries, editSpace, replyInquiry } from '../services/spaces';
+import { acceptBooking, rejectBooking } from '../services/bookings';
 
 interface HostDashboardPageProps {
   currentUser: User | null;
@@ -20,6 +21,29 @@ export const HostDashboardPage: React.FC<HostDashboardPageProps> = ({
   const [showOtiBreakdown, setShowOtiBreakdown] = useState(false);
   const [loading, setLoading] = useState(true);
   const [togglingSpaceId, setTogglingSpaceId] = useState<number | null>(null);
+
+  // Space Edit Modal State
+  const [editingSpace, setEditingSpace] = useState<Space | null>(null);
+  const [editTitle, setEditTitle] = useState('');
+  const [editCategory, setEditCategory] = useState('');
+  const [editHourlyRate, setEditHourlyRate] = useState('');
+  const [editDailyRate, setEditDailyRate] = useState('');
+  const [editLocation, setEditLocation] = useState('');
+  const [editAddress, setEditAddress] = useState('');
+  const [editDescription, setEditDescription] = useState('');
+  const [editAmenities, setEditAmenities] = useState('');
+  const [editIsActive, setEditIsActive] = useState(true);
+  const [savingEdit, setSavingEdit] = useState(false);
+  const [editError, setEditError] = useState<string | null>(null);
+
+  // Inquiry Reply State
+  const [replyingInquiryId, setReplyingInquiryId] = useState<number | null>(null);
+  const [replyText, setReplyText] = useState('');
+  const [sendingReply, setSendingReply] = useState(false);
+
+  // Booking Action Loading
+  const [actionLoadingId, setActionLoadingId] = useState<number | null>(null);
+
   const [metrics, setMetrics] = useState<{
     gross_revenue: number;
     platform_fee: number;
@@ -32,16 +56,16 @@ export const HostDashboardPage: React.FC<HostDashboardPageProps> = ({
     completed_count: number;
     payout_vpa: string;
   }>({
-    gross_revenue: 14850,
-    platform_fee: 1782,
-    net_earnings: 13068,
-    total_hours: 48,
-    total_bookings: 14,
-    active_spaces_count: 2,
-    total_spaces_count: 2,
-    upcoming_count: 3,
-    completed_count: 11,
-    payout_vpa: currentUser?.upi_vpa_masked || 'sunita.spaces@okhdfcbank',
+    gross_revenue: 0,
+    platform_fee: 0,
+    net_earnings: 0,
+    total_hours: 0,
+    total_bookings: 0,
+    active_spaces_count: 0,
+    total_spaces_count: 0,
+    upcoming_count: 0,
+    completed_count: 0,
+    payout_vpa: currentUser?.upi_vpa_masked || 'Not linked',
   });
 
   const isHost = Boolean(currentUser?.is_host && (currentUser?.is_host_verified ?? true));
@@ -65,11 +89,10 @@ export const HostDashboardPage: React.FC<HostDashboardPageProps> = ({
       } else {
         const spacesData = await request<{ spaces?: Space[] } | Space[]>('/api/spaces');
         const allSpaces = Array.isArray(spacesData) ? spacesData : spacesData?.spaces || [];
-        // Filter spaces belonging to this user or seed host
         const userSpaces = allSpaces.filter((s: Space) =>
           currentUser ? s.host_id === currentUser.id || s.owner_id === currentUser.id : true
         );
-        setHostSpaces(userSpaces.length > 0 ? userSpaces : allSpaces.slice(0, 3));
+        setHostSpaces(userSpaces);
       }
 
       if (data?.host_bookings) {
@@ -114,6 +137,122 @@ export const HostDashboardPage: React.FC<HostDashboardPageProps> = ({
       alert(err.message || 'Failed to toggle space status');
     } finally {
       setTogglingSpaceId(null);
+    }
+  };
+
+  const handleStartEdit = (space: Space) => {
+    setEditingSpace(space);
+    setEditTitle(space.title || '');
+    setEditCategory(space.category || 'Workspace');
+    setEditHourlyRate(String(Math.round(space.hourly_rate ?? space.price_hourly ?? 50)));
+    setEditDailyRate(space.price_daily ? String(Math.round(space.price_daily)) : '');
+    setEditLocation(space.neighborhood || space.location || '');
+    setEditAddress(space.address || '');
+    setEditDescription(space.description || '');
+    setEditAmenities(Array.isArray(space.amenities) ? space.amenities.join(', ') : '');
+    setEditIsActive(space.is_active !== false);
+    setEditError(null);
+  };
+
+  const handleSaveEdit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingSpace) return;
+    if (!editTitle.trim() || !editHourlyRate) {
+      setEditError('Title and hourly rate are required.');
+      return;
+    }
+    setSavingEdit(true);
+    setEditError(null);
+    try {
+      const amenityArray = editAmenities
+        .split(',')
+        .map((a) => a.trim())
+        .filter(Boolean);
+
+      const res = await editSpace(editingSpace.id, {
+        title: editTitle.trim(),
+        category: editCategory.trim(),
+        price_hourly: Number(editHourlyRate),
+        hourly_rate: Number(editHourlyRate),
+        price_daily: editDailyRate ? Number(editDailyRate) : undefined,
+        neighborhood: editLocation.trim(),
+        location: editLocation.trim(),
+        address: editAddress.trim(),
+        description: editDescription.trim(),
+        amenities: amenityArray,
+        is_active: editIsActive,
+      });
+
+      const updatedSpace = res.space || {
+        ...editingSpace,
+        title: editTitle.trim(),
+        category: editCategory.trim(),
+        price_hourly: Number(editHourlyRate),
+        hourly_rate: Number(editHourlyRate),
+        neighborhood: editLocation.trim(),
+        address: editAddress.trim(),
+        description: editDescription.trim(),
+        amenities: amenityArray,
+        is_active: editIsActive,
+      };
+
+      setHostSpaces((prev) =>
+        prev.map((s) => (s.id === editingSpace.id ? { ...s, ...updatedSpace } : s))
+      );
+      setEditingSpace(null);
+    } catch (err: any) {
+      setEditError(err.message || 'Failed to update space.');
+    } finally {
+      setSavingEdit(false);
+    }
+  };
+
+  const handleAcceptBooking = async (bookingId: number) => {
+    setActionLoadingId(bookingId);
+    try {
+      await acceptBooking(bookingId);
+      setHostBookings((prev) =>
+        prev.map((b) => (b.id === bookingId ? { ...b, status: 'confirmed' } : b))
+      );
+      setMetrics((prev) => ({ ...prev, upcoming_count: prev.upcoming_count + 1 }));
+    } catch (err: any) {
+      alert(err.message || 'Failed to accept reservation');
+    } finally {
+      setActionLoadingId(null);
+    }
+  };
+
+  const handleRejectBooking = async (bookingId: number) => {
+    if (!window.confirm('Are you sure you want to decline this reservation? Pre-authorized escrow will be released to the seeker.')) {
+      return;
+    }
+    setActionLoadingId(bookingId);
+    try {
+      await rejectBooking(bookingId);
+      setHostBookings((prev) =>
+        prev.map((b) => (b.id === bookingId ? { ...b, status: 'cancelled' } : b))
+      );
+    } catch (err: any) {
+      alert(err.message || 'Failed to decline reservation');
+    } finally {
+      setActionLoadingId(null);
+    }
+  };
+
+  const handleSendReply = async (inquiryId: number) => {
+    if (!replyText.trim()) return;
+    setSendingReply(true);
+    try {
+      await replyInquiry(inquiryId, replyText.trim());
+      setInquiries((prev) =>
+        prev.map((inq) => (inq.id === inquiryId ? { ...inq, response: replyText.trim() } : inq))
+      );
+      setReplyingInquiryId(null);
+      setReplyText('');
+    } catch (err: any) {
+      alert(err.message || 'Failed to send reply');
+    } finally {
+      setSendingReply(false);
     }
   };
 
@@ -259,7 +398,7 @@ export const HostDashboardPage: React.FC<HostDashboardPageProps> = ({
                 Welcome back, {currentUser.name || 'Verified Host'}
               </h1>
               <p className="text-xs text-slate-400">
-                Host ID #{currentUser.id} • Utility CA #{currentUser.discom_ca_masked || 'CA•••9102'} ({currentUser.discom_provider || 'BESCOM / TPDDL'}) • Payouts to {currentUser.upi_vpa_masked || 'sunita.spaces@okhdfcbank'}
+                Host ID #{currentUser.id} • Utility CA #{currentUser.discom_ca_masked || 'CA•••9102'} ({currentUser.discom_provider || 'BESCOM / TPDDL'}) • Payouts to {currentUser.upi_vpa_masked || 'UPI not linked'}
               </p>
             </div>
 
@@ -356,7 +495,9 @@ export const HostDashboardPage: React.FC<HostDashboardPageProps> = ({
           <div className="bg-slate-900/80 border border-slate-800 p-5 rounded-2xl floating-interactive">
             <div className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Gross Bookings</div>
             <div className="text-2xl font-black text-white mt-1">₹{metrics.gross_revenue.toLocaleString()}</div>
-            <div className="text-[11px] text-emerald-400 mt-1">14 completed reservations</div>
+            <div className="text-[11px] text-emerald-400 mt-1">
+              {metrics.completed_count || hostBookings.filter((b) => b.status === 'completed').length} completed reservations
+            </div>
           </div>
 
           <div className="bg-slate-900/80 border border-slate-800 p-5 rounded-2xl floating-interactive">
@@ -457,29 +598,36 @@ export const HostDashboardPage: React.FC<HostDashboardPageProps> = ({
                         </p>
                       </div>
 
-                      <div className="flex items-center gap-2 pt-2 border-t border-slate-800/80">
+                      <div className="flex items-center gap-1.5 pt-2 border-t border-slate-800/80">
                         <button
                           type="button"
                           onClick={() => navigate(`/space/${space.id}`)}
-                          className="flex-1 py-2 px-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold transition text-center"
+                          className="flex-1 py-2 px-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold transition text-center"
                         >
-                          View Listing
+                          View
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleStartEdit(space)}
+                          className="py-2 px-2.5 rounded-xl bg-indigo-600/20 hover:bg-indigo-600/30 border border-indigo-500/40 text-indigo-300 text-xs font-bold transition text-center flex items-center justify-center gap-1"
+                        >
+                          <i className="fa-solid fa-pen-to-square text-[10px]" /> Edit
                         </button>
                         <button
                           type="button"
                           onClick={() => handleToggleSpace(space.id)}
                           disabled={togglingSpaceId === space.id}
-                          className={`flex-1 py-2 px-3 rounded-xl text-xs font-bold transition text-center ${
+                          className={`flex-1 py-2 px-2 rounded-xl text-xs font-bold transition text-center ${
                             space.is_active
                               ? 'bg-amber-500/10 text-amber-300 border border-amber-500/30 hover:bg-amber-500/20'
                               : 'bg-emerald-500/10 text-emerald-300 border border-emerald-500/30 hover:bg-emerald-500/20'
                           }`}
                         >
                           {togglingSpaceId === space.id
-                            ? 'Updating...'
+                            ? '...'
                             : space.is_active
-                            ? 'Pause Space'
-                            : 'Activate Space'}
+                            ? 'Pause'
+                            : 'Activate'}
                         </button>
                       </div>
                     </div>
@@ -519,33 +667,80 @@ export const HostDashboardPage: React.FC<HostDashboardPageProps> = ({
                     <th className="py-3 px-4">Date & Slot</th>
                     <th className="py-3 px-4">Earnings</th>
                     <th className="py-3 px-4">Status</th>
+                    <th className="py-3 px-4 text-right">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-800">
-                  {hostBookings.map((bk) => (
-                    <tr key={bk.id} className="hover:bg-slate-800/30 transition">
-                      <td className="py-3 px-4 font-mono font-bold text-indigo-400">
-                        #{bk.id}
-                      </td>
-                      <td className="py-3 px-4 font-semibold text-white">
-                        {bk.user_name || (bk as any).seeker_name || 'Academic Seeker'}
-                      </td>
-                      <td className="py-3 px-4 text-slate-300">
-                        {bk.space_title || 'Micro-Space'}
-                      </td>
-                      <td className="py-3 px-4 text-slate-400">
-                        {bk.start_time ? new Date(bk.start_time).toLocaleDateString() : 'Today'}
-                      </td>
-                      <td className="py-3 px-4 font-bold text-emerald-400">
-                        ₹{bk.total_price || (bk as any).amount || 150}
-                      </td>
-                      <td className="py-3 px-4">
-                        <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-                          {bk.status || 'confirmed'}
-                        </span>
-                      </td>
-                    </tr>
-                  ))}
+                  {hostBookings.map((bk) => {
+                    const status = bk.status || 'confirmed';
+                    const badgeClass =
+                      status === 'pending'
+                        ? 'bg-amber-500/10 text-amber-400 border-amber-500/30'
+                        : status === 'confirmed'
+                        ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30'
+                        : status === 'active'
+                        ? 'bg-sky-500/10 text-sky-400 border-sky-500/30'
+                        : status === 'completed'
+                        ? 'bg-indigo-500/10 text-indigo-400 border-indigo-500/30'
+                        : 'bg-rose-500/10 text-rose-400 border-rose-500/30';
+
+                    return (
+                      <tr key={bk.id} className="hover:bg-slate-800/30 transition">
+                        <td className="py-3 px-4 font-mono font-bold text-indigo-400">
+                          #{bk.id}
+                        </td>
+                        <td className="py-3 px-4 font-semibold text-white">
+                          {bk.user_name || (bk as any).seeker_name || 'Academic Seeker'}
+                        </td>
+                        <td className="py-3 px-4 text-slate-300">
+                          {bk.space_title || 'Micro-Space'}
+                        </td>
+                        <td className="py-3 px-4 text-slate-400">
+                          {bk.start_time ? new Date(bk.start_time).toLocaleDateString() : 'Today'}
+                        </td>
+                        <td className="py-3 px-4 font-bold text-emerald-400">
+                          ₹{bk.total_price || (bk as any).amount || 150}
+                        </td>
+                        <td className="py-3 px-4">
+                          <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase border ${badgeClass}`}>
+                            {status}
+                          </span>
+                        </td>
+                        <td className="py-3 px-4 text-right">
+                          {status === 'pending' ? (
+                            <div className="flex items-center justify-end gap-1.5">
+                              <button
+                                type="button"
+                                disabled={actionLoadingId === bk.id}
+                                onClick={() => handleAcceptBooking(bk.id)}
+                                className="px-2.5 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-[11px] transition shadow disabled:opacity-50"
+                              >
+                                {actionLoadingId === bk.id ? '...' : '✓ Accept'}
+                              </button>
+                              <button
+                                type="button"
+                                disabled={actionLoadingId === bk.id}
+                                onClick={() => handleRejectBooking(bk.id)}
+                                className="px-2 py-1 rounded-lg bg-rose-600/20 hover:bg-rose-600 text-rose-300 hover:text-white border border-rose-500/30 font-bold text-[11px] transition disabled:opacity-50"
+                              >
+                                Decline
+                              </button>
+                            </div>
+                          ) : status === 'confirmed' ? (
+                            <span className="text-[11px] text-emerald-400/80 font-medium">Ready for check-in</span>
+                          ) : status === 'active' ? (
+                            <span className="text-[11px] text-sky-400 font-medium inline-flex items-center gap-1">
+                              <span className="w-1.5 h-1.5 rounded-full bg-sky-400 animate-pulse" /> In session
+                            </span>
+                          ) : status === 'completed' ? (
+                            <span className="text-[11px] text-slate-500">Checked out</span>
+                          ) : (
+                            <span className="text-[11px] text-rose-400/80">Declined</span>
+                          )}
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
@@ -592,9 +787,51 @@ export const HostDashboardPage: React.FC<HostDashboardPageProps> = ({
                       <div className="text-[10px] font-bold text-emerald-400 mb-0.5">👤 Your Host Response:</div>
                       <div className="text-xs text-slate-300">{inq.response}</div>
                     </div>
+                  ) : replyingInquiryId === inq.id ? (
+                    <div className="space-y-2 mt-2 pt-2 border-t border-slate-800">
+                      <textarea
+                        value={replyText}
+                        onChange={(e) => setReplyText(e.target.value)}
+                        placeholder="Write your host reply to this seeker..."
+                        className="w-full p-2.5 bg-slate-900 border border-slate-700 rounded-xl text-xs text-white focus:outline-none focus:border-amber-500"
+                        rows={2}
+                      />
+                      <div className="flex gap-2">
+                        <button
+                          type="button"
+                          disabled={sendingReply || !replyText.trim()}
+                          onClick={() => handleSendReply(inq.id)}
+                          className="px-3 py-1.5 bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-bold rounded-lg transition disabled:opacity-50"
+                        >
+                          {sendingReply ? 'Sending...' : 'Send Answer'}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setReplyingInquiryId(null);
+                            setReplyText('');
+                          }}
+                          className="px-3 py-1.5 text-xs text-slate-400 hover:text-white"
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    </div>
                   ) : (
-                    <div className="text-[11px] text-emerald-400 flex items-center gap-1.5">
-                      <span>✓ Answered automatically via AI Space Inspector metadata</span>
+                    <div className="flex items-center justify-between mt-2 pt-2 border-t border-slate-900">
+                      <span className="text-[11px] text-emerald-400 flex items-center gap-1.5">
+                        <span>✓ Answered automatically via AI Space Inspector metadata</span>
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setReplyingInquiryId(inq.id);
+                          setReplyText('');
+                        }}
+                        className="text-[11px] text-indigo-400 hover:text-indigo-300 font-bold underline"
+                      >
+                        Add Personal Host Reply
+                      </button>
                     </div>
                   )}
                 </div>
@@ -625,6 +862,154 @@ export const HostDashboardPage: React.FC<HostDashboardPageProps> = ({
           </button>
         </div>
       </div>
+
+      {/* Edit Space Modal */}
+      {editingSpace && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md overflow-y-auto">
+          <div className="bg-slate-900 border border-indigo-500/30 text-white w-full max-w-xl rounded-3xl overflow-hidden my-6 transition-all shadow-2xl">
+            <div className="p-6 border-b border-slate-800 bg-gradient-to-r from-slate-900 via-indigo-950/40 to-slate-900 flex items-center justify-between">
+              <div>
+                <span className="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
+                  Host Management
+                </span>
+                <h3 className="text-lg font-bold text-white mt-1">Edit Listing: {editingSpace.title}</h3>
+              </div>
+              <button
+                onClick={() => setEditingSpace(null)}
+                type="button"
+                className="w-8 h-8 rounded-full flex items-center justify-center text-slate-400 hover:text-white hover:bg-slate-800 transition"
+              >
+                ✕
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveEdit} className="p-6 space-y-4 max-h-[75vh] overflow-y-auto">
+              {editError && (
+                <div className="p-3 bg-rose-500/10 border border-rose-500/30 rounded-xl text-rose-300 text-xs font-medium">
+                  {editError}
+                </div>
+              )}
+
+              <div>
+                <label className="block text-xs font-bold text-slate-300 mb-1">Listing Title</label>
+                <input
+                  type="text"
+                  value={editTitle}
+                  onChange={(e) => setEditTitle(e.target.value)}
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-white text-xs focus:border-indigo-500"
+                  required
+                />
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-bold text-slate-300 mb-1">Category</label>
+                  <input
+                    type="text"
+                    value={editCategory}
+                    onChange={(e) => setEditCategory(e.target.value)}
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-white text-xs focus:border-indigo-500"
+                    placeholder="Workspace / Study Pod / Studio"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-slate-300 mb-1">Hourly Rate (₹)</label>
+                  <input
+                    type="number"
+                    value={editHourlyRate}
+                    onChange={(e) => setEditHourlyRate(e.target.value)}
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-white text-xs focus:border-indigo-500"
+                    required
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-bold text-slate-300 mb-1">Locality / Neighborhood</label>
+                  <input
+                    type="text"
+                    value={editLocation}
+                    onChange={(e) => setEditLocation(e.target.value)}
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-white text-xs focus:border-indigo-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-slate-300 mb-1">Daily Rate (₹, optional)</label>
+                  <input
+                    type="number"
+                    value={editDailyRate}
+                    onChange={(e) => setEditDailyRate(e.target.value)}
+                    placeholder="e.g. 450"
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-white text-xs focus:border-indigo-500"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-300 mb-1">Full Address</label>
+                <input
+                  type="text"
+                  value={editAddress}
+                  onChange={(e) => setEditAddress(e.target.value)}
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-white text-xs focus:border-indigo-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-300 mb-1">Amenities (comma-separated)</label>
+                <input
+                  type="text"
+                  value={editAmenities}
+                  onChange={(e) => setEditAmenities(e.target.value)}
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-white text-xs focus:border-indigo-500"
+                  placeholder="WiFi, Power Outlets, AC, Ergonomic Chair"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-300 mb-1">Description</label>
+                <textarea
+                  value={editDescription}
+                  onChange={(e) => setEditDescription(e.target.value)}
+                  rows={3}
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-white text-xs focus:border-indigo-500"
+                />
+              </div>
+
+              <div className="flex items-center gap-3 p-3 bg-slate-950 rounded-xl border border-slate-800">
+                <input
+                  type="checkbox"
+                  id="edit_is_active"
+                  checked={editIsActive}
+                  onChange={(e) => setEditIsActive(e.target.checked)}
+                  className="rounded border-slate-700 text-emerald-500 focus:ring-emerald-400"
+                />
+                <label htmlFor="edit_is_active" className="text-xs text-slate-300 cursor-pointer">
+                  Listing is active and searchable in the marketplace
+                </label>
+              </div>
+
+              <div className="p-4 border-t border-slate-800 flex items-center justify-end gap-3">
+                <button
+                  type="button"
+                  onClick={() => setEditingSpace(null)}
+                  className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-400 hover:text-white transition"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={savingEdit}
+                  className="px-5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs shadow-lg shadow-indigo-600/30 transition disabled:opacity-50"
+                >
+                  {savingEdit ? 'Saving...' : 'Save Space Changes'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

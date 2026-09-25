@@ -94,3 +94,16 @@ export async function checkOutBooking(
     body: JSON.stringify(coords),
   });
 }
+
+export async function acceptBooking(bookingId: number): Promise<{ success: boolean; message: string; booking: Booking }> {
+  return request(`/api/booking/${bookingId}/accept`, {
+    method: 'POST',
+  });
+}
+
+export async function rejectBooking(bookingId: number): Promise<{ success: boolean; message: string; booking: Booking }> {
+  return request(`/api/booking/${bookingId}/reject`, {
+    method: 'POST',
+  });
+}
+

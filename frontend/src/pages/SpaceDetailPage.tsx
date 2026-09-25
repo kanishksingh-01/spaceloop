@@ -204,7 +204,7 @@ export const SpaceDetailPage: React.FC<SpaceDetailPageProps> = ({ currentUser })
     setInquiryError(null);
     try {
       const res = await submitInquiry(space.id, q);
-      const answer = res.inquiry?.ai_answer || 'Inquiry sent directly to host.';
+      const answer = res.inquiry?.ai_response || res.inquiry?.ai_answer || res.message || 'Inquiry sent directly to host.';
       setInquiryResponse(answer);
       setInquiryQuestion('');
     } catch (err: any) {

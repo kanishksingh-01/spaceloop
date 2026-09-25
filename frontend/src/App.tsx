@@ -19,9 +19,18 @@ import { SessionPage } from './pages/SessionPage';
 import { CalculatorPage } from './pages/CalculatorPage';
 import { VerifyPage } from './pages/VerifyPage';
 import { HowItWorksPage } from './pages/HowItWorksPage';
+import { ErrorBoundary } from './components/common/ErrorBoundary';
 
 export const App: React.FC = () => {
-  const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [currentUser, setCurrentUser] = useState<User | null>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const cached = localStorage.getItem('spaceloop_user');
+        if (cached) return JSON.parse(cached);
+      } catch {}
+    }
+    return null;
+  });
   const [authModalOpen, setAuthModalOpen] = useState(false);
   const [hostAuthModalOpen, setHostAuthModalOpen] = useState(false);
   const [initializing, setInitializing] = useState(true);
@@ -30,7 +39,9 @@ export const App: React.FC = () => {
     const initAuth = async () => {
       try {
         const user = await getCurrentUser();
-        setCurrentUser(user);
+        if (user) {
+          setCurrentUser(user);
+        }
       } catch (err) {
         console.error('Failed to restore session:', err);
       } finally {
@@ -59,44 +70,46 @@ export const App: React.FC = () => {
 
         {/* Application Routes */}
         <main className="flex-1 flex flex-col">
-          <Routes>
-            {/* Seeker Routes */}
-            <Route path="/" element={<LandingPage currentUser={currentUser} />} />
-            <Route path="/explore" element={<ExplorePage />} />
-            <Route path="/curated" element={<ExplorePage />} />
-            <Route path="/explore-view" element={<ExplorePage />} />
-            <Route path="/boutique" element={<ExplorePage />} />
-            <Route path="/space/:id" element={<SpaceDetailPage currentUser={currentUser} />} />
-            <Route path="/session/:id" element={<SessionPage />} />
-            <Route path="/dashboard" element={<DashboardPage currentUser={currentUser} />} />
-            <Route path="/how-it-works" element={<HowItWorksPage />} />
+          <ErrorBoundary>
+            <Routes>
+              {/* Seeker Routes */}
+              <Route path="/" element={<LandingPage currentUser={currentUser} />} />
+              <Route path="/explore" element={<ExplorePage />} />
+              <Route path="/curated" element={<ExplorePage />} />
+              <Route path="/explore-view" element={<ExplorePage />} />
+              <Route path="/boutique" element={<ExplorePage />} />
+              <Route path="/space/:id" element={<SpaceDetailPage currentUser={currentUser} />} />
+              <Route path="/session/:id" element={<SessionPage />} />
+              <Route path="/dashboard" element={<DashboardPage currentUser={currentUser} />} />
+              <Route path="/how-it-works" element={<HowItWorksPage />} />
 
-            {/* Host Dedicated Routes */}
-            <Route
-              path="/host"
-              element={
-                <HostDashboardPage
-                  currentUser={currentUser}
-                  onOpenHostAuthModal={() => setHostAuthModalOpen(true)}
-                />
-              }
-            />
-            <Route
-              path="/host/dashboard"
-              element={
-                <HostDashboardPage
-                  currentUser={currentUser}
-                  onOpenHostAuthModal={() => setHostAuthModalOpen(true)}
-                />
-              }
-            />
-            <Route path="/list-space" element={<ListSpacePage currentUser={currentUser} />} />
-            <Route path="/calculator" element={<CalculatorPage />} />
-            <Route path="/verify" element={<VerifyPage />} />
+              {/* Host Dedicated Routes */}
+              <Route
+                path="/host"
+                element={
+                  <HostDashboardPage
+                    currentUser={currentUser}
+                    onOpenHostAuthModal={() => setHostAuthModalOpen(true)}
+                  />
+                }
+              />
+              <Route
+                path="/host/dashboard"
+                element={
+                  <HostDashboardPage
+                    currentUser={currentUser}
+                    onOpenHostAuthModal={() => setHostAuthModalOpen(true)}
+                  />
+                }
+              />
+              <Route path="/list-space" element={<ListSpacePage currentUser={currentUser} />} />
+              <Route path="/calculator" element={<CalculatorPage />} />
+              <Route path="/verify" element={<VerifyPage />} />
 
-            {/* Fallback */}
-            <Route path="*" element={<LandingPage currentUser={currentUser} />} />
-          </Routes>
+              {/* Fallback */}
+              <Route path="*" element={<LandingPage currentUser={currentUser} />} />
+            </Routes>
+          </ErrorBoundary>
         </main>
 
         {/* Global Footer with Legal Modals & Trust Badges */}
@@ -115,7 +128,10 @@ export const App: React.FC = () => {
         <AuthModal
           isOpen={authModalOpen}
           onClose={() => setAuthModalOpen(false)}
-          onSuccess={() => setAuthModalOpen(false)}
+          onSuccess={(user) => {
+            if (user) setCurrentUser(user);
+            setAuthModalOpen(false);
+          }}
           onSwitchToHost={() => {
             setAuthModalOpen(false);
             setHostAuthModalOpen(true);
@@ -126,7 +142,10 @@ export const App: React.FC = () => {
         <HostAuthModal
           isOpen={hostAuthModalOpen}
           onClose={() => setHostAuthModalOpen(false)}
-          onSuccess={() => setHostAuthModalOpen(false)}
+          onSuccess={(user) => {
+            if (user) setCurrentUser(user);
+            setHostAuthModalOpen(false);
+          }}
           currentUser={currentUser}
           onSwitchToSeeker={() => {
             setHostAuthModalOpen(false);

@@ -5,7 +5,7 @@ import { User } from '../../types';
 interface HostAuthModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSuccess?: () => void;
+  onSuccess?: (user?: User) => void;
   currentUser?: User | null;
   onSwitchToSeeker?: () => void;
 }
@@ -28,15 +28,15 @@ export const HostAuthModal: React.FC<HostAuthModalProps> = ({
 
   // Discom Property KYC
   const [provider, setProvider] = useState('BESCOM');
-  const [caNumber, setCaNumber] = useState('CA9874561230');
-  const [address, setAddress] = useState('80 Feet Rd, Koramangala 4th Block, Bengaluru, KA');
+  const [caNumber, setCaNumber] = useState('');
+  const [address, setAddress] = useState('');
 
   // UPI Penny Drop
-  const [upiVpa, setUpiVpa] = useState('sunita.spaces@okhdfcbank');
-  const [panName, setPanName] = useState(currentUser?.name || 'Sunita Sharma');
+  const [upiVpa, setUpiVpa] = useState('');
+  const [panName, setPanName] = useState(currentUser?.name || '');
 
   // Legal
-  const [easementsAccepted, setEasementsAccepted] = useState(true);
+  const [easementsAccepted, setEasementsAccepted] = useState(false);
 
   // States
   const [loading, setLoading] = useState(false);
@@ -58,9 +58,9 @@ export const HostAuthModal: React.FC<HostAuthModalProps> = ({
 
     setLoading(true);
     try {
-      await hostLogin(email, password);
+      const res = await hostLogin(email, password);
       setSuccessMsg('Host session authenticated! Redirecting to Host Portal...');
-      if (onSuccess) onSuccess();
+      if (onSuccess) onSuccess(res?.user);
       setTimeout(() => {
         window.location.href = '/host/dashboard';
       }, 500);
@@ -102,20 +102,22 @@ export const HostAuthModal: React.FC<HostAuthModalProps> = ({
 
     setLoading(true);
     try {
+      let resUser: User | undefined;
       if (isUpgradingSeeker) {
         // Upgrade existing seeker account
-        await hostUpgrade({
+        const res = await hostUpgrade({
           ca_number: caNumber,
           provider,
           address,
           upi_vpa: upiVpa,
           pan_name: panName || name,
         });
+        resUser = res?.user;
         setSuccessMsg('Account upgraded to Verified Host! Discom & UPI linked.');
       } else {
         // Full new host registration
         const nameParts = name.trim().split(' ');
-        await hostRegister({
+        const res = await hostRegister({
           first_name: nameParts[0] || 'Host',
           last_name: nameParts.slice(1).join(' ') || '',
           email,
@@ -127,10 +129,11 @@ export const HostAuthModal: React.FC<HostAuthModalProps> = ({
           upi_vpa: upiVpa,
           pan_name: panName || name,
         });
+        resUser = res?.user;
         setSuccessMsg('Host account created & verified! Redirecting to Host Portal...');
       }
 
-      if (onSuccess) onSuccess();
+      if (onSuccess) onSuccess(resUser);
       setTimeout(() => {
         window.location.href = '/host/dashboard';
       }, 600);
@@ -348,7 +351,7 @@ export const HostAuthModal: React.FC<HostAuthModalProps> = ({
                       type="text"
                       value={caNumber}
                       onChange={(e) => setCaNumber(e.target.value)}
-                      placeholder="CA9874561230"
+                      placeholder="e.g. CA1002345678"
                       className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-slate-700 text-white text-xs"
                       required
                     />
@@ -395,7 +398,7 @@ export const HostAuthModal: React.FC<HostAuthModalProps> = ({
                       type="text"
                       value={panName}
                       onChange={(e) => setPanName(e.target.value)}
-                      placeholder="Sunita Sharma"
+                      placeholder="e.g. Account Holder Name"
                       className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-slate-700 text-white text-xs"
                       required
                     />

@@ -17,6 +17,32 @@ export const Header: React.FC<HeaderProps> = ({
   const navigate = useNavigate();
   const location = useLocation();
   const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
+  const [theme, setTheme] = useState<'dark' | 'light'>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('spaceloop-theme');
+      if (saved === 'light' || saved === 'dark') return saved;
+      return document.documentElement.classList.contains('light') ? 'light' : 'dark';
+    }
+    return 'dark';
+  });
+
+  React.useEffect(() => {
+    if (typeof document !== 'undefined') {
+      if (theme === 'light') {
+        document.documentElement.classList.add('light');
+        document.documentElement.classList.remove('dark');
+        localStorage.setItem('spaceloop-theme', 'light');
+      } else {
+        document.documentElement.classList.add('dark');
+        document.documentElement.classList.remove('light');
+        localStorage.setItem('spaceloop-theme', 'dark');
+      }
+    }
+  }, [theme]);
+
+  const toggleTheme = () => {
+    setTheme((prev) => (prev === 'dark' ? 'light' : 'dark'));
+  };
 
   const isHostPortal =
     location.pathname.startsWith('/host') ||
@@ -185,6 +211,27 @@ export const Header: React.FC<HeaderProps> = ({
 
         {/* Right Controls & Portal Switcher */}
         <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+          {/* Theme Switcher Button */}
+          <button
+            type="button"
+            onClick={toggleTheme}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-800/80 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700/60 text-xs font-bold transition shadow-sm"
+            title={theme === 'dark' ? 'Switch to Light Theme (Ocean Breeze)' : 'Switch to Dark Theme (Midnight Neon)'}
+            aria-label="Toggle Theme"
+          >
+            {theme === 'dark' ? (
+              <>
+                <span className="text-amber-400">☀️</span>
+                <span className="hidden sm:inline">Ocean Breeze</span>
+              </>
+            ) : (
+              <>
+                <span className="text-indigo-400">🌙</span>
+                <span className="hidden sm:inline">Midnight Neon</span>
+              </>
+            )}
+          </button>
+
           {/* Portal Switcher Button */}
           {isHostPortal ? (
             <button
@@ -397,8 +444,16 @@ export const Header: React.FC<HeaderProps> = ({
             )}
           </div>
 
-          {/* Switch Portal Button in Mobile */}
-          <div className="pt-2 border-t border-slate-800">
+          {/* Theme & Switch Portal Buttons in Mobile */}
+          <div className="pt-2 border-t border-slate-800 space-y-2">
+            <button
+              type="button"
+              onClick={toggleTheme}
+              className="w-full py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs font-bold text-center flex items-center justify-center gap-2"
+            >
+              <span>{theme === 'dark' ? '☀️ Switch to Light Theme (Ocean Breeze)' : '🌙 Switch to Dark Theme (Midnight Neon)'}</span>
+            </button>
+
             {isHostPortal ? (
               <button
                 type="button"
