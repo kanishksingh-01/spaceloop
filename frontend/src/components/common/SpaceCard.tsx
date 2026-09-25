@@ -24,7 +24,16 @@ export const SpaceCard: React.FC<SpaceCardProps> = ({ space, onPress }) => {
     space.location ||
     (space.neighborhood ? `${space.neighborhood}, ${space.city}` : space.city || 'Pune');
   const hourlyRate = Math.round(space.hourly_rate ?? space.price_hourly ?? 50);
-  const matchScore = space.ai_match_score ? Math.round(space.ai_match_score) : 94;
+  const getMatchBadge = () => {
+    if (space.ai_match_score !== undefined && space.ai_match_score !== null) {
+      if (space.ai_match_score >= 80) return 'Top Match';
+      if (space.ai_match_score >= 60) return 'Great Match';
+      return 'Matched';
+    }
+    return 'Verified';
+  };
+
+  const matchBadgeLabel = getMatchBadge();
 
   const handleImageError = () => {
     if (!triedFallback) {
@@ -83,11 +92,15 @@ export const SpaceCard: React.FC<SpaceCardProps> = ({ space, onPress }) => {
           </span>
         </div>
 
-        {/* Match Score / Verified Pill (Top Right) */}
+        {/* Match / Verified Pill (Top Right) */}
         <div className="absolute top-3 right-3 z-10 flex items-center gap-1.5">
-          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-emerald-500/20 backdrop-blur-md border border-emerald-500/40 text-[10px] font-bold text-emerald-400 shadow-sm">
+          <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full backdrop-blur-md text-[10px] font-bold shadow-sm ${
+            matchBadgeLabel === 'Top Match'
+              ? 'bg-indigo-500/25 border border-indigo-400/50 text-indigo-200'
+              : 'bg-emerald-500/20 border border-emerald-500/40 text-emerald-300'
+          }`}>
             <span>✨</span>
-            <span className="match-score-text">{matchScore}% Match</span>
+            <span className="match-score-text">{matchBadgeLabel}</span>
           </span>
         </div>
 
@@ -134,6 +147,10 @@ export const SpaceCard: React.FC<SpaceCardProps> = ({ space, onPress }) => {
               <span>⚡</span> {space.distance_km} km away
             </span>
           )}
+          <span className="px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-medium flex items-center gap-1">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+            <span>{space.availability_status || 'Available Now'}</span>
+          </span>
           <span>{space.sqft || 240} sqft</span>
           <span>•</span>
           <span>Up to {space.max_capacity || 4} ppl</span>
@@ -141,9 +158,14 @@ export const SpaceCard: React.FC<SpaceCardProps> = ({ space, onPress }) => {
 
         {/* AI Match Reasoning if present */}
         {space.ai_match_reasoning && (
-          <div className="mb-3 p-2 rounded-lg bg-indigo-950/40 border border-indigo-500/20 text-xs text-indigo-300">
-            <span className="text-emerald-400 mr-1">✓</span>
-            <span>{space.ai_match_reasoning}</span>
+          <div className="mb-3 p-2.5 rounded-lg bg-indigo-950/40 border border-indigo-500/25 text-xs text-indigo-300">
+            <div className="flex items-center gap-1.5 font-semibold text-emerald-400 text-[11px] mb-1">
+              <i className="fa-solid fa-sparkles text-[10px]" />
+              <span>Why this matches:</span>
+            </div>
+            <p className="text-[11px] leading-relaxed text-indigo-200">
+              {space.ai_match_reasoning}
+            </p>
           </div>
         )}
 

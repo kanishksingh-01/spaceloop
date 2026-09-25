@@ -139,6 +139,77 @@ export async function aiMatchSpaces(queryText: string, lat?: number, lng?: numbe
   };
 }
 
+export interface HybridSearchParams {
+  query?: string;
+  location?: string;
+  category?: string;
+  capacity?: number;
+  max_price?: number;
+  lat?: number;
+  lng?: number;
+  radius?: number | string;
+  date?: string;
+  start_time?: string;
+  end_time?: string;
+  amenities?: string[];
+}
+
+export interface HybridSearchResponse {
+  results: any[];
+  spaces: Space[];
+  query: string;
+  semantic_query?: string;
+  extracted_constraints?: Record<string, any>;
+  effective_filters?: Record<string, any>;
+  total_matches: number;
+  matched_count: number;
+  match_summary: string;
+  fallback_mode?: boolean;
+}
+
+export async function searchSpacesHybrid(params: HybridSearchParams): Promise<HybridSearchResponse> {
+  const res = await request<any>('/api/spaces/search', {
+    method: 'POST',
+    body: JSON.stringify(params),
+  });
+
+  const rawSpaces: any[] = Array.isArray(res.spaces) ? res.spaces : [];
+  const resultMap = new Map<number, any>();
+  if (Array.isArray(res.results)) {
+    res.results.forEach((r: any) => {
+      if (r && r.space && r.space.id) {
+        resultMap.set(r.space.id, r);
+      }
+    });
+  }
+
+  const normalizedSpaces = rawSpaces.map((raw: any) => {
+    const norm = normalizeSpace(raw);
+    const r = resultMap.get(norm.id);
+    if (r) {
+      norm.ai_match_score = r.match_score;
+      norm.ai_match_reasoning = (r.match_reasons && r.match_reasons[0]) || r.considerations;
+      norm.match_reasons = r.match_reasons || [];
+      norm.pros = r.match_reasons || r.pros;
+      norm.availability_status = r.availability_status;
+    }
+    return norm;
+  });
+
+  return {
+    results: res.results || [],
+    spaces: normalizedSpaces,
+    query: res.query || params.query || '',
+    semantic_query: res.semantic_query,
+    extracted_constraints: res.extracted_constraints || {},
+    effective_filters: res.effective_filters || {},
+    total_matches: res.total_matches || normalizedSpaces.length,
+    matched_count: res.matched_count || normalizedSpaces.length,
+    match_summary: res.match_summary || `Found ${normalizedSpaces.length} spaces`,
+    fallback_mode: Boolean(res.fallback_mode)
+  };
+}
+
 export async function aiScanSpace(photoUrl: string, notes: string): Promise<any> {
   return request('/api/spaces/ai-scan', {
     method: 'POST',
