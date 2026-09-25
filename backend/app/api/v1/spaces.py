@@ -7,7 +7,7 @@ import re
 import uuid
 from flask import Blueprint, request, jsonify, redirect, url_for, flash, current_app
 from flask_login import login_required, current_user
-from models import db, Space, User, SpaceInquiry
+from models import db, Space, User, SpaceInquiry, Booking, Review
 from backend.modules.auth import authorize, Permission, ForbiddenError, set_active_context
 from backend.core.geo import haversine_distance, resolve_location_coordinates
 from space_ai import analyze_space_features, match_spaces_with_ai
@@ -305,9 +305,22 @@ def create_space():
 
     db.session.add(new_space)
     db.session.commit()
+
+    # Trust & Safety Listing Evaluation
+    from backend.modules.trust_safety import TrustSafetyEngine
+    listing_assessment = TrustSafetyEngine.evaluate_listing(new_space, current_user)
+    if listing_assessment.recommended_action == "restrict_action":
+        new_space.is_active = False
+        db.session.commit()
+
     resp_dict = new_space.to_dict()
     resp_dict["space_id"] = new_space.id
     resp_dict["success"] = True
+    resp_dict["trust_safety"] = {
+        "risk_level": listing_assessment.risk_level,
+        "recommended_action": listing_assessment.recommended_action,
+        "evidence": listing_assessment.evidence_text
+    }
     return jsonify(resp_dict), 201
 
 
@@ -388,8 +401,24 @@ def api_edit_space(space_id):
         pass
 
     db.session.commit()
+
+    # Trust & Safety Listing Evaluation on update
+    from backend.modules.trust_safety import TrustSafetyEngine
+    listing_assessment = TrustSafetyEngine.evaluate_listing(space, current_user)
+    if listing_assessment.recommended_action == "restrict_action":
+        space.is_active = False
+        db.session.commit()
+
     if request.is_json or request.method in ("PUT", "PATCH"):
-        return jsonify({"success": True, "message": f"Space '{space.title}' updated successfully!", "space": space.to_dict()}), 200
+        return jsonify({
+            "success": True,
+            "message": f"Space '{space.title}' updated successfully!",
+            "space": space.to_dict(),
+            "trust_safety": {
+                "risk_level": listing_assessment.risk_level,
+                "recommended_action": listing_assessment.recommended_action
+            }
+        }), 200
     return redirect(url_for("dashboard_page"))
 
 
@@ -644,4 +673,90 @@ def ai_match_spaces():
             r["match_score"] = round(r.get("composite_score", 0.95) * 100)
 
     return jsonify(search_res), 200
+
+
+# =========================================================================
+# REVIEWS ENDPOINTS (Verified Stay Reviews + Trust & Safety Protection)
+# =========================================================================
+@api_v1_spaces.route("/api/spaces/<int:space_id>/reviews", methods=["GET"])
+def get_space_reviews(space_id):
+    """Returns verified reviews for a specific physical space."""
+    space = Space.query.get_or_404(space_id)
+    reviews = Review.query.filter_by(space_id=space.id).order_by(Review.created_at.desc()).all()
+    return jsonify({
+        "success": True,
+        "space_id": space.id,
+        "reviews": [r.to_dict() for r in reviews],
+        "count": len(reviews),
+        "average_rating": space.average_rating()
+    }), 200
+
+
+@api_v1_spaces.route("/api/spaces/<int:space_id>/reviews", methods=["POST"])
+@login_required
+def create_space_review(space_id):
+    """
+    Submits a review for a physical space.
+    Strictly gated by Trust & Safety (requires verified completed stay, blocks duplication and collusion).
+    """
+    space = Space.query.get_or_404(space_id)
+    data = request.get_json(silent=True) or {}
+
+    rating = int(validate_numeric(data.get("rating"), min_val=1, max_val=5, default=5))
+    comment = sanitize_string(data.get("comment", ""), max_length=1500)
+    if not comment or len(comment.strip()) < 3:
+        return jsonify({"error": "Review comment must be at least 3 characters long."}), 400
+
+    booking_id = validate_numeric(data.get("booking_id"), min_val=1, default=None)
+    booking = None
+    if booking_id:
+        booking = Booking.query.get(int(booking_id))
+    else:
+        # Auto-lookup latest completed stay for current_user at this space
+        booking = Booking.query.filter(
+            Booking.space_id == space.id,
+            Booking.renter_id == current_user.id,
+            Booking.session_state == "checked_out"
+        ).order_by(Booking.departure_time.desc()).first()
+
+    # Evaluate review with Trust & Safety Engine
+    from backend.modules.trust_safety import TrustSafetyEngine
+    assessment = TrustSafetyEngine.evaluate_review(
+        reviewer=current_user,
+        space=space,
+        booking=booking,
+        rating=rating,
+        comment=comment
+    )
+
+    if assessment.recommended_action == "restrict_action":
+        return jsonify({
+            "error": "Review Restricted",
+            "message": f"Trust & Safety alert: {assessment.evidence_text}",
+            "risk_level": assessment.risk_level,
+            "risk_score": assessment.risk_score,
+            "assessment_id": assessment.id,
+            "recommended_action": assessment.recommended_action
+        }), 403
+
+    new_review = Review(
+        space_id=space.id,
+        user_id=current_user.id,
+        booking_id=booking.id if booking else None,
+        user_name=current_user.name or "Verified Guest",
+        rating=rating,
+        comment=comment
+    )
+    db.session.add(new_review)
+    db.session.commit()
+
+    return jsonify({
+        "success": True,
+        "message": "Review submitted successfully!",
+        "review": new_review.to_dict(),
+        "trust_safety": {
+            "risk_level": assessment.risk_level,
+            "confidence": assessment.confidence
+        }
+    }), 201
 

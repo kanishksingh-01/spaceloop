@@ -205,6 +205,18 @@ export const Header: React.FC<HeaderProps> = ({
                 <i className="fa-solid fa-circle-question text-slate-400" />
                 <span>How It Works</span>
               </button>
+              <button
+                onClick={() => navigate('/admin/trust-safety')}
+                className={`px-3 py-1.5 rounded-lg transition flex items-center gap-1.5 ${
+                  location.pathname.includes('trust-safety')
+                    ? 'bg-rose-500/20 text-rose-300 border border-rose-500/30'
+                    : 'text-slate-300 hover:text-white hover:bg-slate-800/60'
+                }`}
+                title="Trust & Safety Console"
+              >
+                <i className="fa-solid fa-shield-halved text-rose-400" />
+                <span>Trust & Safety</span>
+              </button>
             </>
           )}
         </nav>
@@ -439,6 +451,15 @@ export const Header: React.FC<HeaderProps> = ({
                   className="p-2 rounded-lg bg-slate-900/60 hover:bg-slate-800 text-slate-200 flex items-center gap-2 text-left"
                 >
                   <i className="fa-solid fa-circle-question text-slate-400" /> How It Works
+                </button>
+                <button
+                  onClick={() => {
+                    navigate('/admin/trust-safety');
+                    setMobileDrawerOpen(false);
+                  }}
+                  className="p-2 rounded-lg bg-rose-950/30 hover:bg-rose-900/50 text-rose-300 flex items-center gap-2 text-left"
+                >
+                  <i className="fa-solid fa-shield-halved text-rose-400" /> Trust & Safety
                 </button>
               </>
             )}

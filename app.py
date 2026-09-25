@@ -38,6 +38,7 @@ from backend.app.api.v1.auth import api_v1_auth
 from backend.app.api.v1.spaces import api_v1_spaces
 from backend.app.api.v1.bookings import api_v1_bookings
 from backend.app.api.v1.system import api_v1_system
+from backend.app.api.v1.trust_safety import api_v1_trust_safety
 
 
 class VercelWSGIMiddleware:
@@ -129,6 +130,7 @@ def create_app():
     app.register_blueprint(api_v1_spaces)
     app.register_blueprint(api_v1_bookings)
     app.register_blueprint(api_v1_system)
+    app.register_blueprint(api_v1_trust_safety)
 
     # 9. Register API CSRF Defense
     # HTML forms use WTForms CSRF token; JSON APIs with ambient cookies require custom header verification

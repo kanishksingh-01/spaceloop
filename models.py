@@ -513,20 +513,25 @@ class Review(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     space_id = db.Column(db.Integer, db.ForeignKey("spaces.id"), nullable=False)
     user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
+    booking_id = db.Column(db.Integer, db.ForeignKey("bookings.id", ondelete="CASCADE"), nullable=True)
     user_name = db.Column(db.String(120), default="Verified Guest")
     rating = db.Column(db.Integer, default=5)
     comment = db.Column(db.Text, nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
+    booking = db.relationship("Booking", backref=db.backref("reviews", lazy=True), foreign_keys=[booking_id])
+
     __table_args__ = (
         db.Index("idx_review_space", "space_id"),
         db.Index("idx_review_user", "user_id"),
+        db.Index("idx_review_booking", "booking_id"),
     )
 
     def to_dict(self):
         return {
             "id": self.id,
             "space_id": self.space_id,
+            "booking_id": self.booking_id,
             "user_name": self.user_name,
             "rating": self.rating,
             "comment": self.comment,
@@ -629,3 +634,98 @@ class MFARecoveryCode(db.Model):
 
     def is_valid(self) -> bool:
         return not self.used
+
+
+class RiskAssessment(db.Model):
+    __tablename__ = "risk_assessments"
+
+    id = db.Column(db.Integer, primary_key=True)
+    entity_type = db.Column(db.String(30), nullable=False, index=True)  # 'user', 'space', 'booking', 'review', 'payout'
+    entity_id = db.Column(db.Integer, nullable=False, index=True)
+    risk_level = db.Column(db.String(20), default="normal", nullable=False, index=True)  # 'normal', 'unusual', 'suspicious', 'high_risk'
+    risk_score = db.Column(db.Float, default=0.0, nullable=False)  # Normalized [0.0, 1.0]
+    confidence = db.Column(db.Float, default=1.0, nullable=False)  # Statistical certainty [0.0, 1.0]
+    signals_json = db.Column(db.JSON, default=list)  # List of signal codes
+    evidence_text = db.Column(db.Text, default="")
+    recommended_action = db.Column(db.String(40), default="allow", nullable=False)  # 'allow', 'request_verification', 'require_mfa', 'hold_transaction', 'manual_review', 'restrict_action'
+    action_taken = db.Column(db.String(30), default="pending", nullable=False)  # 'allowed', 'flagged', 'held', 'blocked', 'overridden'
+    reviewer_id = db.Column(db.Integer, db.ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    reviewer_notes = db.Column(db.Text, default="")
+    reviewed_at = db.Column(db.DateTime, nullable=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow, index=True)
+
+    reviewer = db.relationship("User", foreign_keys=[reviewer_id], lazy=True)
+
+    __table_args__ = (
+        db.Index("idx_risk_entity", "entity_type", "entity_id"),
+        db.Index("idx_risk_level_created", "risk_level", "created_at"),
+    )
+
+    @property
+    def signals(self) -> list:
+        if isinstance(self.signals_json, list):
+            return self.signals_json
+        if isinstance(self.signals_json, str):
+            try:
+                return json.loads(self.signals_json)
+            except Exception:
+                return []
+        return []
+
+    @signals.setter
+    def signals(self, val: list):
+        self.signals_json = val
+
+    @property
+    def signals_list(self) -> list:
+        return self.signals
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "entity_type": self.entity_type,
+            "entity_id": self.entity_id,
+            "risk_level": self.risk_level,
+            "risk_score": round(self.risk_score, 4),
+            "confidence": round(self.confidence, 4),
+            "signals": self.signals,
+            "evidence": self.evidence_text,
+            "recommended_action": self.recommended_action,
+            "action_taken": self.action_taken,
+            "reviewer_id": self.reviewer_id,
+            "reviewer_notes": self.reviewer_notes or "",
+            "reviewed_at": self.reviewed_at.isoformat() if self.reviewed_at else None,
+            "created_at": self.created_at.isoformat() if self.created_at else None,
+        }
+
+
+class DeviceSession(db.Model):
+    __tablename__ = "device_sessions"
+
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    device_fingerprint = db.Column(db.String(64), nullable=False, index=True)  # Privacy-preserving SHA-256
+    ip_address = db.Column(db.String(45), default="")
+    ip_hash = db.Column(db.String(64), nullable=False, index=True)  # SHA-256 of IP
+    user_agent = db.Column(db.String(255), default="")
+    last_seen_at = db.Column(db.DateTime, default=datetime.utcnow, index=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    user = db.relationship("User", backref=db.backref("device_sessions", lazy=True, cascade="all, delete-orphan"))
+
+    __table_args__ = (
+        db.Index("idx_device_user", "device_fingerprint", "user_id"),
+        db.Index("idx_ip_user", "ip_hash", "user_id"),
+    )
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "user_id": self.user_id,
+            "device_fingerprint": self.device_fingerprint,
+            "ip_address": self.ip_address,
+            "user_agent": self.user_agent,
+            "last_seen_at": self.last_seen_at.isoformat() if self.last_seen_at else None,
+            "created_at": self.created_at.isoformat() if self.created_at else None,
+        }
+

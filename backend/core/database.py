@@ -106,6 +106,16 @@ def ensure_database_schema(app, db):
                         except Exception:
                             pass
 
+            if "reviews" in table_names:
+                rev_cols = {col["name"]: col for col in inspector.get_columns("reviews")}
+                if "booking_id" not in rev_cols:
+                    with db.engine.connect() as conn:
+                        try:
+                            conn.execute(db.text("ALTER TABLE reviews ADD COLUMN booking_id INTEGER REFERENCES bookings(id) ON DELETE CASCADE"))
+                            conn.commit()
+                        except Exception:
+                            pass
+
             # Ensure public_id is populated for all existing users
             from models import User
             users_without_pid = User.query.filter((User.public_id == None) | (User.public_id == "")).all()

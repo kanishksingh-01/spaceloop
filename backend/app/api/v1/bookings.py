@@ -249,6 +249,34 @@ def create_booking():
     escrow_deposit = 100.0
     total_price = round(subtotal + platform_fee + escrow_deposit, 2)
 
+    # =========================================================================
+    # Trust & Safety / Fraud & Abuse Evaluation
+    # =========================================================================
+    from backend.modules.trust_safety import TrustSafetyEngine
+    client_ip = request.headers.get("X-Forwarded-For", request.remote_addr or "")
+    if "," in client_ip:
+        client_ip = client_ip.split(",")[0].strip()
+    device_fp = sanitize_string(data.get("device_fingerprint") or request.headers.get("X-Device-Fingerprint", ""), max_length=128)
+
+    assessment = TrustSafetyEngine.evaluate_booking(
+        seeker=renter,
+        space=space,
+        hours=float(hours),
+        total_price=total_price,
+        device_fingerprint=device_fp,
+        ip_address=client_ip
+    )
+
+    if assessment.recommended_action == "restrict_action":
+        return jsonify({
+            "error": "Booking Restricted",
+            "message": f"Trust & Safety policy restriction: {assessment.evidence_text}",
+            "risk_level": assessment.risk_level,
+            "risk_score": assessment.risk_score,
+            "assessment_id": assessment.id,
+            "recommended_action": assessment.recommended_action
+        }), 403
+
     arrival_pin = str(1000 + (space.id * 7 + int(now.timestamp()) % 8999))[:4]
 
     initial_status = "pending" if (data.get("requires_host_approval") or data.get("status") == "pending") else "confirmed"
@@ -556,6 +584,16 @@ def api_booking_checkout(booking_id):
         booking.escrow_status = "held"
         msg = "Check-out recorded. Condition discrepancy flagged; ₹100 deposit held pending host review."
         refund_state = "Review required"
+
+    # =========================================================================
+    # Trust & Safety Post-Checkout Verification (Zero-Stay, Device Velocity)
+    # =========================================================================
+    from backend.modules.trust_safety import TrustSafetyEngine
+    checkout_assessment = TrustSafetyEngine.evaluate_checkout(booking)
+    if checkout_assessment.recommended_action in ("hold_transaction", "restrict_action") or checkout_assessment.risk_level in ("high_risk", "suspicious"):
+        booking.escrow_status = "held"
+        refund_state = "Review required"
+        msg = f"Check-out recorded. Trust & Safety review flagged: {checkout_assessment.evidence_text}. ₹100 deposit held for manual verification."
 
     renter = booking.renter
     if renter:

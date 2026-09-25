@@ -146,3 +146,68 @@ export interface Inquiry {
   status: string;
   created_at?: string;
 }
+
+export type RiskLevel = 'normal' | 'unusual' | 'suspicious' | 'high_risk';
+export type RecommendedAction = 'allow' | 'monitor' | 'request_verification' | 'require_mfa' | 'hold_transaction' | 'restrict_action';
+export type ActionTaken = 'pending' | 'dismissed' | 'escrow_held' | 'verification_requested' | 'mfa_enforced' | 'account_restricted';
+
+export interface RiskSignal {
+  name: string;
+  code: string;
+  category: string;
+  severity: 'low' | 'medium' | 'high' | 'critical';
+  weight: number;
+  description: string;
+  evidence: string;
+}
+
+export interface RiskAssessment {
+  id: number;
+  entity_type: 'booking' | 'listing' | 'review' | 'user' | 'checkout';
+  entity_id: number;
+  risk_level: RiskLevel;
+  risk_score: number;
+  confidence: number;
+  signals: RiskSignal[];
+  evidence_text: string;
+  recommended_action: RecommendedAction;
+  action_taken: ActionTaken;
+  reviewer_id?: number;
+  reviewer_notes?: string;
+  reviewed_at?: string;
+  created_at?: string;
+  entity_summary?: Record<string, any>;
+}
+
+export interface TrustSafetyStats {
+  total_assessments: number;
+  high_risk_count: number;
+  suspicious_count: number;
+  unusual_count: number;
+  normal_count: number;
+  pending_action_count: number;
+  recent_assessments: RiskAssessment[];
+}
+
+export interface GraphNode {
+  id: string;
+  type: string;
+  label: string;
+  attributes: Record<string, any>;
+}
+
+export interface GraphEdge {
+  source: string;
+  target: string;
+  relationship: string;
+  attributes: Record<string, any>;
+}
+
+export interface EntityGraphData {
+  nodes: GraphNode[];
+  edges: GraphEdge[];
+  subgraph_size: {
+    nodes: number;
+    edges: number;
+  };
+}
