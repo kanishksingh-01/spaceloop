@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { sendChatMessage, ChatMessage } from '../../services/ai';
 
 export const LoopBot: React.FC = () => {
@@ -13,20 +13,204 @@ export const LoopBot: React.FC = () => {
     },
   ]);
   const [loading, setLoading] = useState(false);
+
+  // Position and Size state for draggable and resizable window
+  const [size, setSize] = useState({ width: 410, height: 530 });
+  const [position, setPosition] = useState<{ x: number; y: number } | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
+  const [isResizing, setIsResizing] = useState(false);
+
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
+  // Ref tracking to avoid stale closures in window event listeners
+  const dragRef = useRef({
+    startX: 0,
+    startY: 0,
+    initPosX: 0,
+    initPosY: 0,
+  });
+
+  const resizeRef = useRef({
+    startX: 0,
+    startY: 0,
+    initW: 0,
+    initH: 0,
+  });
+
+  const sizeRef = useRef(size);
+  sizeRef.current = size;
+
+  const positionRef = useRef(position);
+  positionRef.current = position;
+
+  // Initialize position when first opened
+  useEffect(() => {
+    if (isOpen && !position) {
+      const defaultW = Math.min(410, window.innerWidth - 24);
+      const defaultH = Math.min(530, window.innerHeight - 100);
+      const defaultX = Math.max(12, window.innerWidth - defaultW - 24);
+      const defaultY = Math.max(12, window.innerHeight - defaultH - 24);
+
+      setSize({ width: defaultW, height: defaultH });
+      setPosition({ x: defaultX, y: defaultY });
+    }
+  }, [isOpen, position]);
+
+  // Keep window clamped within visible viewport on window resize
+  useEffect(() => {
+    const handleViewportResize = () => {
+      const currentSize = sizeRef.current;
+      const currentPos = positionRef.current;
+
+      const maxAllowedW = Math.min(720, window.innerWidth - 16);
+      const maxAllowedH = Math.min(850, window.innerHeight - 16);
+
+      const clampedW = Math.max(300, Math.min(currentSize.width, maxAllowedW));
+      const clampedH = Math.max(380, Math.min(currentSize.height, maxAllowedH));
+
+      setSize({ width: clampedW, height: clampedH });
+
+      if (currentPos) {
+        const clampedX = Math.max(8, Math.min(currentPos.x, window.innerWidth - clampedW - 8));
+        const clampedY = Math.max(8, Math.min(currentPos.y, window.innerHeight - clampedH - 8));
+        setPosition({ x: clampedX, y: clampedY });
+      }
+    };
+
+    window.addEventListener('resize', handleViewportResize);
+    return () => window.removeEventListener('resize', handleViewportResize);
+  }, []);
+
+  // Auto scroll messages
   useEffect(() => {
     if (isOpen && !isMinimized && messagesEndRef.current) {
       messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
     }
   }, [messages, isOpen, isMinimized]);
 
+  // Focus input when opened
   useEffect(() => {
     if (isOpen && !isMinimized && inputRef.current) {
       inputRef.current.focus();
     }
   }, [isOpen, isMinimized]);
+
+  // Dragging logic
+  const handleHeaderPointerDown = (e: React.MouseEvent | React.TouchEvent) => {
+    const target = e.target as HTMLElement;
+    // Don't drag if clicking buttons, inputs, links, or controls
+    if (
+      target.closest('button') ||
+      target.closest('input') ||
+      target.closest('a') ||
+      target.closest('form')
+    ) {
+      return;
+    }
+
+    const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX;
+    const clientY = 'touches' in e ? e.touches[0].clientY : e.clientY;
+
+    const currentX = positionRef.current?.x ?? Math.max(12, window.innerWidth - size.width - 24);
+    const currentY = positionRef.current?.y ?? Math.max(12, window.innerHeight - size.height - 24);
+
+    dragRef.current = {
+      startX: clientX,
+      startY: clientY,
+      initPosX: currentX,
+      initPosY: currentY,
+    };
+
+    setIsDragging(true);
+    document.body.style.userSelect = 'none';
+
+    const onPointerMove = (moveEvt: MouseEvent | TouchEvent) => {
+      const curX = 'touches' in moveEvt ? moveEvt.touches[0].clientX : moveEvt.clientX;
+      const curY = 'touches' in moveEvt ? moveEvt.touches[0].clientY : moveEvt.clientY;
+
+      const deltaX = curX - dragRef.current.startX;
+      const deltaY = curY - dragRef.current.startY;
+
+      const currentW = sizeRef.current.width;
+      const currentH = sizeRef.current.height;
+
+      // Keep within visible viewport
+      const boundedX = Math.max(8, Math.min(dragRef.current.initPosX + deltaX, window.innerWidth - currentW - 8));
+      const boundedY = Math.max(8, Math.min(dragRef.current.initPosY + deltaY, window.innerHeight - currentH - 8));
+
+      setPosition({ x: boundedX, y: boundedY });
+    };
+
+    const onPointerUp = () => {
+      setIsDragging(false);
+      document.body.style.userSelect = '';
+      window.removeEventListener('mousemove', onPointerMove);
+      window.removeEventListener('mouseup', onPointerUp);
+      window.removeEventListener('touchmove', onPointerMove);
+      window.removeEventListener('touchend', onPointerUp);
+    };
+
+    window.addEventListener('mousemove', onPointerMove, { passive: true });
+    window.addEventListener('mouseup', onPointerUp);
+    window.addEventListener('touchmove', onPointerMove, { passive: true });
+    window.addEventListener('touchend', onPointerUp);
+  };
+
+  // Resizing logic
+  const handleResizePointerDown = (e: React.MouseEvent | React.TouchEvent) => {
+    e.stopPropagation();
+    e.preventDefault();
+
+    const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX;
+    const clientY = 'touches' in e ? e.touches[0].clientY : e.clientY;
+
+    resizeRef.current = {
+      startX: clientX,
+      startY: clientY,
+      initW: sizeRef.current.width,
+      initH: sizeRef.current.height,
+    };
+
+    setIsResizing(true);
+    document.body.style.userSelect = 'none';
+
+    const onPointerMove = (moveEvt: MouseEvent | TouchEvent) => {
+      const curX = 'touches' in moveEvt ? moveEvt.touches[0].clientX : moveEvt.clientX;
+      const curY = 'touches' in moveEvt ? moveEvt.touches[0].clientY : moveEvt.clientY;
+
+      const deltaX = curX - resizeRef.current.startX;
+      const deltaY = curY - resizeRef.current.startY;
+
+      const posX = positionRef.current?.x ?? 0;
+      const posY = positionRef.current?.y ?? 0;
+
+      // Constraints: sensible min and max, bounded by viewport
+      const minW = 310;
+      const minH = 380;
+      const maxW = Math.max(minW, Math.min(720, window.innerWidth - posX - 8));
+      const maxH = Math.max(minH, Math.min(850, window.innerHeight - posY - 8));
+
+      const newW = Math.max(minW, Math.min(resizeRef.current.initW + deltaX, maxW));
+      const newH = Math.max(minH, Math.min(resizeRef.current.initH + deltaY, maxH));
+
+      setSize({ width: newW, height: newH });
+    };
+
+    const onPointerUp = () => {
+      setIsResizing(false);
+      document.body.style.userSelect = '';
+      window.removeEventListener('mousemove', onPointerMove);
+      window.removeEventListener('mouseup', onPointerUp);
+      window.removeEventListener('touchmove', onPointerMove);
+      window.removeEventListener('touchend', onPointerUp);
+    };
+
+    window.addEventListener('mousemove', onPointerMove);
+    window.addEventListener('mouseup', onPointerUp);
+    window.addEventListener('touchmove', onPointerMove);
+    window.addEventListener('touchend', onPointerUp);
+  };
 
   const handleSend = async (messageText?: string) => {
     const textToSend = (messageText || input).trim();
@@ -53,7 +237,7 @@ export const LoopBot: React.FC = () => {
     }
   };
 
-  const renderCleanMessage = (rawText: string) => {
+  const renderCleanMessage = useCallback((rawText: string) => {
     if (!rawText) return null;
     const cleaned = rawText
       .replace(/<br\s*\/?>/gi, '\n')
@@ -68,7 +252,7 @@ export const LoopBot: React.FC = () => {
             return <div key={lIdx} className="h-1" />;
           }
 
-          const parts = line.split(/(\*\*.*?\*\*)/g);
+          const parts = line.split(/(\b\*\*.*?\*\*\b|\*\*.*?\*\*)/g);
           const formattedLine = parts.map((part, pIdx) => {
             if (part.startsWith('**') && part.endsWith('**') && part.length >= 4) {
               return (
@@ -90,11 +274,11 @@ export const LoopBot: React.FC = () => {
         })}
       </div>
     );
-  };
+  }, []);
 
   return (
     <>
-      {/* 1. Floating Launcher Button (Bottom-Right) */}
+      {/* 1. Floating Launcher Button (Bottom-Right, non-blocking) */}
       {(!isOpen || isMinimized) && (
         <div className="fixed bottom-20 md:bottom-6 right-4 sm:right-6 z-40 animate-in fade-in duration-200">
           <button
@@ -120,16 +304,33 @@ export const LoopBot: React.FC = () => {
         </div>
       )}
 
-      {/* 2. Compact Floating Chat Window (No Fullscreen Backdrop) */}
-      {isOpen && !isMinimized && (
+      {/* 2. Floating, Freely Draggable & Resizable Window (Zero Fullscreen Backdrop) */}
+      {isOpen && !isMinimized && position && (
         <aside
           role="complementary"
           aria-label="LoopBot AI Assistant"
-          className="fixed bottom-20 md:bottom-6 right-3 sm:right-6 z-50 w-[calc(100vw-24px)] sm:w-[380px] md:w-[410px] h-[530px] max-h-[calc(100vh-100px)] rounded-2xl sm:rounded-3xl bg-slate-900/95 backdrop-blur-2xl border border-indigo-500/30 shadow-[0_20px_60px_-15px_rgba(0,0,0,0.8),0_0_30px_rgba(99,102,241,0.2)] flex flex-col overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-200"
+          style={{
+            position: 'fixed',
+            left: `${position.x}px`,
+            top: `${position.y}px`,
+            width: `${size.width}px`,
+            height: `${size.height}px`,
+            zIndex: 50,
+          }}
+          className={`rounded-2xl sm:rounded-3xl bg-slate-900/95 backdrop-blur-2xl border ${
+            isDragging || isResizing ? 'border-indigo-400/60 ring-2 ring-indigo-500/30' : 'border-indigo-500/30'
+          } shadow-[0_20px_60px_-15px_rgba(0,0,0,0.8),0_0_30px_rgba(99,102,241,0.2)] flex flex-col overflow-hidden animate-in fade-in duration-150`}
         >
-          {/* Header */}
-          <div className="px-4 py-3.5 bg-slate-950/90 border-b border-slate-800/80 flex items-center justify-between gap-3 shrink-0">
-            <div className="flex items-center gap-2.5 min-w-0">
+          {/* Header - Acts as Draggable Handle */}
+          <div
+            onMouseDown={handleHeaderPointerDown}
+            onTouchStart={handleHeaderPointerDown}
+            className={`px-4 py-3 bg-slate-950/90 border-b border-slate-800/80 flex items-center justify-between gap-3 shrink-0 cursor-grab ${
+              isDragging ? 'cursor-grabbing bg-slate-900/90' : 'hover:bg-slate-950'
+            } transition-colors select-none`}
+            title="Drag header to reposition anywhere"
+          >
+            <div className="flex items-center gap-2.5 min-w-0 pointer-events-none">
               <div className="relative">
                 <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-indigo-600 to-violet-600 flex items-center justify-center text-white text-xs shadow-md shadow-indigo-600/30 border border-white/10">
                   <i className="fa-solid fa-robot" />
@@ -145,19 +346,39 @@ export const LoopBot: React.FC = () => {
                     Concierge
                   </span>
                 </div>
-                <div className="flex items-center gap-1 text-[11px] text-emerald-400 font-medium">
+                <div className="flex items-center gap-1.5 text-[10px] text-emerald-400 font-medium">
                   <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
-                  <span>Online & Ready</span>
+                  <span>Online</span>
+                  <span className="text-slate-500 font-normal hidden sm:inline">• Drag header to move</span>
                 </div>
               </div>
             </div>
 
+            {/* Window Controls */}
             <div className="flex items-center gap-1 shrink-0">
+              {/* Reset Position Button */}
+              <button
+                type="button"
+                onClick={() => {
+                  const defaultW = Math.min(410, window.innerWidth - 24);
+                  const defaultH = Math.min(530, window.innerHeight - 100);
+                  setSize({ width: defaultW, height: defaultH });
+                  setPosition({
+                    x: Math.max(12, window.innerWidth - defaultW - 24),
+                    y: Math.max(12, window.innerHeight - defaultH - 24),
+                  });
+                }}
+                className="w-7 h-7 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800/80 transition flex items-center justify-center text-[10px] cursor-pointer"
+                title="Reset position & size"
+                aria-label="Reset position & size"
+              >
+                <i className="fa-solid fa-arrows-rotate" />
+              </button>
               {/* Minimize Button */}
               <button
                 type="button"
                 onClick={() => setIsMinimized(true)}
-                className="w-7 h-7 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800/80 transition flex items-center justify-center text-xs"
+                className="w-7 h-7 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800/80 transition flex items-center justify-center text-xs cursor-pointer"
                 title="Minimize chat"
                 aria-label="Minimize chat"
               >
@@ -167,7 +388,7 @@ export const LoopBot: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setIsOpen(false)}
-                className="w-7 h-7 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800/80 transition flex items-center justify-center text-xs"
+                className="w-7 h-7 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800/80 transition flex items-center justify-center text-xs cursor-pointer"
                 title="Close chat"
                 aria-label="Close chat"
               >
@@ -229,7 +450,7 @@ export const LoopBot: React.FC = () => {
                 key={idx}
                 type="button"
                 onClick={() => handleSend(chip.prompt)}
-                className="px-2.5 py-1 rounded-full bg-slate-800/80 hover:bg-indigo-600/20 text-slate-300 hover:text-indigo-200 border border-slate-700/60 hover:border-indigo-500/40 transition shrink-0"
+                className="px-2.5 py-1 rounded-full bg-slate-800/80 hover:bg-indigo-600/20 text-slate-300 hover:text-indigo-200 border border-slate-700/60 hover:border-indigo-500/40 transition shrink-0 cursor-pointer"
               >
                 {chip.label}
               </button>
@@ -242,7 +463,7 @@ export const LoopBot: React.FC = () => {
               e.preventDefault();
               handleSend();
             }}
-            className="p-3 bg-slate-950 border-t border-slate-800/80 flex items-center gap-2 shrink-0"
+            className="p-3 bg-slate-950 border-t border-slate-800/80 flex items-center gap-2 shrink-0 relative"
           >
             <input
               ref={inputRef}
@@ -250,17 +471,40 @@ export const LoopBot: React.FC = () => {
               value={input}
               onChange={(e) => setInput(e.target.value)}
               placeholder="Ask about spaces, rules, or earnings..."
-              className="flex-1 bg-slate-900 border border-slate-700/80 rounded-xl px-3.5 py-2 text-xs sm:text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-indigo-500 transition"
+              className="flex-1 bg-slate-900 border border-slate-700/80 rounded-xl px-3.5 py-2 pr-2 text-xs sm:text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-indigo-500 transition"
             />
             <button
               type="submit"
               disabled={loading || !input.trim()}
-              className="w-9 h-9 rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white font-medium text-xs transition shrink-0 flex items-center justify-center disabled:opacity-40 shadow-sm shadow-indigo-600/30"
+              className="w-9 h-9 rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white font-medium text-xs transition shrink-0 flex items-center justify-center disabled:opacity-40 shadow-sm shadow-indigo-600/30 cursor-pointer"
               title="Send message"
             >
               <i className="fa-solid fa-arrow-up" />
             </button>
           </form>
+
+          {/* 3. Resize Handle at Bottom-Right Corner */}
+          <div
+            onMouseDown={handleResizePointerDown}
+            onTouchStart={handleResizePointerDown}
+            title="Drag to resize window"
+            aria-label="Resize chatbot window"
+            className="absolute bottom-0 right-0 w-5 h-5 cursor-se-resize flex items-end justify-end p-1 text-slate-500 hover:text-indigo-400 active:text-indigo-300 transition-colors z-20 group select-none"
+          >
+            <svg
+              width="10"
+              height="10"
+              viewBox="0 0 10 10"
+              className="fill-current opacity-60 group-hover:opacity-100 group-hover:scale-110 transition-all"
+            >
+              <circle cx="8" cy="8" r="1.1" />
+              <circle cx="5" cy="8" r="1.1" />
+              <circle cx="8" cy="5" r="1.1" />
+              <circle cx="2" cy="8" r="1.1" />
+              <circle cx="5" cy="5" r="1.1" />
+              <circle cx="8" cy="2" r="1.1" />
+            </svg>
+          </div>
         </aside>
       )}
     </>
