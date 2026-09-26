@@ -19,8 +19,6 @@ export const LandingPage: React.FC<LandingPageProps> = ({ currentUser }) => {
   const glow1Ref = useRef<HTMLDivElement>(null);
   const glow2Ref = useRef<HTMLDivElement>(null);
   const spatialNetworkRef = useRef<HTMLDivElement>(null);
-  const floatCardLeftRef = useRef<HTMLDivElement>(null);
-  const floatCardRightRef = useRef<HTMLDivElement>(null);
   const orbitRef = useRef<HTMLDivElement>(null);
 
   // Smooth lerp parallax engine (requestAnimationFrame, zero React state re-renders)
@@ -51,12 +49,6 @@ export const LandingPage: React.FC<LandingPageProps> = ({ currentUser }) => {
       }
       if (spatialNetworkRef.current) {
         spatialNetworkRef.current.style.transform = `translate3d(0, ${(currentY * 0.05).toFixed(2)}px, 0)`;
-      }
-      if (floatCardLeftRef.current) {
-        floatCardLeftRef.current.style.transform = `translate3d(0, ${(-currentY * 0.11).toFixed(2)}px, 0)`;
-      }
-      if (floatCardRightRef.current) {
-        floatCardRightRef.current.style.transform = `translate3d(0, ${(currentY * 0.09).toFixed(2)}px, 0)`;
       }
       if (orbitRef.current) {
         orbitRef.current.style.transform = `translate3d(0, ${(-currentY * 0.14).toFixed(2)}px, 0)`;
@@ -169,55 +161,6 @@ export const LandingPage: React.FC<LandingPageProps> = ({ currentUser }) => {
           ref={orbitRef}
           className="absolute -top-12 -left-20 w-96 h-96 border border-indigo-500/10 rounded-full pointer-events-none will-change-transform z-0"
         />
-
-        {/* Layer E: Flanking Floating Glassmorphism Preview Cards (Desktop/Tablet) */}
-        {/* Left Floating Card: Hauz Khas Focus Studio */}
-        <div
-          ref={floatCardLeftRef}
-          className="hidden xl:flex absolute top-28 left-6 2xl:left-14 w-72 flex-col bg-slate-900/85 backdrop-blur-xl border border-indigo-500/25 rounded-2xl p-4 shadow-2xl shadow-indigo-950/50 pointer-events-none will-change-transform z-10 floating-container"
-        >
-          <div className="flex items-center justify-between mb-2">
-            <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 text-[10px] font-bold">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-              Available Now
-            </span>
-            <span className="text-[11px] font-extrabold text-indigo-300">₹35/hr</span>
-          </div>
-          <div className="text-xs font-bold text-white truncate">Hauz Khas Focus Studio</div>
-          <div className="text-[11px] text-slate-400 flex items-center gap-1.5 mt-1">
-            <i className="fa-solid fa-wifi text-indigo-400 text-[10px]" /> 1 Gbps Fiber • Acoustic Pod
-          </div>
-          <div className="mt-2.5 pt-2 border-t border-slate-800/80 flex items-center justify-between text-[10px] text-slate-400">
-            <span className="text-emerald-400 font-semibold flex items-center gap-1">
-              <i className="fa-solid fa-shield-check" /> Verified Premise
-            </span>
-            <span className="text-slate-400">0.8 km away</span>
-          </div>
-        </div>
-
-        {/* Right Floating Card: Kharadi Creative Bay */}
-        <div
-          ref={floatCardRightRef}
-          className="hidden xl:flex absolute top-36 right-6 2xl:right-14 w-72 flex-col bg-slate-900/85 backdrop-blur-xl border border-violet-500/25 rounded-2xl p-4 shadow-2xl shadow-violet-950/50 pointer-events-none will-change-transform z-10 floating-container"
-        >
-          <div className="flex items-center justify-between mb-2">
-            <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-indigo-500/15 border border-indigo-500/30 text-indigo-300 text-[10px] font-bold">
-              <i className="fa-solid fa-bolt text-[9px] text-indigo-400" />
-              Instant QR Entry
-            </span>
-            <span className="text-[11px] font-extrabold text-amber-300">₹55/hr</span>
-          </div>
-          <div className="text-xs font-bold text-white truncate">Kharadi Creative Workshop</div>
-          <div className="text-[11px] text-slate-400 flex items-center gap-1.5 mt-1">
-            <i className="fa-solid fa-desktop text-violet-400 text-[10px]" /> 4K Display • Whiteboard Bay
-          </div>
-          <div className="mt-2.5 pt-2 border-t border-slate-800/80 flex items-center justify-between text-[10px]">
-            <span className="text-amber-400 font-bold flex items-center gap-1">
-              ★ 4.9 <span className="text-slate-400 font-normal">(48 bookings)</span>
-            </span>
-            <span className="text-indigo-400 font-medium">Smart Geofence</span>
-          </div>
-        </div>
 
         {/* Main Foreground Content (Completely Stable, High Readability, No Transform) */}
         <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 relative z-20 text-center">
