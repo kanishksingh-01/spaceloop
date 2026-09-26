@@ -171,9 +171,14 @@ export const LandingPage: React.FC<LandingPageProps> = ({ currentUser }) => {
               <span className="flex h-2 w-2 rounded-full bg-indigo-400 animate-ping" />
               <span>India’s First AI-Powered Micro-Space Network</span>
             </div>
-            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-800/80 border border-slate-700/60 text-slate-300 text-[11px] font-medium tracking-wide">
-              <span>WORK • CREATE • MEET • BUILD • LEARN • HOST • GROW</span>
-            </div>
+            <button
+              onClick={() => navigate('/architecture')}
+              className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full bg-indigo-950/40 hover:bg-indigo-900/60 border border-indigo-500/30 hover:border-indigo-400/60 text-indigo-300 text-[11px] font-bold tracking-wide transition shadow-sm"
+              title="Meet the Team & System Architecture"
+            >
+              <i className="fa-solid fa-cubes text-indigo-400 text-[10px]" />
+              <span>Architecture & Team →</span>
+            </button>
           </div>
 
           {/* Main Headline */}

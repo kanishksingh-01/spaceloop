@@ -238,6 +238,11 @@ def create_app():
     def serve_react_explicit(path=""):
         return _serve_spa_index()
 
+    @app.route("/architecture", endpoint="architecture")
+    @app.route("/architecture/", endpoint="architecture_slash")
+    def architecture_page():
+        return _serve_spa_index()
+
     @app.route("/legacy")
     @app.route("/legacy/")
     def legacy_landing():

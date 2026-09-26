@@ -95,8 +95,8 @@ export const Header: React.FC<HeaderProps> = ({
           </div>
         </div>
 
-        {/* Center Role-Aware Nav Links (Desktop) */}
-        <nav className="hidden lg:flex items-center gap-1 text-xs font-semibold">
+        {/* Center Role-Aware Nav Links (Desktop & Tablet) */}
+        <nav className="hidden md:flex items-center gap-1 text-xs font-semibold">
           {isHostPortal ? (
             /* HOST PORTAL NAVIGATION */
             <>
@@ -149,13 +149,16 @@ export const Header: React.FC<HeaderProps> = ({
                 onClick={() => navigate('/architecture')}
                 className={`px-3 py-1.5 rounded-lg transition flex items-center gap-1.5 ${
                   location.pathname === '/architecture'
-                    ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
-                    : 'text-slate-300 hover:text-white hover:bg-slate-800/60'
+                    ? 'bg-amber-500/30 text-amber-200 border border-amber-500/50 shadow-sm shadow-amber-500/20'
+                    : 'text-slate-300 hover:text-white hover:bg-slate-800/80 border border-transparent hover:border-slate-700/60'
                 }`}
                 title="System Architecture & Engineering Team"
               >
-                <i className="fa-solid fa-cubes text-slate-400" />
+                <i className="fa-solid fa-cubes text-amber-400" />
                 <span>Architecture</span>
+                <span className="px-1.5 py-0.5 rounded text-[9px] font-mono font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                  Team
+                </span>
               </button>
             </>
           ) : (
@@ -198,13 +201,16 @@ export const Header: React.FC<HeaderProps> = ({
                 onClick={() => navigate('/architecture')}
                 className={`px-3 py-1.5 rounded-lg transition flex items-center gap-1.5 ${
                   location.pathname === '/architecture'
-                    ? 'bg-indigo-600/20 text-indigo-300 border border-indigo-500/30'
-                    : 'text-slate-300 hover:text-white hover:bg-slate-800/60'
+                    ? 'bg-indigo-600/30 text-indigo-200 border border-indigo-500/50 shadow-sm shadow-indigo-500/20'
+                    : 'text-slate-300 hover:text-white hover:bg-slate-800/80 border border-transparent hover:border-slate-700/60'
                 }`}
                 title="System Architecture & Engineering Team"
               >
                 <i className="fa-solid fa-cubes text-indigo-400" />
                 <span>Architecture</span>
+                <span className="px-1.5 py-0.5 rounded text-[9px] font-mono font-bold bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
+                  Team
+                </span>
               </button>
               <button
                 onClick={() => navigate('/admin/trust-safety')}

@@ -136,6 +136,15 @@ export const MobileNav: React.FC<MobileNavProps> = ({ currentUser, onOpenAuthMod
             <span>How It Works</span>
           </button>
           <button
+            onClick={() => navigate('/architecture')}
+            className={`flex flex-col items-center gap-1 ${
+              location.pathname === '/architecture' ? 'text-indigo-400 font-semibold' : 'hover:text-indigo-400'
+            }`}
+          >
+            <i className="fa-solid fa-cubes text-base" />
+            <span>Architecture</span>
+          </button>
+          <button
             onClick={onOpenAuthModal}
             className="flex flex-col items-center gap-1 hover:text-indigo-400"
           >

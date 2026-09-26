@@ -104,6 +104,15 @@ export const Footer: React.FC = () => {
                     <i className="fa-solid fa-calculator text-slate-500 text-[10px]" /> Calculator
                   </button>
                 </li>
+                <li>
+                  <button
+                    type="button"
+                    onClick={() => navigate('/architecture')}
+                    className="hover:text-white hover:underline transition flex items-center gap-1.5 text-indigo-300 font-semibold"
+                  >
+                    <i className="fa-solid fa-cubes text-indigo-400 text-[10px]" /> Architecture & Team
+                  </button>
+                </li>
               </ul>
             </div>
 
