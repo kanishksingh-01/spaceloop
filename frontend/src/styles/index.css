@@ -82,81 +82,213 @@ textarea::placeholder {
   border: 1px solid var(--border-subtle);
 }
 
-/* Role CTA utilities */
+/* =========================================================================
+   PREMIUM BUTTON GLOW & TACTILE INTERACTION SYSTEM
+   SaaS-grade clean, soft, controlled glows using SpaceLoop brand accents
+   ========================================================================= */
+
+/* Base transition and focus-visible styling for interactive buttons & links */
+button,
+a.btn,
+.btn-interactive,
+[role="button"] {
+  position: relative;
+  transition: transform 220ms cubic-bezier(0.16, 1, 0.3, 1),
+              box-shadow 220ms cubic-bezier(0.16, 1, 0.3, 1),
+              background-color 220ms ease,
+              border-color 220ms ease,
+              color 180ms ease,
+              opacity 180ms ease;
+  outline: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Keyboard Accessible Focus States */
+button:focus-visible,
+a.btn:focus-visible,
+.btn-interactive:focus-visible,
+[role="button"]:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--canvas), 0 0 0 4px rgba(99, 102, 241, 0.75), 0 0 16px rgba(99, 102, 241, 0.35);
+}
+
+/* 1. Primary Purple/Indigo Gradient CTA Glow */
+.btn-glow-primary,
+button.bg-gradient-to-r,
 .btn-seeker-primary {
   background-color: var(--seeker-primary);
   color: var(--seeker-text);
-  box-shadow: 0 4px 14px 0 rgba(79, 70, 229, 0.35);
-  transition: all 200ms ease;
-}
-.btn-seeker-primary:hover {
-  background-color: var(--seeker-glow);
-  box-shadow: 0 6px 20px 0 rgba(99, 102, 241, 0.45);
+  box-shadow: 0 4px 14px 0 rgba(79, 70, 229, 0.28);
 }
 
+@media (hover: hover) and (pointer: fine) {
+  .btn-glow-primary:hover,
+  button.bg-gradient-to-r:hover,
+  .btn-seeker-primary:hover {
+    transform: translateY(-1.5px);
+    box-shadow: 0 6px 20px -2px rgba(99, 102, 241, 0.45),
+                0 0 24px -2px rgba(139, 92, 246, 0.32);
+  }
+}
+
+/* 2. Solar Gold / Host Amber Button Glow */
+.btn-glow-amber,
 .btn-host-primary {
   background-color: var(--host-primary);
   color: var(--host-text);
   font-weight: 700;
-  box-shadow: 0 4px 14px 0 rgba(245, 158, 11, 0.30);
-  transition: all 200ms ease;
+  box-shadow: 0 4px 14px 0 rgba(245, 158, 11, 0.22);
 }
-.btn-host-primary:hover {
-  background-color: var(--host-gold);
-  box-shadow: 0 6px 20px 0 rgba(251, 191, 36, 0.45);
+
+@media (hover: hover) and (pointer: fine) {
+  .btn-glow-amber:hover,
+  .btn-host-primary:hover {
+    transform: translateY(-1.5px);
+    box-shadow: 0 6px 20px -2px rgba(245, 158, 11, 0.42),
+                0 0 22px -2px rgba(251, 191, 36, 0.28);
+  }
+}
+
+/* 3. Cyan / Blue Accent Glow (Explore, Filter, Action pills) */
+.btn-glow-cyan,
+.btn-cyan {
+  box-shadow: 0 4px 14px 0 rgba(14, 165, 233, 0.22);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .btn-glow-cyan:hover,
+  .btn-cyan:hover {
+    transform: translateY(-1.5px);
+    box-shadow: 0 6px 18px -2px rgba(56, 189, 248, 0.4),
+                0 0 20px -2px rgba(6, 182, 212, 0.28);
+  }
+}
+
+/* 4. Secondary & Outlined Interactive Buttons */
+@media (hover: hover) and (pointer: fine) {
+  button.bg-slate-800:hover,
+  button.bg-slate-900:hover,
+  button.bg-slate-950:hover,
+  .btn-secondary:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 16px -2px rgba(0, 0, 0, 0.45),
+                0 0 14px -2px rgba(99, 102, 241, 0.22);
+    border-color: rgba(99, 102, 241, 0.35);
+  }
+}
+
+/* Tactile Active Press States (Immediate micro-depth on click) */
+button:not(:disabled):active,
+a.btn:not(:disabled):active,
+.btn-interactive:not(:disabled):active,
+[role="button"]:not(:disabled):active {
+  transform: translateY(0.5px) scale(0.99) !important;
+  box-shadow: 0 2px 8px -1px rgba(0, 0, 0, 0.4) !important;
+  transition-duration: 75ms !important;
 }
 
 /* =========================================================================
-   SUBTLE FLOATING & GENTLE ELEVATION SYSTEM
-   Soft, diffused depth with 2-3px smooth hover elevation across dark surfaces
+   PREMIUM FLOATING CARDS & INTERACTIVE CONTAINERS
+   Subtle 3-4px float, refined shadow depth expansion, and return damping
    ========================================================================= */
 
 /* 1. Base Floating Container (gentle depth above background) */
 .floating-container {
   box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.38), 0 2px 6px -1px rgba(0, 0, 0, 0.22);
-  transition: transform 250ms cubic-bezier(0.16, 1, 0.3, 1), box-shadow 250ms cubic-bezier(0.16, 1, 0.3, 1), border-color 250ms ease;
+  transition: transform 260ms cubic-bezier(0.16, 1, 0.3, 1),
+              box-shadow 260ms cubic-bezier(0.16, 1, 0.3, 1),
+              border-color 260ms ease;
   will-change: transform, box-shadow;
 }
 
-/* 2. Interactive Floating Card (smooth 2-3px lift and soft shadow increase on hover) */
+/* 2. Interactive Floating Card & Space Listing Boxes */
 .floating-card,
-.floating-interactive {
-  box-shadow: 0 4px 18px -2px rgba(0, 0, 0, 0.35), 0 2px 6px -1px rgba(0, 0, 0, 0.2);
+.floating-interactive,
+.space-card {
+  box-shadow: 0 4px 18px -2px rgba(0, 0, 0, 0.35), 0 2px 6px -1px rgba(0, 0, 0, 0.18);
   transform: translateY(0);
-  transition: transform 250ms cubic-bezier(0.16, 1, 0.3, 1), box-shadow 250ms cubic-bezier(0.16, 1, 0.3, 1), border-color 250ms ease;
+  transition: transform 260ms cubic-bezier(0.16, 1, 0.3, 1),
+              box-shadow 260ms cubic-bezier(0.16, 1, 0.3, 1),
+              border-color 260ms ease,
+              background-color 260ms ease;
   will-change: transform, box-shadow;
+  outline: none;
 }
 
-.floating-card:hover,
-.floating-interactive:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 12px 28px -4px rgba(0, 0, 0, 0.52), 0 4px 10px -2px rgba(0, 0, 0, 0.32);
+@media (hover: hover) and (pointer: fine) {
+  .floating-card:hover,
+  .floating-interactive:hover,
+  .space-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 16px 36px -6px rgba(0, 0, 0, 0.58),
+                0 6px 14px -3px rgba(0, 0, 0, 0.32),
+                0 0 24px -4px rgba(99, 102, 241, 0.18);
+    border-color: rgba(99, 102, 241, 0.45) !important;
+  }
+
+  /* Host card amber elevation */
+  .floating-interactive-host:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 16px 36px -6px rgba(0, 0, 0, 0.58),
+                0 6px 14px -3px rgba(0, 0, 0, 0.32),
+                0 0 24px -4px rgba(245, 158, 11, 0.18);
+    border-color: rgba(245, 158, 11, 0.45) !important;
+  }
+}
+
+/* Accessible Keyboard Focus for Cards */
+.space-card:focus-visible,
+.floating-card:focus-visible,
+.floating-interactive:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--canvas), 0 0 0 4px rgba(99, 102, 241, 0.8), 0 12px 28px -4px rgba(0, 0, 0, 0.5);
+  border-color: rgba(99, 102, 241, 0.8);
 }
 
 /* 3. Deep Floating Panel (for high-focus cards, booking checkout, modals) */
 .floating-panel {
   box-shadow: 0 8px 32px -4px rgba(0, 0, 0, 0.48), 0 3px 8px -2px rgba(0, 0, 0, 0.28);
   transform: translateY(0);
-  transition: transform 250ms cubic-bezier(0.16, 1, 0.3, 1), box-shadow 250ms cubic-bezier(0.16, 1, 0.3, 1), border-color 250ms ease;
+  transition: transform 260ms cubic-bezier(0.16, 1, 0.3, 1),
+              box-shadow 260ms cubic-bezier(0.16, 1, 0.3, 1),
+              border-color 260ms ease;
   will-change: transform, box-shadow;
 }
 
-.floating-panel:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 16px 36px -4px rgba(0, 0, 0, 0.58), 0 6px 14px -2px rgba(0, 0, 0, 0.36);
+@media (hover: hover) and (pointer: fine) {
+  .floating-panel:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 16px 36px -4px rgba(0, 0, 0, 0.58), 0 6px 14px -2px rgba(0, 0, 0, 0.36);
+  }
 }
 
-/* 4. Core SpaceCard specific floating behavior */
-.space-card {
-  box-shadow: 0 4px 18px -2px rgba(0, 0, 0, 0.38), 0 2px 6px -1px rgba(0, 0, 0, 0.22);
-  transform: translateY(0);
-  transition: transform 250ms cubic-bezier(0.16, 1, 0.3, 1), box-shadow 250ms cubic-bezier(0.16, 1, 0.3, 1), border-color 250ms ease, background-color 250ms ease;
-  will-change: transform, box-shadow;
+/* Nested element stability: prevent child jumps during parent float */
+.space-card > *,
+.floating-card > *,
+.floating-interactive > * {
+  transform: translateZ(0);
 }
 
-.space-card:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 14px 30px -4px rgba(0, 0, 0, 0.55), 0 4px 12px -2px rgba(0, 0, 0, 0.35);
+/* Photo zoom smoothing inside space-card */
+.space-card .group-hover\:scale-\[1\.03\],
+.space-card .group-hover\:scale-105 {
+  transition: transform 450ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Accessibility: Disable transform motion when user requests reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  button,
+  a.btn,
+  .btn-interactive,
+  [role="button"],
+  .space-card,
+  .floating-card,
+  .floating-interactive,
+  .floating-container,
+  .floating-panel {
+    transform: none !important;
+    transition-duration: 0.01ms !important;
+  }
 }
 
 /* =========================================================================

@@ -46,7 +46,16 @@ export const SpaceCard: React.FC<SpaceCardProps> = ({ space, onPress }) => {
 
   return (
     <div
+      role="button"
+      tabIndex={0}
+      aria-label={`View space ${space.title}`}
       onClick={() => onPress(space.id)}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          onPress(space.id);
+        }
+      }}
       className="space-card floating-card group flex flex-col bg-slate-900/90 hover:bg-slate-850 border border-slate-800/80 hover:border-indigo-500/40 rounded-2xl overflow-hidden cursor-pointer"
     >
       {/* Photo Container */}
