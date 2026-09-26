@@ -187,6 +187,17 @@ def create_booking():
         }), 422
 
     if data.get("simulate_payment_failure"):
+        try:
+            from backend.modules.email import EmailService
+            calc_subtotal = round(float(hours) * space.price_hourly, 2)
+            EmailService.notify_payment_failed(
+                user=current_user,
+                space_title=space.title,
+                amount=round(calc_subtotal + round(calc_subtotal * 0.05, 2) + 100.0, 2),
+                reason="UPI Payment Failed: Authorization declined by payer UPI PSP."
+            )
+        except Exception:
+            pass
         return jsonify({
             "error": "UPI Payment Failed: Authorization declined by payer UPI PSP."
         }), 402
@@ -306,6 +317,14 @@ def create_booking():
     new_booking.micro_lease_agreement = lease_agreement
     db.session.commit()
 
+    # Transactional Email Notification (Non-blocking / fault-isolated)
+    try:
+        from backend.modules.email import EmailService
+        EmailService.notify_booking_created(new_booking)
+        EmailService.notify_escrow_held(new_booking)
+    except Exception as email_err:
+        current_app.logger.warning(f"[BOOKING_EMAIL_ERROR] {email_err}")
+
     return jsonify({
         "success": True,
         "booking_id": new_booking.id,
@@ -354,6 +373,12 @@ def api_booking_accept(booking_id):
     booking.session_state = "confirmed"
     db.session.commit()
 
+    try:
+        from backend.modules.email import EmailService
+        EmailService.notify_host_approved(booking)
+    except Exception as email_err:
+        current_app.logger.warning(f"[BOOKING_ACCEPT_EMAIL_ERROR] {email_err}")
+
     return jsonify({
         "success": True,
         "message": f"Reservation #{booking.id} accepted! Seeker pass confirmed.",
@@ -372,6 +397,13 @@ def api_booking_reject(booking_id):
     booking.session_state = "cancelled"
     booking.escrow_status = "refunded"
     db.session.commit()
+
+    try:
+        from backend.modules.email import EmailService
+        EmailService.notify_host_rejected(booking)
+        EmailService.notify_escrow_refunded(booking, reason="Host Declined Reservation")
+    except Exception as email_err:
+        current_app.logger.warning(f"[BOOKING_REJECT_EMAIL_ERROR] {email_err}")
 
     return jsonify({
         "success": True,
@@ -394,6 +426,13 @@ def api_booking_cancel(booking_id):
     booking.session_state = "cancelled"
     booking.escrow_status = "refunded"
     db.session.commit()
+
+    try:
+        from backend.modules.email import EmailService
+        EmailService.notify_booking_cancelled(booking, cancelled_by_user=current_user)
+        EmailService.notify_escrow_refunded(booking, reason="Booking Cancellation")
+    except Exception as email_err:
+        current_app.logger.warning(f"[BOOKING_CANCEL_EMAIL_ERROR] {email_err}")
 
     return jsonify({
         "success": True,
@@ -607,6 +646,14 @@ def api_booking_checkout(booking_id):
 
     db.session.commit()
 
+    # Escrow Release Notification
+    try:
+        from backend.modules.email import EmailService
+        if booking.escrow_status == "released":
+            EmailService.notify_escrow_refunded(booking, reason="Check-out Condition Cleared & On-Time Vacate")
+    except Exception as email_err:
+        current_app.logger.warning(f"[CHECKOUT_ESCROW_EMAIL_ERROR] {email_err}")
+
     return jsonify({
         "success": True,
         "message": msg,
@@ -641,8 +688,36 @@ def api_cancel_booking(booking_id):
         booking.escrow_status = "refunded"
     db.session.commit()
 
+    try:
+        from backend.modules.email import EmailService
+        EmailService.notify_booking_cancelled(booking, cancelled_by_user=current_user)
+        EmailService.notify_escrow_refunded(booking, reason="Booking Cancellation")
+    except Exception as email_err:
+        current_app.logger.warning(f"[BOOKING_CANCEL_EMAIL_ERROR] {email_err}")
+
     return jsonify({
         "success": True,
         "message": f"Booking #{booking_id} cancelled successfully. ₹{int(booking.escrow_deposit_amount)} escrow deposit refunded.",
+        "booking": booking.to_dict()
+    }), 200
+
+
+@api_v1_bookings.route("/api/booking/<int:booking_id>/send-reminder", methods=["POST"])
+@login_required
+def api_booking_send_reminder(booking_id):
+    """Dispatches upcoming session reminder email to seeker."""
+    booking = Booking.query.get_or_404(booking_id)
+    try:
+        authorize(current_user, Permission.BOOKING_VIEW, resource=booking)
+    except ForbiddenError as e:
+        return jsonify({"error": str(e)}), 403
+
+    from backend.modules.email import EmailService
+    dispatched = EmailService.notify_upcoming_reminder(booking)
+
+    return jsonify({
+        "success": True,
+        "message": f"Upcoming session reminder dispatched for Booking #{booking.id}.",
+        "dispatched": dispatched,
         "booking": booking.to_dict()
     }), 200

@@ -729,3 +729,47 @@ class DeviceSession(db.Model):
             "created_at": self.created_at.isoformat() if self.created_at else None,
         }
 
+
+class EmailLog(db.Model):
+    """
+    Transactional Email Event Log & Idempotency Store.
+    Tracks outgoing emails, deduplication keys, provider IDs, and failure states without exposing secrets.
+    """
+    __tablename__ = "email_logs"
+
+    id = db.Column(db.Integer, primary_key=True)
+    idempotency_key = db.Column(db.String(128), unique=True, nullable=False, index=True)
+    event_type = db.Column(db.String(64), nullable=False, index=True)
+    recipient_email = db.Column(db.String(120), nullable=False, index=True)
+    user_id = db.Column(db.Integer, db.ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    booking_id = db.Column(db.Integer, db.ForeignKey("bookings.id", ondelete="SET NULL"), nullable=True)
+    subject = db.Column(db.String(255), nullable=False)
+    status = db.Column(db.String(30), default="sent", nullable=False, index=True)  # 'sent', 'failed', 'skipped_duplicate'
+    resend_id = db.Column(db.String(100), nullable=True)
+    error_message = db.Column(db.Text, nullable=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow, index=True)
+
+    user = db.relationship("User", backref=db.backref("email_logs", lazy=True))
+    booking = db.relationship("Booking", backref=db.backref("email_logs", lazy=True))
+
+    __table_args__ = (
+        db.Index("idx_email_event_created", "event_type", "created_at"),
+        db.Index("idx_email_recipient", "recipient_email"),
+    )
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "idempotency_key": self.idempotency_key,
+            "event_type": self.event_type,
+            "recipient_email": self.recipient_email,
+            "user_id": self.user_id,
+            "booking_id": self.booking_id,
+            "subject": self.subject,
+            "status": self.status,
+            "resend_id": self.resend_id,
+            "error_message": self.error_message,
+            "created_at": self.created_at.isoformat() if self.created_at else None,
+        }
+
+

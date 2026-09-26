@@ -1,3 +1,4 @@
+import os
 import hashlib
 from datetime import datetime, timedelta
 from models import db, User, Space, Booking, Review, SpaceInquiry

@@ -174,8 +174,12 @@ def api_register():
     if not user:
         return jsonify({"success": False, "error": error}), 400
 
-    # Dispatch email verification link
+    # Dispatch email verification link and welcome notification
     EmailService.send_email_verification(user.email, raw_token)
+    try:
+        EmailService.notify_welcome(user)
+    except Exception:
+        pass
 
     # Note: User session is NOT established until email ownership is verified.
     return jsonify({
@@ -263,8 +267,12 @@ def api_seeker_register():
     if not user:
         return jsonify({"success": False, "error": error}), 400
 
-    # Dispatch email verification link
+    # Dispatch email verification link and welcome notification
     EmailService.send_email_verification(user.email, raw_token)
+    try:
+        EmailService.notify_welcome(user)
+    except Exception:
+        pass
 
     # Note: User session is NOT established until email ownership is verified.
     return jsonify({
@@ -388,8 +396,12 @@ def api_host_register():
     user.objective_trust_score = 98.5
     db.session.commit()
 
-    # Dispatch email verification link
+    # Dispatch email verification link and welcome notification
     EmailService.send_email_verification(user.email, raw_token)
+    try:
+        EmailService.notify_welcome(user)
+    except Exception:
+        pass
 
     # Note: User session is NOT established until email ownership is verified.
     return jsonify({
@@ -720,6 +732,15 @@ def api_mfa_verify_setup():
     db.session.commit()
     record_audit("AUTH_MFA_ENROLLED", user_id=current_user.id)
 
+    try:
+        EmailService.notify_security_event(
+            current_user,
+            "Two-Factor Authentication Enabled",
+            "Two-factor authentication (TOTP) has been successfully activated on your SpaceLoop account."
+        )
+    except Exception:
+        pass
+
     return jsonify({
         "success": True,
         "message": "Multi-Factor Authentication enabled successfully.",
@@ -825,6 +846,15 @@ def api_mfa_disable():
     db.session.commit()
     record_audit("AUTH_MFA_DISABLED", user_id=current_user.id)
 
+    try:
+        EmailService.notify_security_event(
+            current_user,
+            "Two-Factor Authentication Disabled",
+            "Two-factor authentication (TOTP) was deactivated on your SpaceLoop account."
+        )
+    except Exception:
+        pass
+
     return jsonify({
         "success": True,
         "message": "Multi-Factor Authentication disabled successfully.",
@@ -892,8 +922,15 @@ def api_verify_email():
             return redirect(f"/auth/verify-email/{token}")
         return jsonify({"success": False, "error": message}), 400
 
-    if request.accept_mimetypes.accept_html and not request.is_json:
-        return redirect(f"/auth/verify-email/{token}")
+    if user:
+        try:
+            EmailService.notify_security_event(
+                user,
+                "Email Address Verified",
+                f"Your email address {user.email} has been successfully verified on SpaceLoop."
+            )
+        except Exception:
+            pass
 
     return jsonify({
         "success": True,

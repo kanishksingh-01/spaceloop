@@ -82,8 +82,13 @@ class Config:
     GROQ_MODEL = os.environ.get("GROQ_MODEL", "openai/gpt-oss-120b")
     GROQ_FALLBACK_MODEL = os.environ.get("GROQ_FALLBACK_MODEL", "openai/gpt-oss-20b")
     GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", os.environ.get("GOOGLE_API_KEY", ""))
+    # AI Rate Limit
     AI_RATE_LIMIT = os.environ.get("AI_RATE_LIMIT", "200 per minute")
-    
+
+    # Transactional Email (Resend)
+    RESEND_API_KEY = os.environ.get("RESEND_API_KEY", "")
+    EMAIL_FROM = os.environ.get("EMAIL_FROM", os.environ.get("RESEND_FROM_EMAIL", "SpaceLoop <notifications@spaceloop.in>"))
+
     # CORS Configuration
     CORS_ORIGINS = os.environ.get(
         "CORS_ORIGINS",
