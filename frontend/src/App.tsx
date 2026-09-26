@@ -20,6 +20,7 @@ import { CalculatorPage } from './pages/CalculatorPage';
 import { VerifyPage } from './pages/VerifyPage';
 import { HowItWorksPage } from './pages/HowItWorksPage';
 import { TrustSafetyPage } from './pages/TrustSafetyPage';
+import { ArchitecturePage } from './pages/ArchitecturePage';
 import { ErrorBoundary } from './components/common/ErrorBoundary';
 
 import { VerifyEmailPage } from './pages/VerifyEmailPage';
@@ -299,6 +300,7 @@ export const App: React.FC = () => {
                   </ProtectedRoute>
                 }
               />
+              <Route path="/architecture" element={<ArchitecturePage />} />
 
               {/* Fallback */}
               <Route path="*" element={<LandingPage currentUser={currentUser} />} />

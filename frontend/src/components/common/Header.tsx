@@ -145,6 +145,18 @@ export const Header: React.FC<HeaderProps> = ({
                 <span>Discom & KYC</span>
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
               </button>
+              <button
+                onClick={() => navigate('/architecture')}
+                className={`px-3 py-1.5 rounded-lg transition flex items-center gap-1.5 ${
+                  location.pathname === '/architecture'
+                    ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
+                    : 'text-slate-300 hover:text-white hover:bg-slate-800/60'
+                }`}
+                title="System Architecture & Engineering Team"
+              >
+                <i className="fa-solid fa-cubes text-slate-400" />
+                <span>Architecture</span>
+              </button>
             </>
           ) : (
             /* SEEKER PORTAL NAVIGATION */
@@ -181,6 +193,18 @@ export const Header: React.FC<HeaderProps> = ({
               >
                 <i className="fa-solid fa-circle-question text-slate-400" />
                 <span>How It Works</span>
+              </button>
+              <button
+                onClick={() => navigate('/architecture')}
+                className={`px-3 py-1.5 rounded-lg transition flex items-center gap-1.5 ${
+                  location.pathname === '/architecture'
+                    ? 'bg-indigo-600/20 text-indigo-300 border border-indigo-500/30'
+                    : 'text-slate-300 hover:text-white hover:bg-slate-800/60'
+                }`}
+                title="System Architecture & Engineering Team"
+              >
+                <i className="fa-solid fa-cubes text-indigo-400" />
+                <span>Architecture</span>
               </button>
               <button
                 onClick={() => navigate('/admin/trust-safety')}
@@ -399,6 +423,15 @@ export const Header: React.FC<HeaderProps> = ({
                 >
                   <i className="fa-solid fa-shield-halved text-emerald-400" /> KYC Verify
                 </button>
+                <button
+                  onClick={() => {
+                    navigate('/architecture');
+                    setMobileDrawerOpen(false);
+                  }}
+                  className="p-2 rounded-lg bg-amber-950/30 hover:bg-amber-900/50 text-amber-300 flex items-center gap-2 text-left"
+                >
+                  <i className="fa-solid fa-cubes text-amber-400" /> Architecture
+                </button>
               </>
             ) : (
               <>
@@ -428,6 +461,15 @@ export const Header: React.FC<HeaderProps> = ({
                   className="p-2 rounded-lg bg-slate-900/60 hover:bg-slate-800 text-slate-200 flex items-center gap-2 text-left"
                 >
                   <i className="fa-solid fa-circle-question text-slate-400" /> How It Works
+                </button>
+                <button
+                  onClick={() => {
+                    navigate('/architecture');
+                    setMobileDrawerOpen(false);
+                  }}
+                  className="p-2 rounded-lg bg-indigo-950/30 hover:bg-indigo-900/50 text-indigo-300 flex items-center gap-2 text-left"
+                >
+                  <i className="fa-solid fa-cubes text-indigo-400" /> Architecture
                 </button>
                 <button
                   onClick={() => {
