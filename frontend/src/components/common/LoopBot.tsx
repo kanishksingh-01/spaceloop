@@ -1,9 +1,9 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { View, Text, Pressable, TextInput, ScrollView } from 'react-native';
 import { sendChatMessage, ChatMessage } from '../../services/ai';
 
 export const LoopBot: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
+  const [isMinimized, setIsMinimized] = useState(false);
   const [input, setInput] = useState('');
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
@@ -14,12 +14,19 @@ export const LoopBot: React.FC = () => {
   ]);
   const [loading, setLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    if (isOpen && messagesEndRef.current) {
+    if (isOpen && !isMinimized && messagesEndRef.current) {
       messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
     }
-  }, [messages, isOpen]);
+  }, [messages, isOpen, isMinimized]);
+
+  useEffect(() => {
+    if (isOpen && !isMinimized && inputRef.current) {
+      inputRef.current.focus();
+    }
+  }, [isOpen, isMinimized]);
 
   const handleSend = async (messageText?: string) => {
     const textToSend = (messageText || input).trim();
@@ -75,11 +82,9 @@ export const LoopBot: React.FC = () => {
 
           const isBullet = line.trim().startsWith('•') || line.trim().startsWith('-');
           return (
-            <p
-              key={lIdx}
-              className={isBullet ? 'pl-2 text-slate-300' : ''}
-            >
-              {formattedLine}
+            <p key={lIdx} className={isBullet ? 'pl-2 text-slate-300 flex items-start gap-1.5' : ''}>
+              {isBullet ? <span className="text-indigo-400 select-none">•</span> : null}
+              <span>{formattedLine}</span>
             </p>
           );
         })}
@@ -89,154 +94,177 @@ export const LoopBot: React.FC = () => {
 
   return (
     <>
-      {/* Floating LoopBot Concierge Launcher */}
-      <div className="fixed bottom-20 md:bottom-6 right-4 sm:right-6 z-40">
-        <button
-          type="button"
-          onClick={() => setIsOpen(true)}
-          className="flex items-center gap-2.5 bg-gradient-to-r from-violet-600 via-indigo-600 to-violet-700 text-white px-3.5 py-2.5 sm:px-4 sm:py-3 rounded-full floating-panel hover:-translate-y-1 transition-all duration-200 border border-violet-400/30 cursor-pointer shadow-lg shadow-violet-600/25"
-        >
-          <div className="relative">
-            <i className="fa-solid fa-robot text-sm sm:text-base" />
-            <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-emerald-400 rounded-full border-2 border-slate-900" />
-          </div>
-          <span className="text-xs sm:text-sm font-semibold tracking-wide">Ask LoopBot</span>
-        </button>
-      </div>
+      {/* 1. Floating Launcher Button (Bottom-Right) */}
+      {(!isOpen || isMinimized) && (
+        <div className="fixed bottom-20 md:bottom-6 right-4 sm:right-6 z-40 animate-in fade-in duration-200">
+          <button
+            type="button"
+            onClick={() => {
+              setIsOpen(true);
+              setIsMinimized(false);
+            }}
+            className="group flex items-center gap-2.5 px-4 py-3 rounded-full bg-gradient-to-r from-indigo-600 via-violet-600 to-indigo-700 text-white font-bold text-xs shadow-lg shadow-indigo-950/60 hover:shadow-indigo-600/40 border border-indigo-400/30 hover:border-indigo-300 transition-all duration-200 hover:-translate-y-1 active:translate-y-0 cursor-pointer"
+            title="Open SpaceLoop AI Concierge"
+          >
+            <div className="relative flex items-center justify-center">
+              <div className="w-6 h-6 rounded-full bg-white/10 flex items-center justify-center">
+                <i className="fa-solid fa-robot text-xs text-white group-hover:rotate-12 transition-transform duration-300" />
+              </div>
+              <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 bg-emerald-400 rounded-full border-2 border-slate-900 animate-pulse" />
+            </div>
+            <span className="tracking-wide">Ask LoopBot</span>
+            <span className="px-1.5 py-0.5 rounded text-[9px] font-mono font-bold bg-white/15 text-indigo-100 border border-white/10">
+              AI
+            </span>
+          </button>
+        </div>
+      )}
 
-      {/* AI Concierge Modal */}
-      {isOpen && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
-          <div className="bg-slate-900 border border-slate-800 w-full sm:max-w-lg rounded-t-2xl sm:rounded-2xl floating-panel flex flex-col h-[560px] max-h-[90vh] overflow-hidden animate-in fade-in zoom-in-95 duration-200">
-            {/* Modal Header */}
-            <div className="p-4 bg-slate-950/80 border-b border-slate-800 flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-lg bg-indigo-600/20 border border-indigo-500/30 flex items-center justify-center text-indigo-400">
-                  <i className="fa-solid fa-robot text-sm" />
+      {/* 2. Compact Floating Chat Window (No Fullscreen Backdrop) */}
+      {isOpen && !isMinimized && (
+        <aside
+          role="complementary"
+          aria-label="LoopBot AI Assistant"
+          className="fixed bottom-20 md:bottom-6 right-3 sm:right-6 z-50 w-[calc(100vw-24px)] sm:w-[380px] md:w-[410px] h-[530px] max-h-[calc(100vh-100px)] rounded-2xl sm:rounded-3xl bg-slate-900/95 backdrop-blur-2xl border border-indigo-500/30 shadow-[0_20px_60px_-15px_rgba(0,0,0,0.8),0_0_30px_rgba(99,102,241,0.2)] flex flex-col overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-200"
+        >
+          {/* Header */}
+          <div className="px-4 py-3.5 bg-slate-950/90 border-b border-slate-800/80 flex items-center justify-between gap-3 shrink-0">
+            <div className="flex items-center gap-2.5 min-w-0">
+              <div className="relative">
+                <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-indigo-600 to-violet-600 flex items-center justify-center text-white text-xs shadow-md shadow-indigo-600/30 border border-white/10">
+                  <i className="fa-solid fa-robot" />
                 </div>
-                <div>
-                  <h3 className="text-sm font-semibold text-white">LoopBot AI Concierge</h3>
-                  <p className="text-xs text-emerald-400 flex items-center gap-1">
-                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" /> Online & Ready
-                  </p>
+                <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-emerald-400 rounded-full border-2 border-slate-900 animate-pulse" />
+              </div>
+              <div className="min-w-0">
+                <div className="flex items-center gap-1.5">
+                  <span className="text-xs font-bold text-white tracking-tight truncate">
+                    LoopBot AI
+                  </span>
+                  <span className="px-1.5 py-0.2 rounded-full text-[9px] font-mono font-bold bg-cyan-500/10 text-cyan-300 border border-cyan-500/25">
+                    Concierge
+                  </span>
+                </div>
+                <div className="flex items-center gap-1 text-[11px] text-emerald-400 font-medium">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                  <span>Online & Ready</span>
                 </div>
               </div>
+            </div>
+
+            <div className="flex items-center gap-1 shrink-0">
+              {/* Minimize Button */}
+              <button
+                type="button"
+                onClick={() => setIsMinimized(true)}
+                className="w-7 h-7 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800/80 transition flex items-center justify-center text-xs"
+                title="Minimize chat"
+                aria-label="Minimize chat"
+              >
+                <i className="fa-solid fa-minus" />
+              </button>
+              {/* Close Button */}
               <button
                 type="button"
                 onClick={() => setIsOpen(false)}
-                className="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800 transition"
+                className="w-7 h-7 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800/80 transition flex items-center justify-center text-xs"
+                title="Close chat"
+                aria-label="Close chat"
               >
-                <i className="fa-solid fa-xmark text-lg" />
+                <i className="fa-solid fa-xmark text-sm" />
               </button>
             </div>
-
-            {/* Message History */}
-            <div className="flex-grow p-4 overflow-y-auto space-y-3.5 text-sm">
-              {messages.map((msg, idx) => (
-                <div
-                  key={idx}
-                  className={`flex gap-2.5 ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
-                >
-                  {msg.role === 'assistant' && (
-                    <div className="w-7 h-7 rounded-full bg-indigo-600/30 text-indigo-300 flex items-center justify-center shrink-0 text-xs">
-                      <i className="fa-solid fa-robot" />
-                    </div>
-                  )}
-                  <div
-                    className={`p-3 rounded-2xl max-w-[88%] leading-relaxed text-xs sm:text-sm ${
-                      msg.role === 'user'
-                        ? 'bg-indigo-600 text-white rounded-tr-sm whitespace-pre-wrap'
-                        : 'bg-slate-800/90 text-slate-200 rounded-tl-sm border border-slate-700/50'
-                    }`}
-                    style={{ wordBreak: 'break-word', overflowWrap: 'anywhere' }}
-                  >
-                    {msg.role === 'user' ? msg.content : renderCleanMessage(msg.content)}
-                  </div>
-                </div>
-              ))}
-              {loading && (
-                <div className="flex gap-2.5 items-center text-slate-400 text-xs">
-                  <div className="w-7 h-7 rounded-full bg-indigo-600/30 text-indigo-300 flex items-center justify-center shrink-0 text-xs">
-                    <i className="fa-solid fa-robot animate-spin" />
-                  </div>
-                  <span>Thinking...</span>
-                </div>
-              )}
-              <div ref={messagesEndRef} />
-            </div>
-
-            {/* Quick Suggested Chips */}
-            <div className="px-4 py-2 bg-slate-950/50 border-t border-slate-800/60 flex items-center gap-2 overflow-x-auto text-xs whitespace-nowrap scrollbar-none">
-              <button
-                type="button"
-                onClick={() => handleSend('Find a quiet workspace for 3 hours with fiber WiFi')}
-                className="px-2.5 py-1 rounded-full bg-slate-800 text-slate-300 hover:text-white hover:bg-slate-700 border border-slate-700 transition"
-              >
-                💼 Remote Work Desk
-              </button>
-              <button
-                type="button"
-                onClick={() => handleSend('Find a small room for a client meeting with presentation screen')}
-                className="px-2.5 py-1 rounded-full bg-slate-800 text-slate-300 hover:text-white hover:bg-slate-700 border border-slate-700 transition"
-              >
-                👥 Client Meeting
-              </button>
-              <button
-                type="button"
-                onClick={() => handleSend('Find an acoustic podcast studio for 2 people')}
-                className="px-2.5 py-1 rounded-full bg-slate-800 text-slate-300 hover:text-white hover:bg-slate-700 border border-slate-700 transition"
-              >
-                🎙️ Podcast Studio
-              </button>
-              <button
-                type="button"
-                onClick={() => handleSend('Find a maker workshop with 3D printer and soldering bay')}
-                className="px-2.5 py-1 rounded-full bg-slate-800 text-slate-300 hover:text-white hover:bg-slate-700 border border-slate-700 transition"
-              >
-                🛠️ Maker Workshop
-              </button>
-              <button
-                type="button"
-                onClick={() => handleSend('How much can I earn renting an unused garage or meeting room?')}
-                className="px-2.5 py-1 rounded-full bg-slate-800 text-slate-300 hover:text-white hover:bg-slate-700 border border-slate-700 transition"
-              >
-                💰 Monetize Space
-              </button>
-              <button
-                type="button"
-                onClick={() => handleSend('How do AI micro-lease agreements protect owners?')}
-                className="px-2.5 py-1 rounded-full bg-slate-800 text-slate-300 hover:text-white hover:bg-slate-700 border border-slate-700 transition"
-              >
-                🛡️ Micro-Lease Safety
-              </button>
-            </div>
-
-            {/* Input Bar */}
-            <form
-              onSubmit={(e) => {
-                e.preventDefault();
-                handleSend();
-              }}
-              className="p-3 bg-slate-950 border-t border-slate-800 flex gap-2"
-            >
-              <input
-                type="text"
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                placeholder="Ask about spaces, rules, or earnings..."
-                className="flex-grow bg-slate-800 border border-slate-700/80 rounded-xl px-3.5 py-2.5 text-sm text-slate-100 placeholder-slate-400 focus:outline-none focus:border-indigo-500 transition"
-              />
-              <button
-                type="submit"
-                disabled={loading}
-                className="bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2.5 rounded-xl font-medium text-sm transition shrink-0 flex items-center justify-center disabled:opacity-50"
-              >
-                <i className="fa-solid fa-arrow-up" />
-              </button>
-            </form>
           </div>
-        </div>
+
+          {/* Scrollable Message History */}
+          <div className="flex-1 p-3.5 sm:p-4 overflow-y-auto space-y-3 text-xs sm:text-[13px] scrollbar-thin scrollbar-thumb-slate-800">
+            {messages.map((msg, idx) => (
+              <div
+                key={idx}
+                className={`flex gap-2.5 ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
+              >
+                {msg.role === 'assistant' && (
+                  <div className="w-6 h-6 rounded-lg bg-indigo-600/25 border border-indigo-500/30 text-indigo-300 flex items-center justify-center shrink-0 text-[10px] mt-0.5">
+                    <i className="fa-solid fa-robot" />
+                  </div>
+                )}
+                <div
+                  className={`p-3 rounded-2xl max-w-[85%] leading-relaxed ${
+                    msg.role === 'user'
+                      ? 'bg-indigo-600 text-white rounded-tr-xs shadow-md shadow-indigo-600/20 whitespace-pre-wrap'
+                      : 'bg-slate-800/90 text-slate-200 rounded-tl-xs border border-slate-700/60 shadow-sm'
+                  }`}
+                  style={{ wordBreak: 'break-word', overflowWrap: 'anywhere' }}
+                >
+                  {msg.role === 'user' ? msg.content : renderCleanMessage(msg.content)}
+                </div>
+              </div>
+            ))}
+
+            {loading && (
+              <div className="flex gap-2 items-center text-slate-400 text-xs">
+                <div className="w-6 h-6 rounded-lg bg-indigo-600/25 border border-indigo-500/30 text-indigo-300 flex items-center justify-center shrink-0 text-[10px]">
+                  <i className="fa-solid fa-robot animate-spin" />
+                </div>
+                <div className="flex items-center gap-1.5 bg-slate-800/80 px-3 py-2 rounded-2xl rounded-tl-xs border border-slate-700/50">
+                  <span className="w-1.5 h-1.5 rounded-full bg-indigo-400 animate-bounce" style={{ animationDelay: '0ms' }} />
+                  <span className="w-1.5 h-1.5 rounded-full bg-indigo-400 animate-bounce" style={{ animationDelay: '150ms' }} />
+                  <span className="w-1.5 h-1.5 rounded-full bg-indigo-400 animate-bounce" style={{ animationDelay: '300ms' }} />
+                </div>
+              </div>
+            )}
+            <div ref={messagesEndRef} />
+          </div>
+
+          {/* Quick Suggested Topic Chips */}
+          <div className="px-3 py-2 bg-slate-950/60 border-t border-slate-800/60 flex items-center gap-1.5 overflow-x-auto text-[11px] whitespace-nowrap scrollbar-none shrink-0">
+            {[
+              { label: '💼 Quiet Work Desk', prompt: 'Find a quiet workspace for 3 hours with fiber WiFi' },
+              { label: '👥 Client Meeting', prompt: 'Find a small room for a client meeting with presentation screen' },
+              { label: '🎙️ Podcast Studio', prompt: 'Find an acoustic podcast studio for 2 people' },
+              { label: '💰 Monetize Space', prompt: 'How much can I earn renting an unused garage or meeting room?' },
+              { label: '🛡️ Micro-Lease Safety', prompt: 'How do AI micro-lease agreements protect space hosts?' },
+            ].map((chip, idx) => (
+              <button
+                key={idx}
+                type="button"
+                onClick={() => handleSend(chip.prompt)}
+                className="px-2.5 py-1 rounded-full bg-slate-800/80 hover:bg-indigo-600/20 text-slate-300 hover:text-indigo-200 border border-slate-700/60 hover:border-indigo-500/40 transition shrink-0"
+              >
+                {chip.label}
+              </button>
+            ))}
+          </div>
+
+          {/* Input Bar */}
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              handleSend();
+            }}
+            className="p-3 bg-slate-950 border-t border-slate-800/80 flex items-center gap-2 shrink-0"
+          >
+            <input
+              ref={inputRef}
+              type="text"
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              placeholder="Ask about spaces, rules, or earnings..."
+              className="flex-1 bg-slate-900 border border-slate-700/80 rounded-xl px-3.5 py-2 text-xs sm:text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-indigo-500 transition"
+            />
+            <button
+              type="submit"
+              disabled={loading || !input.trim()}
+              className="w-9 h-9 rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white font-medium text-xs transition shrink-0 flex items-center justify-center disabled:opacity-40 shadow-sm shadow-indigo-600/30"
+              title="Send message"
+            >
+              <i className="fa-solid fa-arrow-up" />
+            </button>
+          </form>
+        </aside>
       )}
     </>
   );
 };
+
+export default LoopBot;
