@@ -18,3 +18,9 @@ services:
         sync: false
       - key: GEMINI_API_KEY
         sync: false
+      - key: RESEND_API_KEY
+        sync: false
+      - key: APP_URL
+        value: https://spaceloop.onrender.com
+      - key: EMAIL_FROM
+        value: SpaceLoop <onboarding@resend.dev>

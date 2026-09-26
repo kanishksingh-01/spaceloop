@@ -180,6 +180,8 @@ class EmailService:
                     pass
             if not base_url:
                 base_url = "http://localhost:5000"
+            if ("onrender.com" in base_url or os.environ.get("RENDER")) and base_url.startswith("http://"):
+                base_url = "https://" + base_url[len("http://"):]
             verify_url = f"{base_url}/auth/verify-email/{raw_token}"
         link = verify_url
         subject, html_body, text_body = render_email_verification(to_email, link)
