@@ -37,12 +37,13 @@ class EmailService:
 
     @classmethod
     def get_adapter(cls) -> BaseEmailAdapter:
-        if cls._adapter is None:
-            resend_key = os.environ.get("RESEND_API_KEY") or getattr(Config, "RESEND_API_KEY", "")
-            from_email = os.environ.get("EMAIL_FROM") or os.environ.get("RESEND_FROM_EMAIL") or getattr(Config, "EMAIL_FROM", "SpaceLoop <notifications@spaceloop.in>")
+        resend_key = (os.environ.get("RESEND_API_KEY") or getattr(Config, "RESEND_API_KEY", "")).strip()
+        from_email = os.environ.get("EMAIL_FROM") or os.environ.get("RESEND_FROM_EMAIL") or getattr(Config, "EMAIL_FROM", "SpaceLoop <onboarding@resend.dev>")
 
+        # If adapter is not set, or was previously DevelopmentEmailAdapter and a key is now supplied
+        if cls._adapter is None or (isinstance(cls._adapter, DevelopmentEmailAdapter) and resend_key):
             if resend_key:
-                logger.info("[EMAIL_SERVICE] Initializing ResendEmailAdapter")
+                logger.info("[EMAIL_SERVICE] Initializing ResendEmailAdapter with configured API key")
                 cls._adapter = ResendEmailAdapter(api_key=resend_key, from_email=from_email)
             elif os.environ.get("SMTP_HOST"):
                 logger.info("[EMAIL_SERVICE] Initializing SMTPEmailAdapter")
@@ -168,7 +169,19 @@ class EmailService:
 
     @classmethod
     def notify_email_verification(cls, to_email: str, raw_token: str, verify_url: str = None, user_id: int = None) -> bool:
-        link = verify_url or f"https://spaceloop.in/auth/verify-email/{raw_token}"
+        if not verify_url:
+            base_url = (os.environ.get("APP_URL") or os.environ.get("BASE_URL") or os.environ.get("FRONTEND_URL") or "").rstrip("/")
+            if not base_url:
+                try:
+                    from flask import request, has_request_context
+                    if has_request_context():
+                        base_url = request.host_url.rstrip("/")
+                except Exception:
+                    pass
+            if not base_url:
+                base_url = "http://localhost:5000"
+            verify_url = f"{base_url}/auth/verify-email/{raw_token}"
+        link = verify_url
         subject, html_body, text_body = render_email_verification(to_email, link)
         key = f"email-verify-{to_email}-{raw_token[:12]}"
         return cls.send_email(

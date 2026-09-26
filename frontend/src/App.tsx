@@ -22,12 +22,88 @@ import { HowItWorksPage } from './pages/HowItWorksPage';
 import { TrustSafetyPage } from './pages/TrustSafetyPage';
 import { ErrorBoundary } from './components/common/ErrorBoundary';
 
+import { VerifyEmailPage } from './pages/VerifyEmailPage';
+import { logoutUser, resendEmailVerification } from './services/auth';
+
 interface ProtectedRouteProps {
   currentUser: User | null;
   initializing: boolean;
   onRequireAuth: () => void;
   children: React.ReactElement;
 }
+
+const UnverifiedEmailNotice: React.FC<{ email: string; onLogout?: () => void }> = ({ email, onLogout }) => {
+  const [resending, setResending] = useState(false);
+  const [status, setStatus] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  const handleResend = async () => {
+    setResending(true);
+    setStatus(null);
+    setError(null);
+    try {
+      const res = await resendEmailVerification(email);
+      setStatus(res.message || 'Verification email resent via Resend! Check your inbox.');
+    } catch (e: any) {
+      setError(e.message || 'Failed to resend verification email.');
+    } finally {
+      setResending(false);
+    }
+  };
+
+  return (
+    <div className="flex-1 flex flex-col items-center justify-center py-20 px-4 text-center max-w-lg mx-auto">
+      <div className="w-16 h-16 rounded-2xl bg-amber-500/15 border border-amber-500/30 flex items-center justify-center text-amber-400 text-3xl mb-5 shadow-inner">
+        <i className="fa-solid fa-envelope-circle-check" />
+      </div>
+      <span className="px-3 py-1 rounded-full text-xs font-bold bg-amber-500/10 text-amber-400 border border-amber-500/20 mb-3">
+        Action Required
+      </span>
+      <h2 className="text-2xl font-black text-white mb-2">Email Verification Required</h2>
+      <p className="text-slate-300 text-sm mb-6 leading-relaxed">
+        Your account (<strong className="text-amber-300">{email}</strong>) has not been verified yet. Check your inbox for the verification email sent via Resend, or click below to request a new link to access the SpaceLoop portal.
+      </p>
+
+      {status && (
+        <div className="w-full mb-4 p-3 bg-emerald-500/10 border border-emerald-500/30 rounded-xl text-xs text-emerald-300 text-center">
+          ✓ {status}
+        </div>
+      )}
+      {error && (
+        <div className="w-full mb-4 p-3 bg-rose-500/10 border border-rose-500/30 rounded-xl text-xs text-rose-300 text-center">
+          ⚠️ {error}
+        </div>
+      )}
+
+      <div className="flex flex-col sm:flex-row gap-3 w-full justify-center">
+        <button
+          type="button"
+          disabled={resending}
+          onClick={handleResend}
+          className="px-6 py-3 rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white font-bold text-xs shadow-lg shadow-indigo-600/25 transition disabled:opacity-50 flex items-center justify-center gap-2"
+        >
+          <i className="fa-solid fa-paper-plane text-xs" />
+          <span>{resending ? 'Sending with Resend...' : 'Resend Verification Email'}</span>
+        </button>
+
+        <button
+          type="button"
+          onClick={async () => {
+            try {
+              await logoutUser();
+            } catch {}
+            localStorage.removeItem('spaceloop_user');
+            if (onLogout) onLogout();
+            window.location.reload();
+          }}
+          className="px-5 py-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold text-xs border border-slate-700 transition"
+        >
+          Sign Out / Switch User
+        </button>
+      </div>
+    </div>
+  );
+};
 
 const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   currentUser,
@@ -60,6 +136,9 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
         </button>
       </div>
     );
+  }
+  if (!currentUser.is_email_verified) {
+    return <UnverifiedEmailNotice email={currentUser.email} />;
   }
   return children;
 };
@@ -141,20 +220,46 @@ export const App: React.FC = () => {
               <Route
                 path="/host"
                 element={
-                  <HostDashboardPage
+                  <ProtectedRoute
                     currentUser={currentUser}
-                    onOpenHostAuthModal={() => setHostAuthModalOpen(true)}
-                  />
+                    initializing={initializing}
+                    onRequireAuth={() => setHostAuthModalOpen(true)}
+                  >
+                    <HostDashboardPage
+                      currentUser={currentUser}
+                      onOpenHostAuthModal={() => setHostAuthModalOpen(true)}
+                    />
+                  </ProtectedRoute>
                 }
               />
               <Route
                 path="/host/dashboard"
                 element={
-                  <HostDashboardPage
+                  <ProtectedRoute
                     currentUser={currentUser}
-                    onOpenHostAuthModal={() => setHostAuthModalOpen(true)}
-                  />
+                    initializing={initializing}
+                    onRequireAuth={() => setHostAuthModalOpen(true)}
+                  >
+                    <HostDashboardPage
+                      currentUser={currentUser}
+                      onOpenHostAuthModal={() => setHostAuthModalOpen(true)}
+                    />
+                  </ProtectedRoute>
                 }
+              />
+
+              {/* Email Verification Routes (Resend Link Handlers) */}
+              <Route
+                path="/auth/verify-email/:token"
+                element={<VerifyEmailPage onUserVerified={(u) => setCurrentUser(u)} />}
+              />
+              <Route
+                path="/verify-email/:token"
+                element={<VerifyEmailPage onUserVerified={(u) => setCurrentUser(u)} />}
+              />
+              <Route
+                path="/verify-email"
+                element={<VerifyEmailPage onUserVerified={(u) => setCurrentUser(u)} />}
               />
               <Route
                 path="/list-space"

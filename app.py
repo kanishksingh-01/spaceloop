@@ -564,8 +564,11 @@ def create_app():
 
     @app.route("/auth/verify-email/<token>", endpoint="auth_verify_email")
     def auth_verify_email(token):
-        success, msg = AuthService.verify_email(token)
-        return render_template("auth/verify_email.html", success=success, message=msg)
+        success, msg, user = AuthService.verify_email_token(token)
+        if success and user:
+            login_user(user, remember=True)
+            set_active_context(user, "host" if user.is_host and not user.is_seeker else "seeker")
+        return render_template("auth/verify_email.html", success=success, message=msg, user=user.to_dict() if user else None)
 
     @app.route("/auth/access-denied", endpoint="auth_access_denied")
     def auth_access_denied():
