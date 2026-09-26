@@ -47,10 +47,11 @@ export const LoopBot: React.FC = () => {
   // Initialize position when first opened
   useEffect(() => {
     if (isOpen && !position) {
-      const defaultW = Math.min(410, window.innerWidth - 24);
-      const defaultH = Math.min(530, window.innerHeight - 100);
-      const defaultX = Math.max(12, window.innerWidth - defaultW - 24);
-      const defaultY = Math.max(12, window.innerHeight - defaultH - 24);
+      const isMobile = window.innerWidth < 640;
+      const defaultW = isMobile ? Math.min(390, window.innerWidth - 16) : Math.min(410, window.innerWidth - 24);
+      const defaultH = isMobile ? Math.min(500, window.innerHeight - 90) : Math.min(530, window.innerHeight - 100);
+      const defaultX = Math.max(8, window.innerWidth - defaultW - (isMobile ? 8 : 20));
+      const defaultY = Math.max(8, window.innerHeight - defaultH - (isMobile ? 75 : 24));
 
       setSize({ width: defaultW, height: defaultH });
       setPosition({ x: defaultX, y: defaultY });
@@ -62,18 +63,22 @@ export const LoopBot: React.FC = () => {
     const handleViewportResize = () => {
       const currentSize = sizeRef.current;
       const currentPos = positionRef.current;
+      const isMobile = window.innerWidth < 640;
 
       const maxAllowedW = Math.min(720, window.innerWidth - 16);
-      const maxAllowedH = Math.min(850, window.innerHeight - 16);
+      const maxAllowedH = Math.min(850, window.innerHeight - (isMobile ? 80 : 20));
 
-      const clampedW = Math.max(300, Math.min(currentSize.width, maxAllowedW));
-      const clampedH = Math.max(380, Math.min(currentSize.height, maxAllowedH));
+      const minW = isMobile ? Math.min(290, window.innerWidth - 16) : 310;
+      const minH = 360;
+
+      const clampedW = Math.max(minW, Math.min(currentSize.width, maxAllowedW));
+      const clampedH = Math.max(minH, Math.min(currentSize.height, maxAllowedH));
 
       setSize({ width: clampedW, height: clampedH });
 
       if (currentPos) {
         const clampedX = Math.max(8, Math.min(currentPos.x, window.innerWidth - clampedW - 8));
-        const clampedY = Math.max(8, Math.min(currentPos.y, window.innerHeight - clampedH - 8));
+        const clampedY = Math.max(8, Math.min(currentPos.y, window.innerHeight - clampedH - (isMobile ? 75 : 8)));
         setPosition({ x: clampedX, y: clampedY });
       }
     };
@@ -82,7 +87,7 @@ export const LoopBot: React.FC = () => {
     return () => window.removeEventListener('resize', handleViewportResize);
   }, []);
 
-  // Auto scroll messages
+  // Auto scroll messages smoothly
   useEffect(() => {
     if (isOpen && !isMinimized && messagesEndRef.current) {
       messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
@@ -112,8 +117,8 @@ export const LoopBot: React.FC = () => {
     const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX;
     const clientY = 'touches' in e ? e.touches[0].clientY : e.clientY;
 
-    const currentX = positionRef.current?.x ?? Math.max(12, window.innerWidth - size.width - 24);
-    const currentY = positionRef.current?.y ?? Math.max(12, window.innerHeight - size.height - 24);
+    const currentX = positionRef.current?.x ?? Math.max(8, window.innerWidth - size.width - 20);
+    const currentY = positionRef.current?.y ?? Math.max(8, window.innerHeight - size.height - 24);
 
     dragRef.current = {
       startX: clientX,
@@ -134,10 +139,11 @@ export const LoopBot: React.FC = () => {
 
       const currentW = sizeRef.current.width;
       const currentH = sizeRef.current.height;
+      const isMobile = window.innerWidth < 640;
 
       // Keep within visible viewport
       const boundedX = Math.max(8, Math.min(dragRef.current.initPosX + deltaX, window.innerWidth - currentW - 8));
-      const boundedY = Math.max(8, Math.min(dragRef.current.initPosY + deltaY, window.innerHeight - currentH - 8));
+      const boundedY = Math.max(8, Math.min(dragRef.current.initPosY + deltaY, window.innerHeight - currentH - (isMobile ? 75 : 8)));
 
       setPosition({ x: boundedX, y: boundedY });
     };
@@ -184,12 +190,13 @@ export const LoopBot: React.FC = () => {
 
       const posX = positionRef.current?.x ?? 0;
       const posY = positionRef.current?.y ?? 0;
+      const isMobile = window.innerWidth < 640;
 
       // Constraints: sensible min and max, bounded by viewport
-      const minW = 310;
-      const minH = 380;
+      const minW = isMobile ? Math.min(290, window.innerWidth - 16) : 310;
+      const minH = 360;
       const maxW = Math.max(minW, Math.min(720, window.innerWidth - posX - 8));
-      const maxH = Math.max(minH, Math.min(850, window.innerHeight - posY - 8));
+      const maxH = Math.max(minH, Math.min(850, window.innerHeight - posY - (isMobile ? 75 : 8)));
 
       const newW = Math.max(minW, Math.min(resizeRef.current.initW + deltaX, maxW));
       const newH = Math.max(minH, Math.min(resizeRef.current.initH + deltaY, maxH));
@@ -267,7 +274,7 @@ export const LoopBot: React.FC = () => {
           const isBullet = line.trim().startsWith('•') || line.trim().startsWith('-');
           return (
             <p key={lIdx} className={isBullet ? 'pl-2 text-slate-300 flex items-start gap-1.5' : ''}>
-              {isBullet ? <span className="text-indigo-400 select-none">•</span> : null}
+              {isBullet ? <span className="text-purple-400 select-none">•</span> : null}
               <span>{formattedLine}</span>
             </p>
           );
@@ -278,16 +285,16 @@ export const LoopBot: React.FC = () => {
 
   return (
     <>
-      {/* 1. Floating Launcher Button (Bottom-Right, non-blocking) */}
+      {/* 1. Floating Launcher Button (Bottom-Right, zero background overlay) */}
       {(!isOpen || isMinimized) && (
-        <div className="fixed bottom-20 md:bottom-6 right-4 sm:right-6 z-40 animate-in fade-in duration-200">
+        <div className="fixed bottom-20 md:bottom-6 right-4 sm:right-6 z-40 animate-in fade-in duration-200 pointer-events-auto">
           <button
             type="button"
             onClick={() => {
               setIsOpen(true);
               setIsMinimized(false);
             }}
-            className="group flex items-center gap-2.5 px-4 py-3 rounded-full bg-gradient-to-r from-indigo-600 via-violet-600 to-indigo-700 text-white font-bold text-xs shadow-lg shadow-indigo-950/60 hover:shadow-indigo-600/40 border border-indigo-400/30 hover:border-indigo-300 transition-all duration-200 hover:-translate-y-1 active:translate-y-0 cursor-pointer"
+            className="group flex items-center gap-2.5 px-4 py-3 rounded-full bg-gradient-to-r from-indigo-600 via-purple-600 to-indigo-700 text-white font-bold text-xs shadow-lg shadow-indigo-950/60 hover:shadow-[0_0_24px_rgba(168,85,247,0.55)] border border-indigo-400/40 hover:border-purple-300 transition-all duration-200 hover:-translate-y-0.5 active:translate-y-0 cursor-pointer"
             title="Open SpaceLoop AI Concierge"
           >
             <div className="relative flex items-center justify-center">
@@ -297,7 +304,7 @@ export const LoopBot: React.FC = () => {
               <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 bg-emerald-400 rounded-full border-2 border-slate-900 animate-pulse" />
             </div>
             <span className="tracking-wide">Ask LoopBot</span>
-            <span className="px-1.5 py-0.5 rounded text-[9px] font-mono font-bold bg-white/15 text-indigo-100 border border-white/10">
+            <span className="px-1.5 py-0.5 rounded text-[9px] font-mono font-bold bg-white/15 text-purple-100 border border-white/10 group-hover:bg-purple-500/25 transition-colors">
               AI
             </span>
           </button>
@@ -318,21 +325,23 @@ export const LoopBot: React.FC = () => {
             zIndex: 50,
           }}
           className={`rounded-2xl sm:rounded-3xl bg-slate-900/95 backdrop-blur-2xl border ${
-            isDragging || isResizing ? 'border-indigo-400/60 ring-2 ring-indigo-500/30' : 'border-indigo-500/30'
-          } shadow-[0_20px_60px_-15px_rgba(0,0,0,0.8),0_0_30px_rgba(99,102,241,0.2)] flex flex-col overflow-hidden animate-in fade-in duration-150`}
+            isDragging || isResizing
+              ? 'border-purple-400/80 ring-2 ring-purple-500/40 shadow-[0_20px_60px_-10px_rgba(0,0,0,0.85),0_0_35px_rgba(168,85,247,0.35)]'
+              : 'border-indigo-500/30 hover:border-purple-500/40 shadow-[0_20px_60px_-15px_rgba(0,0,0,0.8),0_0_30px_rgba(99,102,241,0.2)]'
+          } flex flex-col overflow-hidden animate-in fade-in duration-150 pointer-events-auto select-auto`}
         >
           {/* Header - Acts as Draggable Handle */}
           <div
             onMouseDown={handleHeaderPointerDown}
             onTouchStart={handleHeaderPointerDown}
-            className={`px-4 py-3 bg-slate-950/90 border-b border-slate-800/80 flex items-center justify-between gap-3 shrink-0 cursor-grab ${
+            className={`px-3.5 sm:px-4 py-3 bg-slate-950/90 border-b border-slate-800/80 flex items-center justify-between gap-2.5 shrink-0 cursor-grab ${
               isDragging ? 'cursor-grabbing bg-slate-900/90' : 'hover:bg-slate-950'
             } transition-colors select-none`}
             title="Drag header to reposition anywhere"
           >
             <div className="flex items-center gap-2.5 min-w-0 pointer-events-none">
               <div className="relative">
-                <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-indigo-600 to-violet-600 flex items-center justify-center text-white text-xs shadow-md shadow-indigo-600/30 border border-white/10">
+                <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-indigo-600 via-purple-600 to-indigo-700 flex items-center justify-center text-white text-xs shadow-md shadow-purple-600/30 border border-white/10">
                   <i className="fa-solid fa-robot" />
                 </div>
                 <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-emerald-400 rounded-full border-2 border-slate-900 animate-pulse" />
@@ -360,15 +369,16 @@ export const LoopBot: React.FC = () => {
               <button
                 type="button"
                 onClick={() => {
-                  const defaultW = Math.min(410, window.innerWidth - 24);
-                  const defaultH = Math.min(530, window.innerHeight - 100);
+                  const isMobile = window.innerWidth < 640;
+                  const defaultW = isMobile ? Math.min(390, window.innerWidth - 16) : Math.min(410, window.innerWidth - 24);
+                  const defaultH = isMobile ? Math.min(500, window.innerHeight - 90) : Math.min(530, window.innerHeight - 100);
                   setSize({ width: defaultW, height: defaultH });
                   setPosition({
-                    x: Math.max(12, window.innerWidth - defaultW - 24),
-                    y: Math.max(12, window.innerHeight - defaultH - 24),
+                    x: Math.max(8, window.innerWidth - defaultW - (isMobile ? 8 : 20)),
+                    y: Math.max(8, window.innerHeight - defaultH - (isMobile ? 75 : 24)),
                   });
                 }}
-                className="w-7 h-7 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800/80 transition flex items-center justify-center text-[10px] cursor-pointer"
+                className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg text-slate-400 hover:text-purple-300 hover:bg-purple-950/40 hover:shadow-[0_0_12px_rgba(168,85,247,0.35)] transition-all flex items-center justify-center text-[10px] cursor-pointer"
                 title="Reset position & size"
                 aria-label="Reset position & size"
               >
@@ -378,7 +388,7 @@ export const LoopBot: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setIsMinimized(true)}
-                className="w-7 h-7 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800/80 transition flex items-center justify-center text-xs cursor-pointer"
+                className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg text-slate-400 hover:text-purple-300 hover:bg-purple-950/40 hover:shadow-[0_0_12px_rgba(168,85,247,0.35)] transition-all flex items-center justify-center text-xs cursor-pointer"
                 title="Minimize chat"
                 aria-label="Minimize chat"
               >
@@ -388,7 +398,7 @@ export const LoopBot: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setIsOpen(false)}
-                className="w-7 h-7 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800/80 transition flex items-center justify-center text-xs cursor-pointer"
+                className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg text-slate-400 hover:text-rose-300 hover:bg-rose-950/40 hover:shadow-[0_0_12px_rgba(244,63,94,0.35)] transition-all flex items-center justify-center text-xs cursor-pointer"
                 title="Close chat"
                 aria-label="Close chat"
               >
@@ -412,7 +422,7 @@ export const LoopBot: React.FC = () => {
                 <div
                   className={`p-3 rounded-2xl max-w-[85%] leading-relaxed ${
                     msg.role === 'user'
-                      ? 'bg-indigo-600 text-white rounded-tr-xs shadow-md shadow-indigo-600/20 whitespace-pre-wrap'
+                      ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-tr-xs shadow-md shadow-indigo-600/20 whitespace-pre-wrap'
                       : 'bg-slate-800/90 text-slate-200 rounded-tl-xs border border-slate-700/60 shadow-sm'
                   }`}
                   style={{ wordBreak: 'break-word', overflowWrap: 'anywhere' }}
@@ -428,9 +438,9 @@ export const LoopBot: React.FC = () => {
                   <i className="fa-solid fa-robot animate-spin" />
                 </div>
                 <div className="flex items-center gap-1.5 bg-slate-800/80 px-3 py-2 rounded-2xl rounded-tl-xs border border-slate-700/50">
-                  <span className="w-1.5 h-1.5 rounded-full bg-indigo-400 animate-bounce" style={{ animationDelay: '0ms' }} />
-                  <span className="w-1.5 h-1.5 rounded-full bg-indigo-400 animate-bounce" style={{ animationDelay: '150ms' }} />
-                  <span className="w-1.5 h-1.5 rounded-full bg-indigo-400 animate-bounce" style={{ animationDelay: '300ms' }} />
+                  <span className="w-1.5 h-1.5 rounded-full bg-purple-400 animate-bounce" style={{ animationDelay: '0ms' }} />
+                  <span className="w-1.5 h-1.5 rounded-full bg-purple-400 animate-bounce" style={{ animationDelay: '150ms' }} />
+                  <span className="w-1.5 h-1.5 rounded-full bg-purple-400 animate-bounce" style={{ animationDelay: '300ms' }} />
                 </div>
               </div>
             )}
@@ -450,7 +460,7 @@ export const LoopBot: React.FC = () => {
                 key={idx}
                 type="button"
                 onClick={() => handleSend(chip.prompt)}
-                className="px-2.5 py-1 rounded-full bg-slate-800/80 hover:bg-indigo-600/20 text-slate-300 hover:text-indigo-200 border border-slate-700/60 hover:border-indigo-500/40 transition shrink-0 cursor-pointer"
+                className="px-2.5 py-1 rounded-full bg-slate-800/80 hover:bg-purple-950/50 text-slate-300 hover:text-purple-200 border border-slate-700/60 hover:border-purple-500/50 hover:shadow-[0_0_12px_rgba(168,85,247,0.3)] transition-all shrink-0 cursor-pointer"
               >
                 {chip.label}
               </button>
@@ -471,12 +481,12 @@ export const LoopBot: React.FC = () => {
               value={input}
               onChange={(e) => setInput(e.target.value)}
               placeholder="Ask about spaces, rules, or earnings..."
-              className="flex-1 bg-slate-900 border border-slate-700/80 rounded-xl px-3.5 py-2 pr-2 text-xs sm:text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-indigo-500 transition"
+              className="flex-1 bg-slate-900 border border-slate-700/80 rounded-xl px-3.5 py-2 pr-2 text-xs sm:text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500/40 transition"
             />
             <button
               type="submit"
               disabled={loading || !input.trim()}
-              className="w-9 h-9 rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white font-medium text-xs transition shrink-0 flex items-center justify-center disabled:opacity-40 shadow-sm shadow-indigo-600/30 cursor-pointer"
+              className="w-9 h-9 rounded-xl bg-gradient-to-r from-indigo-600 via-purple-600 to-indigo-700 hover:from-indigo-500 hover:to-purple-500 text-white font-medium text-xs transition shrink-0 flex items-center justify-center disabled:opacity-40 shadow-sm shadow-indigo-600/30 hover:shadow-[0_0_16px_rgba(168,85,247,0.5)] cursor-pointer"
               title="Send message"
             >
               <i className="fa-solid fa-arrow-up" />
@@ -489,11 +499,11 @@ export const LoopBot: React.FC = () => {
             onTouchStart={handleResizePointerDown}
             title="Drag to resize window"
             aria-label="Resize chatbot window"
-            className="absolute bottom-0 right-0 w-5 h-5 cursor-se-resize flex items-end justify-end p-1 text-slate-500 hover:text-indigo-400 active:text-indigo-300 transition-colors z-20 group select-none"
+            className="absolute bottom-0 right-0 w-6 h-6 cursor-se-resize flex items-end justify-end p-1.5 text-slate-500 hover:text-purple-400 active:text-purple-300 transition-colors z-20 group select-none hover:drop-shadow-[0_0_8px_rgba(168,85,247,0.6)]"
           >
             <svg
-              width="10"
-              height="10"
+              width="11"
+              height="11"
               viewBox="0 0 10 10"
               className="fill-current opacity-60 group-hover:opacity-100 group-hover:scale-110 transition-all"
             >
