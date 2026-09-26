@@ -142,6 +142,39 @@ button.bg-gradient-to-r,
   }
 }
 
+/* Dedicated Subtle Purple Button Glow */
+.btn-purple-glow {
+  transition: transform 220ms cubic-bezier(0.16, 1, 0.3, 1),
+              box-shadow 220ms cubic-bezier(0.16, 1, 0.3, 1),
+              border-color 220ms ease,
+              color 180ms ease,
+              background-color 220ms ease;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .btn-purple-glow:hover {
+    transform: translateY(-1.5px);
+    box-shadow: 0 0 18px -1px rgba(168, 85, 247, 0.45),
+                0 0 8px 0 rgba(99, 102, 241, 0.30);
+    border-color: rgba(168, 85, 247, 0.55) !important;
+  }
+}
+
+@keyframes architectureFadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-entrance {
+  animation: architectureFadeInUp 450ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
 /* 2. Solar Gold / Host Amber Button Glow */
 .btn-glow-amber,
 .btn-host-primary {

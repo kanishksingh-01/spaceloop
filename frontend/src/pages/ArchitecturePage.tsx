@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 /**
@@ -90,6 +90,30 @@ export const ArchitecturePage: React.FC = () => {
   const navigate = useNavigate();
   const [copiedEmail, setCopiedEmail] = useState<string | null>(null);
   const [imageErrors, setImageErrors] = useState<Record<string, boolean>>({});
+  const [parallax, setParallax] = useState({ x: 0, y: 0 });
+
+  // Lightweight, restrained parallax effect respecting reduced motion
+  useEffect(() => {
+    const mediaQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
+    if (mediaQuery.matches) return;
+
+    let rafId: number;
+    const handleMouseMove = (e: MouseEvent) => {
+      cancelAnimationFrame(rafId);
+      rafId = requestAnimationFrame(() => {
+        // Restrained subtle parallax calculation (max +/- 14px)
+        const offsetX = ((e.clientX / window.innerWidth) - 0.5) * 24;
+        const offsetY = ((e.clientY / window.innerHeight) - 0.5) * 24;
+        setParallax({ x: offsetX, y: offsetY });
+      });
+    };
+
+    window.addEventListener('mousemove', handleMouseMove, { passive: true });
+    return () => {
+      cancelAnimationFrame(rafId);
+      window.removeEventListener('mousemove', handleMouseMove);
+    };
+  }, []);
 
   const handleCopyEmail = (email: string, id: string) => {
     navigator.clipboard.writeText(email);
@@ -143,16 +167,18 @@ export const ArchitecturePage: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col antialiased selection:bg-indigo-500 selection:text-white">
-      {/* 1. Minimal Page Sub-Header */}
-      <section className="border-b border-slate-800/80 bg-slate-900/60 backdrop-blur-xl sticky top-16 z-30">
+      {/* 1. Page Return & Breadcrumb Bar */}
+      <section className="border-b border-slate-800/80 bg-slate-900/70 backdrop-blur-xl sticky top-16 z-30 transition-all duration-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3.5 flex flex-wrap items-center justify-between gap-4">
           <div className="flex items-center gap-3">
+            {/* Clear Way to Return to Main Application */}
             <button
               onClick={() => navigate('/')}
-              className="inline-flex items-center gap-2 text-xs font-semibold text-slate-400 hover:text-white transition"
+              className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-800/90 hover:bg-slate-750 text-xs font-semibold text-slate-300 hover:text-white border border-slate-700/80 transition btn-purple-glow"
+              title="Return to SpaceLoop Home"
             >
               <i className="fa-solid fa-arrow-left text-[11px]" />
-              <span>Back to SpaceLoop</span>
+              <span>Return to SpaceLoop</span>
             </button>
             <span className="text-slate-700">|</span>
             <div className="inline-flex items-center gap-2 text-xs font-bold text-white">
@@ -162,18 +188,23 @@ export const ArchitecturePage: React.FC = () => {
           </div>
 
           <div className="flex items-center gap-3">
-            <span className="text-[11px] font-mono text-slate-400 hidden sm:inline">
-              Core Architecture Team
-            </span>
-            <span className="text-[10px] uppercase font-extrabold tracking-wider px-2.5 py-0.5 rounded-full bg-indigo-500/10 text-indigo-300 border border-indigo-500/25">
-              4 Profile Slots
+            <button
+              onClick={() => navigate('/explore')}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-indigo-600/15 hover:bg-indigo-600/25 text-indigo-300 border border-indigo-500/30 text-xs font-semibold transition btn-purple-glow"
+            >
+              <i className="fa-solid fa-compass text-[11px]" />
+              <span className="hidden sm:inline">Explore Spaces</span>
+            </button>
+            <span className="text-[10px] uppercase font-extrabold tracking-wider px-2.5 py-1 rounded-full bg-slate-800 text-slate-300 border border-slate-700">
+              4 Core Profiles
             </span>
           </div>
         </div>
       </section>
 
-      {/* 2. Distinctive Hero Section */}
-      <section className="relative overflow-hidden pt-16 pb-20 md:pt-24 md:pb-24 border-b border-slate-800/80 bg-gradient-to-b from-slate-900 via-slate-950 to-slate-950">
+      {/* 2. Distinctive Hero Section with Restrained Parallax */}
+      <section className="relative overflow-hidden pt-16 pb-20 md:pt-24 md:pb-24 border-b border-slate-800/80 bg-gradient-to-b from-slate-900 via-slate-950 to-slate-950 animate-entrance">
+        {/* Subtle Background Pattern */}
         <div
           className="absolute inset-0 pointer-events-none opacity-20"
           style={{
@@ -183,8 +214,19 @@ export const ArchitecturePage: React.FC = () => {
           }}
         />
 
-        <div className="absolute -top-32 left-1/2 -translate-x-1/2 w-[700px] h-[350px] bg-indigo-600/15 blur-[130px] rounded-full pointer-events-none" />
-        <div className="absolute top-20 right-10 w-[380px] h-[380px] bg-cyan-600/10 blur-[120px] rounded-full pointer-events-none" />
+        {/* Ambient Glowing Orbs with Restrained Parallax */}
+        <div
+          className="absolute -top-32 left-1/2 -translate-x-1/2 w-[700px] h-[350px] bg-indigo-600/15 blur-[130px] rounded-full pointer-events-none transition-transform duration-300 ease-out will-change-transform"
+          style={{
+            transform: `translate3d(calc(-50% + ${parallax.x * 0.8}px), ${parallax.y * 0.8}px, 0)`,
+          }}
+        />
+        <div
+          className="absolute top-20 right-10 w-[380px] h-[380px] bg-cyan-600/10 blur-[120px] rounded-full pointer-events-none transition-transform duration-300 ease-out will-change-transform"
+          style={{
+            transform: `translate3d(${-parallax.x * 0.6}px, ${-parallax.y * 0.6}px, 0)`,
+          }}
+        />
 
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 text-center">
           <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-indigo-500/10 border border-indigo-500/25 text-indigo-300 text-xs font-bold mb-6">
@@ -209,7 +251,7 @@ export const ArchitecturePage: React.FC = () => {
         </div>
       </section>
 
-      {/* 3. Four Spacious Editorial Team Profiles (Alternating Layout) */}
+      {/* 3. Four Spacious Editorial Team Profiles (Alternating Layout & Gentle Float on Hover) */}
       <section className="py-20 lg:py-28 bg-slate-950 border-b border-slate-800/80 relative">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="space-y-20 lg:space-y-28">
@@ -221,11 +263,11 @@ export const ArchitecturePage: React.FC = () => {
               return (
                 <article
                   key={member.id}
-                  className={`group relative rounded-3xl p-6 sm:p-10 lg:p-12 bg-slate-900/60 border border-slate-800/90 transition-all duration-500 floating-panel ${accent.borderHover}`}
+                  className={`group relative rounded-3xl p-6 sm:p-10 lg:p-12 bg-slate-900/60 border border-slate-800/90 transition-all duration-300 ease-out hover:-translate-y-2 hover:shadow-[6px_20px_45px_-4px_rgba(0,0,0,0.65),3px_6px_18px_-2px_rgba(0,0,0,0.38),0_0_24px_rgba(99,102,241,0.2)] floating-panel ${accent.borderHover}`}
                 >
                   {/* Ambient Backdrop Accent Glow */}
                   <div
-                    className={`absolute -inset-0.5 rounded-3xl bg-gradient-to-br ${accent.glow} opacity-0 group-hover:opacity-100 blur-2xl transition-opacity duration-700 pointer-events-none`}
+                    className={`absolute -inset-0.5 rounded-3xl bg-gradient-to-br ${accent.glow} opacity-0 group-hover:opacity-100 blur-2xl transition-opacity duration-500 pointer-events-none`}
                   />
 
                   <div
@@ -233,9 +275,9 @@ export const ArchitecturePage: React.FC = () => {
                       isEven ? 'lg:flex-row' : 'lg:flex-row-reverse'
                     } items-center gap-10 lg:gap-16`}
                   >
-                    {/* Portrait Area (Large, 4:5 Proportion, Face-Safe Framing) */}
+                    {/* Portrait Area (Large, 4:5 Proportion, Face-Safe Framing, Gentle Parallax Elevation) */}
                     <div className="w-full sm:w-[360px] lg:w-[400px] shrink-0">
-                      <div className="relative aspect-[4/5] w-full rounded-2xl sm:rounded-3xl overflow-hidden bg-slate-950 border border-slate-800/90 shadow-2xl group-hover:border-slate-700 transition duration-500">
+                      <div className="relative aspect-[4/5] w-full rounded-2xl sm:rounded-3xl overflow-hidden bg-slate-950 border border-slate-800/90 shadow-2xl group-hover:border-slate-700 transition duration-500 group-hover:-translate-y-1.5">
                         {!hasImageFailed ? (
                           <img
                             src={member.photoUrl}
@@ -281,7 +323,7 @@ export const ArchitecturePage: React.FC = () => {
                       </div>
 
                       {/* Prominent Member Name */}
-                      <h2 className="text-3xl sm:text-4xl lg:text-5xl font-black text-white tracking-tight leading-tight group-hover:text-slate-100 transition">
+                      <h2 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-white tracking-tight leading-tight group-hover:text-slate-100 transition">
                         {member.name}
                       </h2>
 
@@ -302,12 +344,12 @@ export const ArchitecturePage: React.FC = () => {
                         </p>
                       </div>
 
-                      {/* Dedicated Email and LinkedIn Profile Buttons */}
+                      {/* Dedicated Email and LinkedIn Profile Buttons with Subtle Purple Glow */}
                       <div className="pt-6 border-t border-slate-800/80 flex flex-wrap items-center gap-3">
-                        {/* Email Link */}
+                        {/* Email Button */}
                         <a
                           href={`mailto:${member.email}`}
-                          className="inline-flex items-center gap-2.5 px-4 py-2.5 rounded-xl bg-slate-800/90 hover:bg-slate-750 border border-slate-700/80 text-slate-200 hover:text-white text-xs font-semibold tracking-wide transition shadow-sm hover:border-slate-600 floating-container group/btn"
+                          className="inline-flex items-center gap-2.5 px-4 py-2.5 rounded-xl bg-slate-800/90 hover:bg-slate-750 border border-slate-700/80 text-slate-200 hover:text-white text-xs font-semibold tracking-wide transition shadow-sm floating-container btn-purple-glow group/btn"
                           title={`Send email to ${member.email}`}
                         >
                           <i className="fa-solid fa-envelope text-indigo-400 text-sm" />
@@ -318,7 +360,7 @@ export const ArchitecturePage: React.FC = () => {
                         <button
                           type="button"
                           onClick={() => handleCopyEmail(member.email, member.id)}
-                          className="inline-flex items-center justify-center w-10 h-10 rounded-xl bg-slate-800/90 hover:bg-slate-700 border border-slate-700/80 text-slate-400 hover:text-white text-xs transition"
+                          className="inline-flex items-center justify-center w-10 h-10 rounded-xl bg-slate-800/90 hover:bg-slate-700 border border-slate-700/80 text-slate-400 hover:text-white text-xs transition btn-purple-glow"
                           title="Copy email address"
                         >
                           {copiedEmail === member.id ? (
@@ -328,12 +370,12 @@ export const ArchitecturePage: React.FC = () => {
                           )}
                         </button>
 
-                        {/* LinkedIn Profile Link */}
+                        {/* LinkedIn Profile Button */}
                         <a
                           href={member.linkedin}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="inline-flex items-center gap-2.5 px-4 py-2.5 rounded-xl bg-slate-800/90 hover:bg-[#0A66C2]/20 border border-slate-700/80 hover:border-[#0A66C2]/60 text-slate-200 hover:text-white text-xs font-semibold tracking-wide transition shadow-sm floating-container group/btn"
+                          className="inline-flex items-center gap-2.5 px-4 py-2.5 rounded-xl bg-slate-800/90 hover:bg-[#0A66C2]/20 border border-slate-700/80 hover:border-[#0A66C2]/60 text-slate-200 hover:text-white text-xs font-semibold tracking-wide transition shadow-sm floating-container btn-purple-glow group/btn"
                           title="View LinkedIn Profile"
                         >
                           <i className="fa-brands fa-linkedin-in text-[#0A66C2] text-sm" />
@@ -350,7 +392,7 @@ export const ArchitecturePage: React.FC = () => {
         </div>
       </section>
 
-      {/* 4. Professional Hackathon Closing Section */}
+      {/* 4. Professional Hackathon Closing Section with Return CTAs */}
       <section className="py-20 bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 relative overflow-hidden">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center relative z-10">
           <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-cyan-500/10 border border-cyan-500/25 text-cyan-300 text-xs font-bold mb-4">
@@ -370,22 +412,24 @@ export const ArchitecturePage: React.FC = () => {
           </p>
 
           <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4">
+            {/* Primary Return to Marketplace CTA with Purple Glow */}
             <button
               type="button"
               onClick={() => navigate('/explore')}
-              className="w-full sm:w-auto px-8 py-3.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs shadow-lg shadow-indigo-600/30 transition btn-glow-primary flex items-center justify-center gap-2"
+              className="w-full sm:w-auto px-8 py-3.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs shadow-lg shadow-indigo-600/30 transition btn-glow-primary btn-purple-glow flex items-center justify-center gap-2"
             >
               <i className="fa-solid fa-compass" />
               <span>Explore Marketplace</span>
             </button>
 
+            {/* Back to Home CTA */}
             <button
               type="button"
-              onClick={() => navigate('/list-space')}
-              className="w-full sm:w-auto px-8 py-3.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-200 font-bold text-xs border border-slate-700 transition flex items-center justify-center gap-2"
+              onClick={() => navigate('/')}
+              className="w-full sm:w-auto px-8 py-3.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-200 font-bold text-xs border border-slate-700 transition btn-purple-glow flex items-center justify-center gap-2"
             >
-              <i className="fa-solid fa-plus" />
-              <span>List a New Space</span>
+              <i className="fa-solid fa-house" />
+              <span>Return to Home</span>
             </button>
           </div>
         </div>
