@@ -1,5 +1,4 @@
-import React, { useEffect, useState } from 'react';
-import { View, Text, Pressable, Image } from 'react-native';
+import React, { useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Space, User } from '../types';
 import { getSpaces } from '../services/spaces';
@@ -16,6 +15,64 @@ export const LandingPage: React.FC<LandingPageProps> = ({ currentUser }) => {
   const [featuredSpaces, setFeaturedSpaces] = useState<Space[]>([]);
   const [loading, setLoading] = useState(true);
 
+  // Parallax DOM References for 60/120fps direct transform updates
+  const glow1Ref = useRef<HTMLDivElement>(null);
+  const glow2Ref = useRef<HTMLDivElement>(null);
+  const spatialNetworkRef = useRef<HTMLDivElement>(null);
+  const floatCardLeftRef = useRef<HTMLDivElement>(null);
+  const floatCardRightRef = useRef<HTMLDivElement>(null);
+  const orbitRef = useRef<HTMLDivElement>(null);
+
+  // Smooth lerp parallax engine (requestAnimationFrame, zero React state re-renders)
+  useEffect(() => {
+    // Respect user's accessibility preference
+    const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (prefersReducedMotion) return;
+
+    let targetY = window.scrollY;
+    let currentY = window.scrollY;
+    let animationFrameId: number;
+
+    const onScroll = () => {
+      targetY = window.scrollY;
+    };
+
+    window.addEventListener('scroll', onScroll, { passive: true });
+
+    const animate = () => {
+      // Linear interpolation (lerp) damping for fluid, premium inertia
+      currentY += (targetY - currentY) * 0.085;
+
+      if (glow1Ref.current) {
+        glow1Ref.current.style.transform = `translate3d(0, ${(currentY * 0.12).toFixed(2)}px, 0)`;
+      }
+      if (glow2Ref.current) {
+        glow2Ref.current.style.transform = `translate3d(0, ${(-currentY * 0.08).toFixed(2)}px, 0)`;
+      }
+      if (spatialNetworkRef.current) {
+        spatialNetworkRef.current.style.transform = `translate3d(0, ${(currentY * 0.05).toFixed(2)}px, 0)`;
+      }
+      if (floatCardLeftRef.current) {
+        floatCardLeftRef.current.style.transform = `translate3d(0, ${(-currentY * 0.11).toFixed(2)}px, 0)`;
+      }
+      if (floatCardRightRef.current) {
+        floatCardRightRef.current.style.transform = `translate3d(0, ${(currentY * 0.09).toFixed(2)}px, 0)`;
+      }
+      if (orbitRef.current) {
+        orbitRef.current.style.transform = `translate3d(0, ${(-currentY * 0.14).toFixed(2)}px, 0)`;
+      }
+
+      animationFrameId = requestAnimationFrame(animate);
+    };
+
+    animationFrameId = requestAnimationFrame(animate);
+
+    return () => {
+      window.removeEventListener('scroll', onScroll);
+      cancelAnimationFrame(animationFrameId);
+    };
+  }, []);
+
   useEffect(() => {
     const fetchFeatured = async () => {
       try {
@@ -31,11 +88,14 @@ export const LandingPage: React.FC<LandingPageProps> = ({ currentUser }) => {
   }, []);
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col antialiased">
-      {/* 1. HERO SECTION */}
-      <section className="relative overflow-hidden pt-14 pb-20 md:pt-24 md:pb-28 border-b border-slate-800/60 bg-gradient-to-b from-slate-900 via-slate-950 to-slate-950">
-        {/* Interactive Cursor Grid Background */}
-        <div style={{ width: '100%', height: '100%', position: 'absolute', inset: 0, overflow: 'hidden', pointerEvents: 'none' }}>
+    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col antialiased selection:bg-indigo-500 selection:text-white">
+      {/* =========================================================================
+          1. HERO SECTION WITH SUBTLE PARALLAX & SPATIAL TOPOLOGY NETWORK
+          ========================================================================= */}
+      <section className="relative overflow-hidden pt-12 pb-20 md:pt-20 md:pb-28 border-b border-slate-800/80 bg-gradient-to-b from-slate-900 via-slate-950 to-slate-950">
+        
+        {/* Layer A: Interactive Cursor Grid Background */}
+        <div className="absolute inset-0 w-full h-full pointer-events-none overflow-hidden z-0">
           <CursorGrid
             cellSize={70}
             color={theme === 'dark' ? '#D946EF' : '#3BA7F2'}
@@ -53,14 +113,118 @@ export const LandingPage: React.FC<LandingPageProps> = ({ currentUser }) => {
           />
         </div>
 
-        {/* Glowing Background Lights */}
-        <div className="absolute -top-40 left-1/2 -translate-x-1/2 w-[800px] h-[400px] bg-indigo-600/15 blur-[140px] rounded-full pointer-events-none" />
-        <div className="absolute top-28 right-10 w-[350px] h-[350px] bg-violet-600/10 blur-[110px] rounded-full pointer-events-none" />
+        {/* Layer B: Parallax Glowing Background Lights (Depth 1) */}
+        <div
+          ref={glow1Ref}
+          className="absolute -top-40 left-1/2 -translate-x-1/2 w-[850px] h-[450px] bg-indigo-600/15 blur-[140px] rounded-full pointer-events-none will-change-transform z-0"
+        />
+        <div
+          ref={glow2Ref}
+          className="absolute top-36 right-4 sm:right-20 w-[420px] h-[420px] bg-violet-600/10 blur-[120px] rounded-full pointer-events-none will-change-transform z-0"
+        />
 
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 text-center">
+        {/* Layer C: Abstract Connected Spatial Topology Grid (Parallax Depth 2) */}
+        <div
+          ref={spatialNetworkRef}
+          className="absolute inset-0 pointer-events-none overflow-hidden opacity-35 will-change-transform z-0"
+        >
+          <svg className="w-full h-full" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <linearGradient id="spatialGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stopColor="#6366f1" stopOpacity="0.6" />
+                <stop offset="50%" stopColor="#a855f7" stopOpacity="0.3" />
+                <stop offset="100%" stopColor="#3b82f6" stopOpacity="0.1" />
+              </linearGradient>
+              <pattern id="microDots" x="0" y="0" width="48" height="48" patternUnits="userSpaceOnUse">
+                <circle cx="2" cy="2" r="1.2" fill="#6366f1" fillOpacity="0.25" />
+              </pattern>
+            </defs>
+            {/* Ambient Micro-Dot Matrix */}
+            <rect width="100%" height="100%" fill="url(#microDots)" />
+
+            {/* Connecting Vector Lines Between Spatial Hubs */}
+            <g stroke="url(#spatialGrad)" strokeWidth="1" strokeDasharray="5,6" fill="none">
+              <path d="M 120 220 L 340 180 L 520 300 L 780 210 L 960 320 L 1180 190" />
+              <path d="M 280 400 L 520 300 L 720 440 L 960 320 L 1120 450" />
+              <path d="M 340 180 L 460 80 L 780 210" />
+            </g>
+
+            {/* Pulsing Node Rings */}
+            <circle cx="340" cy="180" r="4" fill="#818cf8" />
+            <circle cx="340" cy="180" r="12" stroke="#818cf8" strokeOpacity="0.3" strokeWidth="1.5" fill="none" />
+
+            <circle cx="520" cy="300" r="5" fill="#a855f7" />
+            <circle cx="520" cy="300" r="18" stroke="#a855f7" strokeOpacity="0.25" strokeWidth="1.5" fill="none" />
+
+            <circle cx="780" cy="210" r="4" fill="#38bdf8" />
+            <circle cx="780" cy="210" r="14" stroke="#38bdf8" strokeOpacity="0.3" strokeWidth="1.5" fill="none" />
+
+            <circle cx="960" cy="320" r="5" fill="#818cf8" />
+            <circle cx="960" cy="320" r="20" stroke="#818cf8" strokeOpacity="0.2" strokeWidth="1.5" fill="none" />
+          </svg>
+        </div>
+
+        {/* Layer D: Decorative Orbit Ring (Parallax Depth 3) */}
+        <div
+          ref={orbitRef}
+          className="absolute -top-12 -left-20 w-96 h-96 border border-indigo-500/10 rounded-full pointer-events-none will-change-transform z-0"
+        />
+
+        {/* Layer E: Flanking Floating Glassmorphism Preview Cards (Desktop/Tablet) */}
+        {/* Left Floating Card: Hauz Khas Focus Studio */}
+        <div
+          ref={floatCardLeftRef}
+          className="hidden xl:flex absolute top-28 left-6 2xl:left-14 w-72 flex-col bg-slate-900/85 backdrop-blur-xl border border-indigo-500/25 rounded-2xl p-4 shadow-2xl shadow-indigo-950/50 pointer-events-none will-change-transform z-10 floating-container"
+        >
+          <div className="flex items-center justify-between mb-2">
+            <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 text-[10px] font-bold">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+              Available Now
+            </span>
+            <span className="text-[11px] font-extrabold text-indigo-300">₹35/hr</span>
+          </div>
+          <div className="text-xs font-bold text-white truncate">Hauz Khas Focus Studio</div>
+          <div className="text-[11px] text-slate-400 flex items-center gap-1.5 mt-1">
+            <i className="fa-solid fa-wifi text-indigo-400 text-[10px]" /> 1 Gbps Fiber • Acoustic Pod
+          </div>
+          <div className="mt-2.5 pt-2 border-t border-slate-800/80 flex items-center justify-between text-[10px] text-slate-400">
+            <span className="text-emerald-400 font-semibold flex items-center gap-1">
+              <i className="fa-solid fa-shield-check" /> Verified Premise
+            </span>
+            <span className="text-slate-400">0.8 km away</span>
+          </div>
+        </div>
+
+        {/* Right Floating Card: Kharadi Creative Bay */}
+        <div
+          ref={floatCardRightRef}
+          className="hidden xl:flex absolute top-36 right-6 2xl:right-14 w-72 flex-col bg-slate-900/85 backdrop-blur-xl border border-violet-500/25 rounded-2xl p-4 shadow-2xl shadow-violet-950/50 pointer-events-none will-change-transform z-10 floating-container"
+        >
+          <div className="flex items-center justify-between mb-2">
+            <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-indigo-500/15 border border-indigo-500/30 text-indigo-300 text-[10px] font-bold">
+              <i className="fa-solid fa-bolt text-[9px] text-indigo-400" />
+              Instant QR Entry
+            </span>
+            <span className="text-[11px] font-extrabold text-amber-300">₹55/hr</span>
+          </div>
+          <div className="text-xs font-bold text-white truncate">Kharadi Creative Workshop</div>
+          <div className="text-[11px] text-slate-400 flex items-center gap-1.5 mt-1">
+            <i className="fa-solid fa-desktop text-violet-400 text-[10px]" /> 4K Display • Whiteboard Bay
+          </div>
+          <div className="mt-2.5 pt-2 border-t border-slate-800/80 flex items-center justify-between text-[10px]">
+            <span className="text-amber-400 font-bold flex items-center gap-1">
+              ★ 4.9 <span className="text-slate-400 font-normal">(48 bookings)</span>
+            </span>
+            <span className="text-indigo-400 font-medium">Smart Geofence</span>
+          </div>
+        </div>
+
+        {/* Main Foreground Content (Completely Stable, High Readability, No Transform) */}
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 relative z-20 text-center">
+          
           {/* Eyebrow Pill & Purpose Track */}
           <div className="flex flex-col sm:flex-row items-center justify-center gap-2 mb-6">
-            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-indigo-300 text-xs font-semibold shadow-sm">
+            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-indigo-500/10 border border-indigo-500/25 text-indigo-300 text-xs font-semibold shadow-sm backdrop-blur-md">
               <span className="flex h-2 w-2 rounded-full bg-indigo-400 animate-ping" />
               <span>India’s First AI-Powered Micro-Space Network</span>
             </div>
@@ -70,7 +234,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ currentUser }) => {
           </div>
 
           {/* Main Headline */}
-          <h1 className="text-4xl sm:text-6xl lg:text-7xl font-black tracking-tight text-white leading-tight max-w-4xl mx-auto">
+          <h1 className="text-4xl sm:text-6xl lg:text-7xl font-black tracking-tight text-white leading-tight max-w-4xl mx-auto drop-shadow-sm">
             Turn unused space into <br className="hidden sm:inline" />
             <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 via-violet-300 to-indigo-300">
               living opportunity.
@@ -78,16 +242,16 @@ export const LandingPage: React.FC<LandingPageProps> = ({ currentUser }) => {
           </h1>
 
           {/* Subtitle */}
-          <p className="mt-6 text-base sm:text-xl text-slate-300 leading-relaxed max-w-3xl mx-auto">
+          <p className="mt-6 text-base sm:text-xl text-slate-300 leading-relaxed max-w-3xl mx-auto font-normal">
             Discover and book verified spaces for remote work, client meetings, creative studios, workshops, and study — by the hour. Powered by natural-language AI matching, instant micro-leases, and zero-hardware QR access.
           </p>
 
           {/* Dual Primary CTAs */}
-          <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4">
+          <div className="mt-9 flex flex-col sm:flex-row items-center justify-center gap-4">
             <button
               type="button"
               onClick={() => navigate('/explore')}
-              className="w-full sm:w-auto px-8 py-4 rounded-2xl bg-gradient-to-r from-indigo-600 via-violet-600 to-indigo-700 hover:from-indigo-500 hover:to-violet-500 text-white font-extrabold text-base shadow-xl shadow-indigo-600/30 flex items-center justify-center gap-3 transition transform hover:-translate-y-0.5"
+              className="w-full sm:w-auto px-8 py-4 rounded-2xl bg-gradient-to-r from-indigo-600 via-violet-600 to-indigo-700 hover:from-indigo-500 hover:to-violet-500 text-white font-extrabold text-base shadow-xl shadow-indigo-600/30 flex items-center justify-center gap-3 transition transform hover:-translate-y-0.5 active:translate-y-0"
             >
               <i className="fa-solid fa-compass" />
               <span>Find a Space</span>
@@ -97,18 +261,38 @@ export const LandingPage: React.FC<LandingPageProps> = ({ currentUser }) => {
             <button
               type="button"
               onClick={() => navigate(currentUser ? '/list-space' : '/dashboard')}
-              className="w-full sm:w-auto px-8 py-4 rounded-2xl bg-slate-900/90 hover:bg-amber-500/10 text-amber-300 hover:text-amber-200 font-bold text-base border border-amber-500/30 hover:border-amber-400 shadow-lg flex items-center justify-center gap-3 transition transform hover:-translate-y-0.5"
+              className="w-full sm:w-auto px-8 py-4 rounded-2xl bg-slate-900/90 hover:bg-amber-500/10 text-amber-300 hover:text-amber-200 font-bold text-base border border-amber-500/30 hover:border-amber-400 shadow-lg flex items-center justify-center gap-3 transition transform hover:-translate-y-0.5 active:translate-y-0"
             >
               <i className="fa-solid fa-warehouse text-amber-400" />
               <span>Become a Host</span>
             </button>
           </div>
 
+          {/* Trust Badges Strip Directly Below CTAs */}
+          <div className="mt-8 flex flex-wrap items-center justify-center gap-3 sm:gap-6 text-xs text-slate-400">
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-900/70 border border-slate-800 text-slate-300">
+              <i className="fa-solid fa-bolt text-indigo-400 text-xs" />
+              <span>Instant QR / GPS Unlock</span>
+            </div>
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-900/70 border border-slate-800 text-slate-300">
+              <i className="fa-solid fa-shield-check text-emerald-400 text-xs" />
+              <span>₹100 UPI Micro-Escrow</span>
+            </div>
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-900/70 border border-slate-800 text-slate-300">
+              <i className="fa-solid fa-file-contract text-violet-400 text-xs" />
+              <span>Legal Indian Easements Lease</span>
+            </div>
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-900/70 border border-slate-800 text-slate-300">
+              <i className="fa-solid fa-id-card text-sky-400 text-xs" />
+              <span>DigiLocker KYC Verified</span>
+            </div>
+          </div>
+
           {/* Quick Stats Metric Ribbon */}
-          <div className="mt-16 pt-10 border-t border-slate-800/80 grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6 max-w-4xl mx-auto">
+          <div className="mt-14 pt-8 border-t border-slate-800/80 grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6 max-w-4xl mx-auto">
             <div className="p-4 rounded-2xl bg-slate-900/80 border border-slate-800/80 floating-interactive text-center">
               <div className="text-2xl sm:text-3xl font-black text-white">
-                ₹45<span className="text-indigo-400 text-lg">/hr</span>
+                ₹35<span className="text-indigo-400 text-lg">/hr</span>
               </div>
               <div className="text-xs text-slate-400 mt-1 font-medium">Starting Hourly Rates</div>
             </div>
@@ -128,7 +312,9 @@ export const LandingPage: React.FC<LandingPageProps> = ({ currentUser }) => {
         </div>
       </section>
 
-      {/* 2. HOW SPACELOOP WORKS (6-STEP WORKFLOW) */}
+      {/* =========================================================================
+          2. HOW SPACELOOP WORKS (6-STEP WORKFLOW)
+          ========================================================================= */}
       <section id="how-it-works" className="py-20 bg-slate-950 border-b border-slate-800/80">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center max-w-3xl mx-auto mb-16">
@@ -211,7 +397,9 @@ export const LandingPage: React.FC<LandingPageProps> = ({ currentUser }) => {
         </div>
       </section>
 
-      {/* 3. DUAL VALUE PROPOSITIONS (FOR SEEKERS VS FOR HOSTS) */}
+      {/* =========================================================================
+          3. DUAL VALUE PROPOSITIONS (FOR SEEKERS VS FOR HOSTS)
+          ========================================================================= */}
       <section className="py-20 bg-slate-900/40 border-b border-slate-800/80">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
@@ -228,7 +416,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ currentUser }) => {
               <ul className="space-y-3 text-xs text-slate-300 mb-8">
                 <li className="flex items-center gap-3">
                   <i className="fa-solid fa-circle-check text-emerald-400" />
-                  <span>Pay only for what you use by the hour (starting at ₹45/hr)</span>
+                  <span>Pay only for what you use by the hour (starting at ₹35/hr)</span>
                 </li>
                 <li className="flex items-center gap-3">
                   <i className="fa-solid fa-circle-check text-emerald-400" />
@@ -296,7 +484,9 @@ export const LandingPage: React.FC<LandingPageProps> = ({ currentUser }) => {
         </div>
       </section>
 
-      {/* 4. TRUST & SAFETY SECTION */}
+      {/* =========================================================================
+          4. TRUST & SAFETY SECTION
+          ========================================================================= */}
       <section id="trust-safety" className="py-20 bg-slate-950 border-b border-slate-800/80">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center max-w-3xl mx-auto mb-16">
@@ -343,7 +533,9 @@ export const LandingPage: React.FC<LandingPageProps> = ({ currentUser }) => {
         </div>
       </section>
 
-      {/* 5. FEATURED SPACES SHOWCASE */}
+      {/* =========================================================================
+          5. FEATURED SPACES SHOWCASE
+          ========================================================================= */}
       <section id="featured-spaces" className="py-20 bg-slate-900/40 border-b border-slate-800/80">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex flex-col sm:flex-row sm:items-end justify-between mb-12 gap-4">
@@ -424,7 +616,9 @@ export const LandingPage: React.FC<LandingPageProps> = ({ currentUser }) => {
         </div>
       </section>
 
-      {/* 6. FINAL CTA BANNER */}
+      {/* =========================================================================
+          6. FINAL CTA BANNER
+          ========================================================================= */}
       <section className="py-20 bg-gradient-to-b from-slate-950 to-slate-900">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <div className="bg-gradient-to-tr from-indigo-950/80 via-slate-900/90 to-violet-950/80 border border-indigo-500/30 rounded-3xl p-10 sm:p-14 floating-container">
