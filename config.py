@@ -87,7 +87,7 @@ class Config:
 
     # Transactional Email (Resend)
     RESEND_API_KEY = os.environ.get("RESEND_API_KEY", "")
-    EMAIL_FROM = os.environ.get("EMAIL_FROM", os.environ.get("RESEND_FROM_EMAIL", "SpaceLoop <notifications@spaceloop.in>"))
+    EMAIL_FROM = os.environ.get("EMAIL_FROM", os.environ.get("RESEND_FROM_EMAIL", "SpaceLoop <onboarding@resend.dev>"))
 
     # CORS Configuration
     CORS_ORIGINS = os.environ.get(

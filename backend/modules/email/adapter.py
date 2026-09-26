@@ -44,12 +44,12 @@ class ResendEmailAdapter(BaseEmailAdapter):
     def __init__(
         self,
         api_key: str,
-        from_email: str = "SpaceLoop <notifications@spaceloop.in>",
+        from_email: str = "SpaceLoop <onboarding@resend.dev>",
         timeout: float = 8.0,
         max_retries: int = 2
     ):
         self.api_key = api_key.strip() if api_key else ""
-        self.from_email = from_email or "SpaceLoop <notifications@spaceloop.in>"
+        self.from_email = from_email or "SpaceLoop <onboarding@resend.dev>"
         self.timeout = timeout
         self.max_retries = max_retries
 
@@ -111,6 +111,14 @@ class ResendEmailAdapter(BaseEmailAdapter):
                     error_detail = err_json.get("message") or str(err_json)
                 except Exception:
                     error_detail = resp.text[:200]
+
+                # Smart fallback: if custom domain is not verified, auto-fallback to onboarding@resend.dev
+                if (resp.status_code in (403, 422) and 
+                    ("not allowed by policy" in error_detail.lower() or "domain" in error_detail.lower()) and
+                    payload.get("from") != "SpaceLoop <onboarding@resend.dev>"):
+                    logger.info(f"[RESEND_ADAPTER] Custom domain unverified. Auto-retrying with 'SpaceLoop <onboarding@resend.dev>'")
+                    payload["from"] = "SpaceLoop <onboarding@resend.dev>"
+                    continue
 
                 last_error = f"Resend API HTTP {resp.status_code}: {error_detail}"
                 logger.warning(f"[RESEND_ADAPTER] Attempt {attempt + 1} failed for {to_email}: {last_error}")
