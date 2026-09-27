@@ -16,6 +16,7 @@ from fraud_engine.service import FraudService
 from fraud_engine.features import FeatureExtractor
 from fraud_engine.rules import RuleEngine
 from fraud_engine.risk import RiskEngine
+from fraud_engine.anomaly import AnomalyPredictor, AnomalyResult
 from fraud_engine.app import app
 
 __all__ = [

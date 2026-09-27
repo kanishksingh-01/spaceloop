@@ -125,6 +125,7 @@ class FraudScoreResponse(BaseModel):
     decision: FraudDecision
     triggered_rules: List[RuleResult]
     features: Dict[str, Any]
+    anomaly: Optional[Dict[str, Any]] = None
 
 
 class EventIngestResponse(BaseModel):

@@ -22,6 +22,7 @@ from fraud_engine.schemas import (
 from fraud_engine.features import FeatureExtractor
 from fraud_engine.rules import RuleEngine
 from fraud_engine.risk import RiskEngine
+from fraud_engine.anomaly import AnomalyPredictor
 
 
 class FraudService:
@@ -43,13 +44,19 @@ class FraudService:
         # Step 1: Feature Extraction (Pandas & NumPy)
         features = FeatureExtractor.extract(event, db)
 
+        # Step 1b: Unsupervised Anomaly Scoring (Isolation Forest)
+        anomaly_result = AnomalyPredictor.predict(features)
+
         # Step 2: Rule Engine Evaluation
         triggered_rules = RuleEngine.evaluate(features, event)
 
         # Step 3: Risk Engine Evaluation
-        risk_score, confidence, risk_level, decision = RiskEngine.evaluate(triggered_rules, features)
+        risk_score, confidence, risk_level, decision = RiskEngine.evaluate(triggered_rules, features, anomaly_result)
 
-        # Step 4: Persist Normalized Fraud Event
+        # Step 4: Persist Normalized Fraud Event with Anomaly Lineage
+        payload_data = dict(event.payload or {})
+        payload_data["anomaly"] = anomaly_result.to_dict()
+
         event_record = FraudEventRecord(
             event_id=event_id,
             event_type=event.event_type.value,
@@ -59,7 +66,7 @@ class FraudService:
             ip_address=event.ip_address or "",
             device_fingerprint=event.device_fingerprint or "",
             user_agent=event.user_agent or "",
-            payload_json=event.payload or {},
+            payload_json=payload_data,
             risk_score=risk_score,
             decision=decision.value,
             created_at=event.timestamp
@@ -137,11 +144,14 @@ class FraudService:
         # Step 1: Feature Extraction
         features = FeatureExtractor.extract(synthetic_event, db)
 
+        # Step 1b: Unsupervised Anomaly Scoring (Isolation Forest)
+        anomaly_result = AnomalyPredictor.predict(features)
+
         # Step 2: Rule Engine Evaluation
         triggered_rules = RuleEngine.evaluate(features, synthetic_event)
 
         # Step 3: Risk Engine Evaluation
-        risk_score, confidence, risk_level, decision = RiskEngine.evaluate(triggered_rules, features)
+        risk_score, confidence, risk_level, decision = RiskEngine.evaluate(triggered_rules, features, anomaly_result)
 
         safe_features = {k: (v if isinstance(v, (int, float, str, bool, list, dict)) else str(v)) for k, v in features.items()}
 
@@ -151,7 +161,8 @@ class FraudService:
             risk_level=risk_level,
             decision=decision,
             triggered_rules=triggered_rules,
-            features=safe_features
+            features=safe_features,
+            anomaly=anomaly_result.to_dict()
         )
 
     @classmethod

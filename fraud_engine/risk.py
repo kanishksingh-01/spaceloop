@@ -14,7 +14,32 @@ class RiskEngine:
     """
 
     @classmethod
-    def evaluate(cls, triggered_rules: List[RuleResult], features: Dict[str, Any]) -> Tuple[float, float, FraudRiskLevel, FraudDecision]:
+    def evaluate(
+        cls,
+        triggered_rules: List[RuleResult],
+        features: Dict[str, Any],
+        anomaly_result: Optional[Any] = None
+    ) -> Tuple[float, float, FraudRiskLevel, FraudDecision]:
+        # If unsupervised anomaly model detected unusual pattern, integrate explainable signal
+        if anomaly_result and getattr(anomaly_result, "is_anomaly", False):
+            a_score = float(anomaly_result.anomaly_score)
+            anomaly_contribution = round(min(0.40, max(0.15, 0.15 + (0.35 * (a_score - 0.50) / 0.50))), 2)
+            rule_res = RuleResult(
+                rule_id="RULE_UNSUPERVISED_ANOMALY_SIGNAL",
+                rule_name="Unsupervised Statistical Behavioural Outlier",
+                category="anomaly_detection",
+                severity=FraudSeverity.MEDIUM if a_score < 0.80 else FraudSeverity.HIGH,
+                risk_contribution=anomaly_contribution,
+                triggered=True,
+                evidence=anomaly_result.evidence,
+                feature_responsible="isolation_forest_anomaly_score",
+                value_responsible=round(a_score, 4),
+                code="RULE_UNSUPERVISED_ANOMALY_SIGNAL",
+                name="Unsupervised Statistical Behavioural Outlier",
+                weight=anomaly_contribution
+            )
+            triggered_rules.append(rule_res)
+
         if not triggered_rules:
             return 0.05, 0.95, FraudRiskLevel.NORMAL, FraudDecision.ALLOW
 
