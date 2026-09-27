@@ -3,10 +3,13 @@ SpaceLoop System, AI Concierge, KYC & Analytics REST Blueprint
 Handles platform telemetry, health checks, dashboard metrics, LoopBot chat,
 India Stack KYC verification, and dynamic yield estimation.
 """
+import logging
 from datetime import datetime
 from flask import Blueprint, request, jsonify, session, redirect, url_for
 from flask_login import login_required, current_user
 from models import db, Booking, Space, SpaceInquiry, User
+
+logger = logging.getLogger(__name__)
 from backend.modules.auth import set_active_context
 from space_ai import (
     concierge_chat,
@@ -212,12 +215,25 @@ def ai_chat():
     user_context["is_code_mixed"] = is_code_mixed
 
     # Execute capability orchestration (Loop Bot does not blindly forward to LLM)
-    orch_result = orchestrate_loopbot_query(
-        user_query,
-        history=messages[:-1],
-        context_data=user_context,
-        return_dict=True
-    )
+    try:
+        orch_result = orchestrate_loopbot_query(
+            user_query,
+            history=messages[:-1],
+            context_data=user_context,
+            return_dict=True
+        )
+    except Exception as exc:
+        logger.error("Error during LoopBot query orchestration: %s", exc, exc_info=True)
+        orch_result = {
+            "reply": "I apologize, but I encountered a momentary issue processing your request. How else may I assist you with SpaceLoop?",
+            "intent": "GENERAL_CONVERSATION",
+            "entities": {},
+            "detected_language": effective_lang or "en",
+            "response_language": effective_lang or "en",
+            "confidence": 0.5,
+            "requires_clarification": False,
+            "listing_draft": None
+        }
 
     return jsonify({
         "success": True,

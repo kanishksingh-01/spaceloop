@@ -198,11 +198,11 @@ REPORT_FRAUD_PATTERNS = [
 
 HELP_PATTERNS = [
     # English
-    r"\b(?:help|how\s+does\s+spaceloop\s+work|what\s+is\s+spaceloop|support|contact\s+support|section\s+52\s+protection|terms\s+and\s+conditions|what\s+can\s+you\s+do)\b",
+    r"\b(?:help|how\s+does\s+spaceloop\s+work|what\s+is\s+spaceloop|how\s+spaceloop\s+works|how\s+(?:do\s+i|to)\s+(?:find|search)\s+(?:a\s+)?space|how\s+(?:do\s+i|to)\s+book\s+(?:a\s+)?space|what\s+information\s+(?:is\s+)?(?:required|needed)|what\s+(?:is|do\s+i)\s+need(?:ed)?\s+to\s+book|what\s+documents\s+(?:are\s+)?(?:required|needed)|platform\s+guide|how\s+it\s+works|support|contact\s+support|section\s+52\s+protection|terms\s+and\s+conditions|what\s+can\s+you\s+do)\b",
     # Hindi / Hinglish
-    r"\b(?:help\s+chahiye|madad\s+chahiye|spaceloop\s+kaise\s+kam\s+karta\s+hai|support\s+se\s+baat\s+karni\s+hai|madad\s+karo)\b",
+    r"\b(?:help\s+chahiye|madad\s+chahiye|spaceloop\s+kya\s+hai|spaceloop\s+kaise\s+kam\s+karta\s+hai|booking\s+ke\s+liye\s+kya\s+chahiye|support\s+se\s+baat\s+karni\s+hai|madad\s+karo)\b",
     # Marathi
-    r"\b(?:madat\s+pahije|spaceloop\s+kasa\s+chalto|sahayyata)\b"
+    r"\b(?:madat\s+pahije|spaceloop\s+kay\s+aahe|spaceloop\s+kasa\s+chalto|sahayyata)\b"
 ]
 
 CANONICAL_INTENTS_MAP = {

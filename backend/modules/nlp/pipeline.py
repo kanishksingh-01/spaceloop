@@ -49,12 +49,23 @@ class NLPPipeline:
         extracted_entities = EntityExtractionService.extract_entities(normalized_text, context_data=context_data)
         entities_dict = extracted_entities.to_dict()
 
-        # If intent is generic or low confidence, but explicit entities like location + type exist,
-        # adjust intent to SEARCH_SPACE with appropriate confidence
+        # If intent is low confidence, promote to SEARCH_SPACE only if explicit space keywords
+        # or property_type are present (and NOT out-of-scope topics like weather, stocks, crypto)
         if intent == IntentType.CLARIFICATION_NEEDED.value:
-            if "location" in entities_dict or "property_type" in entities_dict:
-                intent = IntentType.SEARCH_SPACE.value
-                intent_conf = 0.82
+            norm_lower = normalized_text.lower()
+            out_of_scope = any(w in norm_lower for w in [
+                "weather", "temperature", "forecast", "rain",
+                "bitcoin", "crypto", "stock", "share market", "trading",
+                "recipe", "cricket", "ipl", "politics", "election",
+                "disease", "medicine", "doctor", "song", "movie", "lyrics"
+            ])
+            if not out_of_scope:
+                has_space_signal = bool(entities_dict.get("property_type")) or any(
+                    k in norm_lower for k in ["space", "room", "desk", "hall", "office", "studio", "rent", "find", "search", "looking for", "need a", "chahiye"]
+                )
+                if has_space_signal and ("location" in entities_dict or "property_type" in entities_dict):
+                    intent = IntentType.SEARCH_SPACE.value
+                    intent_conf = 0.82
 
         return StructuredNLPResult(
             language=primary_lang,

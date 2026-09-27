@@ -240,7 +240,10 @@ export const LoopBot: React.FC = () => {
         current_path: location.pathname,
         language_preference: loopbotLanguage !== 'auto' ? loopbotLanguage : undefined,
       });
-      setMessages([...newHistory, { role: 'assistant', content: resp.reply }]);
+      const replyContent = resp?.reply && typeof resp.reply === 'string' && resp.reply.trim()
+        ? resp.reply.trim()
+        : 'I am ready to help. What would you like to know about SpaceLoop?';
+      setMessages([...newHistory, { role: 'assistant', content: replyContent }]);
     } catch {
       setMessages([
         ...newHistory,
@@ -256,20 +259,95 @@ export const LoopBot: React.FC = () => {
 
   const renderCleanMessage = useCallback((rawText: string) => {
     if (!rawText) return null;
-    const cleaned = rawText
+
+    let processedText = rawText;
+
+    // Check if wrapped in markdown code fence (```json ... ``` or ```text ... ```)
+    const codeBlockMatch = processedText.match(/^```(?:json|markdown|text)?\s*([\s\S]*?)\s*```$/i);
+    if (codeBlockMatch) {
+      processedText = codeBlockMatch[1].trim();
+    }
+
+    // Try parsing as JSON if it resembles an object
+    if (processedText.startsWith('{') && processedText.endsWith('}')) {
+      try {
+        const parsed = JSON.parse(processedText);
+        if (parsed.reply && typeof parsed.reply === 'string') {
+          processedText = parsed.reply;
+        } else if (parsed.message && typeof parsed.message === 'string') {
+          processedText = parsed.message;
+        } else if (parsed.content && typeof parsed.content === 'string') {
+          processedText = parsed.content;
+        }
+      } catch {
+        // Not valid JSON, keep as processedText
+      }
+    }
+
+    const cleaned = processedText
       .replace(/<br\s*\/?>/gi, '\n')
       .replace(/<[^>]+>/g, '');
 
     const lines = cleaned.split('\n');
 
     return (
-      <div className="space-y-1.5" style={{ wordBreak: 'break-word', overflowWrap: 'anywhere' }}>
-        {lines.map((line, lIdx) => {
-          if (!line.trim()) {
+      <div className="space-y-1.5 text-xs sm:text-sm leading-relaxed" style={{ wordBreak: 'break-word', overflowWrap: 'anywhere' }}>
+        {lines.map((rawLine, lIdx) => {
+          const line = rawLine.trim();
+          if (!line) {
             return <div key={lIdx} className="h-1" />;
           }
 
-          const parts = line.split(/(\b\*\*.*?\*\*\b|\*\*.*?\*\*)/g);
+          // Headers (### Header or ## Header)
+          const headerMatch = line.match(/^(#{1,4})\s+(.+)$/);
+          if (headerMatch) {
+            return (
+              <p key={lIdx} className="font-bold text-white pt-1 text-xs sm:text-sm text-purple-200">
+                {headerMatch[2]}
+              </p>
+            );
+          }
+
+          // Blockquotes (> Quote)
+          const quoteMatch = line.match(/^>\s*(.+)$/);
+          if (quoteMatch) {
+            return (
+              <div key={lIdx} className="pl-2 border-l-2 border-purple-500/60 bg-purple-950/20 py-0.5 rounded-r text-purple-200/90 text-xs italic">
+                {quoteMatch[1]}
+              </div>
+            );
+          }
+
+          // Numbered list items (e.g. "1. ", "2. ")
+          const numberedMatch = line.match(/^(\d+)\.\s+(.+)$/);
+          if (numberedMatch) {
+            const num = numberedMatch[1];
+            const content = numberedMatch[2];
+            const parts = content.split(/(\b\*\*.*?\*\*\b|\*\*.*?\*\*)/g);
+            return (
+              <div key={lIdx} className="pl-1 text-slate-300 flex items-start gap-1.5">
+                <span className="text-purple-400 font-mono font-semibold text-xs select-none shrink-0">{num}.</span>
+                <span>
+                  {parts.map((part, pIdx) => {
+                    if (part.startsWith('**') && part.endsWith('**') && part.length >= 4) {
+                      return (
+                        <strong key={pIdx} className="font-semibold text-white">
+                          {part.slice(2, -2)}
+                        </strong>
+                      );
+                    }
+                    return <span key={pIdx}>{part}</span>;
+                  })}
+                </span>
+              </div>
+            );
+          }
+
+          // Bullet list items (•, -, *)
+          const isBullet = line.startsWith('•') || line.startsWith('- ') || line.startsWith('* ');
+          const bulletContent = isBullet ? line.replace(/^[•\-\*]\s*/, '') : line;
+
+          const parts = bulletContent.split(/(\b\*\*.*?\*\*\b|\*\*.*?\*\*)/g);
           const formattedLine = parts.map((part, pIdx) => {
             if (part.startsWith('**') && part.endsWith('**') && part.length >= 4) {
               return (
@@ -281,10 +359,9 @@ export const LoopBot: React.FC = () => {
             return <span key={pIdx}>{part}</span>;
           });
 
-          const isBullet = line.trim().startsWith('•') || line.trim().startsWith('-');
           return (
-            <p key={lIdx} className={isBullet ? 'pl-2 text-slate-300 flex items-start gap-1.5' : ''}>
-              {isBullet ? <span className="text-purple-400 select-none">•</span> : null}
+            <p key={lIdx} className={isBullet ? 'pl-1 text-slate-300 flex items-start gap-1.5' : 'text-slate-200'}>
+              {isBullet ? <span className="text-purple-400 select-none shrink-0">•</span> : null}
               <span>{formattedLine}</span>
             </p>
           );

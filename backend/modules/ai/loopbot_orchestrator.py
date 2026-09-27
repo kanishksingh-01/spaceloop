@@ -473,8 +473,38 @@ def _sanitize_loopbot_response(text: str) -> str:
     return cleaned.strip()
 
 
-def _handle_clarification(effective_lang: str) -> str:
+def _handle_clarification(effective_lang: str, raw_query: str = "") -> str:
     from backend.modules.nlp.i18n import MultilingualService
+    if raw_query:
+        q_lower = raw_query.lower().strip()
+        out_of_scope = [
+            "weather", "temperature", "forecast", "rain", "climate",
+            "cricket", "ipl", "football", "sports",
+            "politics", "election", "president", "prime minister", "modi",
+            "recipe", "cooking", "how to cook",
+            "movie", "song", "lyrics", "celebrity",
+            "crypto", "bitcoin", "ethereum", "stock market", "trading", "share market",
+            "flight ticket", "train ticket", "pnr", "hotel booking",
+            "doctor", "medical", "medicine", "disease"
+        ]
+        if any(w in q_lower for w in out_of_scope):
+            if effective_lang == "hi":
+                return (
+                    "ℹ️ **जानकारी उपलब्ध नहीं है:**\n\n"
+                    "यह जानकारी SpaceLoop पर उपलब्ध नहीं है। SpaceLoop केवल फिजिकल स्पेस (डेस्क, स्टूडियो, मीटिंग रूम) खोजने, बुक करने, स्मार्ट एक्सेस और होस्ट स्पेस लिस्टिंग में मदद करता है।\n\n"
+                    "क्या मैं आपको किसी फिजिकल स्पेस की बुकिंग या खोज में मदद कर सकता हूँ?"
+                )
+            elif effective_lang == "mr":
+                return (
+                    "ℹ️ **माहिती उपलब्ध नाही:**\n\n"
+                    "ही माहिती SpaceLoop वर उपलब्ध नाही. SpaceLoop फक्त जागा (डेस्क, स्टुडिओ, मीटिंग रूम) शोधणे, बुक करणे आणि होस्ट लिस्टिंगसाठी आहे.\n\n"
+                    "मी तुम्हाला जागेच्या बुकिंग किंवा शोधात कशी मदत करू?"
+                )
+            return (
+                "ℹ️ **Information Unavailable:**\n\n"
+                "I don't have information about that. SpaceLoop's assistant only provides assistance with discovering verified workspaces, hourly bookings, pricing breakdowns, smart access, Section 52 legal protection, and host space monetization.\n\n"
+                "How can I assist you with physical spaces today?"
+            )
     return MultilingualService.get_localized_response("CLARIFICATION_NEEDED", effective_lang)
 
 
@@ -761,6 +791,68 @@ def _handle_ask_help(query: str, effective_lang: str) -> str:
     from backend.modules.nlp.i18n import MultilingualService
     if effective_lang != "en":
         return MultilingualService.get_localized_response("LEGAL_SAFETY", effective_lang)
+
+    q = (query or "").lower().strip()
+
+    # 1. "What is SpaceLoop?"
+    if any(k in q for k in ["what is spaceloop", "tell me about spaceloop", "about spaceloop", "spaceloop overview"]):
+        return (
+            "🏢 **What is SpaceLoop?**\n\n"
+            "SpaceLoop is India's premier peer-to-peer marketplace for discovering, booking, and monetizing unused physical spaces by the hour.\n\n"
+            "• **Flexible Spaces**: Desks, meeting rooms, podcast cabins, photo studios, maker workshops, pop-up stalls, and quiet study spaces.\n"
+            "• **Hourly Freedom**: Book from 30 minutes up to 7 days with zero long-term leases.\n"
+            "• **Zero-Hardware Smart Access**: 50m GPS geofenced check-in and dynamic QR code door passes.\n"
+            "• **Section 52 Legal Protection**: Operates under revocable micro-licenses under the Indian Easements Act, 1882 (zero risk of adverse tenancy claims).\n"
+            "• **₹100 UPI Micro-Escrow**: Deposits are safely escrowed and refunded within 120 seconds of on-time checkout.\n\n"
+            "Would you like to find a space or list your own unused space?"
+        )
+
+    # 2. "How does SpaceLoop work?"
+    if any(k in q for k in ["how does spaceloop work", "how spaceloop works", "workflow", "how it works"]):
+        return (
+            "⚡ **How SpaceLoop Works (4-Step Flow):**\n\n"
+            "1. **Search & Match**: Browse verified spaces by city, neighborhood, budget, or amenities on `/explore`.\n"
+            "2. **Instant Booking**: Choose your hours, review upfront pricing (hourly rate + 5% platform fee + ₹100 deposit), and pay via UPI or card.\n"
+            "3. **Zero-Hardware Arrival**: Arrive within 50m of the property to activate your GPS digital door pass and scan the door QR.\n"
+            "4. **Checkout & Instant Refund**: Conclude your booking on `/dashboard`. Once room power-off checks pass, your ₹100 deposit is refunded to your UPI VPA within 120 seconds."
+        )
+
+    # 3. "How do I find a space?"
+    if any(k in q for k in ["how do i find", "how to find", "find a space", "where to find", "where can i search"]):
+        return (
+            "🔍 **How to Find a Space on SpaceLoop:**\n\n"
+            "1. **Browse Marketplace**: Visit `/explore` to view verified spaces across Pune, Dehradun, Mumbai, and Delhi.\n"
+            "2. **Filter by Category**: Choose Desks, Meeting Rooms, Photo Studios, Workshops, or Event Spaces.\n"
+            "3. **Proximity Search**: Use the radius slider on `/explore` to find spaces within 1km–25km of your current location.\n"
+            "4. **Ask LoopBot**: You can ask me directly (e.g. *'find a quiet meeting room for 6 in Kharadi'*), and I will recommend matching options."
+        )
+
+    # 4. "How do I book a space?"
+    if any(k in q for k in ["how do i book", "how to book", "steps to book", "booking steps"]):
+        return (
+            "🚀 **How to Book a Space:**\n\n"
+            "1. **Select a Space**: Choose any listing on `/explore` or from search recommendations.\n"
+            "2. **Pick Duration**: Choose your start time and booking duration (minimum 30 minutes).\n"
+            "3. **Review Upfront Breakdown**: Total = Hourly Rent + 5% Platform Fee + ₹100 Refundable UPI Escrow.\n"
+            "4. **Authorize Payment**: Complete instant payment via any UPI app (GPay, PhonePe, Paytm) or card.\n"
+            "5. **Access Door Pass**: Your digital pass with arrival PIN activates immediately in your `/dashboard`."
+        )
+
+    # 5. "What information is required?"
+    if any(k in q for k in ["information is required", "what information", "what is required", "what documents", "requirements"]):
+        return (
+            "📋 **Information Required on SpaceLoop:**\n\n"
+            "**To Book a Space (Seeker / Guest):**\n"
+            "• **Contact**: Phone number or email for instant OTP sign-in.\n"
+            "• **Identity Verification**: Sovereign DigiLocker Aadhaar KYC (or academic student ID for student discounts).\n"
+            "• **Payment**: UPI VPA or Debit/Credit card for the hourly rental and refundable ₹100 deposit.\n"
+            "• **Arrival**: Smartphone GPS enabled (for 50m geofence check-in) and camera for door QR scanning.\n\n"
+            "**To List a Space (Host):**\n"
+            "• **Property Details**: High-resolution photos, address, usable square footage, and amenities.\n"
+            "• **Ownership Verification**: Electricity bill (Discom CA number) or Aadhaar tokenized KYC.\n"
+            "• **Payout Account**: UPI VPA to receive automated 95% revenue payouts."
+        )
+
     return (
         "🤝 **SpaceLoop Help & Platform Guide:**\n\n"
         "• **How SpaceLoop Works**: Discover and book verified physical spaces by the hour with zero hardware keys or physical handoffs.\n"
@@ -839,7 +931,7 @@ def orchestrate_loopbot_query(
     # Low-confidence Intent Guardrail (< 0.60 or CLARIFICATION_NEEDED): ask clarification, never invent.
     try:
         if canonical_intent == IntentType.CLARIFICATION_NEEDED.value or nlp_result.confidence < 0.60:
-            raw_reply = _handle_clarification(effective_lang)
+            raw_reply = _handle_clarification(effective_lang, raw_query=query)
             canonical_intent = IntentType.CLARIFICATION_NEEDED.value
         elif canonical_intent == IntentType.SEARCH_PROPERTY.value:
             raw_reply = _handle_search_property(params, effective_lang, raw_query=query)
