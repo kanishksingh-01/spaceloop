@@ -15,6 +15,7 @@ frontend/.env.local
 !*.example
 *.bak
 node_modules/
+spaceloop/
 spaceloop/node_modules/
 NIRIKSHAK/frontend/node_modules/
 _backup_frontend_pre_migration/
