@@ -88,13 +88,21 @@
   font-size: clamp(2.2rem, 5.5vw, 3.8rem);
   font-weight: 800;
   letter-spacing: 0.32em;
-  color: #0B3D91;
   text-align: center;
-  transition: color 0.3s ease;
+  background: linear-gradient(90deg, #0284C7 0%, #4F46E5 50%, #7C3AED 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: transparent;
+  transition: opacity 0.3s ease;
 }
 
 .dark .ag-wordmark-text {
-  color: #F8FAFC;
+  background: linear-gradient(90deg, #22D3EE 0%, #38BDF8 25%, #818CF8 65%, #C084FC 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: transparent;
 }
 
 /* Subtle, Refined Metallic Sheen (Non-blinding, soft light reflection) */
