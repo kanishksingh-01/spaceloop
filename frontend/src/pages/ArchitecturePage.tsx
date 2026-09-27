@@ -298,8 +298,8 @@ export const ArchitecturePage: React.FC = () => {
             </p>
           </div>
 
-          {/* Exactly 4 Team Member Profiles Rendered via Reusable ArchitectCard (Section 6 & 16) */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 sm:gap-10">
+          {/* Exactly 4 Team Member Profiles Rendered in a Single Horizontal Row on Desktop */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
             {TEAM_MEMBERS.map((member) => (
               <ArchitectCard
                 key={member.id}
@@ -387,12 +387,17 @@ export const ArchitecturePage: React.FC = () => {
             {/* Subsystem Deep Dive */}
             <div className="p-5 sm:p-6 rounded-2xl bg-[#F0F8FF] dark:bg-slate-950/60 border border-[#D0E6F7] dark:border-white/10 mb-8 ag-subsystem-box">
               <div className="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-[#D0E6F7] dark:border-slate-800 mb-4">
-                <div>
-                  <div className="text-[10px] font-mono text-slate-500 dark:text-slate-400 uppercase tracking-widest">
-                    PRIMARY SUBSYSTEM
-                  </div>
-                  <div className="text-base font-bold text-slate-900 dark:text-white">
-                    {activeModalMember.subsystem.title}
+                <div className="flex items-center gap-2.5">
+                  <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-[#D0E6F7] dark:border-slate-700">
+                    {activeModalMember.subsystem.codename}
+                  </span>
+                  <div>
+                    <div className="text-[10px] font-mono text-slate-500 dark:text-slate-400 uppercase tracking-widest">
+                      PRIMARY SUBSYSTEM
+                    </div>
+                    <div className="text-base font-bold text-slate-900 dark:text-white">
+                      {activeModalMember.subsystem.title}
+                    </div>
                   </div>
                 </div>
                 <div className="px-3 py-1.5 rounded-full bg-white dark:bg-slate-800 border border-[#D0E6F7] dark:border-slate-700 text-xs font-mono font-bold text-[#0B3D91] dark:text-cyan-300">
