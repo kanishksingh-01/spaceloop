@@ -877,6 +877,19 @@ def concierge_chat(messages, context_data=None):
         ])
 
     context_str = f"\nPlatform Context: {json.dumps(context_data)}" if context_data else ""
+
+    # 0. Execute LoopBot Orchestrator (Intent Detection -> RAG / Marketplace / Availability / Pricing / Booking)
+    user_msgs_raw = [m.get("content", "").strip() for m in messages if isinstance(m, dict) and m.get("role") != "assistant"]
+    last_query_raw = user_msgs_raw[-1] if user_msgs_raw else ""
+    orchestrated_reply = None
+    try:
+        from backend.modules.ai.loopbot_orchestrator import orchestrate_loopbot_query
+        orchestrated_reply = orchestrate_loopbot_query(last_query_raw, history=messages[:-1], context_data=context_data)
+    except Exception as e:
+        logger.error(f"[LOOPBOT_ORCHESTRATOR] Routing error: {e}")
+
+    orchestrator_grounding = f"\n\nSubsystem Ground Truth & Orchestrated Facts:\n{orchestrated_reply}\nGround your final response strictly in these verified facts.\n" if orchestrated_reply else ""
+
     system_prompt = f"""
 You are LoopBot, the friendly, hyper-knowledgeable AI Concierge for SpaceLoop.
 SpaceLoop is an India Stack AI platform that converts unused physical square footage (private offices, conference rooms, podcast cabins, photography studios, maker workshops, pop-up retail stalls, spare rooms, garages, and off-peak cafes) into verified, affordable temporary spaces under Section 52 of the Indian Easements Act, 1882.
@@ -900,6 +913,7 @@ Guidelines:
 - Access: Zero-hardware geofenced digital door pass (50m GPS radius + QR scan + 4-digit arrival PIN fallback).
 {active_spaces_text}
 {context_str}
+{orchestrator_grounding}
 """
     formatted_msgs = [{"role": "system", "content": system_prompt}]
     if isinstance(messages, list):
@@ -922,8 +936,12 @@ Guidelines:
         cleaned_groq = _clean_loopbot_output(res)
         return sanitize_string(cleaned_groq, max_length=2000)
 
+    # 3. If Orchestrator produced an exact response, prioritize it as the deterministic fallback
+    if orchestrated_reply:
+        return sanitize_string(orchestrated_reply, max_length=2500)
+
     # =========================================================================
-    # 3. SEMANTIC CONVERSATIONAL ENGINE (Grounding in Database & Platform Context)
+    # 4. SEMANTIC CONVERSATIONAL ENGINE (Grounding in Database & Platform Context)
     # =========================================================================
     user_msgs = [m.get("content", "").lower() for m in messages if isinstance(m, dict) and m.get("role") != "assistant"]
     last_msg = user_msgs[-1] if user_msgs else ""

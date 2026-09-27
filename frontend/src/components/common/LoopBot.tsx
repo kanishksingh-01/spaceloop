@@ -1,7 +1,12 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
+import { useLocation } from 'react-router-dom';
 import { sendChatMessage, ChatMessage } from '../../services/ai';
 
 export const LoopBot: React.FC = () => {
+  const location = useLocation();
+  const spaceMatch = location.pathname.match(/^\/space\/(\d+)/);
+  const currentSpaceId = spaceMatch ? parseInt(spaceMatch[1], 10) : undefined;
+
   const [isOpen, setIsOpen] = useState(false);
   const [isMinimized, setIsMinimized] = useState(false);
   const [input, setInput] = useState('');
@@ -229,7 +234,10 @@ export const LoopBot: React.FC = () => {
     setLoading(true);
 
     try {
-      const resp = await sendChatMessage(textToSend, newHistory);
+      const resp = await sendChatMessage(textToSend, newHistory, {
+        space_id: currentSpaceId,
+        current_path: location.pathname,
+      });
       setMessages([...newHistory, { role: 'assistant', content: resp.reply }]);
     } catch {
       setMessages([
@@ -354,6 +362,11 @@ export const LoopBot: React.FC = () => {
                   <span className="px-1.5 py-0.2 rounded-full text-[9px] font-mono font-bold bg-cyan-500/10 text-cyan-300 border border-cyan-500/25">
                     Concierge
                   </span>
+                  {currentSpaceId && (
+                    <span className="px-1.5 py-0.2 rounded-full text-[9px] font-mono font-bold bg-purple-500/20 text-purple-300 border border-purple-500/30">
+                      Space #{currentSpaceId}
+                    </span>
+                  )}
                 </div>
                 <div className="flex items-center gap-1.5 text-[10px] text-emerald-400 font-medium">
                   <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
@@ -447,15 +460,25 @@ export const LoopBot: React.FC = () => {
             <div ref={messagesEndRef} />
           </div>
 
-          {/* Quick Suggested Topic Chips */}
+          {/* Quick Suggested Topic Chips (RAG & Orchestrator Powered) */}
           <div className="px-3 py-2 bg-slate-950/60 border-t border-slate-800/60 flex items-center gap-1.5 overflow-x-auto text-[11px] whitespace-nowrap scrollbar-none shrink-0">
-            {[
-              { label: '💼 Quiet Work Desk', prompt: 'Find a quiet workspace for 3 hours with fiber WiFi' },
-              { label: '👥 Client Meeting', prompt: 'Find a small room for a client meeting with presentation screen' },
-              { label: '🎙️ Podcast Studio', prompt: 'Find an acoustic podcast studio for 2 people' },
-              { label: '💰 Monetize Space', prompt: 'How much can I earn renting an unused garage or meeting room?' },
-              { label: '🛡️ Micro-Lease Safety', prompt: 'How do AI micro-lease agreements protect space hosts?' },
-            ].map((chip, idx) => (
+            {(currentSpaceId
+              ? [
+                  { label: '⚡ Amenities (RAG)', prompt: 'What amenities does this space have?' },
+                  { label: '🥪 Food Policy (RAG)', prompt: 'Can I bring food?' },
+                  { label: '👥 Team Meeting Fit', prompt: 'Is this good for a team meeting?' },
+                  { label: '💰 4-Hour Price Breakdown', prompt: 'How much for 4 hours?' },
+                  { label: '🚀 Book Space', prompt: 'Book this space' },
+                ]
+              : [
+                  { label: '🔍 Spaces for 8 (Search)', prompt: 'Find spaces for 8 people' },
+                  { label: '📅 Availability Tomorrow', prompt: "What's available tomorrow?" },
+                  { label: '💰 Calculate 4 Hours', prompt: 'How much for 4 hours?' },
+                  { label: '⚖️ Compare Spaces (DB+RAG)', prompt: 'Compare these spaces' },
+                  { label: '💼 Quiet Work Desk', prompt: 'Find a quiet workspace for 3 hours with fiber WiFi' },
+                  { label: '🛡️ Section 52 & Escrow', prompt: 'How do AI micro-leases and ₹100 UPI escrow protect hosts?' },
+                ]
+            ).map((chip, idx) => (
               <button
                 key={idx}
                 type="button"

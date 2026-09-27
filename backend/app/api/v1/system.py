@@ -173,13 +173,18 @@ def ai_chat():
     if not messages:
         return jsonify({"reply": "Hello! How can I assist you with SpaceLoop today?"}), 200
 
-    user_context = None
+    user_context = {}
     if current_user.is_authenticated:
         user_context = {
             "user_name": current_user.name,
             "role": current_user.role,
             "is_verified": current_user.is_student_verified or current_user.is_host_verified
         }
+
+    if data.get("space_id"):
+        user_context["space_id"] = data.get("space_id")
+    if data.get("current_path"):
+        user_context["current_path"] = data.get("current_path")
 
     response = concierge_chat(messages, context_data=user_context)
     return jsonify({"reply": response})
