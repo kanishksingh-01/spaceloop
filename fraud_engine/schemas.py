@@ -86,13 +86,36 @@ class ScoreRequest(BaseModel):
 
 
 class RuleResult(BaseModel):
-    code: str
-    name: str
+    rule_id: str = ""
+    rule_name: str = ""
     category: str
     severity: FraudSeverity
-    weight: float
-    triggered: bool
+    risk_contribution: float = 0.0
+    triggered: bool = True
     evidence: str
+    feature_responsible: Optional[str] = None
+    value_responsible: Optional[Any] = None
+
+    # Backward-compatible fields
+    code: Optional[str] = None
+    name: Optional[str] = None
+    weight: Optional[float] = None
+
+    def model_post_init(self, __context: Any) -> None:
+        if self.code and not self.rule_id:
+            self.rule_id = self.code
+        elif self.rule_id and not self.code:
+            self.code = self.rule_id
+
+        if self.name and not self.rule_name:
+            self.rule_name = self.name
+        elif self.rule_name and not self.name:
+            self.name = self.rule_name
+
+        if self.weight is not None and self.risk_contribution == 0.0:
+            self.risk_contribution = self.weight
+        elif self.risk_contribution != 0.0 and self.weight is None:
+            self.weight = self.risk_contribution
 
 
 class FraudScoreResponse(BaseModel):

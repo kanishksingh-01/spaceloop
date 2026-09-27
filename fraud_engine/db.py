@@ -25,6 +25,10 @@ def get_db() -> Generator[Session, None, None]:
         session.close()
 
 
+from sqlalchemy import inspect, text
+from models import db, User, Space, Booking, DeviceSession, FraudEventRecord, FraudAlertRecord, RiskAssessment
+
+
 def ensure_fraud_tables():
     """Ensures device_sessions, risk_assessments, fraud_events and fraud_alerts tables exist."""
     try:
@@ -32,6 +36,15 @@ def ensure_fraud_tables():
         RiskAssessment.__table__.create(bind=engine, checkfirst=True)
         FraudEventRecord.__table__.create(bind=engine, checkfirst=True)
         FraudAlertRecord.__table__.create(bind=engine, checkfirst=True)
+
+        inspector = inspect(engine)
+        if "spaces" in inspector.get_table_names():
+            space_cols = {col["name"] for col in inspector.get_columns("spaces")}
+            if "embedding_json" not in space_cols:
+                with engine.connect() as conn:
+                    col_type = "JSON" if "postgres" in str(engine.url).lower() else "TEXT"
+                    conn.execute(text(f"ALTER TABLE spaces ADD COLUMN embedding_json {col_type}"))
+                    conn.commit()
     except Exception:
         pass
 

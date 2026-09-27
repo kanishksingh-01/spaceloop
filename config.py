@@ -45,6 +45,9 @@ class Config:
             _raw_db_url = f"sqlite:///{tmp_db}"
         else:
             _raw_db_url = "sqlite:///" + os.path.join(basedir, "app.db")
+    elif _raw_db_url.startswith("sqlite:///") and not _raw_db_url.startswith("sqlite:////"):
+        rel_p = _raw_db_url[len("sqlite:///"):]
+        _raw_db_url = "sqlite:///" + os.path.abspath(os.path.join(basedir, rel_p))
     elif _raw_db_url.startswith("postgres://"):
         _raw_db_url = _raw_db_url.replace("postgres://", "postgresql://", 1)
     SQLALCHEMY_DATABASE_URI = _raw_db_url

@@ -24,7 +24,7 @@ class RiskEngine:
         has_high = False
 
         for r in triggered_rules:
-            w = float(r.weight)
+            w = float(r.risk_contribution if r.risk_contribution else (r.weight or 0.0))
             combined_prob *= (1.0 - w)
             if r.severity == FraudSeverity.CRITICAL:
                 has_critical = True
@@ -48,11 +48,14 @@ class RiskEngine:
             risk_level = FraudRiskLevel.NORMAL
 
         # 4. Action decision mapping
-        if has_critical or any(r.code in ("RULE_SELF_TRANSACTION", "RULE_SHARED_DEVICE_MULTI_ACCOUNT") for r in triggered_rules):
+        critical_codes = ("RULE_SELF_TRANSACTION", "RULE_SHARED_DEVICE_MULTI_ACCOUNT", "RULE_DUPLICATE_LISTING")
+        challenge_codes = ("RULE_IMPOSSIBLE_GEO_VELOCITY", "RULE_SUDDEN_PROFILE_MUTATION", "RULE_DISPOSABLE_EMAIL")
+
+        if has_critical or any(r.rule_id in critical_codes or r.code in critical_codes for r in triggered_rules):
             decision = FraudDecision.BLOCK
         elif risk_score >= FraudEngineConfig.THRESHOLD_HOLD:
             decision = FraudDecision.HOLD
-        elif any(r.code in ("RULE_IMPOSSIBLE_GEO_VELOCITY", "RULE_SUDDEN_PROFILE_MUTATION") for r in triggered_rules):
+        elif any(r.rule_id in challenge_codes or r.code in challenge_codes for r in triggered_rules):
             decision = FraudDecision.CHALLENGE
         elif risk_score >= FraudEngineConfig.THRESHOLD_REVIEW:
             decision = FraudDecision.REVIEW
