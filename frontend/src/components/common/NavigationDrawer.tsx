@@ -281,7 +281,7 @@ export const NavigationDrawer: React.FC<NavigationDrawerProps> = ({
   const isVisible = isOpen || (isDragging && isEdgeDrag.current);
 
   // Navigation Items Definition with Scaled Typography
-  const navItems = [
+  const seekerNavItems = [
     {
       path: '/',
       label: t('nav.home') || 'Home',
@@ -291,23 +291,36 @@ export const NavigationDrawer: React.FC<NavigationDrawerProps> = ({
       iconBg: 'bg-[#0B3D91]/10 dark:bg-indigo-500/15',
     },
     {
-      path: '/explore',
-      label: t('nav.explore') || 'Explore Spaces',
-      subtitle: 'Verified desks, studios & hubs',
-      icon: 'fa-solid fa-compass',
-      iconColor: 'text-[#3BA7F2] dark:text-cyan-400',
-      iconBg: 'bg-[#3BA7F2]/10 dark:bg-cyan-500/15',
-      badge: 'Live',
-      badgeStyle: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/25',
-    },
-    {
       path: '/dashboard',
       label: t('nav.myBookings') || 'My Bookings',
       subtitle: 'Active sessions, passes & QR codes',
       icon: 'fa-solid fa-calendar-check',
       iconColor: 'text-indigo-600 dark:text-indigo-400',
       iconBg: 'bg-indigo-500/10 dark:bg-indigo-500/15',
+      badge: 'Sessions',
+      badgeStyle: 'bg-indigo-500/10 text-indigo-700 dark:text-indigo-300 border-indigo-500/25',
     },
+    {
+      path: '/how-it-works',
+      label: t('nav.howItWorks') || 'How It Works',
+      subtitle: 'Section 52 lease & zero-hardware',
+      icon: 'fa-solid fa-circle-question',
+      iconColor: 'text-violet-600 dark:text-violet-400',
+      iconBg: 'bg-violet-500/10 dark:bg-violet-500/15',
+    },
+    {
+      path: '/admin/trust-safety',
+      label: t('nav.trustSafety') || 'Trust & Safety',
+      subtitle: 'Verification, fraud defense & safety console',
+      icon: 'fa-solid fa-shield-halved',
+      iconColor: 'text-rose-600 dark:text-rose-400',
+      iconBg: 'bg-rose-500/10 dark:bg-rose-500/15',
+      badge: 'Defense',
+      badgeStyle: 'bg-rose-500/10 text-rose-700 dark:text-rose-300 border-rose-500/25',
+    },
+  ];
+
+  const hostNavItems = [
     {
       path: '/host/dashboard',
       label: t('nav.hostPortal') || 'Host Dashboard',
@@ -352,15 +365,9 @@ export const NavigationDrawer: React.FC<NavigationDrawerProps> = ({
       iconColor: 'text-rose-600 dark:text-rose-400',
       iconBg: 'bg-rose-500/10 dark:bg-rose-500/15',
     },
-    {
-      path: '/how-it-works',
-      label: t('nav.howItWorks') || 'How It Works',
-      subtitle: 'Section 52 lease & zero-hardware',
-      icon: 'fa-solid fa-circle-question',
-      iconColor: 'text-violet-600 dark:text-violet-400',
-      iconBg: 'bg-violet-500/10 dark:bg-violet-500/15',
-    },
   ];
+
+  const navItems = isHostPortal ? hostNavItems : seekerNavItems;
 
   return (
     <>
@@ -533,7 +540,7 @@ export const NavigationDrawer: React.FC<NavigationDrawerProps> = ({
             ===================================================================== */}
         <nav className="flex-1 overflow-y-auto overscroll-contain px-3 sm:px-4 py-2 space-y-1 focus:outline-none">
           <div className="text-[10px] font-mono font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 px-2 py-1">
-            Navigation Directory
+            {isHostPortal ? 'Host Navigation' : 'Seeker Navigation'}
           </div>
 
           {navItems.map((item) => {

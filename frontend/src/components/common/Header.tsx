@@ -184,28 +184,6 @@ export const Header: React.FC<HeaderProps> = ({
                 <span>{t('nav.explore')}</span>
               </button>
               <button
-                onClick={() => navigate('/dashboard')}
-                className={`px-3 py-1.5 rounded-lg transition flex items-center gap-1.5 ${
-                  location.pathname === '/dashboard'
-                    ? 'bg-indigo-600/20 text-indigo-300 border border-indigo-500/30'
-                    : 'text-slate-300 hover:text-white hover:bg-slate-800/60'
-                }`}
-              >
-                <i className="fa-solid fa-calendar-check text-slate-400" />
-                <span>{t('nav.myBookings')}</span>
-              </button>
-              <button
-                onClick={() => navigate('/how-it-works')}
-                className={`px-3 py-1.5 rounded-lg transition flex items-center gap-1.5 ${
-                  location.pathname === '/how-it-works'
-                    ? 'bg-indigo-600/20 text-indigo-300 border border-indigo-500/30'
-                    : 'text-slate-300 hover:text-white hover:bg-slate-800/60'
-                }`}
-              >
-                <i className="fa-solid fa-circle-question text-slate-400" />
-                <span>{t('nav.howItWorks')}</span>
-              </button>
-              <button
                 onClick={() => navigate('/architecture')}
                 className={`px-3 py-1.5 rounded-lg transition flex items-center gap-1.5 ${
                   location.pathname === '/architecture'
@@ -220,28 +198,18 @@ export const Header: React.FC<HeaderProps> = ({
                   Team
                 </span>
               </button>
-              <button
-                onClick={() => navigate('/admin/trust-safety')}
-                className={`px-3 py-1.5 rounded-lg transition flex items-center gap-1.5 ${
-                  location.pathname.includes('trust-safety')
-                    ? 'bg-rose-500/20 text-rose-300 border border-rose-500/30'
-                    : 'text-slate-300 hover:text-white hover:bg-slate-800/60'
-                }`}
-                title="Trust & Safety Console"
-              >
-                <i className="fa-solid fa-shield-halved text-rose-400" />
-                <span>{t('nav.trustSafety')}</span>
-              </button>
             </>
           )}
         </nav>
 
         {/* Right Controls & Portal Switcher */}
         <div className="flex items-center gap-1.5 sm:gap-2.5 md:gap-3 shrink-0">
-          {/* Multilingual Selector (Desktop & Tablet; also accessible in Drawer on all devices) */}
-          <div className="hidden sm:block">
-            <LanguageSelector />
-          </div>
+          {/* Multilingual Selector (Host Portal on desktop/tablet; Seeker Portal has it inside Hamburger Menu) */}
+          {isHostPortal && (
+            <div className="hidden sm:block">
+              <LanguageSelector />
+            </div>
+          )}
 
           {/* Theme Switcher Button (Compact icon on mobile, icon+label on sm+) */}
           <button
