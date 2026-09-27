@@ -274,7 +274,7 @@ export const ArchitecturePage: React.FC = () => {
       {/* =========================================================================
           4. ARCHITECT PROFILES SECTION (Section 6, 7, 8, 9, 10, 11)
           ========================================================================= */}
-      <main className="py-16 sm:py-24 relative z-10 flex-1">
+      <main className="relative z-10 w-full pt-14 pb-20 sm:pt-20 sm:pb-28 lg:pt-24 lg:pb-32 border-b border-[#D0E6F7] dark:border-white/[0.08]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           {/* Section Header with Reusable RevealHeading (Section 10 & 16) */}
           <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-12 sm:mb-16">
@@ -316,6 +316,9 @@ export const ArchitecturePage: React.FC = () => {
           </div>
         </div>
       </main>
+
+      {/* Guide Hairline — Clean Bottom Boundary Below Architecture Profiles */}
+      <div className="ag-guide-line-h" aria-hidden="true" />
 
       {/* =========================================================================
           5. EXPANDABLE GLASS MODAL FOR ARCHITECTURE SPEC (Section 7)
@@ -470,7 +473,7 @@ export const ArchitecturePage: React.FC = () => {
       {/* =========================================================================
           6. CLOSING HACKATHON FINALE & RETURN NAVIGATION
           ========================================================================= */}
-      <footer className="py-16 bg-gradient-to-b from-[#E8F6FF] via-[#F0F8FF] to-white dark:from-[#020617] dark:via-[#0F172A] dark:to-[#020617] border-t border-[#D0E6F7] dark:border-white/[0.08] relative transition-colors duration-300">
+      <footer className="py-16 sm:py-24 bg-gradient-to-b from-[#E8F6FF] via-[#F0F8FF] to-white dark:from-[#020617] dark:via-[#0F172A] dark:to-[#020617] relative transition-colors duration-300">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center relative z-10">
           <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#0B3D91]/10 border border-[#0B3D91]/25 text-[#0B3D91] dark:bg-cyan-500/10 dark:border-cyan-500/25 dark:text-cyan-300 text-xs font-mono font-bold mb-4 shadow-2xs">
             <Activity className="w-3.5 h-3.5" />
