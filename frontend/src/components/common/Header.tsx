@@ -131,29 +131,6 @@ export const Header: React.FC<HeaderProps> = ({
                 <span>{t('nav.listSpace')}</span>
               </button>
               <button
-                onClick={() => navigate('/calculator')}
-                className={`px-3 py-1.5 rounded-lg transition flex items-center gap-1.5 ${
-                  location.pathname === '/calculator'
-                    ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
-                    : 'text-slate-300 hover:text-white hover:bg-slate-800/60'
-                }`}
-              >
-                <i className="fa-solid fa-calculator text-slate-400" />
-                <span>{t('nav.calculator')}</span>
-              </button>
-              <button
-                onClick={() => navigate('/verify')}
-                className={`px-3 py-1.5 rounded-lg transition flex items-center gap-1.5 ${
-                  location.pathname === '/verify'
-                    ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
-                    : 'text-slate-300 hover:text-white hover:bg-slate-800/60'
-                }`}
-              >
-                <i className="fa-solid fa-shield-halved text-emerald-400" />
-                <span>Discom & KYC</span>
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
-              </button>
-              <button
                 onClick={() => navigate('/architecture')}
                 className={`px-3 py-1.5 rounded-lg transition flex items-center gap-1.5 ${
                   location.pathname === '/architecture'
