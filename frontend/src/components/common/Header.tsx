@@ -5,6 +5,7 @@ import { logoutUser } from '../../services/auth';
 import { useTheme } from '../../context/ThemeContext';
 import { useTranslation } from '../../i18n';
 import { LanguageSelector } from './LanguageSelector';
+import { NavigationDrawer, HamburgerButton } from './NavigationDrawer';
 
 interface HeaderProps {
   currentUser: User | null;
@@ -53,6 +54,11 @@ export const Header: React.FC<HeaderProps> = ({
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-3">
         {/* Brand Logo & Active Portal Indicator */}
         <div className="flex items-center gap-2.5">
+          <HamburgerButton
+            isOpen={mobileDrawerOpen}
+            onToggle={() => setMobileDrawerOpen((prev) => !prev)}
+            className="mr-1"
+          />
           <button
             type="button"
             onClick={() => navigate(isHostPortal ? '/host/dashboard' : '/')}
@@ -359,178 +365,18 @@ export const Header: React.FC<HeaderProps> = ({
             )
           )}
 
-          {/* Mobile Menu Toggle Button */}
-          <button
-            type="button"
-            onClick={() => setMobileDrawerOpen(!mobileDrawerOpen)}
-            className="lg:hidden p-2 rounded-lg bg-slate-900 border border-slate-800 text-slate-300 hover:text-white focus:outline-none"
-            aria-label="Toggle Navigation Menu"
-          >
-            <i className="fa-solid fa-bars text-sm" />
-          </button>
         </div>
       </div>
 
-      {/* Mobile Drawer Menu */}
-      {mobileDrawerOpen && (
-        <div className="lg:hidden border-t border-slate-800/80 bg-slate-950/95 backdrop-blur-xl px-4 py-4 space-y-3 shadow-2xl">
-          {currentUser && (
-            <div className="flex items-center justify-between pb-3 border-b border-slate-800">
-              <div className="flex items-center gap-2.5">
-                <div>
-                  <div className="text-xs font-bold text-white">{currentUser.name}</div>
-                  <div className="text-[10px] text-slate-400">
-                    {currentUser.email} • {currentUser.role}
-                  </div>
-                </div>
-              </div>
-              <button
-                type="button"
-                onClick={handleLogout}
-                className="text-xs text-rose-400 font-semibold"
-              >
-                Sign Out
-              </button>
-            </div>
-          )}
-
-          {/* Mobile Portal Navigation Links */}
-          <div className="grid grid-cols-2 gap-2 text-xs font-medium">
-            {isHostPortal ? (
-              <>
-                <button
-                  onClick={() => {
-                    navigate('/host/dashboard');
-                    setMobileDrawerOpen(false);
-                  }}
-                  className="p-2 rounded-lg bg-slate-900/60 hover:bg-slate-800 text-slate-200 flex items-center gap-2 text-left"
-                >
-                  <i className="fa-solid fa-chart-pie text-amber-400" /> Host Dashboard
-                </button>
-                <button
-                  onClick={() => {
-                    navigate('/list-space');
-                    setMobileDrawerOpen(false);
-                  }}
-                  className="p-2 rounded-lg bg-slate-900/60 hover:bg-slate-800 text-slate-200 flex items-center gap-2 text-left"
-                >
-                  <i className="fa-solid fa-plus text-amber-400" /> List Space
-                </button>
-                <button
-                  onClick={() => {
-                    navigate('/calculator');
-                    setMobileDrawerOpen(false);
-                  }}
-                  className="p-2 rounded-lg bg-slate-900/60 hover:bg-slate-800 text-slate-200 flex items-center gap-2 text-left"
-                >
-                  <i className="fa-solid fa-calculator text-slate-400" /> Calculator
-                </button>
-                <button
-                  onClick={() => {
-                    navigate('/verify');
-                    setMobileDrawerOpen(false);
-                  }}
-                  className="p-2 rounded-lg bg-slate-900/60 hover:bg-slate-800 text-slate-200 flex items-center gap-2 text-left"
-                >
-                  <i className="fa-solid fa-shield-halved text-emerald-400" /> KYC Verify
-                </button>
-                <button
-                  onClick={() => {
-                    navigate('/architecture');
-                    setMobileDrawerOpen(false);
-                  }}
-                  className="p-2 rounded-lg bg-amber-950/30 hover:bg-amber-900/50 text-amber-300 flex items-center gap-2 text-left"
-                >
-                  <i className="fa-solid fa-cubes text-amber-400" /> Architecture
-                </button>
-              </>
-            ) : (
-              <>
-                <button
-                  onClick={() => {
-                    navigate('/explore');
-                    setMobileDrawerOpen(false);
-                  }}
-                  className="p-2 rounded-lg bg-slate-900/60 hover:bg-slate-800 text-slate-200 flex items-center gap-2 text-left"
-                >
-                  <i className="fa-solid fa-compass text-indigo-400" /> Explore
-                </button>
-                <button
-                  onClick={() => {
-                    navigate('/dashboard');
-                    setMobileDrawerOpen(false);
-                  }}
-                  className="p-2 rounded-lg bg-slate-900/60 hover:bg-slate-800 text-slate-200 flex items-center gap-2 text-left"
-                >
-                  <i className="fa-solid fa-calendar-check text-slate-400" /> My Bookings
-                </button>
-                <button
-                  onClick={() => {
-                    navigate('/how-it-works');
-                    setMobileDrawerOpen(false);
-                  }}
-                  className="p-2 rounded-lg bg-slate-900/60 hover:bg-slate-800 text-slate-200 flex items-center gap-2 text-left"
-                >
-                  <i className="fa-solid fa-circle-question text-slate-400" /> How It Works
-                </button>
-                <button
-                  onClick={() => {
-                    navigate('/architecture');
-                    setMobileDrawerOpen(false);
-                  }}
-                  className="p-2 rounded-lg bg-indigo-950/30 hover:bg-indigo-900/50 text-indigo-300 flex items-center gap-2 text-left"
-                >
-                  <i className="fa-solid fa-cubes text-indigo-400" /> Architecture
-                </button>
-                <button
-                  onClick={() => {
-                    navigate('/admin/trust-safety');
-                    setMobileDrawerOpen(false);
-                  }}
-                  className="p-2 rounded-lg bg-rose-950/30 hover:bg-rose-900/50 text-rose-300 flex items-center gap-2 text-left"
-                >
-                  <i className="fa-solid fa-shield-halved text-rose-400" /> Trust & Safety
-                </button>
-              </>
-            )}
-          </div>
-
-          {/* Theme & Switch Portal Buttons in Mobile */}
-          <div className="pt-2 border-t border-slate-800 space-y-2">
-            <button
-              type="button"
-              onClick={toggleTheme}
-              className="w-full py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs font-bold text-center flex items-center justify-center gap-2"
-            >
-              <span>{theme === 'dark' ? '☀️ Switch to Light Theme (Ocean Breeze)' : '🌙 Switch to Dark Theme (Midnight Neon)'}</span>
-            </button>
-
-            {isHostPortal ? (
-              <button
-                type="button"
-                onClick={() => {
-                  navigate('/explore');
-                  setMobileDrawerOpen(false);
-                }}
-                className="w-full py-2.5 rounded-xl bg-indigo-600/20 text-indigo-300 border border-indigo-500/30 text-xs font-bold text-center"
-              >
-                ⚡ Switch to Seeker Portal
-              </button>
-            ) : (
-              <button
-                type="button"
-                onClick={() => {
-                  navigate('/host/dashboard');
-                  setMobileDrawerOpen(false);
-                }}
-                className="w-full py-2.5 rounded-xl bg-amber-500/20 text-amber-300 border border-amber-500/30 text-xs font-bold text-center"
-              >
-                🏡 Switch to Host Portal
-              </button>
-            )}
-          </div>
-        </div>
-      )}
+      {/* Interactive Physical Navigation Drawer & Edge-Swipe Engine */}
+      <NavigationDrawer
+        isOpen={mobileDrawerOpen}
+        onClose={() => setMobileDrawerOpen(false)}
+        onOpen={() => setMobileDrawerOpen(true)}
+        currentUser={currentUser}
+        onOpenAuthModal={onOpenAuthModal}
+        onOpenHostAuthModal={onOpenHostAuthModal}
+      />
     </header>
   );
 };
