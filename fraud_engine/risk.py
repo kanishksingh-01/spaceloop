@@ -1,0 +1,62 @@
+"""
+SpaceLoop Fraud Engine Risk Engine Layer
+Calculates non-linear composite risk scores, statistical confidence, and automated policy actions.
+"""
+from typing import List, Dict, Any, Tuple
+from fraud_engine.schemas import RuleResult, FraudSeverity, FraudRiskLevel, FraudDecision
+from fraud_engine.config import FraudEngineConfig
+
+
+class RiskEngine:
+    """
+    Computes calibrated composite risk scores and policy actions using non-linear diminishing marginal risk accumulation:
+    R = 1.0 - ∏ (1.0 - w_i)
+    """
+
+    @classmethod
+    def evaluate(cls, triggered_rules: List[RuleResult], features: Dict[str, Any]) -> Tuple[float, float, FraudRiskLevel, FraudDecision]:
+        if not triggered_rules:
+            return 0.05, 0.95, FraudRiskLevel.NORMAL, FraudDecision.ALLOW
+
+        # 1. Independent probability accumulation
+        combined_prob = 1.0
+        has_critical = False
+        has_high = False
+
+        for r in triggered_rules:
+            w = float(r.weight)
+            combined_prob *= (1.0 - w)
+            if r.severity == FraudSeverity.CRITICAL:
+                has_critical = True
+            elif r.severity == FraudSeverity.HIGH:
+                has_high = True
+
+        raw_score = 1.0 - combined_prob
+        risk_score = round(min(1.0, max(0.0, raw_score)), 4)
+
+        # 2. Statistical certainty scaling
+        confidence = round(min(0.98, 0.65 + (0.08 * len(triggered_rules))), 4)
+
+        # 3. Risk Tier assignment
+        if risk_score >= FraudEngineConfig.THRESHOLD_BLOCK or has_critical:
+            risk_level = FraudRiskLevel.HIGH_RISK
+        elif risk_score >= FraudEngineConfig.THRESHOLD_HOLD or has_high:
+            risk_level = FraudRiskLevel.SUSPICIOUS
+        elif risk_score >= FraudEngineConfig.THRESHOLD_REVIEW:
+            risk_level = FraudRiskLevel.UNUSUAL
+        else:
+            risk_level = FraudRiskLevel.NORMAL
+
+        # 4. Action decision mapping
+        if has_critical or any(r.code in ("RULE_SELF_TRANSACTION", "RULE_SHARED_DEVICE_MULTI_ACCOUNT") for r in triggered_rules):
+            decision = FraudDecision.BLOCK
+        elif risk_score >= FraudEngineConfig.THRESHOLD_HOLD:
+            decision = FraudDecision.HOLD
+        elif any(r.code in ("RULE_IMPOSSIBLE_GEO_VELOCITY", "RULE_SUDDEN_PROFILE_MUTATION") for r in triggered_rules):
+            decision = FraudDecision.CHALLENGE
+        elif risk_score >= FraudEngineConfig.THRESHOLD_REVIEW:
+            decision = FraudDecision.REVIEW
+        else:
+            decision = FraudDecision.ALLOW
+
+        return risk_score, confidence, risk_level, decision

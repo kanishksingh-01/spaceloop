@@ -39,6 +39,7 @@ from backend.app.api.v1.spaces import api_v1_spaces
 from backend.app.api.v1.bookings import api_v1_bookings
 from backend.app.api.v1.system import api_v1_system
 from backend.app.api.v1.trust_safety import api_v1_trust_safety
+from fraud_engine.flask_blueprint import api_fraud_flask
 
 
 class VercelWSGIMiddleware:
@@ -131,13 +132,14 @@ def create_app():
     app.register_blueprint(api_v1_bookings)
     app.register_blueprint(api_v1_system)
     app.register_blueprint(api_v1_trust_safety)
+    app.register_blueprint(api_fraud_flask)
 
     # 9. Register API CSRF Defense
     # HTML forms use WTForms CSRF token; JSON APIs with ambient cookies require custom header verification
     for endpoint, view_func in app.view_functions.items():
         try:
             for rule in app.url_map.iter_rules(endpoint):
-                if rule.rule.startswith("/api/"):
+                if rule.rule.startswith("/api/") or rule.rule.startswith("/fraud/"):
                     csrf.exempt(view_func)
                     break
         except Exception:

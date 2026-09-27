@@ -773,3 +773,98 @@ class EmailLog(db.Model):
         }
 
 
+class FraudEventRecord(db.Model):
+    """
+    Normalized SpaceLoop Ingested Fraud Event Store.
+    Tracks raw telemetry, normalized entity anchors, and evaluated risk scores.
+    """
+    __tablename__ = "fraud_events"
+
+    id = db.Column(db.Integer, primary_key=True)
+    event_id = db.Column(db.String(36), unique=True, nullable=False, index=True)
+    event_type = db.Column(db.String(50), nullable=False, index=True)
+    user_id = db.Column(db.Integer, db.ForeignKey("users.id", ondelete="SET NULL"), nullable=True, index=True)
+    entity_type = db.Column(db.String(30), nullable=False, index=True)
+    entity_id = db.Column(db.Integer, nullable=True, index=True)
+    ip_address = db.Column(db.String(45), default="")
+    device_fingerprint = db.Column(db.String(64), default="", index=True)
+    user_agent = db.Column(db.String(255), default="")
+    payload_json = db.Column(db.JSON, default=dict)
+    risk_score = db.Column(db.Float, default=0.0)
+    decision = db.Column(db.String(30), default="allow")
+    created_at = db.Column(db.DateTime, default=datetime.utcnow, index=True)
+
+    user = db.relationship("User", backref=db.backref("fraud_events", lazy=True))
+
+    __table_args__ = (
+        db.Index("idx_fraud_event_user_type", "user_id", "event_type"),
+        db.Index("idx_fraud_event_created", "created_at"),
+    )
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "event_id": self.event_id,
+            "event_type": self.event_type,
+            "user_id": self.user_id,
+            "entity_type": self.entity_type,
+            "entity_id": self.entity_id,
+            "ip_address": self.ip_address,
+            "device_fingerprint": self.device_fingerprint,
+            "payload": self.payload_json or {},
+            "risk_score": round(self.risk_score, 4),
+            "decision": self.decision,
+            "created_at": self.created_at.isoformat() if self.created_at else None,
+        }
+
+
+class FraudAlertRecord(db.Model):
+    """
+    Actionable Fraud & Anomaly Triage Alert.
+    Created when evaluated risk exceeds alert thresholds or critical policy gates trigger.
+    """
+    __tablename__ = "fraud_alerts"
+
+    id = db.Column(db.Integer, primary_key=True)
+    alert_id = db.Column(db.String(36), unique=True, nullable=False, index=True)
+    event_id = db.Column(db.String(36), nullable=False, index=True)
+    user_id = db.Column(db.Integer, db.ForeignKey("users.id", ondelete="SET NULL"), nullable=True, index=True)
+    entity_type = db.Column(db.String(30), nullable=False, index=True)
+    entity_id = db.Column(db.Integer, nullable=True, index=True)
+    severity = db.Column(db.String(20), default="medium", nullable=False)  # low, medium, high, critical
+    risk_score = db.Column(db.Float, default=0.0, nullable=False)
+    decision = db.Column(db.String(30), default="review", nullable=False)  # allow, review, challenge, hold, block
+    status = db.Column(db.String(20), default="open", nullable=False)  # open, investigating, resolved, dismissed
+    triggered_rules_json = db.Column(db.JSON, default=list)
+    features_snapshot_json = db.Column(db.JSON, default=dict)
+    notes = db.Column(db.Text, default="")
+    created_at = db.Column(db.DateTime, default=datetime.utcnow, index=True)
+    resolved_at = db.Column(db.DateTime, nullable=True)
+
+    user = db.relationship("User", backref=db.backref("fraud_alerts", lazy=True))
+
+    __table_args__ = (
+        db.Index("idx_fraud_alert_status_created", "status", "created_at"),
+        db.Index("idx_fraud_alert_severity", "severity"),
+    )
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "alert_id": self.alert_id,
+            "event_id": self.event_id,
+            "user_id": self.user_id,
+            "entity_type": self.entity_type,
+            "entity_id": self.entity_id,
+            "severity": self.severity,
+            "risk_score": round(self.risk_score, 4),
+            "decision": self.decision,
+            "status": self.status,
+            "triggered_rules": self.triggered_rules_json or [],
+            "features_snapshot": self.features_snapshot_json or {},
+            "notes": self.notes or "",
+            "created_at": self.created_at.isoformat() if self.created_at else None,
+            "resolved_at": self.resolved_at.isoformat() if self.resolved_at else None,
+        }
+
+
