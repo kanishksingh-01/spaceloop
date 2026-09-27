@@ -22,9 +22,13 @@ KNOWN_HUBS_MAP: Dict[str, str] = {
     "hinjawadi": "Hinjewadi, Pune",
     "shivajinagar": "Shivajinagar, Pune",
     "pune": "Pune",
+    "punyat": "Pune",
     "पुणे": "Pune",
+    "पुण्यात": "Pune",
     "mumbai": "Mumbai",
+    "mumbait": "Mumbai",
     "मुंबई": "Mumbai",
+    "मुंबईत": "Mumbai",
     "bandra": "Bandra, Mumbai",
     "powai": "Powai, Mumbai",
     "andheri": "Andheri, Mumbai",
@@ -74,6 +78,8 @@ SPACE_TYPES_MAP: Dict[str, str] = {
     # Meeting
     "meeting": "Meeting", "conference": "Meeting", "boardroom": "Meeting",
     "collab": "Meeting", "discussion": "Meeting", "बैठक": "Meeting",
+    "room": "Meeting", "कमरा": "Meeting", "कमरे": "Meeting",
+    "खोली": "Meeting", "खोल्या": "Meeting",
     # Studio
     "studio": "Studio", "podcast": "Studio", "recording": "Studio",
     "photography": "Studio", "photo": "Studio", "vocal": "Studio",
@@ -87,10 +93,10 @@ SPACE_TYPES_MAP: Dict[str, str] = {
     "boutique": "Retail", "दुकान": "Retail", "shop": "Retail",
     # Storage
     "storage": "Storage", "warehouse": "Storage", "garage": "Storage",
-    "गोदाम": "Storage", "space storage": "Storage",
+    "गैराज": "Storage", "गोदाम": "Storage", "space storage": "Storage",
     # Event
-    "event": "Event", "hall": "Event", "gathering": "Event",
-    "सभागृह": "Event", "auditorium": "Event"
+    "event": "Event", "hall": "Event", "gathering": "Event", "terrace": "Event",
+    "टैरेस": "Event", "सभागृह": "Event", "auditorium": "Event"
 }
 
 # Amenities Dictionary
@@ -142,7 +148,7 @@ class EntityExtractionService:
         # 2. GUEST COUNT / CAPACITY (Bounded: 1 <= guests <= 500)
         # ---------------------------------------------------------------------
         cap_match = re.search(
-            r"\b(?:for\s+)?(\d+)\s*(?:people|persons?|guests?|members?|attendees?|seats?|pax|log(?:on)?|vyakti(?:yon)?|jan(?:on)?|mansen|lok)\b",
+            r"(?:for\s+)?(\d+)\s*(?:people|persons?|guests?|members?|attendees?|seats?|pax|log(?:on)?|vyakti(?:yon)?|jan(?:on|oon|ूं)?|mansen|lok|लोकांसाठी|लोकांना|लोकां|लोगों|लोग|जनूं|जना|व्यक्ति|व्यक्तियों)(?!\w)",
             clean
         )
         if cap_match:
@@ -181,10 +187,12 @@ class EntityExtractionService:
         # ---------------------------------------------------------------------
         # 4. PRICING / BUDGET (Bounded: >= ₹5.0)
         # ---------------------------------------------------------------------
-        price_match = re.search(
-            r"\b(?:under|below|max|budget|upto|less\s+than|₹)\s*(?:₹)?\s*(\d+(?:\.\d+)?)\b",
-            clean
-        )
+        price_match = re.search(r"₹\s*(\d+(?:\.\d+)?)", clean)
+        if not price_match:
+            price_match = re.search(
+                r"\b(?:under|below|max|budget|upto|less\s+than)\s*(?:₹)?\s*(\d+(?:\.\d+)?)\b",
+                clean
+            )
         if price_match:
             try:
                 price_val = float(price_match.group(1))
@@ -198,9 +206,14 @@ class EntityExtractionService:
         # ---------------------------------------------------------------------
         matched_location = None
         for hub_key in sorted(KNOWN_HUBS_MAP.keys(), key=len, reverse=True):
-            if re.search(rf"\b{re.escape(hub_key)}\b", clean):
-                matched_location = KNOWN_HUBS_MAP[hub_key]
-                break
+            if any('\u0900' <= c <= '\u097f' for c in hub_key):
+                if re.search(rf"(?:^|[^\u0900-\u097f]){re.escape(hub_key)}(?:$|[^\u0900-\u097f])", clean):
+                    matched_location = KNOWN_HUBS_MAP[hub_key]
+                    break
+            else:
+                if re.search(rf"\b{re.escape(hub_key)}\b", clean):
+                    matched_location = KNOWN_HUBS_MAP[hub_key]
+                    break
 
         if matched_location:
             entities.location = matched_location
@@ -209,9 +222,14 @@ class EntityExtractionService:
         # 6. PROPERTY / SPACE TYPE
         # ---------------------------------------------------------------------
         for type_key, canonical_type in SPACE_TYPES_MAP.items():
-            if re.search(rf"\b{re.escape(type_key)}\b", clean):
-                entities.property_type = canonical_type
-                break
+            if any('\u0900' <= c <= '\u097f' for c in type_key):
+                if re.search(rf"(?:^|[^\u0900-\u097f]){re.escape(type_key)}(?:$|[^\u0900-\u097f])", clean):
+                    entities.property_type = canonical_type
+                    break
+            else:
+                if re.search(rf"\b{re.escape(type_key)}\b", clean):
+                    entities.property_type = canonical_type
+                    break
 
         # ---------------------------------------------------------------------
         # 7. DATE & TIME RANGE

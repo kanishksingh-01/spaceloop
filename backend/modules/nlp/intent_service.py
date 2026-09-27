@@ -26,11 +26,13 @@ GREETING_PATTERNS = [
 
 BOOKING_PATTERNS = [
     # English
-    r"\b(?:book\s+(?:this|a)?\s*(?:space|room|desk)|reserve\s+(?:now|this)|how\s+to\s+book|make\s+a\s+reservation|checkout\s+link|direct\s+booking)\b",
+    r"\b(?:book\s+(?:this|a|listing)?\s*(?:space|room|desk|listing|\w+)|reserve\s+(?:now|this)|how\s+to\s+book|make\s+a\s+reservation|checkout\s+link|direct\s+booking)\b",
     # Hindi / Hinglish
     r"\b(?:book\s+karna\s+hai|reserve\s+karna\s+hai|booking\s+kaise\s+kare(?:in)?|booking\s+karo|booking\s+link\s+chahiye|ye\s+space\s+book\s+karo)\b",
+    r"(?:बुक\s+करना\s+है|आरक्षण\s+करना)",
     # Marathi
     r"\b(?:book\s+karaycha\s+aahe|aarakshan\s+kara|booking\s+kashi\s+karaychi|aarakshit\s+kara)\b",
+    r"बुक\s+करायचं\s+आहे",
     # Pahari
     r"\b(?:book\s+karno\s+chho|kamro\s+book\s+kara|basa\s+book\s+karno)\b"
 ]
@@ -50,8 +52,10 @@ PRICING_PATTERNS = [
     # Hindi / Hinglish
     r"\b(?:kitna\s+(?:lagega|kharcha|hoga|padega)|price\s+kitni\s+hai|kitne\s+rupaye\s+lagenge|kiraya\s+kitna\s+hai|rates\s+kya\s+hain|rate\s+batao)\b",
     r"\bkitna\s+(?:lagega|hoga|hai)\b",
+    r"(?:कितना\s+(?:लगेगा|खर्चा|होगा|पड़ेगा)|किराया\s+कितना\s+है)",
     # Marathi
     r"\b(?:kiti\s+kharch\s+yeil|bhada\s+kiti\s+aahe|kiti\s+rupaye\s+lagtil|dar\s+kay\s+aahet)\b",
+    r"(?:भाडं\s+किती\s+आहे|किती\s+खर्च\s+येईल)",
     # Pahari
     r"\b(?:kituk\s+rupya\s+lagnu|kiti\s+laglo|kiraya\s+katuk\s+chha|bhadu\s+kiti\s+chho)\b"
 ]
@@ -64,9 +68,11 @@ AVAILABILITY_PATTERNS = [
     r"\b(?:kal|aaj)\s+(?:\w+\s+)?(?:available|khali|free)\s*(?:hai|milega|hoga|kya)?\b",
     r"\b(?:open|free)\s+slots\s+hain\b",
     r"\bkab\s+(?:free|khali)\s+(?:hai|milega)\b",
+    r"(?:खाली|उपलब्ध)\s+(?:है|मिलेगा)",
     # Marathi
     r"\b(?:udya|aaj)\s+(?:\w+\s+)?(?:uplabdha|rikami|rikama|rikame)\b",
     r"\bslots\s+rikame\s+aahet\b",
+    r"(?:उपलब्ध|रिकामी|रिकामे)\s+आहेत?",
     # Pahari
     r"\b(?:bhol|aaj)\s+(?:\w+\s+)?(?:milal|khali)\b",
     r"\bkakh\s+khali\s+chho\b"
@@ -77,8 +83,10 @@ AMENITIES_PATTERNS = [
     r"\b(?:what\s+amenities|amenities\s+does\s+this|is\s+there\s+wifi|has\s+air\s+conditioning|have\s+ac|power\s+backup|presentation\s+screen|whiteboard|parking\s+available)\b",
     # Hindi / Hinglish
     r"\b(?:wifi\s+(?:milega|hai)|ac\s+hai\s+kya|power\s+backup\s+hai|screen\s+milegi|kya\s+suvidhayein\s+hain|amenities\s+kya\s+hain)\b",
+    r"सुविधाएं\s+क्या\s+हैं",
     # Marathi
     r"\b(?:wifi\s+aahe\s+ka|ac\s+uplabdha\s+aahe\s+ka|kay\s+suvidha\s+aahet|parking\s+aahe\s+ka)\b",
+    r"काय\s+सुविधा\s+आहेत",
     # Pahari
     r"\b(?:suvidha\s+kya\s+chhan|wifi\s+chho\s+ki\s+na|bijli\s+chhan\s+ki\s+na)\b"
 ]
@@ -96,30 +104,35 @@ RULES_PATTERNS = [
 
 HOST_MONETIZE_PATTERNS = [
     # English
-    r"\b(?:how\s+to\s+(?:host|monetize|rent\s+out)|monetiz\w*|list\s+my\s+(?:space|room|garage|office|property)|earn\s+money|earnings\s+calculator|host\s+calculator)\b",
+    r"\b(?:how\s+to\s+(?:host|monetize|rent\s+out)|monetiz\w*|list\s+(?:my\s+)?(?:\w+\s+)?(?:space|room|garage|office|property|terrace|hall|land|rooftop)|earn\s+(?:money|passive\s+income|income)|earnings\s+calculator|host\s+calculator)\b",
     # Hindi / Hinglish
     r"\b(?:apni\s+jagah\s+rent\s+pe\s+kaise\s+du|garage\s+se\s+kamai|space\s+list\s+karna\s+hai|host\s+kaise\s+banein|kitna\s+kama\s+sakte\s+hain|kamai\s+kaise\s+kare)\b",
+    r"(?:जगह\s+लिस्ट\s+करना|किराये\s+पर\s+देना)",
     # Marathi
     r"\b(?:maza\s+garage\s+bhadyane\s+kasa\s+deu|paisa\s+kasa\s+kamvaycha|space\s+list\s+karaychi\s+aahe|host\s+kasa\s+honar)\b",
+    r"भाड्याने\s+द्यायची\s+आहे",
     # Pahari
     r"\b(?:ghaur\s+kiraye\s+ma\s+kankari\s+diyun|kamro\s+kiraya\s+ma\s+deno\s+chho)\b"
 ]
 
 LEGAL_SAFETY_PATTERNS = [
     # English
-    r"\b(?:section\s+52|easements\s+act|tenancy\s+protection|squatting|upi\s+escrow|refundable\s+deposit|geofence\s+pass|digital\s+pass)\b",
+    r"\b(?:section\s+52|easements\s+act|tenancy\s+protection|squatting|upi\s+escrow|refundable\s+deposit|geofence\s+pass|digital\s+pass|security\s+deposit|deposit\s+hold|get\s+refunded|when\s+will.*refund|dispute|raise\s+a\s+dispute|complaint|smart\s+lock|pin\s+code|qr\s*code|unlock.*gate|check[\s-]out|end\s+(?:my\s+)?session)\b",
     # Hindi / Hinglish
     r"\b(?:section\s+52\s+kya\s+hai|tenancy\s+ka\s+(?:lafda|risk)|deposit\s+kaise\s+wapas\s+hoga|kabza\s+to\s+nahi\s+karega)\b",
+    r"(?:डिपॉजिट\s+वापस|रिफंड)",
     # Marathi
-    r"\b(?:section\s+52\s+kay\s+aahe|kabja\s+tar\s+honar\s+nahi\s+na|deposit\s+parat\s+kase\s+milnar)\b"
+    r"\b(?:section\s+52\s+kay\s+aahe|kabja\s+tar\s+honar\s+nahi\s+na|deposit\s+parat\s+kase\s+milnar)\b",
+    r"डिपॉझिट\s+परत"
 ]
 
 SEARCH_SPACE_PATTERNS = [
     # English
     r"\b(?:find|search|looking\s+for|need)\s+(?:a\s+|an\s+)?(?:\w+\s+)?(?:space|spaces|room|rooms|desk|desks|studio|studios|workspace|workspaces|office|offices|hall|halls)\b",
     r"\b(?:spaces?|rooms?|desks?|studios?)\s+for\b",
-    # Hindi / Hinglish
+    # Hindi / Hinglish (Latin & Devanagari)
     r"\b(?:kamra|kamre|desk|meeting\s+room|office|jagah|studio|hall)\s+(?:chahiye|khojo|dhoondo|dedo|milega|dikhao|dakhva)\b",
+    r"(?:कमरा|कमरे|खोली|खोल्या|जागा|कक्ष|कक्षा|दफ्तर|कार्यालय).*?(?:चाहिए|पाहिजे|हवी|हवा|खोजो|ढूंढो|बथों|दिखाओ|दाखवा)",
     r"\b(?:kamra|kamre|jagah|desk)\s+(?:dhoond|khoj)\b",
     # Marathi
     r"\b(?:kholi|kholya|desk|jaga|office)\s+(?:pahije|shodha|dakhva|havay|havi|hava)\b",

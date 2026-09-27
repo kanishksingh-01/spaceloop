@@ -22,7 +22,7 @@ NUMBER_WORDS: Dict[str, str] = {
     "six": "6", "seven": "7", "eight": "8", "nine": "9", "ten": "10",
     "eleven": "11", "twelve": "12", "fifteen": "15", "twenty": "20",
     # Hindi / Hinglish
-    "ek": "1", "do": "2", "teen": "3", "char": "4", "chaar": "4",
+    "ek": "1", "teen": "3", "char": "4", "chaar": "4",
     "paanch": "5", "panch": "5", "chhah": "6", "che": "6", "saat": "7",
     "aath": "8", "nau": "9", "das": "10", "gyarah": "11", "barah": "12",
     "pandrah": "15", "bees": "20",
@@ -38,6 +38,8 @@ NUMBER_WORDS: Dict[str, str] = {
 
 # Colloquial spelling variations and phonetic canonicalization
 SPELLING_NORMALIZATIONS = [
+    # Contextual replacement for Latin 'do' -> 2 only when counting capacity/time
+    (r"\bdo\s+(log(?:on)?|ghant(?:e|a)?|tas|jan(?:on|oon)?|baje|seats?|pax|rooms?|kamr(?:e|a))\b", r"2 \1"),
     # Hindi / Hinglish colloquial variants
     (r"\b(?:chahye|chaiye|chahey|chahiyea|chahiyei)\b", "chahiye"),
     (r"\b(?:kaha|kahanpe|kaha\s+pe)\b", "kahan"),
@@ -86,15 +88,15 @@ class TextNormalizationService:
                 normalized = normalized.replace(d_char, digit)
 
         # 4. Standardize Indian currency representations to ₹
-        # e.g. "Rs 500", "RS. 500", "inr 500", "500 rs", "500 rupaye" -> "₹500"
+        # e.g. "Rs 500", "RS. 500", "inr 500", "500 rs", "500 rupaye", "500 रुपये" -> "₹500"
         normalized = re.sub(
-            r"\b(?:rs\.?|inr|rupaye|rupees?|rupiya)\s*(\d+(?:\.\d+)?)\b",
+            r"(?:rs\.?|inr|rupaye|rupees?|rupiya|रुपये|रुपया|रुपिया|रु\.?)\s*(\d+(?:\.\d+)?)",
             r"₹\1",
             normalized,
             flags=re.IGNORECASE
         )
         normalized = re.sub(
-            r"\b(\d+(?:\.\d+)?)\s*(?:rs\.?|inr|rupaye|rupees?|rupiya|रुपये|रु)\b",
+            r"(\d+(?:\.\d+)?)\s*(?:rs\.?|inr|rupaye|rupees?|rupiya|रुपये|रुपया|रुपिया|रु\.?)(?!\w)",
             r"₹\1",
             normalized,
             flags=re.IGNORECASE
