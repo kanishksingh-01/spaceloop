@@ -430,10 +430,27 @@ def compare_spaces_db_rag(space_ids: list[int] | None = None) -> list[dict]:
 
 
 def orchestrate_loopbot_query(query: str, history: list | None = None, context_data: dict | None = None) -> str:
+    from backend.modules.nlp.i18n import MultilingualService
+    lang_pref = context_data.get("language_preference") if context_data else None
+    effective_lang, detected_lang, is_code_mixed = MultilingualService.negotiate_language(
+        query, explicit_preference=lang_pref
+    )
+
     intent, params = detect_loopbot_intent(query, context_data)
     space_id = params.get("space_id")
     hours = params.get("hours", 4.0)
     target_space = Space.query.get(space_id) if space_id else None
+
+    # For non-English interactions, return verified localized responses where applicable
+    if effective_lang != "en":
+        if intent == LoopBotIntent.HOST_MONETIZATION:
+            return MultilingualService.get_localized_response("HOST_MONETIZE", effective_lang, params)
+        if intent == LoopBotIntent.LEGAL_AND_SAFETY:
+            return MultilingualService.get_localized_response("LEGAL_SAFETY", effective_lang, params)
+        if intent == LoopBotIntent.BOOKING_ACTION:
+            return MultilingualService.get_localized_response("BOOK_SPACE", effective_lang, params)
+        if intent == LoopBotIntent.GENERAL_CHAT:
+            return MultilingualService.get_localized_response("GREETING", effective_lang, params)
 
     # 1. RAG ONLY: "What amenities does this space have?" or "Can I bring food?"
     if intent in (LoopBotIntent.RAG_AMENITIES, LoopBotIntent.RAG_RULES_POLICY):

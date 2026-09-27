@@ -14,6 +14,7 @@ from backend.modules.nlp.text_normalization import TextNormalizationService
 from backend.modules.nlp.intent_service import IntentService
 from backend.modules.nlp.entity_extraction import EntityExtractionService
 from backend.modules.nlp.pipeline import NLPPipeline
+from backend.modules.nlp.i18n import MultilingualService, LANGUAGE_METADATA
 
 __all__ = [
     "LanguageCode",
@@ -24,5 +25,7 @@ __all__ = [
     "TextNormalizationService",
     "IntentService",
     "EntityExtractionService",
-    "NLPPipeline"
+    "NLPPipeline",
+    "MultilingualService",
+    "LANGUAGE_METADATA"
 ]

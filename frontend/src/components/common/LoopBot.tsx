@@ -1,20 +1,21 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { useLocation } from 'react-router-dom';
 import { sendChatMessage, ChatMessage } from '../../services/ai';
+import { useTranslation } from '../../i18n';
 
 export const LoopBot: React.FC = () => {
   const location = useLocation();
   const spaceMatch = location.pathname.match(/^\/space\/(\d+)/);
   const currentSpaceId = spaceMatch ? parseInt(spaceMatch[1], 10) : undefined;
+  const { t, loopbotLanguage, setLoopbotLanguage, languages } = useTranslation();
 
   const [isOpen, setIsOpen] = useState(false);
   const [isMinimized, setIsMinimized] = useState(false);
   const [input, setInput] = useState('');
-  const [messages, setMessages] = useState<ChatMessage[]>([
+  const [messages, setMessages] = useState<ChatMessage[]>(() => [
     {
       role: 'assistant',
-      content:
-        "Hi! I'm LoopBot, your SpaceLoop AI concierge. Whether you need a focus desk, client meeting suite, podcast studio, maker workshop, or want to monetize idle square footage — ask away!",
+      content: t('loopbot.initialGreeting'),
     },
   ]);
   const [loading, setLoading] = useState(false);
@@ -237,6 +238,7 @@ export const LoopBot: React.FC = () => {
       const resp = await sendChatMessage(textToSend, newHistory, {
         space_id: currentSpaceId,
         current_path: location.pathname,
+        language_preference: loopbotLanguage !== 'auto' ? loopbotLanguage : undefined,
       });
       setMessages([...newHistory, { role: 'assistant', content: resp.reply }]);
     } catch {
@@ -377,7 +379,22 @@ export const LoopBot: React.FC = () => {
             </div>
 
             {/* Window Controls */}
-            <div className="flex items-center gap-1 shrink-0">
+            <div className="flex items-center gap-1.5 shrink-0">
+              {/* LoopBot Conversation Language Selector */}
+              <select
+                value={loopbotLanguage}
+                onChange={(e) => setLoopbotLanguage(e.target.value)}
+                className="bg-slate-800 text-[10px] text-purple-200 border border-purple-500/30 rounded-lg px-1.5 py-0.5 focus:outline-none focus:ring-1 focus:ring-purple-400 cursor-pointer"
+                title={t('loopbot.languageSelect')}
+              >
+                <option value="auto">🌐 {t('loopbot.autoDetect')}</option>
+                {languages.map((l) => (
+                  <option key={l.code} value={l.code}>
+                    {l.name}
+                  </option>
+                ))}
+              </select>
+
               {/* Reset Position Button */}
               <button
                 type="button"
@@ -503,7 +520,7 @@ export const LoopBot: React.FC = () => {
               type="text"
               value={input}
               onChange={(e) => setInput(e.target.value)}
-              placeholder="Ask about spaces, rules, or earnings..."
+              placeholder={t('loopbot.placeholder')}
               className="flex-1 bg-slate-900 border border-slate-700/80 rounded-xl px-3.5 py-2 pr-2 text-xs sm:text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500/40 transition"
             />
             <button

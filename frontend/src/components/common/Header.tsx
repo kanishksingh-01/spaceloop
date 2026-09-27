@@ -3,6 +3,8 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { User } from '../../types';
 import { logoutUser } from '../../services/auth';
 import { useTheme } from '../../context/ThemeContext';
+import { useTranslation } from '../../i18n';
+import { LanguageSelector } from './LanguageSelector';
 
 interface HeaderProps {
   currentUser: User | null;
@@ -19,7 +21,7 @@ export const Header: React.FC<HeaderProps> = ({
   const location = useLocation();
   const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
   const { theme, toggleTheme } = useTheme();
-
+  const { t } = useTranslation();
 
   const isHostPortal =
     location.pathname.startsWith('/host') ||
@@ -42,7 +44,7 @@ export const Header: React.FC<HeaderProps> = ({
     if (onOpenHostAuthModal) {
       onOpenHostAuthModal();
     } else {
-      onOpenAuthModal();
+      onOpenHostAuthModal();
     }
   };
 
@@ -85,11 +87,11 @@ export const Header: React.FC<HeaderProps> = ({
           <div className="hidden sm:flex items-center">
             {isHostPortal ? (
               <span className="text-[10px] uppercase font-extrabold tracking-wider px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-400 border border-amber-500/30 flex items-center gap-1">
-                🏡 Host Portal
+                🏡 {t('nav.hostPortal')}
               </span>
             ) : (
               <span className="text-[10px] uppercase font-extrabold tracking-wider px-2 py-0.5 rounded-full bg-indigo-500/10 text-indigo-400 border border-indigo-500/30 flex items-center gap-1">
-                ⚡ Seeker Portal
+                ⚡ {t('nav.seekerPortal')}
               </span>
             )}
           </div>
@@ -109,7 +111,7 @@ export const Header: React.FC<HeaderProps> = ({
                 }`}
               >
                 <i className="fa-solid fa-chart-pie text-amber-400" />
-                <span>Host Dashboard</span>
+                <span>{t('nav.hostDashboard')}</span>
               </button>
               <button
                 onClick={() => navigate('/list-space')}
@@ -120,7 +122,7 @@ export const Header: React.FC<HeaderProps> = ({
                 }`}
               >
                 <i className="fa-solid fa-plus-circle text-amber-400" />
-                <span>List Space</span>
+                <span>{t('nav.listSpace')}</span>
               </button>
               <button
                 onClick={() => navigate('/calculator')}
@@ -131,7 +133,7 @@ export const Header: React.FC<HeaderProps> = ({
                 }`}
               >
                 <i className="fa-solid fa-calculator text-slate-400" />
-                <span>Earnings Calculator</span>
+                <span>{t('nav.calculator')}</span>
               </button>
               <button
                 onClick={() => navigate('/verify')}
@@ -155,7 +157,7 @@ export const Header: React.FC<HeaderProps> = ({
                 title="System Architecture & Engineering Team"
               >
                 <i className="fa-solid fa-cubes text-amber-400" />
-                <span>Architecture</span>
+                <span>{t('nav.architecture')}</span>
                 <span className="px-1.5 py-0.5 rounded text-[9px] font-mono font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30">
                   Team
                 </span>
@@ -173,7 +175,7 @@ export const Header: React.FC<HeaderProps> = ({
                 }`}
               >
                 <i className="fa-solid fa-compass text-indigo-400" />
-                <span>Explore Spaces</span>
+                <span>{t('nav.explore')}</span>
               </button>
               <button
                 onClick={() => navigate('/dashboard')}
@@ -184,7 +186,7 @@ export const Header: React.FC<HeaderProps> = ({
                 }`}
               >
                 <i className="fa-solid fa-calendar-check text-slate-400" />
-                <span>My Bookings</span>
+                <span>{t('nav.myBookings')}</span>
               </button>
               <button
                 onClick={() => navigate('/how-it-works')}
@@ -195,7 +197,7 @@ export const Header: React.FC<HeaderProps> = ({
                 }`}
               >
                 <i className="fa-solid fa-circle-question text-slate-400" />
-                <span>How It Works</span>
+                <span>{t('nav.howItWorks')}</span>
               </button>
               <button
                 onClick={() => navigate('/architecture')}
@@ -207,7 +209,7 @@ export const Header: React.FC<HeaderProps> = ({
                 title="System Architecture & Engineering Team"
               >
                 <i className="fa-solid fa-cubes text-indigo-400" />
-                <span>Architecture</span>
+                <span>{t('nav.architecture')}</span>
                 <span className="px-1.5 py-0.5 rounded text-[9px] font-mono font-bold bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
                   Team
                 </span>
@@ -222,7 +224,7 @@ export const Header: React.FC<HeaderProps> = ({
                 title="Trust & Safety Console"
               >
                 <i className="fa-solid fa-shield-halved text-rose-400" />
-                <span>Trust & Safety</span>
+                <span>{t('nav.trustSafety')}</span>
               </button>
             </>
           )}
@@ -230,6 +232,9 @@ export const Header: React.FC<HeaderProps> = ({
 
         {/* Right Controls & Portal Switcher */}
         <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+          {/* Multilingual Selector */}
+          <LanguageSelector />
+
           {/* Theme Switcher Button */}
           <button
             type="button"
@@ -259,7 +264,7 @@ export const Header: React.FC<HeaderProps> = ({
               className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-indigo-600/10 hover:bg-indigo-600/20 text-indigo-300 border border-indigo-500/30 text-xs font-bold transition"
               title="Switch to Seeker Portal"
             >
-              <span>🎓 Switch to Seeker</span>
+              <span>🎓 {t('nav.switchToSeeker')}</span>
             </button>
           ) : (
             <button
@@ -268,7 +273,7 @@ export const Header: React.FC<HeaderProps> = ({
               className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border border-amber-500/30 text-xs font-bold transition"
               title="Switch to Host Portal"
             >
-              <span>🏡 Switch to Host</span>
+              <span>🏡 {t('nav.switchToHost')}</span>
             </button>
           )}
 

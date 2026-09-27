@@ -21,25 +21,28 @@ MARATHI_DEVANAGARI_TOKENS = {
 # Garhwali distinctive tokens (Devanagari - Central Pahari / Uttarakhand)
 GARHWALI_DEVANAGARI_TOKENS = {
     "कख", "कन", "कैक", "च्यांद", "च्यांदा", "भैजी", "दीदी", "ह्वैल", "छौ", "छन",
-    "छी", "बथौ", "घौर", "कमरो", "डांडा", "गौं", "कौथिग", "थै", "म्येरु", "त्वेरु"
+    "छी", "बथौ", "बथों", "घौर", "कमरो", "डांडा", "गौं", "कौथिग", "थै", "म्येरु", "त्वेरु",
+    "देहरादून", "जनूं", "कुणी"
 }
 
 # Kumaoni distinctive tokens (Devanagari - Central Pahari / Uttarakhand)
 KUMAONI_DEVANAGARI_TOKENS = {
     "कसिक", "कसिकै", "कैले", "कथु", "छ्या", "छौ", "भला", "च्यांहूं", "कौतु",
-    "जौ", "मेर", "तेर", "कुकुर", "हिट", "भासा"
+    "जौ", "मेर", "तेर", "कुकुर", "हिट", "भासा", "नैनीताल", "अल्मोड़ा", "हल्द्वानी",
+    "कुणी", "बैठकी", "छन"
 }
 
 # Jaunsari distinctive tokens (Devanagari - Western/Central Pahari / Jaunsar-Bawar)
 JAUNSARI_DEVANAGARI_TOKENS = {
-    "केथा", "किए", "छा", "बासा", "जोड़ा", "रोउं", "ओर", "रोणी", "तेउं", "मेउं"
+    "केथा", "किए", "छा", "बासा", "जोड़ा", "रोउं", "ओर", "रोणी", "तेउं", "मेउं",
+    "जौंसार", "दियूं", "बैठक"
 }
 
 # Hindi standard tokens (Devanagari)
 HINDI_DEVANAGARI_TOKENS = {
     "है", "हैं", "हूँ", "हो", "था", "थी", "थे", "कहाँ", "कैसे", "कितना", "कितने",
     "कितनी", "चाहिए", "कमरा", "कमरे", "जगह", "किराया", "बताओ", "मिलेगा", "करो",
-    "सकते", "सकता", "सकती", "कृपया", "नमस्ते", "खोजो", "ढूंढो", "घंटे"
+    "सकते", "सकता", "सकती", "कृपया", "नमस्ते", "खोजो", "ढूंढो", "घंटे", "लोग"
 }
 
 # Romanized Hinglish tokens (Latin)
@@ -48,14 +51,19 @@ HINGLISH_TOKENS = {
     "kamra", "kamre", "milega", "kya", "hai", "hain", "hoon", "karo", "hoga",
     "batao", "btao", "pe", "mein", "me", "ka", "ki", "ke", "rupaye", "rupiya",
     "kab", "kaise", "ek", "do", "teen", "char", "paanch", "chhah", "saat", "aath",
-    "dhoondo", "khojo", "dedo", "mil", "sakta", "sakate", "namaste", "pranam"
+    "dhoondo", "khojo", "dedo", "mil", "sakta", "sakate", "namaste", "pranam",
+    "log", "liye", "bhai", "yaar"
 }
+
+# Strongly indicative Hindi tokens in Latin script (cannot be mistaken for common English words)
+UNAMBIGUOUS_HINGLISH_TOKENS = HINGLISH_TOKENS - {"me", "pe", "to", "do", "char", "in"}
 
 # Romanized Marathi tokens (Latin)
 MARATHI_ROMANIZED_TOKENS = {
     "pahije", "kuthe", "kiti", "aahe", "ahe", "nahi", "kasa", "kashi", "kase",
     "mala", "kholya", "kholi", "jaga", "kadhi", "karaycha", "shodha", "shodhato",
-    "milen", "bhaden", "bhada", "namaskar", "don", "chaar", "paach", "saha"
+    "milen", "bhaden", "bhada", "namaskar", "don", "chaar", "paach", "saha",
+    "madhe", "sathi", "lokansathi", "punyat"
 }
 
 # Romanized Garhwali tokens (Latin)
@@ -156,6 +164,7 @@ class LanguageDetectionService:
 
         en_matches = len(words.intersection(ENGLISH_TOKENS))
         hi_matches = len(words.intersection(HINGLISH_TOKENS))
+        unambiguous_hi_matches = len(words.intersection(UNAMBIGUOUS_HINGLISH_TOKENS))
         mr_matches = len(words.intersection(MARATHI_ROMANIZED_TOKENS))
         gbm_matches = len(words.intersection(GARHWALI_ROMANIZED_TOKENS))
         kfy_matches = len(words.intersection(KUMAONI_ROMANIZED_TOKENS))
@@ -184,11 +193,13 @@ class LanguageDetectionService:
             conf = min(0.96, 0.75 + mr_matches * 0.07)
             return LanguageCode.MR_LATN.value, secondaries, is_cm, conf
 
-        # Check Hinglish
-        if hi_matches > 0:
+        # Check Hinglish:
+        # Require unambiguous Hindi tokens (e.g. chahiye, kahan, hai, log, etc.),
+        # or hi_matches must strictly exceed en_matches to prevent false positives on English pronouns like "me"
+        if unambiguous_hi_matches > 0 or (hi_matches > en_matches and hi_matches > 0):
             is_cm = en_matches > 0
             secondaries = [LanguageCode.EN.value] if is_cm else []
-            conf = min(0.96, 0.75 + hi_matches * 0.07)
+            conf = min(0.96, 0.75 + max(hi_matches, unambiguous_hi_matches) * 0.07)
             return LanguageCode.HI_LATN.value, secondaries, is_cm, conf
 
         # Pure English

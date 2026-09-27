@@ -186,8 +186,25 @@ def ai_chat():
     if data.get("current_path"):
         user_context["current_path"] = data.get("current_path")
 
+    # Negotiate multilingual preferences & message detection
+    from backend.modules.nlp.i18n import MultilingualService
+    lang_pref = data.get("language_preference") or request.headers.get("X-Language-Preference")
+    user_query = messages[-1].get("content", "") if messages else ""
+    effective_lang, detected_lang, is_code_mixed = MultilingualService.negotiate_language(
+        user_query, explicit_preference=lang_pref
+    )
+    user_context["language_preference"] = lang_pref
+    user_context["effective_language"] = effective_lang
+    user_context["detected_language"] = detected_lang
+    user_context["is_code_mixed"] = is_code_mixed
+
     response = concierge_chat(messages, context_data=user_context)
-    return jsonify({"reply": response})
+    return jsonify({
+        "reply": response,
+        "detected_language": detected_lang,
+        "response_language": effective_lang,
+        "is_code_mixed": is_code_mixed
+    })
 
 
 @api_v1_system.route("/api/system/status", methods=["GET"])

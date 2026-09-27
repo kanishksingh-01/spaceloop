@@ -890,6 +890,19 @@ def concierge_chat(messages, context_data=None):
 
     orchestrator_grounding = f"\n\nSubsystem Ground Truth & Orchestrated Facts:\n{orchestrated_reply}\nGround your final response strictly in these verified facts.\n" if orchestrated_reply else ""
 
+    # Multilingual negotiation and prompt guidelines
+    effective_lang = "en"
+    multilingual_prompt_guidelines = ""
+    try:
+        from backend.modules.nlp.i18n import MultilingualService
+        if context_data and context_data.get("effective_language"):
+            effective_lang = context_data["effective_language"]
+        else:
+            effective_lang, _, _ = MultilingualService.negotiate_language(last_query_raw)
+        multilingual_prompt_guidelines = MultilingualService.build_multilingual_prompt_guidelines(effective_lang)
+    except Exception:
+        pass
+
     system_prompt = f"""
 You are LoopBot, the friendly, hyper-knowledgeable AI Concierge for SpaceLoop.
 SpaceLoop is an India Stack AI platform that converts unused physical square footage (private offices, conference rooms, podcast cabins, photography studios, maker workshops, pop-up retail stalls, spare rooms, garages, and off-peak cafes) into verified, affordable temporary spaces under Section 52 of the Indian Easements Act, 1882.
@@ -914,6 +927,7 @@ Guidelines:
 {active_spaces_text}
 {context_str}
 {orchestrator_grounding}
+{multilingual_prompt_guidelines}
 """
     formatted_msgs = [{"role": "system", "content": system_prompt}]
     if isinstance(messages, list):
@@ -947,7 +961,21 @@ Guidelines:
     last_msg = user_msgs[-1] if user_msgs else ""
     user_name = context_data.get("user_name") if context_data else None
     role = context_data.get("role", "seeker") if context_data else "seeker"
-    greeting_prefix = f"Hi {user_name}! " if user_name else ""
+    # Multilingual localized fallback
+    if effective_lang != "en":
+        try:
+            from backend.modules.nlp.i18n import MultilingualService
+            from backend.modules.nlp.pipeline import NLPPipeline
+            nlp_res = NLPPipeline.process(last_query_raw, context_data)
+            localized = MultilingualService.get_localized_response(
+                nlp_res.intent,
+                effective_lang,
+                nlp_res.entities
+            )
+            if localized:
+                return sanitize_string(localized, max_length=2500)
+        except Exception:
+            pass
 
     # A. Greetings, Casual Inquiries, Identity
     if any(last_msg.strip() == k or last_msg.strip().startswith(f"{k} ") for k in ["hi", "hello", "hey", "hola", "namaste", "greetings", "good morning", "good afternoon", "good evening"]):
