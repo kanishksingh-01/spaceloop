@@ -1,7 +1,14 @@
 import React, { useState } from 'react';
 import { View, Text, Pressable, TextInput, Image, ScrollView } from 'react-native';
 import { useNavigate } from 'react-router-dom';
-import { aiScanSpace, createSpace, uploadSpacePhoto } from '../services/spaces';
+import {
+  aiScanSpace,
+  createSpace,
+  uploadSpacePhoto,
+  assistListing,
+  translateListing,
+  ListingAssistanceResponse,
+} from '../services/spaces';
 import { HostAuthModal } from '../components/common/HostAuthModal';
 import { User } from '../types';
 
@@ -34,6 +41,13 @@ export const ListSpacePage: React.FC<ListSpacePageProps> = ({ currentUser }) => 
   const [error, setError] = useState<string | null>(null);
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [selectedPersonas, setSelectedPersonas] = useState<string[]>([]);
+
+  // Part 6: NLP Listing Assistant & Translation State
+  const [nlInput, setNlInput] = useState('');
+  const [isNlDrafting, setIsNlDrafting] = useState(false);
+  const [nlAssistResult, setNlAssistResult] = useState<ListingAssistanceResponse | null>(null);
+  const [isTranslating, setIsTranslating] = useState(false);
+  const [translationSuccess, setTranslationSuccess] = useState<string | null>(null);
 
   const categoryOptions = [
     'Workspace',
@@ -168,6 +182,62 @@ export const ListSpacePage: React.FC<ListSpacePageProps> = ({ currentUser }) => 
     }
   };
 
+  const handleNlDraft = async () => {
+    if (!nlInput.trim()) {
+      setError('Please enter some space details in natural language (e.g. 2 bedroom flat in Pune, 25k rent).');
+      return;
+    }
+    setIsNlDrafting(true);
+    setError(null);
+    try {
+      const res = await assistListing(nlInput.trim());
+      setNlAssistResult(res);
+      const fields = res.extracted_fields || {};
+
+      if (fields.title) setTitle(fields.title);
+      if (res.generated_description) setDescription(res.generated_description);
+      if (fields.category) setCategory(fields.category);
+      if (fields.price_hourly) setHourlyRate(String(Math.round(fields.price_hourly)));
+      if (fields.location) setLocation(fields.location);
+      if (fields.city) setCity(fields.city);
+      if (fields.amenities && fields.amenities.length > 0) {
+        setAmenities(fields.amenities.join(', '));
+      }
+      setScanMessage(
+        `✓ Listing drafted with AI! Extracted ${fields.propertyType || 'space'} in ${fields.location || 'your area'}.`
+      );
+    } catch (err: any) {
+      setError(err.message || 'Failed to analyze listing text with AI.');
+    } finally {
+      setIsNlDrafting(false);
+    }
+  };
+
+  const handleTranslateListing = async (lang: 'hi' | 'mr' | 'en') => {
+    if (!title && !description) {
+      setError('Please provide or draft a title and description before translating.');
+      return;
+    }
+    setIsTranslating(true);
+    setError(null);
+    setTranslationSuccess(null);
+    try {
+      const amenityArray = amenities
+        .split(',')
+        .map((a) => a.trim())
+        .filter(Boolean);
+      const res = await translateListing(title, description, amenityArray, lang);
+      if (res.title) setTitle(res.title);
+      if (res.description) setDescription(res.description);
+      const langNames: Record<string, string> = { hi: 'Hindi', mr: 'Marathi', en: 'English' };
+      setTranslationSuccess(`Listing translated to ${langNames[lang] || lang}!`);
+    } catch (err: any) {
+      setError(err.message || 'Failed to translate listing.');
+    } finally {
+      setIsTranslating(false);
+    }
+  };
+
   const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -289,6 +359,165 @@ export const ListSpacePage: React.FC<ListSpacePageProps> = ({ currentUser }) => 
             <Text className="text-sm text-rose-300 font-medium">✕ {error}</Text>
           </View>
         )}
+
+        {/* NLP Natural Language Listing Assistant */}
+        <View className="bg-gradient-to-r from-slate-900 via-indigo-950/40 to-slate-900 border border-indigo-500/30 rounded-2xl p-6 floating-panel space-y-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="text-base font-bold text-white">✨ Natural Language Listing Assistant</span>
+                <span className="text-[10px] bg-indigo-500/20 text-indigo-300 font-bold px-2 py-0.5 rounded-full border border-indigo-500/30">
+                  Multilingual AI
+                </span>
+              </div>
+              <Text className="text-xs text-slate-400 mt-0.5">
+                Paste or describe your space in English, Hindi, or Marathi (e.g. &quot;2 bedroom flat in Pune, fully furnished, near IT park, 25k rent&quot;).
+              </Text>
+            </div>
+            <div className="flex items-center gap-1.5 self-start sm:self-auto">
+              <span className="text-[11px] text-slate-400">Translate:</span>
+              {(['en', 'hi', 'mr'] as const).map((lang) => (
+                <button
+                  key={lang}
+                  type="button"
+                  onClick={() => handleTranslateListing(lang)}
+                  disabled={isTranslating || (!title && !description)}
+                  className={`text-[11px] font-bold px-2.5 py-1 rounded-lg border transition ${
+                    isTranslating
+                      ? 'opacity-50 cursor-not-allowed bg-slate-800 border-slate-700 text-slate-400'
+                      : 'bg-slate-800 hover:bg-indigo-900/60 border-slate-700 hover:border-indigo-500/50 text-indigo-200'
+                  }`}
+                >
+                  {lang.toUpperCase()}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="space-y-3">
+            <textarea
+              value={nlInput}
+              onChange={(e) => setNlInput(e.target.value)}
+              placeholder="e.g. 2 bedroom flat in Pune, fully furnished, near IT park, 25k rent&#10;or: बाणेर मध्ये शांत 1 बीएचके खोली, एसी आणि वायफाय, 15000 भाडं..."
+              rows={3}
+              className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500"
+            />
+
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <div className="flex items-center gap-2 text-[11px] text-emerald-400 font-medium">
+                <i className="fa-solid fa-shield-halved" />
+                <span>Strict Factual Integrity: user rates &amp; dimensions are never altered.</span>
+              </div>
+              <button
+                type="button"
+                onClick={handleNlDraft}
+                disabled={isNlDrafting || !nlInput.trim()}
+                className={`px-5 py-2 rounded-xl text-xs font-bold text-white transition flex items-center gap-2 ${
+                  isNlDrafting || !nlInput.trim()
+                    ? 'bg-indigo-900/40 text-slate-500 cursor-not-allowed'
+                    : 'bg-indigo-600 hover:bg-indigo-500 shadow-lg shadow-indigo-600/30'
+                }`}
+              >
+                {isNlDrafting ? (
+                  <>
+                    <i className="fa-solid fa-circle-notch fa-spin" />
+                    <span>Analyzing &amp; Drafting...</span>
+                  </>
+                ) : (
+                  <>
+                    <i className="fa-solid fa-wand-magic-sparkles" />
+                    <span>Draft Listing with AI</span>
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+
+          {/* AI Extraction Summary Banner */}
+          {nlAssistResult && (
+            <div className="mt-4 p-4 rounded-xl bg-slate-950/80 border border-indigo-500/20 space-y-3">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-bold text-indigo-300">
+                  ⚡ Extracted Attributes ({(nlAssistResult.detected_language || 'EN').toUpperCase()})
+                </span>
+                <span className="text-[10px] text-slate-400">
+                  {nlAssistResult.missing_fields?.length === 0
+                    ? '✓ Core Fields Extracted'
+                    : `⚠️ ${nlAssistResult.missing_fields?.length} Recommended Fields Missing`}
+                </span>
+              </div>
+
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
+                <div className="bg-slate-900/90 p-2 rounded-lg border border-slate-800">
+                  <span className="text-[10px] text-slate-400 block">Type</span>
+                  <span className="text-white font-semibold">
+                    {nlAssistResult.extracted_fields?.propertyType || 'Space'}
+                    {nlAssistResult.extracted_fields?.bedrooms ? ` (${nlAssistResult.extracted_fields.bedrooms} BHK)` : ''}
+                  </span>
+                </div>
+                <div className="bg-slate-900/90 p-2 rounded-lg border border-slate-800">
+                  <span className="text-[10px] text-slate-400 block">Location</span>
+                  <span className="text-white font-semibold">
+                    {nlAssistResult.extracted_fields?.location || 'Pune'}
+                    {nlAssistResult.extracted_fields?.near ? ` (Near ${nlAssistResult.extracted_fields.near})` : ''}
+                  </span>
+                </div>
+                <div className="bg-slate-900/90 p-2 rounded-lg border border-slate-800">
+                  <span className="text-[10px] text-slate-400 block">Authoritative Rent</span>
+                  <span className="text-emerald-400 font-bold">
+                    {nlAssistResult.extracted_fields?.rent
+                      ? `₹${Number(nlAssistResult.extracted_fields.rent).toLocaleString()}/mo`
+                      : 'Not specified'}
+                  </span>
+                </div>
+                <div className="bg-slate-900/90 p-2 rounded-lg border border-slate-800">
+                  <span className="text-[10px] text-slate-400 block">Hourly Rate</span>
+                  <span className="text-indigo-300 font-bold">
+                    {nlAssistResult.extracted_fields?.price_hourly
+                      ? `₹${Math.round(nlAssistResult.extracted_fields.price_hourly)}/hr`
+                      : '₹50/hr'}
+                  </span>
+                </div>
+              </div>
+
+              {/* Clarification Questions if missing info */}
+              {nlAssistResult.clarifications && nlAssistResult.clarifications.length > 0 && (
+                <div className="p-3 bg-amber-500/10 border border-amber-500/30 rounded-lg space-y-1">
+                  <div className="flex items-center gap-1.5 text-amber-300 text-xs font-bold">
+                    <i className="fa-solid fa-circle-question" />
+                    <span>Recommended Details to Clarify:</span>
+                  </div>
+                  <ul className="list-disc list-inside text-[11px] text-amber-200/90 space-y-0.5">
+                    {nlAssistResult.clarifications.map((q, idx) => (
+                      <li key={idx}>{q}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              {/* Inconsistencies Warning if any */}
+              {nlAssistResult.inconsistencies && nlAssistResult.inconsistencies.length > 0 && (
+                <div className="p-3 bg-rose-500/10 border border-rose-500/30 rounded-lg space-y-1">
+                  <div className="flex items-center gap-1.5 text-rose-300 text-xs font-bold">
+                    <i className="fa-solid fa-triangle-exclamation" />
+                    <span>Inconsistencies Detected:</span>
+                  </div>
+                  <ul className="list-disc list-inside text-[11px] text-rose-200/90 space-y-0.5">
+                    {nlAssistResult.inconsistencies.map((inc, idx) => (
+                      <li key={idx}>{inc.message}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </div>
+          )}
+
+          {translationSuccess && (
+            <div className="p-2.5 bg-emerald-500/10 border border-emerald-500/30 rounded-xl text-xs text-emerald-300 font-medium">
+              ✓ {translationSuccess}
+            </div>
+          )}
+        </View>
 
         {/* 1-Click Demo Presets */}
         <View className="bg-slate-900 border border-slate-800 rounded-2xl p-6 floating-container">

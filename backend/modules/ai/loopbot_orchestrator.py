@@ -610,10 +610,69 @@ def _handle_ask_amenities(query: str, space_id: int | None, effective_lang: str)
     )
 
 
-def _handle_create_listing(params: dict, effective_lang: str) -> str:
+def _handle_create_listing(query: str, params: dict, effective_lang: str) -> tuple[str, dict | None]:
+    from backend.modules.nlp.listing_assistance import ListingAssistanceService
     from backend.modules.nlp.i18n import MultilingualService
+
+    # Check if the query contains concrete space attributes to draft a listing
+    assist_result = ListingAssistanceService.assist_listing(query, target_language=effective_lang)
+    extracted = assist_result.get("extracted_fields", {})
+    has_details = any([
+        extracted.get("rent"),
+        extracted.get("bedrooms"),
+        (extracted.get("propertyType") and (extracted.get("location") or extracted.get("near")))
+    ])
+
+    if has_details:
+        title = extracted.get("title") or "SpaceLoop Listing"
+        desc = assist_result.get("generated_description", "")
+        clarifications = assist_result.get("clarifications", [])
+        inconsistencies = assist_result.get("inconsistencies", [])
+
+        lines = [
+            "🏡 **SpaceLoop Listing Assistant - Draft Created:**\n",
+            f"**Title:** {title}",
+            f"• **Property Type:** {extracted.get('propertyType', 'Space').title()}",
+        ]
+        if extracted.get("bedrooms"):
+            lines.append(f"• **Bedrooms:** {extracted['bedrooms']} BHK")
+        if extracted.get("location"):
+            loc_str = extracted['location']
+            if extracted.get("near"):
+                loc_str += f" (Near {extracted['near']})"
+            lines.append(f"• **Location:** {loc_str}")
+        elif extracted.get("near"):
+            lines.append(f"• **Near:** {extracted['near']}")
+
+        if extracted.get("rent"):
+            rent_val = int(extracted['rent']) if extracted['rent'] == int(extracted['rent']) else extracted['rent']
+            lines.append(f"• **Authoritative Rent:** ₹{rent_val:,}/month")
+        if extracted.get("price_hourly"):
+            lines.append(f"• **Hourly Rate:** ₹{extracted['price_hourly']}/hr")
+        if extracted.get("furnished") is not None:
+            lines.append(f"• **Furnishing:** {'Fully Furnished' if extracted['furnished'] else 'Unfurnished'}")
+        if extracted.get("amenities"):
+            lines.append(f"• **Amenities:** {', '.join(extracted['amenities'])}")
+
+        lines.append(f"\n📝 **Generated Grounded Description:**\n> {desc}\n")
+
+        if clarifications:
+            lines.append("❓ **To complete your listing, please confirm:**")
+            for q in clarifications:
+                lines.append(f"- {q}")
+            lines.append("")
+
+        if inconsistencies:
+            lines.append("⚠️ **Potential Inconsistency Detected:**")
+            for inc in inconsistencies:
+                lines.append(f"- {inc.get('message', '')}")
+            lines.append("")
+
+        lines.append("👉 Visit `/list-space` to review and publish this space to the marketplace!")
+        return "\n".join(lines), assist_result
+
     if effective_lang != "en":
-        return MultilingualService.get_localized_response("HOST_MONETIZE", effective_lang, params)
+        return MultilingualService.get_localized_response("HOST_MONETIZE", effective_lang, params), None
     return (
         "🏡 **Monetize Your Idle Space on SpaceLoop:**\n\n"
         "Turn spare rooms, garages, terraces, or off-peak office desks into passive monthly income:\n"
@@ -622,7 +681,7 @@ def _handle_create_listing(params: dict, effective_lang: str) -> str:
         "3. **Keep 95% Yield**: Direct automated UPI payouts with only a 5% platform fee.\n"
         "4. **Full Tenancy Protection**: Section 52 revocable licenses eliminate adverse tenancy claims.\n\n"
         "Visit `/list-space` to start listing your space or `/calculator` to estimate your monthly earnings!"
-    )
+    ), None
 
 
 def _handle_edit_listing(params: dict, effective_lang: str) -> str:
@@ -759,6 +818,8 @@ def orchestrate_loopbot_query(
     space_id = params.get("space_id")
     hours = params.get("duration_hours") or params.get("hours") or 4.0
 
+    listing_draft = None
+
     # Step 2: Capability / Retrieval Decision Layer
     # Low-confidence Intent Guardrail (< 0.60 or CLARIFICATION_NEEDED): ask clarification, never invent.
     if canonical_intent == IntentType.CLARIFICATION_NEEDED.value or nlp_result.confidence < 0.60:
@@ -777,7 +838,7 @@ def orchestrate_loopbot_query(
     elif canonical_intent == IntentType.ASK_AMENITIES.value:
         raw_reply = _handle_ask_amenities(query, space_id, effective_lang)
     elif canonical_intent == IntentType.CREATE_LISTING.value:
-        raw_reply = _handle_create_listing(params, effective_lang)
+        raw_reply, listing_draft = _handle_create_listing(query, params, effective_lang)
     elif canonical_intent == IntentType.EDIT_LISTING.value:
         raw_reply = _handle_edit_listing(params, effective_lang)
     elif canonical_intent == IntentType.ASK_BOOKING_STATUS.value:
@@ -798,7 +859,7 @@ def orchestrate_loopbot_query(
     clean_reply = _sanitize_loopbot_response(raw_reply)
 
     if return_dict:
-        return {
+        res_dict = {
             "reply": clean_reply,
             "intent": canonical_intent,
             "entities": nlp_result.entities,
@@ -807,4 +868,7 @@ def orchestrate_loopbot_query(
             "confidence": round(nlp_result.confidence, 4),
             "requires_clarification": (canonical_intent == IntentType.CLARIFICATION_NEEDED.value)
         }
+        if listing_draft:
+            res_dict["listing_draft"] = listing_draft
+        return res_dict
     return clean_reply

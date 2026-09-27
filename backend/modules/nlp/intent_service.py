@@ -107,12 +107,15 @@ RULES_PATTERNS = [
 HOST_MONETIZE_PATTERNS = [
     # English
     r"\b(?:how\s+to\s+(?:host|monetize|rent\s+out)|monetiz\w*|list\s+(?:my\s+)?(?:\w+\s+)?(?:space|room|garage|office|property|terrace|hall|land|rooftop)|earn\s+(?:money|passive\s+income|income)|earnings\s+calculator|host\s+calculator)\b",
+    r"\b(?:(?:i\s+)?(?:want\s+to\s+)?(?:list|create\s+listing|add\s+listing|draft\s+listing|put\s+on\s+rent|rent\s+out)(?:\s+(?:a|an|my))?.*?(?:space|room|flat|apartment|bhk|garage|office|property|terrace|hall|studio|desk))\b",
     # Hindi / Hinglish
     r"\b(?:apni\s+jagah\s+rent\s+pe\s+kaise\s+du|garage\s+se\s+kamai|space\s+list\s+karna\s+hai|host\s+kaise\s+banein|kitna\s+kama\s+sakte\s+hain|kamai\s+kaise\s+kare)\b",
-    r"(?:जगह\s+लिस्ट\s+करना|किराये\s+पर\s+देना)",
+    r"\b(?:\w+\s+)?(?:list\s+karna\s+hai|listing\s+banani\s+hai|rent\s+pe\s+dena\s+hai)\b",
+    r"(?:जगह\s+लिस्ट\s+करना|किराये\s+पर\s+देना|लिस्टिंग\s+बना|कमरा\s+किराये)",
     # Marathi
     r"\b(?:maza\s+garage\s+bhadyane\s+kasa\s+deu|paisa\s+kasa\s+kamvaycha|space\s+list\s+karaychi\s+aahe|host\s+kasa\s+honar)\b",
-    r"भाड्याने\s+द्यायची\s+आहे",
+    r"\b(?:\w+\s+)?(?:list\s+karaych[ei]\s+aahe|bhadyane\s+d[ey]aych[aei]\s+aahe)\b",
+    r"(?:भाड्याने\s+द्यायची\s+आहे|जागा\s+लिस्ट\s+करायची)",
     # Pahari
     r"\b(?:ghaur\s+kiraye\s+ma\s+kankari\s+diyun|kamro\s+kiraya\s+ma\s+deno\s+chho)\b"
 ]

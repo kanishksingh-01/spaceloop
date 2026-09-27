@@ -273,3 +273,63 @@ export async function editSpace(spaceId: number, payload: Partial<Space> & Recor
     body: JSON.stringify(payload),
   });
 }
+
+export interface ListingAssistanceResponse {
+  success: boolean;
+  extracted_fields: {
+    propertyType?: string;
+    property_type?: string;
+    category?: string;
+    bedrooms?: number;
+    location?: string;
+    city?: string;
+    neighborhood?: string;
+    near?: string;
+    furnished?: boolean;
+    rent?: number;
+    price_monthly?: number;
+    price_hourly?: number;
+    sqft?: number;
+    max_capacity?: number;
+    amenities?: string[];
+    title?: string;
+  };
+  missing_fields: string[];
+  clarifications: string[];
+  inconsistencies: Array<{ field: string; message: string; severity?: string }>;
+  generated_description: string;
+  improved_wording?: string;
+  detected_language: string;
+  language: string;
+}
+
+export async function assistListing(text: string, language?: string): Promise<ListingAssistanceResponse> {
+  return request('/api/spaces/assist-listing', {
+    method: 'POST',
+    body: JSON.stringify({ text, language }),
+  });
+}
+
+export async function translateListing(
+  title: string,
+  description: string,
+  amenities: string[],
+  targetLanguage: string
+): Promise<{
+  success: boolean;
+  target_language: string;
+  title: string;
+  description: string;
+  amenities: string[];
+}> {
+  return request('/api/spaces/translate-listing', {
+    method: 'POST',
+    body: JSON.stringify({
+      title,
+      description,
+      amenities,
+      target_language: targetLanguage,
+    }),
+  });
+}
+

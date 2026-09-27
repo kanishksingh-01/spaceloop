@@ -145,6 +145,47 @@ def ai_scan_space():
     return jsonify(analysis)
 
 
+@api_v1_spaces.route("/api/spaces/assist-listing", methods=["POST"])
+@rate_limit_ai
+def api_assist_listing():
+    """
+    NLP-powered listing assistance endpoint.
+    Converts unstructured natural language into structured space attributes,
+    identifies missing fields, checks for physical space inconsistencies,
+    and generates factual descriptions.
+    """
+    data = request.get_json(silent=True) or request.form or {}
+    text = sanitize_string(data.get("text") or data.get("description") or data.get("prompt") or "", max_length=2000)
+    target_language = sanitize_string(data.get("target_language") or data.get("language") or "en", max_length=10)
+
+    from backend.modules.nlp.listing_assistance import ListingAssistanceService
+    result = ListingAssistanceService.assist_listing(text=text, target_language=target_language)
+    return jsonify(result), (200 if result.get("success") else 400)
+
+
+@api_v1_spaces.route("/api/spaces/translate-listing", methods=["POST"])
+@rate_limit_ai
+def api_translate_listing():
+    """
+    Translates listing title, description, and amenities into target language.
+    """
+    data = request.get_json(silent=True) or request.form or {}
+    title = sanitize_string(data.get("title", ""), max_length=200)
+    description = sanitize_string(data.get("description", ""), max_length=3000)
+    raw_amenities = data.get("amenities") or []
+    amenities = [sanitize_string(a, max_length=50) for a in raw_amenities if isinstance(a, str)]
+    target_language = sanitize_string(data.get("target_language") or "hi", max_length=10)
+
+    from backend.modules.nlp.listing_assistance import ListingAssistanceService
+    result = ListingAssistanceService.translate_listing_content(
+        title=title,
+        description=description,
+        amenities=amenities,
+        target_language=target_language
+    )
+    return jsonify(result), 200
+
+
 ALLOWED_EXTENSIONS = {"png", "jpg", "jpeg", "webp"}
 
 

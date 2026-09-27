@@ -228,7 +228,8 @@ def ai_chat():
         "response_language": orch_result["response_language"],
         "confidence": orch_result["confidence"],
         "requires_clarification": orch_result["requires_clarification"],
-        "is_code_mixed": is_code_mixed
+        "is_code_mixed": is_code_mixed,
+        "listing_draft": orch_result.get("listing_draft")
     }), 200
 
 
