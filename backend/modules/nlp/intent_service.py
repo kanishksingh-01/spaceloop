@@ -80,7 +80,9 @@ AVAILABILITY_PATTERNS = [
 
 AMENITIES_PATTERNS = [
     # English
-    r"\b(?:what\s+amenities|amenities\s+does\s+this|is\s+there\s+wifi|has\s+air\s+conditioning|have\s+ac|power\s+backup|presentation\s+screen|whiteboard|parking\s+available)\b",
+    r"\b(?:what\s+amenities|amenities\s+(?:does\s+this|available)|is\s+there\s+wifi|has\s+air\s+conditioning|have\s+ac|power\s+backup|presentation\s+screen|whiteboard|parking\s+available)\b",
+    r"\b(?:have|has|with|include[sd]?|is\s+there)\b.*?\b(?:wifi|wi-fi|ac|air\s+conditioning|power\s+backup|inverter|monitor|screen|whiteboard|parking)\b",
+    r"\b(?:wifi|wi-fi|fiber\s+internet)\b.*?\b(?:available|speed|included)\b",
     # Hindi / Hinglish
     r"\b(?:wifi\s+(?:milega|hai)|ac\s+hai\s+kya|power\s+backup\s+hai|screen\s+milegi|kya\s+suvidhayein\s+hain|amenities\s+kya\s+hain)\b",
     r"सुविधाएं\s+क्या\s+हैं",
@@ -142,6 +144,90 @@ SEARCH_SPACE_PATTERNS = [
     r"\bpadhai\s+khatir\s+jaga\s+chyan\b"
 ]
 
+LOCATION_PATTERNS = [
+    # English
+    r"\b(?:where\s+is\s+(?:this|the)?\s*space|location\s+of|how\s+to\s+reach|what\s+is\s+the\s+address|neighborhood|exact\s+location|gps\s+coordinates|directions\s+to|where\s+located)\b",
+    # Hindi / Hinglish
+    r"\b(?:kahan\s+(?:pe\s+)?hai|address\s+kya\s+hai|kaise\s+pahunche|location\s+batao|kaha\s+hai|jagah\s+kahan\s+hai)\b",
+    r"(?:कहाँ\s+है|पता\s+क्या\s+है|लोकेशन)",
+    # Marathi
+    r"\b(?:kuthe\s+aahe|patta\s+kay\s+aahe|kase\s+pohachayche)\b",
+    r"कुठे\s+आहे",
+    # Pahari
+    r"\b(?:kakh\s+chho|ketha\s+chha)\b"
+]
+
+EDIT_LISTING_PATTERNS = [
+    # English
+    r"\b(?:edit\s+(?:my\s+)?listing|update\s+(?:my\s+)?space|change\s+(?:price|rate|photos|timing|amenities|rules)|modify\s+listing|update\s+listing)\b",
+    # Hindi / Hinglish
+    r"\b(?:listing\s+edit\s+karna|price\s+change\s+karna|photos\s+update\s+karna|listing\s+badalna\s+hai|details\s+update\s+karni)\b",
+    # Marathi
+    r"\b(?:listing\s+badlaychi\s+aahe|dar\s+badla|photos\s+badlayche)\b"
+]
+
+BOOKING_STATUS_PATTERNS = [
+    # English
+    r"\b(?:booking\s+status|check\s+(?:my\s+)?booking|my\s+reservation|is\s+my\s+booking\s+confirmed|door\s+pass\s+status|arrival\s+pin\s+code|check\s+status)\b",
+    # Hindi / Hinglish
+    r"\b(?:booking\s+(?:confirm\s+hui\s+kya|status\s+kya\s+hai|kaise\s+check\s+kare)|meri\s+booking|pass\s+mila\s+kya|pin\s+code\s+kya\s+hai)\b",
+    # Marathi
+    r"\b(?:booking\s+jhali\s+ka|majhi\s+booking|booking\s+status\s+dakhva)\b"
+]
+
+PAYMENT_STATUS_PATTERNS = [
+    # English
+    r"\b(?:payment\s+status|deposit\s+status|escrow\s+status|when\s+will.*(?:refund|deposit)|refund\s+status|100\s*(?:rs|rupees)?\s*deposit\s*refund|deposit\s+refund)\b",
+    # Hindi / Hinglish
+    r"\b(?:deposit\s+kab\s+aayega|refund\s+kab\s+milega|payment\s+status\s+kya\s+hai|paisa\s+wapas\s+aaya\s+kya|100\s*rupaye\s+kab\s+milenge)\b",
+    # Marathi
+    r"\b(?:refund\s+kadhi\s+yeil|paise\s+parat\s+ale\s+ka|payment\s+status\s+kay\s+aahe)\b"
+]
+
+REPORT_FRAUD_PATTERNS = [
+    # English
+    r"\b(?:report\s+fraud|report\s+(?:a\s+)?(?:scam|host|guest|violation)|suspicious\s+activity|safety\s+issue|fake\s+listing|fraud\s+report|fraudulent)\b",
+    # Hindi / Hinglish
+    r"\b(?:fraud\s+report\s+karna\s+hai|scam\s+hai|fraud\s+hai|dhokha\s+hua|report\s+karna\s+hai|fake\s+listing\s+hai)\b",
+    # Marathi
+    r"\b(?:fraud\s+aahe|takraar\s+karaychi\s+aahe|khota\s+listing)\b"
+]
+
+HELP_PATTERNS = [
+    # English
+    r"\b(?:help|how\s+does\s+spaceloop\s+work|what\s+is\s+spaceloop|support|contact\s+support|section\s+52\s+protection|terms\s+and\s+conditions|what\s+can\s+you\s+do)\b",
+    # Hindi / Hinglish
+    r"\b(?:help\s+chahiye|madad\s+chahiye|spaceloop\s+kaise\s+kam\s+karta\s+hai|support\s+se\s+baat\s+karni\s+hai|madad\s+karo)\b",
+    # Marathi
+    r"\b(?:madat\s+pahije|spaceloop\s+kasa\s+chalto|sahayyata)\b"
+]
+
+CANONICAL_INTENTS_MAP = {
+    IntentType.SEARCH_SPACE.value: IntentType.SEARCH_PROPERTY.value,
+    IntentType.SEARCH_PROPERTY.value: IntentType.SEARCH_PROPERTY.value,
+    IntentType.CHECK_AVAILABILITY.value: IntentType.CHECK_AVAILABILITY.value,
+    IntentType.BOOK_SPACE.value: IntentType.BOOK_PROPERTY.value,
+    IntentType.BOOK_PROPERTY.value: IntentType.BOOK_PROPERTY.value,
+    IntentType.GET_PRICING.value: IntentType.ASK_PRICE.value,
+    IntentType.ASK_PRICE.value: IntentType.ASK_PRICE.value,
+    IntentType.ASK_LOCATION.value: IntentType.ASK_LOCATION.value,
+    IntentType.INQUIRE_AMENITIES.value: IntentType.ASK_AMENITIES.value,
+    IntentType.ASK_AMENITIES.value: IntentType.ASK_AMENITIES.value,
+    IntentType.HOST_MONETIZE.value: IntentType.CREATE_LISTING.value,
+    IntentType.CREATE_LISTING.value: IntentType.CREATE_LISTING.value,
+    IntentType.EDIT_LISTING.value: IntentType.EDIT_LISTING.value,
+    IntentType.ASK_BOOKING_STATUS.value: IntentType.ASK_BOOKING_STATUS.value,
+    IntentType.ASK_PAYMENT_STATUS.value: IntentType.ASK_PAYMENT_STATUS.value,
+    IntentType.REPORT_FRAUD.value: IntentType.REPORT_FRAUD.value,
+    IntentType.INQUIRE_RULES.value: IntentType.ASK_HELP.value,
+    IntentType.LEGAL_SAFETY.value: IntentType.ASK_HELP.value,
+    IntentType.ASK_HELP.value: IntentType.ASK_HELP.value,
+    IntentType.COMPARE_SPACES.value: IntentType.SEARCH_PROPERTY.value,
+    IntentType.GENERAL_GREETING.value: IntentType.GENERAL_CONVERSATION.value,
+    IntentType.GENERAL_CONVERSATION.value: IntentType.GENERAL_CONVERSATION.value,
+    IntentType.CLARIFICATION_NEEDED.value: IntentType.CLARIFICATION_NEEDED.value,
+}
+
 
 class IntentService:
     """
@@ -149,17 +235,30 @@ class IntentService:
     """
 
     INTENT_MAP = [
+        (IntentType.REPORT_FRAUD.value, REPORT_FRAUD_PATTERNS, 0.96),
         (IntentType.BOOK_SPACE.value, BOOKING_PATTERNS, 0.96),
+        (IntentType.EDIT_LISTING.value, EDIT_LISTING_PATTERNS, 0.95),
+        (IntentType.ASK_BOOKING_STATUS.value, BOOKING_STATUS_PATTERNS, 0.95),
+        (IntentType.ASK_PAYMENT_STATUS.value, PAYMENT_STATUS_PATTERNS, 0.95),
         (IntentType.COMPARE_SPACES.value, COMPARE_PATTERNS, 0.94),
         (IntentType.GET_PRICING.value, PRICING_PATTERNS, 0.95),
         (IntentType.CHECK_AVAILABILITY.value, AVAILABILITY_PATTERNS, 0.94),
+        (IntentType.ASK_LOCATION.value, LOCATION_PATTERNS, 0.94),
         (IntentType.INQUIRE_AMENITIES.value, AMENITIES_PATTERNS, 0.93),
         (IntentType.INQUIRE_RULES.value, RULES_PATTERNS, 0.93),
         (IntentType.HOST_MONETIZE.value, HOST_MONETIZE_PATTERNS, 0.95),
         (IntentType.LEGAL_SAFETY.value, LEGAL_SAFETY_PATTERNS, 0.92),
+        (IntentType.ASK_HELP.value, HELP_PATTERNS, 0.92),
         (IntentType.SEARCH_SPACE.value, SEARCH_SPACE_PATTERNS, 0.94),
         (IntentType.GENERAL_GREETING.value, GREETING_PATTERNS, 0.92),
     ]
+
+    @classmethod
+    def canonicalize_intent(cls, intent_name: str) -> str:
+        """
+        Maps any intent variant or alias to the 13 canonical SpaceLoop intents.
+        """
+        return CANONICAL_INTENTS_MAP.get(intent_name, intent_name)
 
     @classmethod
     def extract_intent(cls, normalized_text: str, context_data: Optional[Dict[str, Any]] = None) -> Tuple[str, float]:

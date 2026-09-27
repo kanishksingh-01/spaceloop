@@ -147,6 +147,7 @@ def api_estimate():
     return jsonify(estimate)
 
 
+@api_v1_system.route("/api/assistant", methods=["POST"])
 @api_v1_system.route("/api/ai/chat", methods=["POST"])
 @api_v1_system.route("/api/concierge/chat", methods=["POST"])
 @rate_limit_ai
@@ -171,11 +172,21 @@ def ai_chat():
                 messages.append({"role": "user", "content": clean_msg})
 
     if not messages:
-        return jsonify({"reply": "Hello! How can I assist you with SpaceLoop today?"}), 200
+        return jsonify({
+            "success": True,
+            "reply": "Hello! How can I assist you with SpaceLoop today?",
+            "intent": "GENERAL_CONVERSATION",
+            "entities": {},
+            "detected_language": "en",
+            "response_language": "en",
+            "confidence": 1.0,
+            "requires_clarification": False
+        }), 200
 
     user_context = {}
     if current_user.is_authenticated:
         user_context = {
+            "user_id": current_user.id,
             "user_name": current_user.name,
             "role": current_user.role,
             "is_verified": current_user.is_student_verified or current_user.is_host_verified
@@ -188,6 +199,8 @@ def ai_chat():
 
     # Negotiate multilingual preferences & message detection
     from backend.modules.nlp.i18n import MultilingualService
+    from backend.modules.ai.loopbot_orchestrator import orchestrate_loopbot_query
+
     lang_pref = data.get("language_preference") or request.headers.get("X-Language-Preference")
     user_query = messages[-1].get("content", "") if messages else ""
     effective_lang, detected_lang, is_code_mixed = MultilingualService.negotiate_language(
@@ -198,13 +211,25 @@ def ai_chat():
     user_context["detected_language"] = detected_lang
     user_context["is_code_mixed"] = is_code_mixed
 
-    response = concierge_chat(messages, context_data=user_context)
+    # Execute capability orchestration (Loop Bot does not blindly forward to LLM)
+    orch_result = orchestrate_loopbot_query(
+        user_query,
+        history=messages[:-1],
+        context_data=user_context,
+        return_dict=True
+    )
+
     return jsonify({
-        "reply": response,
-        "detected_language": detected_lang,
-        "response_language": effective_lang,
+        "success": True,
+        "reply": orch_result["reply"],
+        "intent": orch_result["intent"],
+        "entities": orch_result["entities"],
+        "detected_language": orch_result["detected_language"],
+        "response_language": orch_result["response_language"],
+        "confidence": orch_result["confidence"],
+        "requires_clarification": orch_result["requires_clarification"],
         "is_code_mixed": is_code_mixed
-    })
+    }), 200
 
 
 @api_v1_system.route("/api/system/status", methods=["GET"])

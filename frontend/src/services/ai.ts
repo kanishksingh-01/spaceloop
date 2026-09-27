@@ -11,17 +11,29 @@ export interface ChatContext {
   language_preference?: string;
 }
 
+export interface AssistantResponse {
+  success?: boolean;
+  reply: string;
+  intent?: string;
+  entities?: Record<string, any>;
+  detected_language?: string;
+  response_language?: string;
+  confidence?: number;
+  requires_clarification?: boolean;
+  is_code_mixed?: boolean;
+}
+
 export async function sendChatMessage(
   message: string,
   history: ChatMessage[] = [],
   context?: ChatContext
-): Promise<{ reply: string; detected_language?: string; response_language?: string }> {
+): Promise<AssistantResponse> {
   const messages = [...history];
   if (!messages.some(m => m.content === message && m.role === 'user')) {
     messages.push({ role: 'user', content: message });
   }
 
-  return request('/api/ai/chat', {
+  return request('/api/assistant', {
     method: 'POST',
     body: JSON.stringify({
       message,

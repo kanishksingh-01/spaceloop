@@ -22,17 +22,32 @@ class LanguageCode(str, Enum):
 
 
 class IntentType(str, Enum):
-    SEARCH_SPACE = "SEARCH_SPACE"                 # Search for space/room/desk
+    # Canonical SpaceLoop Part 4 Intents
+    SEARCH_PROPERTY = "SEARCH_PROPERTY"           # Search for space/room/desk
     CHECK_AVAILABILITY = "CHECK_AVAILABILITY"     # Availability/slots for date/time
-    GET_PRICING = "GET_PRICING"                   # Cost, rate calculations
-    INQUIRE_AMENITIES = "INQUIRE_AMENITIES"       # Wi-Fi, AC, screen, parking, etc.
-    INQUIRE_RULES = "INQUIRE_RULES"               # Food, smoking, noise, Section 52
-    BOOK_SPACE = "BOOK_SPACE"                     # Reserve, booking link, checkout
-    COMPARE_SPACES = "COMPARE_SPACES"             # Comparing multiple spaces
-    HOST_MONETIZE = "HOST_MONETIZE"               # Host earnings, listing spaces
-    LEGAL_SAFETY = "LEGAL_SAFETY"                 # Section 52, escrow, KYC, security
-    GENERAL_GREETING = "GENERAL_GREETING"         # Hello, hi, namaste, ram ram
+    BOOK_PROPERTY = "BOOK_PROPERTY"               # Reserve, booking link, checkout
+    ASK_PRICE = "ASK_PRICE"                       # Cost, rate calculations
+    ASK_LOCATION = "ASK_LOCATION"                 # Address, neighborhood, map, directions
+    ASK_AMENITIES = "ASK_AMENITIES"               # Wi-Fi, AC, screen, parking, etc.
+    CREATE_LISTING = "CREATE_LISTING"             # Host earnings, listing spaces
+    EDIT_LISTING = "EDIT_LISTING"                 # Update existing listing, pricing, photos
+    ASK_BOOKING_STATUS = "ASK_BOOKING_STATUS"     # Active booking, PIN, check-in status
+    ASK_PAYMENT_STATUS = "ASK_PAYMENT_STATUS"     # UPI escrow deposit, refund status
+    REPORT_FRAUD = "REPORT_FRAUD"                 # Suspicious behavior, dispute report
+    ASK_HELP = "ASK_HELP"                         # Section 52, platform help, guidelines
+    GENERAL_CONVERSATION = "GENERAL_CONVERSATION" # Hello, hi, namaste, general chat
     CLARIFICATION_NEEDED = "CLARIFICATION_NEEDED" # Low confidence / ambiguous query
+
+    # Backward compatibility aliases for Part 2 & Part 3 suites
+    SEARCH_SPACE = "SEARCH_SPACE"
+    BOOK_SPACE = "BOOK_SPACE"
+    GET_PRICING = "GET_PRICING"
+    INQUIRE_AMENITIES = "INQUIRE_AMENITIES"
+    INQUIRE_RULES = "INQUIRE_RULES"
+    COMPARE_SPACES = "COMPARE_SPACES"
+    HOST_MONETIZE = "HOST_MONETIZE"
+    LEGAL_SAFETY = "LEGAL_SAFETY"
+    GENERAL_GREETING = "GENERAL_GREETING"
 
 
 @dataclass

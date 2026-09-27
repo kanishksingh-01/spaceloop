@@ -429,213 +429,365 @@ def compare_spaces_db_rag(space_ids: list[int] | None = None) -> list[dict]:
     return comparison
 
 
-def orchestrate_loopbot_query(query: str, history: list | None = None, context_data: dict | None = None) -> str:
+def _sanitize_loopbot_response(text: str) -> str:
+    """
+    Guarantees clean, production-grade output:
+    - Strips raw JSON blocks or curly brace dumps
+    - Strips internal database object strings (e.g. <Space 1>, <User 2>)
+    - Strips tool execution artifacts or internal error tracebacks
+    - Strips raw vector embeddings and float score lists
+    - Removes raw HTML tags and normalizes whitespace
+    """
+    if not text:
+        return ""
+
+    cleaned = str(text)
+
+    # 1. Remove raw JSON blocks (e.g. ```json ... ``` or standalone { ... })
+    cleaned = re.sub(r"```(?:json)?\s*\{[\s\S]*?\}\s*```", "", cleaned)
+    cleaned = re.sub(r'\{\s*"[a-zA-Z0-9_]+":[\s\S]*?\}', "", cleaned)
+
+    # 2. Remove database object representations (e.g. <Space 1: ...>, <User 2>)
+    cleaned = re.sub(r"<[A-Za-z0-9_]+(?:\s+[A-Za-z0-9_]+)*:\s*[^>]*>", "", cleaned)
+    cleaned = re.sub(r"<[A-Za-z0-9_]+\s+object\s+at\s+0x[0-9a-fA-F]+>", "", cleaned)
+
+    # 3. Remove raw tool tags or debugging output (e.g. [TOOL_OUTPUT: ...], Traceback)
+    cleaned = re.sub(r"\[(?:TOOL|DEBUG|INTERNAL)[^\]]*\]", "", cleaned, flags=re.IGNORECASE)
+    cleaned = re.sub(r"Traceback\s*\(most\s+recent\s+call\s+last\):[\s\S]*?(?:\w+Error:.*)", "", cleaned)
+
+    # 4. Remove vector embeddings or raw score dumps
+    cleaned = re.sub(r"\[-?\d+\.\d+(?:,\s*-?\d+\.\d+){4,}\]", "", cleaned)
+    cleaned = re.sub(r"(?:cosine_similarity|embedding_score|score):\s*\d+\.\d+", "", cleaned)
+
+    # 5. Clean HTML tags
+    cleaned = re.sub(r"<br\s*/?>", "\n", cleaned)
+    cleaned = re.sub(r"<[^>]+>", "", cleaned)
+
+    # 6. Normalize whitespace
+    cleaned = re.sub(r"\n{3,}", "\n\n", cleaned)
+    return cleaned.strip()
+
+
+def _handle_clarification(effective_lang: str) -> str:
     from backend.modules.nlp.i18n import MultilingualService
-    lang_pref = context_data.get("language_preference") if context_data else None
+    return MultilingualService.get_localized_response("CLARIFICATION_NEEDED", effective_lang)
+
+
+def _handle_search_property(params: dict, effective_lang: str) -> str:
+    from backend.modules.nlp.i18n import MultilingualService
+    if effective_lang != "en":
+        return MultilingualService.get_localized_response("SEARCH_SPACE", effective_lang, params)
+
+    search_results = run_marketplace_search(params, limit=3)
+    cap_req = params.get("guest_count") or params.get("capacity") or "Flexible"
+    cards = []
+    for idx, res in enumerate(search_results):
+        s = res["space"]
+        p = res["pricing_2h"]
+        cards.append(
+            f"{idx + 1}. **{s.title}** ({res['match_badge']})\n"
+            f"   • Location: {s.location}\n"
+            f"   • Capacity: Up to {s.max_capacity} people ({s.sqft} sq ft)\n"
+            f"   • Rate: ₹{s.price_hourly}/hour (Total ₹{p['total_upfront']} for 2h incl. deposit)\n"
+            f"   • Amenities: {', '.join(s.amenities[:3]) if s.amenities else 'High-speed Wi-Fi, Ergonomic Desk'}\n"
+            f"   • Status: {'🟢 Available Now' if res['is_available'] else '🟡 Reserved soon'}"
+        )
+    cards_str = "\n\n".join(cards) if cards else "No matching spaces found at this exact moment."
+    return (
+        f"🔍 **Marketplace Search Results for {cap_req} People:**\n\n"
+        f"{cards_str}\n\n"
+        f"All spaces are verified under Section 52 revocable licenses with zero-hardware digital door passes. Would you like to reserve one?"
+    )
+
+
+def _handle_check_availability(params: dict, space_id: int | None, effective_lang: str) -> str:
+    target_date = params.get("date_str") or params.get("date", "tomorrow")
+    avail = check_availability_db(space_id=space_id, target_date_str=target_date)
+    date_str = avail["date_str"]
+    reports_text = "\n\n".join([
+        f"• **{r['title']}** in {r['location']} (₹{r['hourly_rate']}/hr)\n"
+        f"  Status: {r['status']}\n"
+        f"  Available Windows: {r['slots']}"
+        for r in avail["reports"]
+    ])
+    return (
+        f"📅 **Real-Time Space Availability for {date_str}:**\n\n"
+        f"{reports_text}\n\n"
+        f"You can choose immediate check-in or reserve a specific slot. Which time window works best for you?"
+    )
+
+
+def _handle_book_property(params: dict, space_id: int | None, hours: float, effective_lang: str) -> str:
+    from backend.modules.nlp.i18n import MultilingualService
+    if effective_lang != "en":
+        return MultilingualService.get_localized_response("BOOK_SPACE", effective_lang, params)
+
+    action = prepare_booking_system_action(space_id=space_id, hours=hours)
+    p = action.get("pricing", {})
+    steps_text = "\n".join([f"   {step}" for step in action["steps"]])
+    return (
+        f"🚀 **Booking System: {action['title']}**\n\n"
+        f"Ready to secure your temporary space reservation:\n"
+        f"• **Direct Booking Link**: `/space/{action['space_id']}`\n"
+        f"• **Estimated Cost ({hours}h)**: ₹{p.get('total_upfront', 194.5)} upfront (includes ₹100 instant refundable deposit)\n\n"
+        f"**Instant Reservation Steps**:\n"
+        f"{steps_text}\n\n"
+        f"Visit the listing page at `/space/{action['space_id']}` to confirm your booking in under 60 seconds!"
+    )
+
+
+def _handle_ask_price(params: dict, space_id: int | None, hours: float, effective_lang: str) -> str:
+    target_s = Space.query.get(space_id) if space_id else Space.query.filter_by(is_active=True).first()
+    p = calculate_pricing_details(target_s, hours=hours) if target_s else {
+        "title": "Standard Flexible Space",
+        "hourly_rate": 45.0,
+        "hours": hours,
+        "subtotal": 45.0 * hours,
+        "platform_fee": round(45.0 * hours * 0.05, 2),
+        "refundable_escrow": 100.0,
+        "total_upfront": round(45.0 * hours * 1.05 + 100.0, 2),
+        "net_cost": round(45.0 * hours * 1.05, 2)
+    }
+    return (
+        f"💰 **Pricing Calculation Breakdown ({p['hours']} Hours) for {p['title']}:**\n\n"
+        f"1. **Base Hourly Rent**: ₹{p['hourly_rate']}/hr × {p['hours']}h = **₹{p['subtotal']}**\n"
+        f"2. **Platform & Safety Fee (5%)**: **₹{p['platform_fee']}**\n"
+        f"3. **Refundable UPI Micro-Escrow**: **₹{p['refundable_escrow']}** *(Released instantly at checkout)*\n\n"
+        f"• **Total Upfront Payable**: **₹{p['total_upfront']}**\n"
+        f"• **Net Final Cost to You**: **₹{p['net_cost']}** *(after your ₹100 deposit is refunded)*\n\n"
+        f"Zero hidden charges. Would you like to proceed with booking this space?"
+    )
+
+
+def _handle_ask_location(params: dict, space_id: int | None, effective_lang: str) -> str:
+    target_s = Space.query.get(space_id) if space_id else Space.query.filter_by(is_active=True).first()
+    if target_s:
+        addr = target_s.address or f"{target_s.neighborhood or ''}, {target_s.city}"
+        return (
+            f"📍 **Location Details: {target_s.title}**\n\n"
+            f"• **Address**: {addr}\n"
+            f"• **Neighborhood / City**: {target_s.neighborhood or target_s.city}, {target_s.city}\n"
+            f"• **Coordinates**: {target_s.latitude}, {target_s.longitude}\n"
+            f"• **Zero-Hardware Arrival**: Geofence radius of 50m. Simply arrive on site to scan the door QR or provide your 4-digit PIN.\n\n"
+            f"Would you like me to check available slots or show pricing for this space?"
+        )
+    return (
+        "📍 **SpaceLoop Locations:**\n\n"
+        "SpaceLoop operates verified, zero-hardware workspaces across Pune (Kharadi, Wagholi, Baner, Kothrud), Dehradun, Rishikesh, Mumbai, and Delhi.\n\n"
+        "Which city or neighborhood are you looking for spaces in?"
+    )
+
+
+def _handle_ask_amenities(query: str, space_id: int | None, effective_lang: str) -> str:
+    target_space = Space.query.get(space_id) if space_id else Space.query.filter_by(is_active=True).first()
+    space_title = target_space.title if target_space else "our verified spaces"
+    amen_list = target_space.amenities if target_space and target_space.amenities else ["High-speed fiber Wi-Fi", "4K presentation monitor", "Ergonomic seating", "Inverter power backup"]
+    amen_bullets = "\n".join([f"   • {a}" for a in amen_list])
+    return (
+        f"⚡ **Verified Amenities & Equipment for {space_title}:**\n\n"
+        f"{amen_bullets}\n\n"
+        f"• **Acoustic Environment**: {target_space.ai_noise_level if target_space else 'Quiet (<45 dB)'}\n"
+        f"• **Power Access**: {target_space.ai_power_access if target_space else 'Continuous power backup with dedicated surge-protected outlets'}\n"
+        f"• **Access Protocol**: Geofenced digital door pass with instant arrival PIN.\n\n"
+        f"Ready to book or would you like to know how much a session costs?"
+    )
+
+
+def _handle_create_listing(params: dict, effective_lang: str) -> str:
+    from backend.modules.nlp.i18n import MultilingualService
+    if effective_lang != "en":
+        return MultilingualService.get_localized_response("HOST_MONETIZE", effective_lang, params)
+    return (
+        "🏡 **Monetize Your Idle Space on SpaceLoop:**\n\n"
+        "Turn spare rooms, garages, terraces, or off-peak office desks into passive monthly income:\n"
+        "1. **60-Second AI Photo Scan**: Point your camera at `/list-space` to calculate square footage and acoustic grade.\n"
+        "2. **Dynamic Rates**: Earn ₹45–₹150/hour based on your space type and amenities.\n"
+        "3. **Keep 95% Yield**: Direct automated UPI payouts with only a 5% platform fee.\n"
+        "4. **Full Tenancy Protection**: Section 52 revocable licenses eliminate adverse tenancy claims.\n\n"
+        "Visit `/list-space` to start listing your space or `/calculator` to estimate your monthly earnings!"
+    )
+
+
+def _handle_edit_listing(params: dict, effective_lang: str) -> str:
+    return (
+        "✏️ **Editing & Managing Your Space Listing:**\n\n"
+        "Hosts can update their listings at any time without downtime:\n"
+        "1. Open your **Host Dashboard** at `/dashboard`.\n"
+        "2. Navigate to the **Host Spaces** section.\n"
+        "3. Click **Edit Space** on the listing you want to modify.\n"
+        "4. You can adjust hourly rates, upload new photos, edit amenities, update quiet hours, or change house rules.\n"
+        "5. Click **Save Changes** — your updates reflect immediately across the SpaceLoop marketplace."
+    )
+
+
+def _handle_ask_booking_status(params: dict, context_data: dict | None, effective_lang: str) -> str:
+    user_id = context_data.get("user_id") if context_data else None
+    if user_id:
+        try:
+            recent_booking = Booking.query.filter_by(renter_id=user_id).order_by(Booking.created_at.desc()).first()
+            if recent_booking:
+                s = recent_booking.space
+                title = s.title if s else f"Space #{recent_booking.space_id}"
+                start_fmt = recent_booking.start_time.strftime("%d %b %I:%M %p") if recent_booking.start_time else "Scheduled"
+                end_fmt = recent_booking.end_time.strftime("%I:%M %p") if recent_booking.end_time else ""
+                status_icon = "🟢" if recent_booking.status in ("confirmed", "active") else "🟡"
+                return (
+                    f"📋 **Your Booking Status:**\n\n"
+                    f"{status_icon} **{title}** (Booking #{recent_booking.id})\n"
+                    f"• Status: **{recent_booking.status.title()}**\n"
+                    f"• Time Window: {start_fmt} – {end_fmt}\n"
+                    f"• Zero-Hardware Access: Geofence activates within 50m of coordinates.\n"
+                    f"• Digital Door Pass & PIN available on your `/dashboard`.\n\n"
+                    f"Need directions or help with your session?"
+                )
+        except Exception:
+            pass
+
+    return (
+        "📋 **Booking Status Inquiry:**\n\n"
+        "You can view all your active, upcoming, and past reservations with instant digital door passes in your **Guest Dashboard** at `/dashboard`.\n\n"
+        "If you just placed a booking, confirmation is instant upon UPI micro-escrow authorization. Would you like me to find a space or help you reserve one?"
+    )
+
+
+def _handle_ask_payment_status(params: dict, effective_lang: str) -> str:
+    from backend.modules.nlp.i18n import MultilingualService
+    if effective_lang != "en":
+        return MultilingualService.get_localized_response("ESCROW_REFUND", effective_lang, params)
+    return (
+        "💳 **₹100 UPI Micro-Escrow & Payment Protocol:**\n\n"
+        "• **Security Deposit**: ₹100 is temporarily pre-authorized via UPI during booking to secure the space.\n"
+        "• **Instant Automated Refund**: Upon on-time checkout and room electrical power-off confirmation, the ₹100 escrow hold is released back to your UPI VPA within 120 seconds.\n"
+        "• **Accepted Payment Methods**: All UPI apps (Google Pay, PhonePe, Paytm, BHIM), debit/credit cards, and net banking.\n"
+        "• **Receipts**: Detailed invoices and escrow refund receipts can be viewed anytime in your `/dashboard`."
+    )
+
+
+def _handle_report_fraud(params: dict, effective_lang: str) -> str:
+    return (
+        "🛡️ **SpaceLoop Trust & Safety — Report an Issue:**\n\n"
+        "We enforce strict integrity standards across all physical spaces and host interactions:\n"
+        "1. **Report Incident**: Go to your `/dashboard` or the space page and click **Report an Issue**.\n"
+        "2. **Immediate Lock**: Suspected fraudulent spaces or abusive accounts are frozen pending investigation.\n"
+        "3. **Deposit Protection**: Escrow funds and rental fees are safely held in escrow during disputes.\n"
+        "4. **Legal Enforcement**: All bookings operate under Section 52 revocable micro-licenses with zero-hardware GPS audit trails.\n\n"
+        "Our Trust & Safety team reviews all incident flags 24/7."
+    )
+
+
+def _handle_ask_help(query: str, effective_lang: str) -> str:
+    from backend.modules.nlp.i18n import MultilingualService
+    if effective_lang != "en":
+        return MultilingualService.get_localized_response("LEGAL_SAFETY", effective_lang)
+    return (
+        "🤝 **SpaceLoop Help & Platform Guide:**\n\n"
+        "• **How SpaceLoop Works**: Discover and book verified physical spaces by the hour with zero hardware keys or physical handoffs.\n"
+        "• **Section 52 Legal Protection**: All reservations operate as non-possessory micro-licenses under Section 52 of the Indian Easements Act, 1882. No tenancy rights are created.\n"
+        "• **₹100 UPI Micro-Escrow**: Deposits are held safely in escrow and refunded within 120 seconds of on-time checkout.\n"
+        "• **Key Actions**:\n"
+        "  - Search spaces: Visit `/` or `/explore`\n"
+        "  - Calculate host earnings: Visit `/calculator`\n"
+        "  - List unused space: Visit `/list-space`\n"
+        "  - View your account: Visit `/dashboard`\n\n"
+        "What can I help you accomplish today?"
+    )
+
+
+def _handle_general_conversation(effective_lang: str, context_data: dict | None) -> str:
+    from backend.modules.nlp.i18n import MultilingualService
+    if effective_lang != "en":
+        return MultilingualService.get_localized_response("GREETING", effective_lang)
+    role = (context_data or {}).get("role", "seeker")
+    user_name = (context_data or {}).get("user_name", "")
+    prefix = f"Hello {user_name}! " if user_name else ""
+    return (
+        f"👋 {prefix}I'm **LoopBot**, your SpaceLoop AI Concierge!\n\n"
+        f"I can help you discover workspaces, book meeting rooms by the hour, explain Section 52 legal safety, check availability, or monetize your unused square footage.\n\n"
+        f"How can I assist you today?"
+    )
+
+
+def orchestrate_loopbot_query(
+    query: str,
+    history: list | None = None,
+    context_data: dict | None = None,
+    return_dict: bool = False
+) -> str | dict:
+    """
+    Unified Loop Bot Orchestrator:
+    Executes the complete flow:
+    Language Detection -> Normalization -> Intent Extraction -> Entity Extraction ->
+    Tool/Retrieval Decision -> Subsystem Execution -> Response Generation -> Language Localization -> Output Sanitizer.
+    """
+    from backend.modules.nlp.pipeline import NLPPipeline
+    from backend.modules.nlp.schemas import IntentType
+    from backend.modules.nlp.intent_service import IntentService
+    from backend.modules.nlp.i18n import MultilingualService
+
+    context_data = context_data or {}
+    lang_pref = context_data.get("language_preference")
+
+    # Step 1: Run unified 4-stage NLP Pipeline
+    nlp_result = NLPPipeline.process(query, context_data=context_data)
     effective_lang, detected_lang, is_code_mixed = MultilingualService.negotiate_language(
         query, explicit_preference=lang_pref
     )
 
-    intent, params = detect_loopbot_intent(query, context_data)
+    canonical_intent = IntentService.canonicalize_intent(nlp_result.intent)
+    params = nlp_result.entities or {}
+
+    # Contextual fallbacks from context_data
+    if "space_id" not in params and context_data.get("space_id"):
+        params["space_id"] = int(context_data["space_id"])
     space_id = params.get("space_id")
-    hours = params.get("hours", 4.0)
-    target_space = Space.query.get(space_id) if space_id else None
+    hours = params.get("duration_hours") or params.get("hours") or 4.0
 
-    # For non-English interactions, return verified localized responses where applicable
-    if effective_lang != "en":
-        if intent == LoopBotIntent.HOST_MONETIZATION:
-            return MultilingualService.get_localized_response("HOST_MONETIZE", effective_lang, params)
-        if intent == LoopBotIntent.LEGAL_AND_SAFETY:
-            return MultilingualService.get_localized_response("LEGAL_SAFETY", effective_lang, params)
-        if intent == LoopBotIntent.BOOKING_ACTION:
-            return MultilingualService.get_localized_response("BOOK_SPACE", effective_lang, params)
-        if intent == LoopBotIntent.GENERAL_CHAT:
-            return MultilingualService.get_localized_response("GREETING", effective_lang, params)
+    # Step 2: Capability / Retrieval Decision Layer
+    # Low-confidence Intent Guardrail (< 0.60 or CLARIFICATION_NEEDED): ask clarification, never invent.
+    if canonical_intent == IntentType.CLARIFICATION_NEEDED.value or nlp_result.confidence < 0.60:
+        raw_reply = _handle_clarification(effective_lang)
+        canonical_intent = IntentType.CLARIFICATION_NEEDED.value
+    elif canonical_intent == IntentType.SEARCH_PROPERTY.value:
+        raw_reply = _handle_search_property(params, effective_lang)
+    elif canonical_intent == IntentType.CHECK_AVAILABILITY.value:
+        raw_reply = _handle_check_availability(params, space_id, effective_lang)
+    elif canonical_intent == IntentType.BOOK_PROPERTY.value:
+        raw_reply = _handle_book_property(params, space_id, hours, effective_lang)
+    elif canonical_intent == IntentType.ASK_PRICE.value:
+        raw_reply = _handle_ask_price(params, space_id, hours, effective_lang)
+    elif canonical_intent == IntentType.ASK_LOCATION.value:
+        raw_reply = _handle_ask_location(params, space_id, effective_lang)
+    elif canonical_intent == IntentType.ASK_AMENITIES.value:
+        raw_reply = _handle_ask_amenities(query, space_id, effective_lang)
+    elif canonical_intent == IntentType.CREATE_LISTING.value:
+        raw_reply = _handle_create_listing(params, effective_lang)
+    elif canonical_intent == IntentType.EDIT_LISTING.value:
+        raw_reply = _handle_edit_listing(params, effective_lang)
+    elif canonical_intent == IntentType.ASK_BOOKING_STATUS.value:
+        raw_reply = _handle_ask_booking_status(params, context_data, effective_lang)
+    elif canonical_intent == IntentType.ASK_PAYMENT_STATUS.value:
+        raw_reply = _handle_ask_payment_status(params, effective_lang)
+    elif canonical_intent == IntentType.REPORT_FRAUD.value:
+        raw_reply = _handle_report_fraud(params, effective_lang)
+    elif canonical_intent == IntentType.ASK_HELP.value:
+        raw_reply = _handle_ask_help(query, effective_lang)
+    elif canonical_intent == IntentType.GENERAL_CONVERSATION.value:
+        raw_reply = _handle_general_conversation(effective_lang, context_data)
+    else:
+        raw_reply = _handle_clarification(effective_lang)
+        canonical_intent = IntentType.CLARIFICATION_NEEDED.value
 
-    # 1. RAG ONLY: "What amenities does this space have?" or "Can I bring food?"
-    if intent in (LoopBotIntent.RAG_AMENITIES, LoopBotIntent.RAG_RULES_POLICY):
-        rag_results = retrieve_rag_knowledge(query, target_space_id=space_id, top_k=3)
-        if intent == LoopBotIntent.RAG_RULES_POLICY:
-            space_title = target_space.title if target_space else "SpaceLoop listings"
-            food_allowed = not any("no food" in c["text"].lower() for c in rag_results)
-            return (
-                f"🥗 **House Rules & Food Policy for {space_title}:**\n\n"
-                f"• **Food & Drink Policy**: {'Light dry snacks, sealed beverages, coffee, and packaged water are permitted!' if food_allowed else 'Food is restricted inside the primary workspace to preserve sensitive equipment.'}\n"
-                f"• **Smoking**: SpaceLoop properties maintain a 100% strictly smoke-free policy.\n"
-                f"• **Noise Floor**: Please respect quiet hours and fellow occupants ({target_space.ai_noise_level if target_space else 'quiet focus floor'}).\n"
-                f"• **Cleanliness**: Ensure all waste is placed in designated disposal bins before checkout.\n\n"
-                f"Would you like me to check available slots or calculate the price for your session?"
-            )
-        else:
-            space_title = target_space.title if target_space else "our verified spaces"
-            amen_list = target_space.amenities if target_space and target_space.amenities else ["High-speed fiber Wi-Fi", "4K presentation monitor", "Ergonomic seating", "Inverter power backup"]
-            amen_bullets = "\n".join([f"   • {a}" for a in amen_list])
-            return (
-                f"⚡ **Verified Amenities & Equipment for {space_title}:**\n\n"
-                f"{amen_bullets}\n\n"
-                f"• **Acoustic Environment**: {target_space.ai_noise_level if target_space else 'Quiet (<45 dB)'}\n"
-                f"• **Power Access**: {target_space.ai_power_access if target_space else 'Continuous power backup with dedicated surge-protected outlets'}\n"
-                f"• **Access Protocol**: Geofenced digital door pass with instant arrival PIN.\n\n"
-                f"Ready to book or would you like to know how much a session costs?"
-            )
+    # Step 3: Sanitize output to guarantee no raw JSON, DB objects, or tool output
+    clean_reply = _sanitize_loopbot_response(raw_reply)
 
-    # 2. RAG + LISTING DATA: "Is this good for a team meeting?"
-    if intent == LoopBotIntent.SUITABILITY_ASSESSMENT:
-        target_s = target_space or Space.query.filter_by(is_active=True).first()
-        cap = target_s.max_capacity if target_s else 6
-        sqft = target_s.sqft if target_s else 250
-        noise = target_s.ai_noise_level if target_s else "Quiet (<40 dB)"
-        amenities = ", ".join(target_s.amenities[:4]) if target_s and target_s.amenities else "Presentation display, Whiteboard, High-speed fiber"
-        is_meeting_query = any(k in query.lower() for k in ["meeting", "team", "conference", "collab", "sprint"])
-        verdict = "Yes, it is excellently suited!" if is_meeting_query and cap >= 4 else "It is a capable and verified space."
-        return (
-            f"🎯 **Space Suitability Assessment: {target_s.title if target_s else 'Space'}**\n\n"
-            f"{verdict}\n\n"
-            f"1. **Capacity & Dimensions**:\n"
-            f"   • Fits up to **{cap} people** comfortably ({sqft} sq ft usable area).\n"
-            f"2. **Collaboration Features**:\n"
-            f"   • {amenities}.\n"
-            f"3. **Acoustic Privacy**:\n"
-            f"   • {noise} — ideal for confidential discussions without outside disruption.\n"
-            f"4. **Host Telemetry**:\n"
-            f"   • {target_s.average_rating()}★ rating with {round(target_s.owner.objective_trust_score, 1) if target_s.owner else 98.5}% on-time vacate and cleanliness reliability.\n\n"
-            f"Would you like me to calculate the cost for your team or check availability?"
-        )
-
-    # 3. MARKETPLACE SEARCH: "Find spaces for 8 people"
-    if intent == LoopBotIntent.MARKETPLACE_SEARCH:
-        search_results = run_marketplace_search(params, limit=3)
-        cap_req = params.get("capacity", 8)
-        cards = []
-        for idx, res in enumerate(search_results):
-            s = res["space"]
-            p = res["pricing_2h"]
-            cards.append(
-                f"{idx + 1}. **{s.title}** ({res['match_badge']})\n"
-                f"   • Location: {s.location}\n"
-                f"   • Capacity: Up to {s.max_capacity} people ({s.sqft} sq ft)\n"
-                f"   • Rate: ₹{s.price_hourly}/hour (Total ₹{p['total_upfront']} for 2h incl. deposit)\n"
-                f"   • Amenities: {', '.join(s.amenities[:3]) if s.amenities else 'High-speed Wi-Fi, Ergonomic Desk'}\n"
-                f"   • Status: {'🟢 Available Now' if res['is_available'] else '🟡 Reserved soon'}"
-            )
-        cards_str = "\n\n".join(cards)
-        return (
-            f"🔍 **Marketplace Search Results for {cap_req} People:**\n\n"
-            f"{cards_str}\n\n"
-            f"All spaces are verified under Section 52 revocable licenses with zero hardware door pass access. Would you like to reserve one?"
-        )
-
-    # 4. AVAILABILITY DB: "What's available tomorrow?"
-    if intent == LoopBotIntent.AVAILABILITY_QUERY:
-        avail = check_availability_db(space_id=space_id, target_date_str=params.get("date", "tomorrow"))
-        date_str = avail["date_str"]
-        reports_text = "\n\n".join([
-            f"• **{r['title']}** in {r['location']} (₹{r['hourly_rate']}/hr)\n"
-            f"  Status: {r['status']}\n"
-            f"  Available Windows: {r['slots']}"
-            for r in avail["reports"]
-        ])
-        return (
-            f"📅 **Real-Time Space Availability for {date_str}:**\n\n"
-            f"{reports_text}\n\n"
-            f"You can choose **Start Now** for immediate check-in or select any start time slot. Which space fits your schedule best?"
-        )
-
-    # 5. PRICING DB / CALCULATION: "How much for 4 hours?"
-    if intent == LoopBotIntent.PRICING_CALCULATION:
-        target_s = target_space or Space.query.filter_by(is_active=True).first()
-        p = calculate_pricing_details(target_s, hours=hours) if target_s else {
-            "title": "Standard Flexible Space",
-            "hourly_rate": 45.0,
-            "hours": hours,
-            "subtotal": 45.0 * hours,
-            "platform_fee": round(45.0 * hours * 0.05, 2),
-            "refundable_escrow": 100.0,
-            "total_upfront": round(45.0 * hours * 1.05 + 100.0, 2),
-            "net_cost": round(45.0 * hours * 1.05, 2)
+    if return_dict:
+        return {
+            "reply": clean_reply,
+            "intent": canonical_intent,
+            "entities": nlp_result.entities,
+            "detected_language": detected_lang,
+            "response_language": effective_lang,
+            "confidence": round(nlp_result.confidence, 4),
+            "requires_clarification": (canonical_intent == IntentType.CLARIFICATION_NEEDED.value)
         }
-        return (
-            f"💰 **Pricing Calculation Breakdown ({p['hours']} Hours) for {p['title']}:**\n\n"
-            f"1. **Base Hourly Rent**: ₹{p['hourly_rate']}/hr × {p['hours']}h = **₹{p['subtotal']}**\n"
-            f"2. **Platform & Safety Fee (5%)**: **₹{p['platform_fee']}**\n"
-            f"3. **Refundable UPI Micro-Escrow**: **₹{p['refundable_escrow']}** *(Released instantly at checkout)*\n\n"
-            f"• **Total Upfront Payable**: **₹{p['total_upfront']}**\n"
-            f"• **Net Final Cost to You**: **₹{p['net_cost']}** *(after your ₹100 deposit is refunded)*\n\n"
-            f"Zero hidden charges. Would you like to proceed with booking this space?"
-        )
-
-    # 6. BOOKING SYSTEM: "Book this space"
-    if intent == LoopBotIntent.BOOKING_ACTION:
-        action = prepare_booking_system_action(space_id=space_id, hours=hours)
-        p = action.get("pricing", {})
-        steps_text = "\n".join([f"   {step}" for step in action["steps"]])
-        return (
-            f"🚀 **Booking System: {action['title']}**\n\n"
-            f"Ready to secure your temporary space reservation:\n"
-            f"• **Direct Booking Link**: `/space/{action['space_id']}`\n"
-            f"• **Estimated Cost ({hours}h)**: ₹{p.get('total_upfront', 194.5)} upfront (includes ₹100 instant refundable deposit)\n\n"
-            f"**Instant Reservation Steps**:\n"
-            f"{steps_text}\n\n"
-            f"Click the link or visit the listing page to confirm your reservation in under 60 seconds!"
-        )
-
-    # 7. COMPARE SPACES: "Compare these spaces" (DB + RAG)
-    if intent == LoopBotIntent.COMPARE_SPACES:
-        compare_ids = params.get("compare_ids")
-        comparisons = compare_spaces_db_rag(compare_ids)
-        cards = []
-        for c in comparisons:
-            cards.append(
-                f"• **{c['title']}** (#{c['id']} - {c['category']})\n"
-                f"  - Location: {c['location']}\n"
-                f"  - Capacity: {c['capacity']}\n"
-                f"  - Pricing: {c['rate']}\n"
-                f"  - Amenities: {c['amenities']}\n"
-                f"  - Food Policy: {c['food_policy']}\n"
-                f"  - Acoustic Privacy: {c['noise_level']}\n"
-                f"  - Telemetry: {c['trust_rating']}"
-            )
-        cards_str = "\n\n".join(cards)
-        return (
-            f"⚖️ **Side-by-Side Space Comparison (DB + RAG):**\n\n"
-            f"{cards_str}\n\n"
-            f"**Recommendation**:\n"
-            f"• Choose the first for focused individual or pair productivity.\n"
-            f"• Choose the second for team collaboration and presentation capabilities.\n\n"
-            f"Which one would you like to explore further?"
-        )
-
-    # 8. Host Monetization / Legal fallback
-    if intent == LoopBotIntent.HOST_MONETIZATION:
-        return (
-            "🏠 **Monetizing Unused Space on SpaceLoop:**\n\n"
-            "Turn spare rooms, empty garages, studios, or off-peak café tables into passive income:\n"
-            "1. **60-Second AI Photo Scan**: Point your camera at `/list-space` to calculate square footage and acoustic grade.\n"
-            "2. **Dynamic Rates**: Earn ₹45–₹150/hour based on category and amenities.\n"
-            "3. **Keep 95% Yield**: Direct automated UPI payouts with only a 5% platform fee.\n"
-            "4. **Full Tenancy Protection**: Section 52 revocable licenses eliminate adverse tenancy claims.\n\n"
-            "Would you like an instant earnings estimate for your space?"
-        )
-
-    if intent == LoopBotIntent.LEGAL_AND_SAFETY:
-        return (
-            "⚖️ **Legal Protection under Section 52, Indian Easements Act:**\n\n"
-            "• **Revocable License**: All bookings grant temporary permissions, NOT a tenancy or leasehold. Renters have zero legal rights to claim possession or tenancy.\n"
-            "• **Micro-Lease Sealed**: An automated legal agreement specifies the exact booked time window and purpose.\n"
-            "• **₹100 UPI Micro-Escrow**: Deposits are held safely and refunded automatically upon on-time departure.\n"
-            "• **Geofenced Access**: Guests check in only within 50m of property GPS coordinates."
-        )
-
-    return (
-        "👋 **I'm LoopBot**, your SpaceLoop AI Concierge!\n\n"
-        "I combine semantic knowledge retrieval with real-time marketplace data. You can ask me:\n"
-        "• ⚡ *'What amenities does this space have?'* (RAG)\n"
-        "• 🥪 *'Can I bring food?'* (RAG)\n"
-        "• 👥 *'Is this good for a team meeting?'* (RAG + Listing Data)\n"
-        "• 🔍 *'Find spaces for 8 people'* (Marketplace Search)\n"
-        "• 📅 *'What's available tomorrow?'* (Availability DB)\n"
-        "• 💰 *'How much for 4 hours?'* (Pricing DB / Calculation)\n"
-        "• 🚀 *'Book this space'* (Booking System)\n"
-        "• ⚖️ *'Compare these spaces'* (DB + RAG)\n\n"
-        "How can I help you today?"
-    )
+    return clean_reply
