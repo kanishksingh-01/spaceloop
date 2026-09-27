@@ -216,8 +216,11 @@ def hybrid_search_spaces(
             query = query.filter(Space.max_capacity >= effective_cap)
 
         # Hard Filter: Maximum Price Ceiling
-        if effective_max_price is not None and effective_max_price > 0:
-            query = query.filter(Space.price_hourly <= effective_max_price)
+        if effective_max_price is not None:
+            if effective_max_price <= 0:
+                query = query.filter(Space.id == -1)
+            else:
+                query = query.filter(Space.price_hourly <= effective_max_price)
 
         # Hard Filter: Category / Space Type
         if effective_cat and effective_cat.lower() not in ("all", "any"):

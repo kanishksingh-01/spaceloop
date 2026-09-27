@@ -124,6 +124,18 @@ TEMPLATES: Dict[str, Dict[str, str]] = {
         "jns": "🤔 बात पूरी समझ नी आई। तुम तैं कमरा खोजना च, जागा जोड़नी च, भाडू पूछना च या धारा 52 नियम पूछना च? साफ बथावा।",
         "hi-Latn": "🤔 Samajh nahi aaya. Kya aap space book karna chahte hain, apni property list karna chahte hain, pricing puch rahe hain ya Section 52 legal protection samajhna chahte hain?",
         "mr-Latn": "🤔 Samjhle nahi. Tumhala space book karaychi aahe, property list karaychi aahe, pricing vicharaychi aahe ki Section 52 legal protection samajhun ghyaychi aahe?"
+    },
+
+    # 8. PRICE_INQUIRY
+    "PRICE_INQUIRY": {
+        "en": "💰 **Pricing Details**: The estimated rate is ₹{hourly_rate}/hr. Upfront payment includes ₹100 refundable UPI escrow hold which is returned within 120 seconds of on-time checkout.",
+        "hi": "💰 **किराया विवरण**: अनुमानित दर ₹{hourly_rate}/घंटा है। इसमें ₹100 का सुरक्षा डिपॉजिट शामिल है जो चेकआउट के 120 सेकंड में वापस मिल जाता है।",
+        "mr": "💰 **भाडे तपशील**: अंदाजे दर ₹{hourly_rate}/तास आहे. यामध्ये ₹१०० परत मिळणारी अनामत रक्कम समाविष्ट आहे जी चेकआउटनंतर लगेच परत केली जाते.",
+        "gar": "💰 **भाडू विवरण**: दर ₹{hourly_rate}/घंटा च। चेकआउट मा ₹100 तुरंत वापस मिलदु।",
+        "kfy": "💰 **भाड विवरण**: दर ₹{hourly_rate}/घंटा छ। चेकआउट मा ₹100 वापस मिलूँछ।",
+        "jns": "💰 **भाडू विवरण**: दर ₹{hourly_rate}/घंटा च। ₹100 चेकआउट मा वापस मिलदु।",
+        "hi-Latn": "💰 **Pricing Details**: Estimated rate ₹{hourly_rate}/hr hai. Isme ₹100 refundable UPI deposit shamil hai jo checkout ke baad turant refund hota hai.",
+        "mr-Latn": "💰 **Pricing Details**: Andaje dar ₹{hourly_rate}/hr aahe. Yachyat ₹100 refundable deposit aahe jo checkout nantor lagach refund hoto."
     }
 }
 
@@ -214,6 +226,8 @@ class MultilingualService:
             mapped_key = "HOST_MONETIZE"
         elif "ESCROW" in intent_key or "REFUND" in intent_key:
             mapped_key = "ESCROW_REFUND"
+        elif "PRICE" in intent_key or "RATE" in intent_key:
+            mapped_key = "PRICE_INQUIRY"
 
         intent_templates = TEMPLATES.get(mapped_key, TEMPLATES["CLARIFICATION_NEEDED"])
 
@@ -235,6 +249,7 @@ class MultilingualService:
         filled = filled.replace("{property_type}", str(entities.get("property_type") or "work/meeting space"))
         filled = filled.replace("{guest_count}", str(entities.get("guest_count") or 1))
         filled = filled.replace("{max_price}", str(entities.get("max_price") or 500))
+        filled = filled.replace("{hourly_rate}", str(entities.get("hourly_rate") or 45))
 
         return filled
 

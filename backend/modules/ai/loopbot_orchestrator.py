@@ -565,6 +565,12 @@ def _handle_ask_price(params: dict, space_id: int | None, hours: float, effectiv
         "total_upfront": round(45.0 * hours * 1.05 + 100.0, 2),
         "net_cost": round(45.0 * hours * 1.05, 2)
     }
+    from backend.modules.nlp.i18n import MultilingualService
+    if effective_lang != "en":
+        price_params = dict(params)
+        price_params["hourly_rate"] = p["hourly_rate"]
+        return MultilingualService.get_localized_response("PRICE_INQUIRY", effective_lang, price_params)
+
     return (
         f"💰 **Pricing Calculation Breakdown ({p['hours']} Hours) for {p['title']}:**\n\n"
         f"1. **Base Hourly Rent**: ₹{p['hourly_rate']}/hr × {p['hours']}h = **₹{p['subtotal']}**\n"
@@ -795,6 +801,15 @@ def orchestrate_loopbot_query(
     Language Detection -> Normalization -> Intent Extraction -> Entity Extraction ->
     Tool/Retrieval Decision -> Subsystem Execution -> Response Generation -> Language Localization -> Output Sanitizer.
     """
+    from flask import has_app_context
+    if not has_app_context():
+        from app import create_app
+        _temp_app = create_app()
+        with _temp_app.app_context():
+            return orchestrate_loopbot_query(
+                query, history=history, context_data=context_data, return_dict=return_dict
+            )
+
     from backend.modules.nlp.pipeline import NLPPipeline
     from backend.modules.nlp.schemas import IntentType
     from backend.modules.nlp.intent_service import IntentService
@@ -822,36 +837,41 @@ def orchestrate_loopbot_query(
 
     # Step 2: Capability / Retrieval Decision Layer
     # Low-confidence Intent Guardrail (< 0.60 or CLARIFICATION_NEEDED): ask clarification, never invent.
-    if canonical_intent == IntentType.CLARIFICATION_NEEDED.value or nlp_result.confidence < 0.60:
-        raw_reply = _handle_clarification(effective_lang)
-        canonical_intent = IntentType.CLARIFICATION_NEEDED.value
-    elif canonical_intent == IntentType.SEARCH_PROPERTY.value:
-        raw_reply = _handle_search_property(params, effective_lang, raw_query=query)
-    elif canonical_intent == IntentType.CHECK_AVAILABILITY.value:
-        raw_reply = _handle_check_availability(params, space_id, effective_lang)
-    elif canonical_intent == IntentType.BOOK_PROPERTY.value:
-        raw_reply = _handle_book_property(params, space_id, hours, effective_lang)
-    elif canonical_intent == IntentType.ASK_PRICE.value:
-        raw_reply = _handle_ask_price(params, space_id, hours, effective_lang)
-    elif canonical_intent == IntentType.ASK_LOCATION.value:
-        raw_reply = _handle_ask_location(params, space_id, effective_lang)
-    elif canonical_intent == IntentType.ASK_AMENITIES.value:
-        raw_reply = _handle_ask_amenities(query, space_id, effective_lang)
-    elif canonical_intent == IntentType.CREATE_LISTING.value:
-        raw_reply, listing_draft = _handle_create_listing(query, params, effective_lang)
-    elif canonical_intent == IntentType.EDIT_LISTING.value:
-        raw_reply = _handle_edit_listing(params, effective_lang)
-    elif canonical_intent == IntentType.ASK_BOOKING_STATUS.value:
-        raw_reply = _handle_ask_booking_status(params, context_data, effective_lang)
-    elif canonical_intent == IntentType.ASK_PAYMENT_STATUS.value:
-        raw_reply = _handle_ask_payment_status(params, effective_lang)
-    elif canonical_intent == IntentType.REPORT_FRAUD.value:
-        raw_reply = _handle_report_fraud(params, effective_lang)
-    elif canonical_intent == IntentType.ASK_HELP.value:
-        raw_reply = _handle_ask_help(query, effective_lang)
-    elif canonical_intent == IntentType.GENERAL_CONVERSATION.value:
-        raw_reply = _handle_general_conversation(effective_lang, context_data)
-    else:
+    try:
+        if canonical_intent == IntentType.CLARIFICATION_NEEDED.value or nlp_result.confidence < 0.60:
+            raw_reply = _handle_clarification(effective_lang)
+            canonical_intent = IntentType.CLARIFICATION_NEEDED.value
+        elif canonical_intent == IntentType.SEARCH_PROPERTY.value:
+            raw_reply = _handle_search_property(params, effective_lang, raw_query=query)
+        elif canonical_intent == IntentType.CHECK_AVAILABILITY.value:
+            raw_reply = _handle_check_availability(params, space_id, effective_lang)
+        elif canonical_intent == IntentType.BOOK_PROPERTY.value:
+            raw_reply = _handle_book_property(params, space_id, hours, effective_lang)
+        elif canonical_intent == IntentType.ASK_PRICE.value:
+            raw_reply = _handle_ask_price(params, space_id, hours, effective_lang)
+        elif canonical_intent == IntentType.ASK_LOCATION.value:
+            raw_reply = _handle_ask_location(params, space_id, effective_lang)
+        elif canonical_intent == IntentType.ASK_AMENITIES.value:
+            raw_reply = _handle_ask_amenities(query, space_id, effective_lang)
+        elif canonical_intent == IntentType.CREATE_LISTING.value:
+            raw_reply, listing_draft = _handle_create_listing(query, params, effective_lang)
+        elif canonical_intent == IntentType.EDIT_LISTING.value:
+            raw_reply = _handle_edit_listing(params, effective_lang)
+        elif canonical_intent == IntentType.ASK_BOOKING_STATUS.value:
+            raw_reply = _handle_ask_booking_status(params, context_data, effective_lang)
+        elif canonical_intent == IntentType.ASK_PAYMENT_STATUS.value:
+            raw_reply = _handle_ask_payment_status(params, effective_lang)
+        elif canonical_intent == IntentType.REPORT_FRAUD.value:
+            raw_reply = _handle_report_fraud(params, effective_lang)
+        elif canonical_intent == IntentType.ASK_HELP.value:
+            raw_reply = _handle_ask_help(query, effective_lang)
+        elif canonical_intent == IntentType.GENERAL_CONVERSATION.value:
+            raw_reply = _handle_general_conversation(effective_lang, context_data)
+        else:
+            raw_reply = _handle_clarification(effective_lang)
+            canonical_intent = IntentType.CLARIFICATION_NEEDED.value
+    except Exception as err:
+        logger.error(f"LoopBot dispatch exception: {err}")
         raw_reply = _handle_clarification(effective_lang)
         canonical_intent = IntentType.CLARIFICATION_NEEDED.value
 
