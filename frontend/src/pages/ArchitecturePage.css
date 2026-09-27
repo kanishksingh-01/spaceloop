@@ -4,49 +4,92 @@
    ========================================================================== */
 
 /* --------------------------------------------------------------------------
-   1. Page Entry & S P A C E   L O O P   Wordmark Loader (Section 1, 2, 3)
+   1. SpaceLoop Cinematic Floating Entrance (Antigravity System)
    -------------------------------------------------------------------------- */
-.ag-loader-backdrop {
+.ag-entrance-layer {
   position: fixed;
   inset: 0;
   z-index: 9999;
   display: flex;
-  flex-direction: column;
   align-items: center;
   justify-content: center;
   background-color: #E8F6FF;
-  transition: opacity 0.52s cubic-bezier(0.16, 1, 0.3, 1),
-              filter 0.52s cubic-bezier(0.16, 1, 0.3, 1),
-              transform 0.52s cubic-bezier(0.16, 1, 0.3, 1);
+  /* Seamless integration with blueprint grid — zero container feeling */
+  background-size: 32px 32px;
+  background-image:
+    linear-gradient(to right, rgba(11, 61, 145, 0.04) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(11, 61, 145, 0.04) 1px, transparent 1px);
+  transition: opacity 0.8s cubic-bezier(0.16, 1, 0.3, 1),
+              filter 0.8s cubic-bezier(0.16, 1, 0.3, 1),
+              transform 0.8s cubic-bezier(0.16, 1, 0.3, 1);
   will-change: opacity, filter, transform;
 }
 
-.dark .ag-loader-backdrop {
+.dark .ag-entrance-layer {
   background-color: #020617;
+  background-image:
+    linear-gradient(to right, rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
 }
 
-.ag-loader-backdrop.ag-loader-exit {
+/* Exit: Floating upward levitation and atmospheric diffusion into the hero */
+.ag-entrance-layer.ag-entrance-exit {
   opacity: 0;
-  filter: blur(8px);
-  transform: scale(1.015);
+  filter: blur(5px);
+  transform: translate3d(0, -20px, 0) scale(1.015);
   pointer-events: none;
 }
 
-/* Wordmark Wrapper */
-.ag-wordmark-wrapper {
+/* Floating Wordmark Container */
+.ag-floating-wordmark-container {
   position: relative;
-  display: inline-block;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   user-select: none;
+  animation: agEntranceGlideIn 0.75s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
-/* Base Crisp Wordmark */
+@keyframes agEntranceGlideIn {
+  0% {
+    opacity: 0;
+    transform: translate3d(0, 16px, 0) scale(0.97);
+  }
+  100% {
+    opacity: 1;
+    transform: translate3d(0, 0px, 0) scale(1);
+  }
+}
+
+/* Continuous Zero-Gravity Floating Levitation */
+.ag-floating-wordmark {
+  position: relative;
+  display: inline-block;
+  animation: agFloatLevitate 3.4s ease-in-out infinite alternate;
+  will-change: transform;
+}
+
+@keyframes agFloatLevitate {
+  0% {
+    transform: translate3d(0, 0px, 0);
+  }
+  50% {
+    transform: translate3d(0, -9px, 0);
+  }
+  100% {
+    transform: translate3d(0, 0px, 0);
+  }
+}
+
+/* Base Crisp Typography */
 .ag-wordmark-text {
   display: block;
   font-family: var(--font-display, inherit);
-  font-size: clamp(2.1rem, 5.5vw, 3.8rem);
+  font-size: clamp(2.2rem, 5.5vw, 3.8rem);
   font-weight: 800;
-  letter-spacing: 0.28em;
-  color: #0B2545;
+  letter-spacing: 0.32em;
+  color: #0B3D91;
+  text-align: center;
   transition: color 0.3s ease;
 }
 
@@ -54,117 +97,67 @@
   color: #F8FAFC;
 }
 
-/* Continuous Left-to-Right Luminous Sweep Across S P A C E   L O O P */
-.ag-wordmark-sweep {
+/* Subtle, Refined Metallic Sheen (Non-blinding, soft light reflection) */
+.ag-wordmark-sheen {
   position: absolute;
   inset: 0;
   pointer-events: none;
   font-family: var(--font-display, inherit);
-  font-size: clamp(2.1rem, 5.5vw, 3.8rem);
+  font-size: clamp(2.2rem, 5.5vw, 3.8rem);
   font-weight: 800;
-  letter-spacing: 0.28em;
+  letter-spacing: 0.32em;
+  text-align: center;
   white-space: nowrap;
   background: linear-gradient(
     90deg,
     transparent 0%,
-    transparent 15%,
-    rgba(59, 167, 242, 0.45) 35%,
-    rgba(127, 231, 214, 0.98) 50%,
-    rgba(59, 167, 242, 0.45) 65%,
-    transparent 85%,
+    rgba(59, 167, 242, 0.15) 30%,
+    rgba(127, 231, 214, 0.6) 50%,
+    rgba(59, 167, 242, 0.15) 70%,
     transparent 100%
   );
-  background-size: 280% 100%;
+  background-size: 250% 100%;
   -webkit-background-clip: text;
   background-clip: text;
   -webkit-text-fill-color: transparent;
-  filter: drop-shadow(0 0 10px rgba(59, 167, 242, 0.6)) drop-shadow(0 0 4px rgba(127, 231, 214, 0.75));
-  animation: agWordmarkGlowSweep 0.95s cubic-bezier(0.25, 0.9, 0.4, 1) 0.4s forwards;
+  animation: agWordmarkSheenSweep 1.1s cubic-bezier(0.25, 0.9, 0.4, 1) 0.65s forwards;
   opacity: 0;
 }
 
-.dark .ag-wordmark-sweep {
+.dark .ag-wordmark-sheen {
   background: linear-gradient(
     90deg,
     transparent 0%,
-    transparent 15%,
-    rgba(6, 182, 212, 0.45) 35%,
-    rgba(139, 92, 246, 0.98) 50%,
-    rgba(6, 182, 212, 0.45) 65%,
-    transparent 85%,
+    rgba(56, 189, 248, 0.15) 30%,
+    rgba(129, 140, 248, 0.65) 50%,
+    rgba(56, 189, 248, 0.15) 70%,
     transparent 100%
   );
-  filter: drop-shadow(0 0 12px rgba(6, 182, 212, 0.6)) drop-shadow(0 0 5px rgba(139, 92, 246, 0.75));
+  background-size: 250% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
 }
 
-@keyframes agWordmarkGlowSweep {
+@keyframes agWordmarkSheenSweep {
   0% {
     background-position: 180% 0;
     opacity: 0;
   }
-  15% {
-    opacity: 1;
+  20% {
+    opacity: 0.85;
   }
-  85% {
-    opacity: 1;
+  80% {
+    opacity: 0.85;
   }
   100% {
     background-position: -80% 0;
-    opacity: 0.1;
-  }
-}
-
-/* Wordmark Entrance Animation with Controlled Scale Pop */
-.ag-loader-wordmark {
-  animation: agWordmarkFocusIn 0.45s cubic-bezier(0.2, 0.9, 0.35, 1) forwards;
-}
-
-@keyframes agWordmarkFocusIn {
-  0% {
     opacity: 0;
-    filter: blur(5px);
-    transform: scale(0.96);
-  }
-  70% {
-    opacity: 1;
-    filter: blur(0px);
-    transform: scale(1.015); /* very subtle scale pop */
-  }
-  100% {
-    opacity: 1;
-    filter: blur(0px);
-    transform: scale(1.0); /* settled and stable */
-  }
-}
-
-.ag-loader-pulse-glow {
-  position: absolute;
-  width: 320px;
-  height: 140px;
-  border-radius: 9999px;
-  background: radial-gradient(circle, rgba(59, 167, 242, 0.24) 0%, rgba(11, 61, 145, 0.1) 60%, transparent 100%);
-  filter: blur(40px);
-  pointer-events: none;
-  animation: agPulseGlow 1.4s ease-in-out infinite alternate;
-}
-
-.dark .ag-loader-pulse-glow {
-  background: radial-gradient(circle, rgba(6, 182, 212, 0.25) 0%, rgba(79, 70, 229, 0.15) 60%, transparent 100%);
-}
-
-@keyframes agPulseGlow {
-  0% {
-    opacity: 0.5;
-    transform: scale(0.92);
-  }
-  100% {
-    opacity: 0.95;
-    transform: scale(1.1);
   }
 }
 
 /* --------------------------------------------------------------------------
-   2. Letter-by-Letter Reveal Heading & Synchronized Scanner (Section 4 & 5)
+   2. Letter-by-Letter Reveal & Synchronized Optical Cursor Line
    -------------------------------------------------------------------------- */
 .ag-reveal-heading-wrapper {
   position: relative;
@@ -172,22 +165,24 @@
   overflow: visible;
 }
 
-/* Individual Character Span: Subtle softness, small 3px offset, never heavily blurred */
+/* Individual Character Span: Strictly invisible until cursor passes through */
 .ag-reveal-char {
   display: inline-block;
-  opacity: 0.15; /* slightly concealed, visually readable */
-  filter: blur(1.5px); /* extremely subtle softness, never heavily blurred */
-  transform: translateY(3px); /* small, controlled offset */
-  transition: opacity 0.32s cubic-bezier(0.2, 0.9, 0.3, 1),
-              filter 0.28s cubic-bezier(0.2, 0.9, 0.3, 1),
-              transform 0.32s cubic-bezier(0.2, 0.9, 0.3, 1);
-  will-change: opacity, filter, transform;
+  opacity: 0; /* NOTHING displayed before cursor passes */
+  transform: translateY(2px);
+  filter: blur(1px);
+  transition: opacity 0.12s cubic-bezier(0.16, 1, 0.3, 1),
+              transform 0.12s cubic-bezier(0.16, 1, 0.3, 1),
+              filter 0.12s cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: opacity, transform, filter;
+  user-select: none;
 }
 
 .ag-reveal-char.ag-char-revealed {
   opacity: 1;
-  filter: blur(0px);
   transform: translateY(0);
+  filter: blur(0px);
+  user-select: auto;
 }
 
 .ag-reveal-space {
@@ -195,76 +190,63 @@
   width: 0.28em;
 }
 
-/* Synchronized Scanner Container */
-.ag-reveal-scanner-container {
-  position: absolute;
-  top: -6%;
-  bottom: -6%;
-  pointer-events: none;
-  z-index: 20;
-  transform: translateX(-50%);
-  transition: opacity 0.35s ease;
-  will-change: left, opacity;
-}
-
-/* 1.5px Razor-Thin Crisp Scanner Core Line */
-.ag-reveal-scanner-core {
+/* Precision Optical Scanner Cursor Bar */
+.ag-optical-cursor {
   position: absolute;
   top: 0;
-  bottom: 0;
-  left: 50%;
-  width: 1.5px;
-  transform: translateX(-50%);
+  left: 0;
+  width: 2px;
+  pointer-events: none;
+  z-index: 20;
+  transition: opacity 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: transform, opacity;
+}
+
+/* Core Cursor Line (2px, Crisp, Subtle Restrained Halo) */
+.ag-cursor-core {
+  position: absolute;
+  inset: 0;
+  width: 2px;
   border-radius: 1px;
   background: linear-gradient(
     180deg,
-    transparent 0%,
-    #3BA7F2 20%,
-    #7FE7D6 50%,
-    #0B3D91 80%,
-    transparent 100%
+    rgba(11, 61, 145, 0.25) 0%,
+    #0B3D91 40%,
+    #3BA7F2 100%
   );
+  box-shadow: 0 0 6px rgba(11, 61, 145, 0.35);
 }
 
-.dark .ag-reveal-scanner-core {
+.dark .ag-cursor-core {
   background: linear-gradient(
     180deg,
-    transparent 0%,
-    #06B6D4 20%,
-    #4F46E5 50%,
-    #8B5CF6 80%,
-    transparent 100%
+    rgba(56, 189, 248, 0.25) 0%,
+    #38BDF8 40%,
+    #818CF8 100%
   );
+  box-shadow: 0 0 6px rgba(56, 189, 248, 0.45);
 }
 
-/* Soft Blurred Duplicate / Glow Layer */
-.ag-reveal-scanner-glow {
+/* Delicate Trailing Optical Sheen */
+.ag-cursor-trail {
   position: absolute;
   top: 0;
   bottom: 0;
-  left: 50%;
-  width: 4px;
-  transform: translateX(-50%);
-  filter: blur(2.5px);
-  opacity: 0.75;
+  right: 100%;
+  width: 8px;
   background: linear-gradient(
-    180deg,
+    90deg,
     transparent 0%,
-    #3BA7F2 30%,
-    #7FE7D6 50%,
-    #0B3D91 70%,
-    transparent 100%
+    rgba(59, 167, 242, 0.16) 100%
   );
+  pointer-events: none;
 }
 
-.dark .ag-reveal-scanner-glow {
+.dark .ag-cursor-trail {
   background: linear-gradient(
-    180deg,
+    90deg,
     transparent 0%,
-    #06B6D4 30%,
-    #4F46E5 50%,
-    #8B5CF6 70%,
-    transparent 100%
+    rgba(56, 189, 248, 0.2) 100%
   );
 }
 
@@ -502,26 +484,33 @@
    8. Reduced Motion Override
    -------------------------------------------------------------------------- */
 @media (prefers-reduced-motion: reduce) {
-  .ag-loader-backdrop,
-  .ag-loader-wordmark,
-  .ag-wordmark-sweep,
-  .ag-loader-pulse-glow,
+  .ag-entrance-layer,
+  .ag-floating-wordmark-container,
+  .ag-floating-wordmark,
+  .ag-wordmark-sheen,
   .ag-reveal-char,
-  .ag-reveal-scanner-container,
+  .ag-optical-cursor,
   .ag-glass-card,
   .ag-ambient-float-1,
   .ag-ambient-float-2 {
     animation: none !important;
     transition: none !important;
+    transform: none !important;
+    filter: none !important;
+  }
+
+  .ag-entrance-layer {
+    display: none !important;
   }
 
   .ag-reveal-char {
     opacity: 1 !important;
     filter: none !important;
     transform: none !important;
+    user-select: auto !important;
   }
 
-  .ag-reveal-scanner-container {
+  .ag-optical-cursor {
     display: none !important;
   }
 

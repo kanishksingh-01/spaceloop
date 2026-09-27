@@ -228,7 +228,7 @@ export const ArchitecturePage: React.FC = () => {
                 text="Meet the Architects Behind SpaceLoop"
                 as="h1"
                 className="text-4xl sm:text-6xl lg:text-7xl font-extrabold tracking-tight text-slate-900 dark:text-white leading-[1.1] font-display"
-                delay={loaderComplete ? 100 : 1550}
+                delay={loaderComplete ? 50 : 1900}
                 duration={900}
                 gradientFromIndex={20} // Starts gradient at "Behind SpaceLoop"
                 gradientClassName="text-transparent bg-clip-text bg-gradient-to-r from-[#0B3D91] via-[#1E40AF] to-[#3BA7F2] dark:from-cyan-400 dark:via-indigo-300 dark:to-violet-400"

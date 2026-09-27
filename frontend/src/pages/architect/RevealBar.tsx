@@ -1,13 +1,24 @@
 import React from 'react';
 
 interface RevealBarProps {
-  leftPercent: number; // 0 to 100
+  x: number;
+  y?: number;
+  height?: number;
   isVisible: boolean;
   prefersReducedMotion?: boolean;
 }
 
+/**
+ * RevealBar — High-Precision Optical Scanner Cursor Line
+ * ----------------------------------------------------------------------------
+ * Precision 2px optical cursor line with delicate, restrained halo and
+ * micro trailing optical sheen. Follows active characters with GPU-accelerated
+ * 3D transforms and smoothly reveals typography as it passes through.
+ */
 export const RevealBar: React.FC<RevealBarProps> = ({
-  leftPercent,
+  x,
+  y = 0,
+  height,
   isVisible,
   prefersReducedMotion = false,
 }) => {
@@ -15,21 +26,20 @@ export const RevealBar: React.FC<RevealBarProps> = ({
     return null;
   }
 
-  const clampedPercent = Math.min(Math.max(leftPercent, 0), 100);
-
   return (
     <div
       aria-hidden="true"
-      className="ag-reveal-scanner-container"
+      className="ag-optical-cursor"
       style={{
-        left: `${clampedPercent}%`,
-        opacity: isVisible && clampedPercent < 100 ? 1 : 0,
+        transform: `translate3d(${x}px, ${y}px, 0)`,
+        height: height && height > 0 ? `${height}px` : '1.15em',
+        opacity: isVisible ? 1 : 0,
       }}
     >
-      {/* Soft Blurred Duplicate / Glow Layer */}
-      <div className="ag-reveal-scanner-glow" />
-      {/* 1.5px Razor-Thin Crisp Scanner Core Line */}
-      <div className="ag-reveal-scanner-core" />
+      {/* Precision Core Cursor Line (2px) */}
+      <div className="ag-cursor-core" />
+      {/* Delicate Trailing Optical Sheen */}
+      <div className="ag-cursor-trail" />
     </div>
   );
 };

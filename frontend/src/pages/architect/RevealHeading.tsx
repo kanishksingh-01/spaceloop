@@ -8,12 +8,21 @@ interface RevealHeadingProps {
   delay?: number;
   duration?: number;
   triggerOnScroll?: boolean;
-  gradientFromIndex?: number; // Optional character index where brand gradient begins
+  gradientFromIndex?: number;
   gradientClassName?: string;
   onComplete?: () => void;
   prefersReducedMotion?: boolean;
 }
 
+/**
+ * RevealHeading — Antigravity Precision Optical Reveal
+ * ----------------------------------------------------------------------------
+ * - Characters are strictly hidden (opacity: 0) before the cursor passes through.
+ * - NOTHING is displayed ahead of the optical cursor.
+ * - Each letter reveals in crisp focus ONLY after the cursor has crossed it.
+ * - The precision optical cursor leads the uncover sequence with exact DOM tracking.
+ * - Natural word grouping preserves responsive wrapping without mid-word breaks.
+ */
 export const RevealHeading: React.FC<RevealHeadingProps> = ({
   text,
   as: Component = 'h1',
@@ -27,20 +36,32 @@ export const RevealHeading: React.FC<RevealHeadingProps> = ({
   prefersReducedMotion = false,
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
-  const [progress, setProgress] = useState(prefersReducedMotion ? 1 : 0);
-  const [isRevealing, setIsRevealing] = useState(false);
+  const charRefs = useRef<(HTMLSpanElement | null)[]>([]);
   const [hasStarted, setHasStarted] = useState(false);
+  // -1 means no characters revealed yet (initial state: 100% hidden)
+  const [revealedCount, setRevealedCount] = useState<number>(prefersReducedMotion ? text.length : 0);
+  const [cursorPos, setCursorPos] = useState<{
+    x: number;
+    y: number;
+    height: number;
+    visible: boolean;
+  }>({
+    x: 0,
+    y: 0,
+    height: 0,
+    visible: false,
+  });
 
-  // If reduced motion is active, reveal immediately
+  // Reduced motion: reveal all characters immediately without animation delay
   useEffect(() => {
     if (prefersReducedMotion) {
-      setProgress(1);
-      setIsRevealing(false);
+      setRevealedCount(text.length);
+      setCursorPos((prev) => ({ ...prev, visible: false }));
       onComplete?.();
     }
-  }, [prefersReducedMotion, onComplete]);
+  }, [prefersReducedMotion, text.length, onComplete]);
 
-  // Handle scroll trigger or delayed start
+  // Trigger reveal on scroll intersection or scheduled delay
   useEffect(() => {
     if (prefersReducedMotion || hasStarted) return;
 
@@ -52,7 +73,7 @@ export const RevealHeading: React.FC<RevealHeadingProps> = ({
             observer.disconnect();
           }
         },
-        { threshold: 0.2 }
+        { threshold: 0.25 }
       );
 
       observer.observe(containerRef.current);
@@ -65,34 +86,93 @@ export const RevealHeading: React.FC<RevealHeadingProps> = ({
     }
   }, [triggerOnScroll, delay, hasStarted, prefersReducedMotion]);
 
-  // Synchronized scanner animation loop
+  // Synchronized Optical Cursor & Letter Reveal Loop
   useEffect(() => {
     if (!hasStarted || prefersReducedMotion) return;
 
-    setIsRevealing(true);
     let startTime: number | null = null;
     let rafId: number;
+    const totalChars = text.length;
+
+    // Helper to measure character boundaries relative to heading wrapper
+    const getMetrics = () => {
+      if (!containerRef.current) return null;
+      const cRect = containerRef.current.getBoundingClientRect();
+      const metrics = charRefs.current.map((el) => {
+        if (!el) return null;
+        const r = el.getBoundingClientRect();
+        return {
+          left: r.left - cRect.left,
+          right: r.right - cRect.left,
+          top: r.top - cRect.top,
+          height: r.height,
+        };
+      });
+      return { cRect, metrics };
+    };
+
+    let cached = getMetrics();
 
     const animate = (timestamp: number) => {
-      if (!startTime) startTime = timestamp;
+      if (!startTime) {
+        startTime = timestamp;
+        cached = getMetrics();
+      }
+
       const elapsed = timestamp - startTime;
-      const rawProgress = Math.min(elapsed / duration, 1);
+      const progress = Math.min(elapsed / duration, 1);
 
-      setProgress(rawProgress);
+      // Current position along the character index sequence
+      const currentPos = progress * totalChars;
+      const activeCharIdx = Math.min(Math.floor(currentPos), totalChars - 1);
+      const charFraction = currentPos - Math.floor(currentPos);
 
-      if (rawProgress < 1) {
+      // Only reveal characters whose right/trailing edge has been reached/passed
+      // Characters ahead of the cursor remain strictly opacity: 0
+      const count = Math.min(Math.floor(currentPos), totalChars);
+      setRevealedCount(count);
+
+      // Compute optical cursor coordinates
+      if (cached && cached.metrics[activeCharIdx]) {
+        const m = cached.metrics[activeCharIdx];
+        let targetX = m.left + (m.right - m.left) * charFraction;
+        let targetY = m.top;
+        let targetH = m.height || 28;
+
+        if (progress >= 1) {
+          targetX = m.right;
+        }
+
+        setCursorPos({
+          x: targetX,
+          y: targetY,
+          height: targetH,
+          visible: progress < 1,
+        });
+      } else if (containerRef.current) {
+        // Fallback relative to container width
+        const w = containerRef.current.offsetWidth;
+        setCursorPos({
+          x: progress * w,
+          y: 0,
+          height: containerRef.current.offsetHeight,
+          visible: progress < 1,
+        });
+      }
+
+      if (progress < 1) {
         rafId = requestAnimationFrame(animate);
       } else {
-        setIsRevealing(false);
+        setRevealedCount(totalChars);
+        setCursorPos((prev) => ({ ...prev, visible: false }));
         onComplete?.();
       }
     };
 
     rafId = requestAnimationFrame(animate);
     return () => cancelAnimationFrame(rafId);
-  }, [hasStarted, duration, prefersReducedMotion, onComplete]);
+  }, [hasStarted, duration, text.length, prefersReducedMotion, onComplete]);
 
-  const totalChars = text.length;
   const words = text.split(' ');
   let charCounter = 0;
 
@@ -103,14 +183,16 @@ export const RevealHeading: React.FC<RevealHeadingProps> = ({
         className="ag-reveal-heading-wrapper"
         aria-hidden="true"
       >
-        {/* Synchronized Scanner Reveal Bar (Section 3) */}
+        {/* Precision Optical Scanner Cursor Bar */}
         <RevealBar
-          leftPercent={progress * 100}
-          isVisible={isRevealing}
+          x={cursorPos.x}
+          y={cursorPos.y}
+          height={cursorPos.height}
+          isVisible={cursorPos.visible}
           prefersReducedMotion={prefersReducedMotion}
         />
 
-        {/* Word-grouped Character-by-Character Elements (Natural Responsive Wrapping) */}
+        {/* Word-grouped Character Spans (Natural Responsive Wrapping) */}
         {words.map((word, wordIdx) => {
           const wordChars = Array.from(word);
           const startIndex = charCounter;
@@ -121,19 +203,20 @@ export const RevealHeading: React.FC<RevealHeadingProps> = ({
               <span className="inline-block whitespace-nowrap">
                 {wordChars.map((char, charInWordIdx) => {
                   const absoluteCharIdx = startIndex + charInWordIdx;
-                  const charThreshold = totalChars > 1 ? absoluteCharIdx / (totalChars - 1) : 0;
-                  const isRevealed = prefersReducedMotion || progress >= charThreshold;
+                  // REVEALED ONLY AFTER CURSOR HAS PASSED THROUGH
+                  // Ahead of cursor: strictly false (opacity: 0)
+                  const isRevealed = prefersReducedMotion || absoluteCharIdx < revealedCount;
                   const isGradient = gradientFromIndex >= 0 && absoluteCharIdx >= gradientFromIndex;
 
                   return (
                     <span
                       key={charInWordIdx}
+                      ref={(el) => {
+                        charRefs.current[absoluteCharIdx] = el;
+                      }}
                       className={`ag-reveal-char ${isRevealed ? 'ag-char-revealed' : ''} ${
                         isGradient ? gradientClassName : ''
                       }`}
-                      style={{
-                        transitionDelay: prefersReducedMotion ? '0ms' : `${Math.max(0, (absoluteCharIdx / totalChars) * 110)}ms`,
-                      }}
                     >
                       {char}
                     </span>

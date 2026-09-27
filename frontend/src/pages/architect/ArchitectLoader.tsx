@@ -6,14 +6,14 @@ interface ArchitectLoaderProps {
 }
 
 /**
- * ArchitectLoader
+ * ArchitectLoader — SpaceLoop Cinematic Floating Entrance
  * ----------------------------------------------------------------------------
- * S P A C E   L O O P   Cinematic Loading Transition
- * - ONLY element visible: the SpaceLoop wordmark.
- * - Slower, deliberate, and premium duration (~1.8–2.0s total).
- * - Focus-in -> subtle scale pop -> stable wordmark -> continuous left-to-right glow sweep -> short hold -> smooth dissolve.
- * - Always runs on browser refresh (F5/Ctrl+R). Zero localStorage/sessionStorage suppression.
- * - Never restarts on React state changes, scroll, hover, or theme toggling.
+ * - "SPACE LOOP" floating weightlessly in the open architectural canvas.
+ * - NOT containerized in a loading page or separate splash box.
+ * - Smooth, zero-gravity floating levitation (organic breathing motion).
+ * - Subtle, refined metallic sheen across the letters (no harsh/blinding glow).
+ * - Butter-smooth non-abrupt entrance and upward diffusion exit into the hero.
+ * - Executes on every refresh (F5/Ctrl+R). Zero localStorage/sessionStorage suppression.
  */
 export const ArchitectLoader: React.FC<ArchitectLoaderProps> = ({
   onComplete,
@@ -23,27 +23,25 @@ export const ArchitectLoader: React.FC<ArchitectLoaderProps> = ({
   const [isVisible, setIsVisible] = useState(true);
 
   useEffect(() => {
-    // If user prefers reduced motion, skip the animation immediately
     if (prefersReducedMotion) {
       setIsVisible(false);
       onComplete();
       return;
     }
 
-    // Choreographed timing target (~1.9s - 2.05s total):
-    // 0ms - 400ms: Wordmark subtle focus-in + slight scale pop to stable
-    // 400ms - 1350ms: Smooth continuous left-to-right glow sweep across S P A C E   L O O P
-    // 1350ms - 1500ms: Short illuminated hold with wordmark settled and crisp
-    // 1500ms: Loader layer begins smooth dissolve into the Architect hero (480ms transition)
-    // 2020ms: Loader fully dissolved, unmounts cleanly
+    // Sequence Choreography:
+    // 0ms - 750ms: Silk glide entrance with zero-gravity floating levitation
+    // 750ms - 1750ms: Weightless floating state with subtle refined light sheen
+    // 1750ms: Gentle upward levitation & soft atmospheric diffusion into hero (750ms transition)
+    // 2500ms: Smoothly unmounts cleanly
     const exitTimer = setTimeout(() => {
       setIsExiting(true);
-    }, 1500);
+    }, 1750);
 
     const finishTimer = setTimeout(() => {
       setIsVisible(false);
       onComplete();
-    }, 2020);
+    }, 2500);
 
     return () => {
       clearTimeout(exitTimer);
@@ -56,22 +54,19 @@ export const ArchitectLoader: React.FC<ArchitectLoaderProps> = ({
   return (
     <div
       aria-hidden="true"
-      className={`ag-loader-backdrop ${isExiting ? 'ag-loader-exit' : ''}`}
+      className={`ag-entrance-layer ${isExiting ? 'ag-entrance-exit' : ''}`}
     >
-      {/* Restrained Ambient Radial Aura */}
-      <div className="ag-loader-pulse-glow" />
-
-      {/* S P A C E   L O O P Wordmark — The ONLY element visible during loading */}
-      <div className="relative z-10 flex items-center justify-center ag-loader-wordmark">
-        <div className="ag-wordmark-wrapper">
+      {/* Floating Wordmark in Open Canvas — Zero containerization */}
+      <div className="ag-floating-wordmark-container">
+        <div className="ag-floating-wordmark">
           {/* Base Crisp Wordmark */}
           <span className="ag-wordmark-text">
-            S&nbsp;P&nbsp;A&nbsp;C&nbsp;E&nbsp;&nbsp;&nbsp;L&nbsp;O&nbsp;O&nbsp;P
+            SPACE LOOP
           </span>
 
-          {/* Continuous Left-to-Right Luminous Sweep */}
-          <span className="ag-wordmark-sweep" aria-hidden="true">
-            S&nbsp;P&nbsp;A&nbsp;C&nbsp;E&nbsp;&nbsp;&nbsp;L&nbsp;O&nbsp;O&nbsp;P
+          {/* Refined, non-blinding ambient sheen */}
+          <span className="ag-wordmark-sheen" aria-hidden="true">
+            SPACE LOOP
           </span>
         </div>
       </div>
