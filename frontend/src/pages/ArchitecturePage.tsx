@@ -228,7 +228,7 @@ export const ArchitecturePage: React.FC = () => {
                 text="Meet the Architects Behind SpaceLoop"
                 as="h1"
                 className="text-4xl sm:text-6xl lg:text-7xl font-extrabold tracking-tight text-slate-900 dark:text-white leading-[1.1] font-display"
-                delay={loaderComplete ? 100 : 950}
+                delay={loaderComplete ? 100 : 1550}
                 duration={900}
                 gradientFromIndex={20} // Starts gradient at "Behind SpaceLoop"
                 gradientClassName="text-transparent bg-clip-text bg-gradient-to-r from-[#0B3D91] via-[#1E40AF] to-[#3BA7F2] dark:from-cyan-400 dark:via-indigo-300 dark:to-violet-400"
@@ -289,6 +289,7 @@ export const ArchitecturePage: React.FC = () => {
                 className="text-2xl sm:text-4xl font-extrabold text-slate-900 dark:text-white tracking-tight font-display"
                 triggerOnScroll={true}
                 duration={750}
+                gradientFromIndex={12}
                 prefersReducedMotion={prefersReducedMotion}
               />
             </div>
@@ -471,9 +472,18 @@ export const ArchitecturePage: React.FC = () => {
             <span className="uppercase tracking-wider">HACKATHON GRAND FINALE // PRODUCTION READY</span>
           </div>
 
-          <h2 className="text-3xl sm:text-4xl font-extrabold text-slate-900 dark:text-white tracking-tight font-display">
-            Building the Future of Shared Physical Spaces
-          </h2>
+          <div className="mb-2">
+            <RevealHeading
+              text="Building the Future of Shared Physical Spaces"
+              as="h2"
+              className="text-3xl sm:text-4xl font-extrabold text-slate-900 dark:text-white tracking-tight font-display"
+              triggerOnScroll={true}
+              duration={800}
+              gradientFromIndex={24}
+              gradientClassName="text-transparent bg-clip-text bg-gradient-to-r from-[#0B3D91] via-[#1E40AF] to-[#3BA7F2] dark:from-cyan-400 dark:via-indigo-300 dark:to-violet-400"
+              prefersReducedMotion={prefersReducedMotion}
+            />
+          </div>
 
           <p className="mt-4 text-sm sm:text-base text-slate-600 dark:text-slate-300 max-w-2xl mx-auto leading-relaxed">
             SpaceLoop unlocks idle physical capacity across urban India through zero-hardware smart access, automated micro-leases under Section 52, and sovereign identity verification.

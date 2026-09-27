@@ -1,11 +1,20 @@
 import React, { useEffect, useState } from 'react';
-import { Sparkles } from 'lucide-react';
 
 interface ArchitectLoaderProps {
   onComplete: () => void;
   prefersReducedMotion?: boolean;
 }
 
+/**
+ * ArchitectLoader
+ * ----------------------------------------------------------------------------
+ * S P A C E   L O O P   Cinematic Loading Transition
+ * - ONLY element visible: the SpaceLoop wordmark.
+ * - Slower, deliberate, and premium duration (~1.8–2.0s total).
+ * - Focus-in -> subtle scale pop -> stable wordmark -> continuous left-to-right glow sweep -> short hold -> smooth dissolve.
+ * - Always runs on browser refresh (F5/Ctrl+R). Zero localStorage/sessionStorage suppression.
+ * - Never restarts on React state changes, scroll, hover, or theme toggling.
+ */
 export const ArchitectLoader: React.FC<ArchitectLoaderProps> = ({
   onComplete,
   prefersReducedMotion = false,
@@ -14,25 +23,27 @@ export const ArchitectLoader: React.FC<ArchitectLoaderProps> = ({
   const [isVisible, setIsVisible] = useState(true);
 
   useEffect(() => {
-    // If reduced motion is requested, complete immediately without animation delay
+    // If user prefers reduced motion, skip the animation immediately
     if (prefersReducedMotion) {
       setIsVisible(false);
       onComplete();
       return;
     }
 
-    // Sequence:
-    // 0ms - 750ms: Wordmark reveals + branded light movement
-    // 750ms: Wordmark settles, transition starts dissolving
+    // Choreographed timing target (~1.9s - 2.05s total):
+    // 0ms - 400ms: Wordmark subtle focus-in + slight scale pop to stable
+    // 400ms - 1350ms: Smooth continuous left-to-right glow sweep across S P A C E   L O O P
+    // 1350ms - 1500ms: Short illuminated hold with wordmark settled and crisp
+    // 1500ms: Loader layer begins smooth dissolve into the Architect hero (480ms transition)
+    // 2020ms: Loader fully dissolved, unmounts cleanly
     const exitTimer = setTimeout(() => {
       setIsExiting(true);
-    }, 850);
+    }, 1500);
 
-    // 1100ms: Loader completely dissolved into hero, unmounts
     const finishTimer = setTimeout(() => {
       setIsVisible(false);
       onComplete();
-    }, 1120);
+    }, 2020);
 
     return () => {
       clearTimeout(exitTimer);
@@ -47,34 +58,21 @@ export const ArchitectLoader: React.FC<ArchitectLoaderProps> = ({
       aria-hidden="true"
       className={`ag-loader-backdrop ${isExiting ? 'ag-loader-exit' : ''}`}
     >
-      {/* Soft Ambient Radial Background Glow */}
+      {/* Restrained Ambient Radial Aura */}
       <div className="ag-loader-pulse-glow" />
 
-      {/* Center Wordmark & Calibration Sequence */}
-      <div className="relative z-10 flex flex-col items-center text-center px-4 ag-loader-wordmark">
-        {/* Micro Telemetry Eyebrow */}
-        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#0B3D91]/10 dark:bg-white/10 border border-[#0B3D91]/20 dark:border-white/15 text-[#0B3D91] dark:text-cyan-400 text-[10px] font-mono font-bold tracking-widest uppercase mb-4 shadow-xs">
-          <Sparkles className="w-3 h-3 text-[#3BA7F2] dark:text-cyan-400" />
-          <span>SYSTEM CALIBRATION // 2026</span>
-        </div>
+      {/* S P A C E   L O O P Wordmark — The ONLY element visible during loading */}
+      <div className="relative z-10 flex items-center justify-center ag-loader-wordmark">
+        <div className="ag-wordmark-wrapper">
+          {/* Base Crisp Wordmark */}
+          <span className="ag-wordmark-text">
+            S&nbsp;P&nbsp;A&nbsp;C&nbsp;E&nbsp;&nbsp;&nbsp;L&nbsp;O&nbsp;O&nbsp;P
+          </span>
 
-        {/* SpaceLoop App Wordmark with Branded Light Movement Sweep */}
-        <div className="relative inline-block overflow-hidden py-1 px-3">
-          <h1 className="text-4xl sm:text-5xl md:text-6xl font-extrabold tracking-tight font-display select-none">
-            <span className="text-slate-900 dark:text-white">Space</span>
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#0B3D91] via-[#1E40AF] to-[#3BA7F2] dark:from-cyan-400 dark:via-indigo-300 dark:to-violet-400">
-              Loop
-            </span>
-          </h1>
-
-          {/* Branded Light Movement Beam across wordmark */}
-          <div className="ag-loader-light-sweep" />
-        </div>
-
-        {/* Technical Subtitle Indicator */}
-        <div className="mt-3 flex items-center gap-2 text-xs font-mono font-medium text-slate-500 dark:text-slate-400">
-          <span className="w-1.5 h-1.5 rounded-full bg-[#3BA7F2] dark:bg-cyan-400 animate-ping" />
-          <span>INITIALIZING ARCHITECTURAL ENGINE</span>
+          {/* Continuous Left-to-Right Luminous Sweep */}
+          <span className="ag-wordmark-sweep" aria-hidden="true">
+            S&nbsp;P&nbsp;A&nbsp;C&nbsp;E&nbsp;&nbsp;&nbsp;L&nbsp;O&nbsp;O&nbsp;P
+          </span>
         </div>
       </div>
     </div>
