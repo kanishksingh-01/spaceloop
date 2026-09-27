@@ -104,7 +104,7 @@ export const Header: React.FC<HeaderProps> = ({
         </div>
 
         {/* Center Role-Aware Nav Links (Desktop & Tablet) */}
-        <nav className="hidden md:flex items-center gap-1 text-xs font-semibold">
+        <nav className="hidden lg:flex items-center gap-1 text-xs font-semibold">
           {isHostPortal ? (
             /* HOST PORTAL NAVIGATION */
             <>
@@ -237,15 +237,17 @@ export const Header: React.FC<HeaderProps> = ({
         </nav>
 
         {/* Right Controls & Portal Switcher */}
-        <div className="flex items-center gap-2 sm:gap-3 shrink-0">
-          {/* Multilingual Selector */}
-          <LanguageSelector />
+        <div className="flex items-center gap-1.5 sm:gap-2.5 md:gap-3 shrink-0">
+          {/* Multilingual Selector (Desktop & Tablet; also accessible in Drawer on all devices) */}
+          <div className="hidden sm:block">
+            <LanguageSelector />
+          </div>
 
-          {/* Theme Switcher Button */}
+          {/* Theme Switcher Button (Compact icon on mobile, icon+label on sm+) */}
           <button
             type="button"
             onClick={toggleTheme}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-800/80 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700/60 text-xs font-bold transition shadow-sm"
+            className="inline-flex items-center justify-center gap-1.5 w-9 h-9 sm:w-auto sm:px-3 sm:py-1.5 rounded-xl bg-slate-800/80 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700/60 text-xs font-bold transition shadow-sm shrink-0"
             title={theme === 'dark' ? 'Switch to Light Theme (Ocean Breeze)' : 'Switch to Dark Theme (Midnight Neon)'}
             aria-label="Toggle Theme"
           >
@@ -262,12 +264,12 @@ export const Header: React.FC<HeaderProps> = ({
             )}
           </button>
 
-          {/* Portal Switcher Button */}
+          {/* Portal Switcher Button (Visible on large screens; Drawer has dedicated switcher for mobile/tablet) */}
           {isHostPortal ? (
             <button
               type="button"
               onClick={() => navigate('/explore')}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-indigo-600/10 hover:bg-indigo-600/20 text-indigo-300 border border-indigo-500/30 text-xs font-bold transition"
+              className="hidden lg:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-indigo-600/10 hover:bg-indigo-600/20 text-indigo-300 border border-indigo-500/30 text-xs font-bold transition shrink-0"
               title="Switch to Seeker Portal"
             >
               <span>🎓 {t('nav.switchToSeeker')}</span>
@@ -276,7 +278,7 @@ export const Header: React.FC<HeaderProps> = ({
             <button
               type="button"
               onClick={() => navigate('/host/dashboard')}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border border-amber-500/30 text-xs font-bold transition"
+              className="hidden lg:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border border-amber-500/30 text-xs font-bold transition shrink-0"
               title="Switch to Host Portal"
             >
               <span>🏡 {t('nav.switchToHost')}</span>
@@ -287,77 +289,77 @@ export const Header: React.FC<HeaderProps> = ({
           {isHostPortal ? (
             /* HOST PORTAL AUTH CONTROLS */
             isVerifiedHost ? (
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
                 <button
                   type="button"
                   onClick={() => navigate('/list-space')}
-                  className="hidden sm:inline-flex items-center gap-1.5 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-bold text-xs px-3.5 py-1.5 rounded-xl shadow-md shadow-amber-500/20 transition"
+                  className="hidden sm:inline-flex items-center gap-1.5 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-bold text-xs px-3 py-1.5 rounded-xl shadow-md shadow-amber-500/20 transition"
                 >
                   <i className="fa-solid fa-plus text-[10px]" /> Add Space
                 </button>
-                <div className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-slate-900 border border-slate-800 text-xs font-bold text-slate-200">
+                <div className="flex items-center gap-1.5 px-2 sm:px-2.5 py-1 rounded-xl bg-slate-900 border border-slate-800 text-xs font-bold text-slate-200">
                   <span>🏡 {currentUser?.name?.split(' ')[0] || 'Host'}</span>
                 </div>
                 <button
                   type="button"
                   onClick={handleLogout}
-                  className="px-2.5 py-1.5 rounded-xl bg-slate-900 hover:bg-rose-950/40 text-slate-400 hover:text-rose-400 border border-slate-800 text-xs font-semibold transition"
+                  className="p-2 sm:px-2.5 sm:py-1.5 rounded-xl bg-slate-900 hover:bg-rose-950/40 text-slate-400 hover:text-rose-400 border border-slate-800 text-xs font-semibold transition"
                   title="Sign Out"
                 >
                   <i className="fa-solid fa-arrow-right-from-bracket" />
                 </button>
               </div>
             ) : (
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
                 <button
                   type="button"
                   onClick={openHostAuth}
-                  className="text-xs font-bold text-slate-300 hover:text-white px-3 py-1.5 rounded-lg hover:bg-slate-900 transition"
+                  className="hidden sm:inline-block text-xs font-bold text-slate-300 hover:text-white px-2.5 sm:px-3 py-1.5 rounded-lg hover:bg-slate-900 transition"
                 >
                   Host Sign In
                 </button>
                 <button
                   type="button"
                   onClick={openHostAuth}
-                  className="bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-bold text-xs px-3.5 py-2 rounded-xl shadow-md shadow-amber-500/25 transition"
+                  className="bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-bold text-xs px-2.5 sm:px-3.5 py-1.5 sm:py-2 rounded-xl shadow-md shadow-amber-500/25 transition shrink-0"
                 >
-                  Register Property
+                  Register Space
                 </button>
               </div>
             )
           ) : (
             /* SEEKER PORTAL AUTH CONTROLS */
             currentUser ? (
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
                 <button
                   type="button"
                   onClick={() => navigate('/dashboard')}
-                  className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-slate-900 border border-slate-800 text-xs font-bold text-slate-200"
+                  className="flex items-center gap-1.5 px-2 sm:px-2.5 py-1 rounded-xl bg-slate-900 border border-slate-800 text-xs font-bold text-slate-200"
                 >
                   <span>🎓 {currentUser.name?.split(' ')[0] || 'Seeker'}</span>
                 </button>
                 <button
                   type="button"
                   onClick={handleLogout}
-                  className="px-2.5 py-1.5 rounded-xl bg-slate-900 hover:bg-rose-950/40 text-slate-400 hover:text-rose-400 border border-slate-800 text-xs font-semibold transition"
+                  className="p-2 sm:px-2.5 sm:py-1.5 rounded-xl bg-slate-900 hover:bg-rose-950/40 text-slate-400 hover:text-rose-400 border border-slate-800 text-xs font-semibold transition"
                   title="Sign Out"
                 >
                   <i className="fa-solid fa-arrow-right-from-bracket" />
                 </button>
               </div>
             ) : (
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
                 <button
                   type="button"
                   onClick={onOpenAuthModal}
-                  className="text-xs font-bold text-slate-300 hover:text-white px-3 py-1.5 rounded-lg hover:bg-slate-900 transition"
+                  className="hidden sm:inline-block text-xs font-bold text-slate-300 hover:text-white px-2.5 sm:px-3 py-1.5 rounded-lg hover:bg-slate-900 transition"
                 >
                   Seeker Sign In
                 </button>
                 <button
                   type="button"
                   onClick={onOpenAuthModal}
-                  className="bg-gradient-to-r from-indigo-600 via-violet-600 to-indigo-700 hover:from-indigo-500 hover:to-violet-500 text-white font-bold text-xs px-3.5 py-2 rounded-xl shadow-md shadow-indigo-600/30 transition"
+                  className="bg-gradient-to-r from-indigo-600 via-violet-600 to-indigo-700 hover:from-indigo-500 hover:to-violet-500 text-white font-bold text-xs px-2.5 sm:px-3.5 py-1.5 sm:py-2 rounded-xl shadow-md shadow-indigo-600/30 transition shrink-0"
                 >
                   Student SSO
                 </button>

@@ -10,14 +10,15 @@ import { LanguageSelector } from './LanguageSelector';
  * ============================================================================
  * SPACELOOP INTERACTIVE NAVIGATION DRAWER & PHYSICAL DRAG ENGINE
  * ----------------------------------------------------------------------------
- * Fully isolated, undo-safe component providing:
- * - Animated 3-line to 'X' Hamburger Button
- * - 60fps gesture-based physical dragging (Touch & Pointer events)
+ * Proportioned & scaled for Mobile (320px-640px), Tablet (640px-1024px),
+ * and Laptop/Desktop (>1024px).
+ *
+ * Features:
+ * - 60fps Native Pointer & Touch Drag Physics with Spring Settling
  * - Edge-swipe / peek interaction when drawer is closed
- * - Spring-like velocity-aware settling on release
- * - Keyboard accessibility (ESC to close, focus management)
- * - Full dual-theme compatibility (Ocean Breeze & Midnight Neon)
- * - Zero external animation libraries (vanilla React + CSS transforms)
+ * - High-contrast visible typography and bounded flex containers
+ * - Full Dual-Theme Support (Ocean Breeze Light Mode & Midnight Neon Dark Mode)
+ * - Keyboard accessibility (ESC closes, focus management)
  * ============================================================================
  */
 
@@ -51,30 +52,30 @@ export const HamburgerButton: React.FC<HamburgerButtonProps> = ({
       onClick={onToggle}
       aria-label={isOpen ? 'Close navigation drawer' : 'Open navigation drawer'}
       aria-expanded={isOpen}
-      className={`group relative flex flex-col justify-center items-center w-10 h-10 rounded-xl transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-[#0B3D91]/40 dark:focus:ring-indigo-500/50 ${
+      className={`group relative flex flex-col justify-center items-center w-9 h-9 sm:w-10 sm:h-10 rounded-xl transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-[#0B3D91]/40 dark:focus:ring-indigo-500/50 shrink-0 ${
         isOpen
-          ? 'bg-slate-200/80 dark:bg-slate-800 text-slate-900 dark:text-white'
-          : 'bg-white/80 hover:bg-[#E8F6FF] dark:bg-slate-900/80 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 hover:text-[#0B3D91] dark:hover:text-white border border-[#D0E6F7] dark:border-slate-800 shadow-sm'
+          ? 'bg-slate-200 dark:bg-slate-800 text-slate-900 dark:text-white'
+          : 'bg-white hover:bg-[#F0F8FF] dark:bg-slate-900/90 dark:hover:bg-slate-800 text-[#0B2545] dark:text-slate-200 hover:text-[#0B3D91] dark:hover:text-white border border-[#D0E6F7] dark:border-slate-800 shadow-sm'
       } ${className}`}
     >
       <span className="sr-only">{isOpen ? 'Close menu' : 'Open menu'}</span>
-      <div className="w-5 h-4 relative flex flex-col justify-between items-center pointer-events-none">
+      <div className="w-4 sm:w-5 h-3.5 sm:h-4 relative flex flex-col justify-between items-center pointer-events-none">
         {/* Top Bar */}
         <span
-          className={`h-0.5 w-5 bg-current rounded-full transform transition-all duration-300 ease-in-out origin-center ${
-            isOpen ? 'rotate-45 translate-y-[7px]' : ''
+          className={`h-0.5 w-4 sm:w-5 bg-current rounded-full transform transition-all duration-300 ease-in-out origin-center ${
+            isOpen ? 'rotate-45 translate-y-[6px] sm:translate-y-[7px]' : ''
           }`}
         />
         {/* Middle Bar */}
         <span
-          className={`h-0.5 w-5 bg-current rounded-full transition-all duration-200 ease-in-out ${
+          className={`h-0.5 w-4 sm:w-5 bg-current rounded-full transition-all duration-200 ease-in-out ${
             isOpen ? 'opacity-0 scale-x-0' : 'opacity-100'
           }`}
         />
         {/* Bottom Bar */}
         <span
-          className={`h-0.5 w-5 bg-current rounded-full transform transition-all duration-300 ease-in-out origin-center ${
-            isOpen ? '-rotate-45 -translate-y-[7px]' : ''
+          className={`h-0.5 w-4 sm:w-5 bg-current rounded-full transform transition-all duration-300 ease-in-out origin-center ${
+            isOpen ? '-rotate-45 -translate-y-[6px] sm:-translate-y-[7px]' : ''
           }`}
         />
       </div>
@@ -107,13 +108,13 @@ export const NavigationDrawer: React.FC<NavigationDrawerProps> = ({
   const currentDragX = useRef<number>(0);
   const isEdgeDrag = useRef<boolean>(false);
 
-  // Measure actual drawer width on mount/resize
+  // Measure actual drawer width dynamically across mobile/tablet/laptop
   useEffect(() => {
     const updateWidth = () => {
       if (drawerRef.current) {
         setDrawerWidth(drawerRef.current.offsetWidth || 360);
       } else {
-        const measured = Math.min(360, window.innerWidth * 0.85);
+        const measured = Math.min(400, Math.max(300, window.innerWidth * 0.85));
         setDrawerWidth(measured);
       }
     };
@@ -122,7 +123,7 @@ export const NavigationDrawer: React.FC<NavigationDrawerProps> = ({
     return () => window.removeEventListener('resize', updateWidth);
   }, []);
 
-  // Keyboard navigation & accessibility: ESC to close
+  // Keyboard accessibility: ESC to close
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape' && isOpen) {
@@ -133,7 +134,7 @@ export const NavigationDrawer: React.FC<NavigationDrawerProps> = ({
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isOpen, onClose]);
 
-  // Lock body scroll when drawer is open
+  // Lock body scrolling when drawer is open
   useEffect(() => {
     if (isOpen) {
       document.body.style.overflow = 'hidden';
@@ -189,16 +190,13 @@ export const NavigationDrawer: React.FC<NavigationDrawerProps> = ({
       const deltaX = clientX - dragStartX.current;
 
       if (isEdgeDrag.current) {
-        // Dragging open from left edge: offset goes from 0 up to drawerWidth
         const clamped = Math.max(0, Math.min(deltaX, drawerWidth));
         setDragOffset(clamped);
       } else {
-        // Dragging to close from open drawer: offset is negative (pulling left)
         if (deltaX > 0) {
           // Rubber band resistance if pulling right past open position
           setDragOffset(deltaX * 0.2);
         } else {
-          // Normal drag left (clamped to -drawerWidth)
           setDragOffset(Math.max(-drawerWidth, deltaX));
         }
       }
@@ -215,7 +213,6 @@ export const NavigationDrawer: React.FC<NavigationDrawerProps> = ({
     const velocity = totalDelta / timeElapsed; // px per ms
 
     if (isEdgeDrag.current) {
-      // Swipe open threshold: distance > 25% width OR positive flick velocity
       const threshold = drawerWidth * 0.25;
       if (totalDelta > threshold || velocity > 0.3) {
         onOpen();
@@ -223,12 +220,10 @@ export const NavigationDrawer: React.FC<NavigationDrawerProps> = ({
         onClose();
       }
     } else {
-      // Swipe close threshold: pulled left > 25% width OR negative flick velocity
       const threshold = drawerWidth * -0.25;
       if (totalDelta < threshold || velocity < -0.3) {
         onClose();
       } else {
-        // Reset to fully open
         onOpen();
       }
     }
@@ -236,7 +231,7 @@ export const NavigationDrawer: React.FC<NavigationDrawerProps> = ({
     setDragOffset(null);
   }, [isDragging, drawerWidth, onOpen, onClose]);
 
-  // Pointer event listeners (desktop mouse + tablet/mobile touch)
+  // Pointer event listeners (desktop mouse + touch)
   useEffect(() => {
     if (!isDragging) return;
 
@@ -265,7 +260,7 @@ export const NavigationDrawer: React.FC<NavigationDrawerProps> = ({
 
   if (isOpen) {
     if (dragOffset !== null) {
-      translateX = dragOffset; // e.g. -60px when pulling left
+      translateX = dragOffset;
       const progress = Math.max(0, Math.min(1, 1 + dragOffset / drawerWidth));
       backdropOpacity = progress;
     } else {
@@ -274,26 +269,107 @@ export const NavigationDrawer: React.FC<NavigationDrawerProps> = ({
     }
   } else {
     if (dragOffset !== null && isEdgeDrag.current) {
-      translateX = -drawerWidth + dragOffset; // starts at -drawerWidth, goes towards 0
+      translateX = -drawerWidth + dragOffset;
       const progress = Math.max(0, Math.min(1, dragOffset / drawerWidth));
       backdropOpacity = progress;
     } else {
-      translateX = -drawerWidth - 20; // completely offscreen
+      translateX = -drawerWidth - 25; // completely offscreen
       backdropOpacity = 0;
     }
   }
 
   const isVisible = isOpen || (isDragging && isEdgeDrag.current);
 
+  // Navigation Items Definition with Scaled Typography
+  const navItems = [
+    {
+      path: '/',
+      label: t('nav.home') || 'Home',
+      subtitle: 'SpaceLoop marketplace & discovery',
+      icon: 'fa-solid fa-house',
+      iconColor: 'text-[#0B3D91] dark:text-indigo-400',
+      iconBg: 'bg-[#0B3D91]/10 dark:bg-indigo-500/15',
+    },
+    {
+      path: '/explore',
+      label: t('nav.explore') || 'Explore Spaces',
+      subtitle: 'Verified desks, studios & hubs',
+      icon: 'fa-solid fa-compass',
+      iconColor: 'text-[#3BA7F2] dark:text-cyan-400',
+      iconBg: 'bg-[#3BA7F2]/10 dark:bg-cyan-500/15',
+      badge: 'Live',
+      badgeStyle: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/25',
+    },
+    {
+      path: '/dashboard',
+      label: t('nav.myBookings') || 'My Bookings',
+      subtitle: 'Active sessions, passes & QR codes',
+      icon: 'fa-solid fa-calendar-check',
+      iconColor: 'text-indigo-600 dark:text-indigo-400',
+      iconBg: 'bg-indigo-500/10 dark:bg-indigo-500/15',
+    },
+    {
+      path: '/host/dashboard',
+      label: t('nav.hostPortal') || 'Host Dashboard',
+      subtitle: 'Manage listings, rates & occupancy',
+      icon: 'fa-solid fa-chart-pie',
+      iconColor: 'text-amber-600 dark:text-amber-400',
+      iconBg: 'bg-amber-500/10 dark:bg-amber-500/15',
+      badge: 'Host',
+      badgeStyle: 'bg-amber-500/10 text-amber-700 dark:text-amber-300 border-amber-500/25',
+    },
+    {
+      path: '/list-space',
+      label: t('nav.listSpace') || 'List a Space',
+      subtitle: 'Monetize unused capacity in minutes',
+      icon: 'fa-solid fa-plus-circle',
+      iconColor: 'text-amber-600 dark:text-amber-400',
+      iconBg: 'bg-amber-500/10 dark:bg-amber-500/15',
+    },
+    {
+      path: '/calculator',
+      label: t('nav.calculator') || 'Yield Calculator',
+      subtitle: 'Calculate estimated earnings',
+      icon: 'fa-solid fa-calculator',
+      iconColor: 'text-emerald-600 dark:text-emerald-400',
+      iconBg: 'bg-emerald-500/10 dark:bg-emerald-500/15',
+    },
+    {
+      path: '/architecture',
+      label: t('nav.architecture') || 'Architecture & Team',
+      subtitle: '4 Core Profiles, subsystems & stack',
+      icon: 'fa-solid fa-cubes',
+      iconColor: 'text-[#0B3D91] dark:text-indigo-400',
+      iconBg: 'bg-[#0B3D91]/10 dark:bg-indigo-500/15',
+      badge: 'Team',
+      badgeStyle: 'bg-[#0B3D91]/10 text-[#0B3D91] dark:bg-indigo-500/20 dark:text-indigo-300 border-[#0B3D91]/25 dark:border-indigo-500/30',
+    },
+    {
+      path: '/verify',
+      label: t('nav.verify') || 'Identity & Trust KYC',
+      subtitle: 'Aadhaar tokenized verification',
+      icon: 'fa-solid fa-shield-halved',
+      iconColor: 'text-rose-600 dark:text-rose-400',
+      iconBg: 'bg-rose-500/10 dark:bg-rose-500/15',
+    },
+    {
+      path: '/how-it-works',
+      label: t('nav.howItWorks') || 'How It Works',
+      subtitle: 'Section 52 lease & zero-hardware',
+      icon: 'fa-solid fa-circle-question',
+      iconColor: 'text-violet-600 dark:text-violet-400',
+      iconBg: 'bg-violet-500/10 dark:bg-violet-500/15',
+    },
+  ];
+
   return (
     <>
       {/* =====================================================================
-          1. INVISIBLE EDGE TRIGGER (Swipe-from-edge peek detector when closed)
+          1. EDGE TRIGGER (Swipe-from-edge peek detector when closed)
           ===================================================================== */}
       {!isOpen && (
         <div
           onPointerDown={(e) => {
-            // Only trigger on primary button / touch
             if (e.button === 0) {
               startDrag(e.clientX, true);
             }
@@ -302,8 +378,7 @@ export const NavigationDrawer: React.FC<NavigationDrawerProps> = ({
           title="Drag from edge to open menu"
           aria-hidden="true"
         >
-          {/* Subtle indicator bar on edge hover */}
-          <div className="absolute top-1/2 -translate-y-1/2 left-0.5 w-1 h-12 rounded-r-full bg-[#0B3D91]/30 dark:bg-indigo-500/30 opacity-0 hover:opacity-100 transition-opacity" />
+          <div className="absolute top-1/2 -translate-y-1/2 left-0.5 w-1 h-14 rounded-r-full bg-[#0B3D91]/30 dark:bg-indigo-500/30 opacity-0 hover:opacity-100 transition-opacity" />
         </div>
       )}
 
@@ -325,7 +400,7 @@ export const NavigationDrawer: React.FC<NavigationDrawerProps> = ({
       )}
 
       {/* =====================================================================
-          3. INTERACTIVE PHYSICAL SLIDING DRAWER
+          3. SCALED & RESPONSIVE PHYSICAL SLIDING DRAWER
           ===================================================================== */}
       <aside
         ref={drawerRef}
@@ -336,9 +411,9 @@ export const NavigationDrawer: React.FC<NavigationDrawerProps> = ({
           transform: `translate3d(${translateX}px, 0, 0)`,
           transition: isDragging ? 'none' : 'transform 0.35s cubic-bezier(0.16, 1, 0.3, 1)',
         }}
-        className="fixed top-0 left-0 bottom-0 w-[320px] sm:w-[360px] max-w-[85vw] z-50 flex flex-col bg-white dark:bg-slate-950 text-slate-800 dark:text-slate-100 border-r border-[#D0E6F7] dark:border-slate-800/90 shadow-[8px_0_35px_-5px_rgba(11,61,145,0.12)] dark:shadow-[8px_0_40px_-5px_rgba(0,0,0,0.8)] backdrop-blur-2xl will-change-transform select-none"
+        className="fixed top-0 left-0 bottom-0 h-[100dvh] max-h-[100dvh] w-[85vw] min-w-[280px] max-w-[380px] sm:max-w-[400px] z-50 flex flex-col bg-white dark:bg-slate-950 text-slate-800 dark:text-slate-100 border-r border-[#D0E6F7] dark:border-slate-800/90 shadow-[8px_0_35px_-5px_rgba(11,61,145,0.12)] dark:shadow-[8px_0_40px_-5px_rgba(0,0,0,0.85)] sm:rounded-r-3xl overflow-hidden will-change-transform select-none"
       >
-        {/* PHYSICAL DRAG HANDLE TAB (Visible on the right edge of drawer) */}
+        {/* DRAG HANDLE TAB (Grab handle on right edge) */}
         <div
           onPointerDown={(e) => {
             if (e.button === 0) {
@@ -353,24 +428,24 @@ export const NavigationDrawer: React.FC<NavigationDrawerProps> = ({
         </div>
 
         {/* =====================================================================
-            DRAWER HEADER (Brand, Active Portal, Close Button)
+            DRAWER HEADER (Compact, Responsive Header with Close Button)
             ===================================================================== */}
-        <div className="p-4 sm:p-5 border-b border-[#D0E6F7] dark:border-slate-800/80 flex items-center justify-between gap-3 bg-[#E8F6FF]/50 dark:bg-slate-900/60">
-          <div className="flex items-center gap-2.5">
+        <div className="h-14 sm:h-16 px-4 sm:px-5 border-b border-[#D0E6F7] dark:border-slate-800/80 flex items-center justify-between gap-3 bg-[#E8F6FF]/60 dark:bg-slate-900/60 shrink-0">
+          <div className="flex items-center gap-2.5 min-w-0">
             <div
-              className={`w-9 h-9 rounded-xl flex items-center justify-center shadow-md ${
+              className={`w-8 h-8 sm:w-9 sm:h-9 rounded-xl flex items-center justify-center shadow-md shrink-0 ${
                 isHostPortal
                   ? 'bg-gradient-to-tr from-amber-600 via-orange-600 to-amber-400 shadow-amber-500/20'
                   : 'bg-gradient-to-tr from-[#0B3D91] via-[#1E40AF] to-[#3BA7F2] dark:from-indigo-600 dark:via-violet-600 dark:to-indigo-400 shadow-indigo-500/20'
               }`}
             >
-              <i className="fa-solid fa-infinity text-white text-lg" />
+              <i className="fa-solid fa-infinity text-white text-base sm:text-lg" />
             </div>
-            <div>
-              <div className="text-lg font-extrabold tracking-tight text-slate-900 dark:text-white font-display flex items-center gap-1">
+            <div className="min-w-0">
+              <div className="text-base sm:text-lg font-extrabold tracking-tight text-slate-900 dark:text-white font-display flex items-center gap-1 leading-tight">
                 Space<span className="text-[#0B3D91] dark:text-indigo-400">Loop</span>
               </div>
-              <div className="text-[10px] font-mono font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+              <div className="text-[10px] font-mono font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 truncate">
                 {isHostPortal ? '🏡 Host Space' : '⚡ Seeker Desk'}
               </div>
             </div>
@@ -380,20 +455,20 @@ export const NavigationDrawer: React.FC<NavigationDrawerProps> = ({
             type="button"
             onClick={onClose}
             aria-label="Close navigation drawer"
-            className="w-8 h-8 rounded-lg flex items-center justify-center text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white hover:bg-slate-200/60 dark:hover:bg-slate-800/80 transition"
+            className="w-8 h-8 rounded-xl flex items-center justify-center text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white hover:bg-slate-200/60 dark:hover:bg-slate-800/80 transition shrink-0"
           >
-            <i className="fa-solid fa-xmark text-sm" />
+            <i className="fa-solid fa-xmark text-base" />
           </button>
         </div>
 
         {/* =====================================================================
-            DRAWER USER PROFILE CARD (Session Status & Quick Sign-In)
+            DRAWER USER PROFILE CARD (Responsive & Compact)
             ===================================================================== */}
-        <div className="p-4 border-b border-[#D0E6F7] dark:border-slate-800/80 bg-white dark:bg-slate-950">
+        <div className="p-3 sm:p-4 border-b border-[#D0E6F7] dark:border-slate-800/80 bg-white dark:bg-slate-950 shrink-0">
           {currentUser ? (
-            <div className="p-3.5 rounded-2xl bg-[#F0F8FF] dark:bg-slate-900/80 border border-[#D0E6F7] dark:border-slate-800 flex items-center justify-between gap-3 shadow-2xs">
+            <div className="p-3 rounded-2xl bg-[#F0F8FF] dark:bg-slate-900/80 border border-[#D0E6F7] dark:border-slate-800 flex items-center justify-between gap-2.5 shadow-2xs">
               <div className="flex items-center gap-2.5 min-w-0">
-                <div className="w-10 h-10 rounded-xl bg-[#0B3D91] dark:bg-indigo-600 text-white font-bold text-sm flex items-center justify-center shrink-0 shadow-sm">
+                <div className="w-9 h-9 rounded-xl bg-[#0B3D91] dark:bg-indigo-600 text-white font-bold text-xs sm:text-sm flex items-center justify-center shrink-0 shadow-sm">
                   {currentUser.name ? currentUser.name.charAt(0).toUpperCase() : 'U'}
                 </div>
                 <div className="min-w-0">
@@ -404,26 +479,26 @@ export const NavigationDrawer: React.FC<NavigationDrawerProps> = ({
                     {currentUser.email}
                   </div>
                   <div className="text-[10px] text-emerald-600 dark:text-emerald-400 font-semibold flex items-center gap-1 mt-0.5">
-                    <i className="fa-solid fa-circle-check text-[9px]" /> Verified Member
+                    <i className="fa-solid fa-circle-check text-[9px]" /> Verified
                   </div>
                 </div>
               </div>
               <button
                 type="button"
                 onClick={handleLogout}
-                className="p-2 rounded-lg text-slate-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/30 transition text-xs shrink-0"
+                className="p-2 rounded-xl text-slate-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/30 transition text-xs shrink-0"
                 title="Sign Out"
               >
                 <i className="fa-solid fa-arrow-right-from-bracket" />
               </button>
             </div>
           ) : (
-            <div className="p-3.5 rounded-2xl bg-gradient-to-br from-[#E8F6FF] to-[#F0F8FF] dark:from-slate-900 dark:to-slate-900/60 border border-[#D0E6F7] dark:border-slate-800 text-center">
-              <div className="text-xs font-bold text-slate-900 dark:text-white mb-1">
+            <div className="p-3 rounded-2xl bg-gradient-to-br from-[#E8F6FF] to-[#F0F8FF] dark:from-slate-900 dark:to-slate-900/60 border border-[#D0E6F7] dark:border-slate-800 text-center">
+              <div className="text-xs font-bold text-slate-900 dark:text-white mb-0.5">
                 Welcome to SpaceLoop
               </div>
-              <p className="text-[11px] text-slate-600 dark:text-slate-400 mb-3 leading-snug">
-                Access verified micro-desks, studios, and unused workspaces across India starting at ₹35/hr.
+              <p className="text-[11px] text-slate-600 dark:text-slate-400 mb-2.5 leading-snug">
+                Verified micro-desks & unused spaces starting at ₹35/hr.
               </p>
               <div className="flex items-center gap-2">
                 <button
@@ -432,7 +507,7 @@ export const NavigationDrawer: React.FC<NavigationDrawerProps> = ({
                     onClose();
                     onOpenAuthModal();
                   }}
-                  className="flex-1 py-2 px-3 rounded-xl bg-[#0B3D91] hover:bg-[#072C6B] dark:bg-indigo-600 dark:hover:bg-indigo-500 text-white text-xs font-bold shadow-sm transition"
+                  className="flex-1 py-1.5 px-2.5 rounded-xl bg-[#0B3D91] hover:bg-[#072C6B] dark:bg-indigo-600 dark:hover:bg-indigo-500 text-white text-xs font-bold shadow-sm transition"
                 >
                   Seeker Sign In
                 </button>
@@ -443,7 +518,7 @@ export const NavigationDrawer: React.FC<NavigationDrawerProps> = ({
                       onClose();
                       onOpenHostAuthModal();
                     }}
-                    className="flex-1 py-2 px-3 rounded-xl bg-white hover:bg-slate-50 dark:bg-slate-800 dark:hover:bg-slate-750 text-slate-800 dark:text-slate-200 border border-[#D0E6F7] dark:border-slate-700 text-xs font-bold shadow-2xs transition"
+                    className="flex-1 py-1.5 px-2.5 rounded-xl bg-white hover:bg-slate-50 dark:bg-slate-800 dark:hover:bg-slate-750 text-slate-800 dark:text-slate-200 border border-[#D0E6F7] dark:border-slate-700 text-xs font-bold shadow-2xs transition"
                   >
                     Host Sign In
                   </button>
@@ -454,183 +529,84 @@ export const NavigationDrawer: React.FC<NavigationDrawerProps> = ({
         </div>
 
         {/* =====================================================================
-            DRAWER NAVIGATION LINKS (Tactile Hover & Visible Labels)
+            DRAWER NAVIGATION DIRECTORY (Bounded, Scaled & High-Contrast)
             ===================================================================== */}
-        <nav className="flex-1 overflow-y-auto px-3 py-3 space-y-1">
-          <div className="text-[10px] font-mono font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 px-3 py-1.5">
+        <nav className="flex-1 overflow-y-auto overscroll-contain px-3 sm:px-4 py-2 space-y-1 focus:outline-none">
+          <div className="text-[10px] font-mono font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 px-2 py-1">
             Navigation Directory
           </div>
 
-          {/* 1. Home */}
-          <button
-            type="button"
-            onClick={() => handleNavigate('/')}
-            className={`w-full group flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-semibold transition-all duration-150 ${
-              location.pathname === '/'
-                ? 'bg-[#0B3D91]/10 text-[#0B3D91] dark:bg-indigo-600/20 dark:text-indigo-300 font-bold'
-                : 'text-slate-700 dark:text-slate-300 hover:bg-[#F0F8FF] dark:hover:bg-slate-900 hover:text-slate-900 dark:hover:text-white'
-            }`}
-          >
-            <div className="flex items-center gap-3">
-              <i className="fa-solid fa-house w-4 text-center text-[#0B3D91] dark:text-indigo-400 group-hover:scale-110 transition-transform" />
-              <span>{t('nav.home') || 'Home'}</span>
-            </div>
-            <i className="fa-solid fa-chevron-right text-[10px] text-slate-400 opacity-0 group-hover:opacity-100 transition-opacity" />
-          </button>
+          {navItems.map((item) => {
+            const isActive =
+              location.pathname === item.path ||
+              (item.path !== '/' && location.pathname.startsWith(item.path));
 
-          {/* 2. Explore Spaces */}
-          <button
-            type="button"
-            onClick={() => handleNavigate('/explore')}
-            className={`w-full group flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-semibold transition-all duration-150 ${
-              location.pathname === '/explore'
-                ? 'bg-[#0B3D91]/10 text-[#0B3D91] dark:bg-indigo-600/20 dark:text-indigo-300 font-bold'
-                : 'text-slate-700 dark:text-slate-300 hover:bg-[#F0F8FF] dark:hover:bg-slate-900 hover:text-slate-900 dark:hover:text-white'
-            }`}
-          >
-            <div className="flex items-center gap-3">
-              <i className="fa-solid fa-compass w-4 text-center text-[#3BA7F2] dark:text-cyan-400 group-hover:scale-110 transition-transform" />
-              <span>{t('nav.explore') || 'Explore Spaces'}</span>
-            </div>
-            <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-bold border border-emerald-500/20">
-              Live
-            </span>
-          </button>
+            return (
+              <button
+                key={item.path}
+                type="button"
+                onClick={() => handleNavigate(item.path)}
+                className={`w-full group flex items-center gap-2.5 sm:gap-3 px-2.5 sm:px-3 py-2 rounded-xl text-left transition-all duration-150 ${
+                  isActive
+                    ? 'bg-[#0B3D91]/10 text-[#0B3D91] border border-[#0B3D91]/25 dark:bg-indigo-600/20 dark:text-indigo-300 dark:border-indigo-500/30 font-bold shadow-2xs'
+                    : 'text-slate-700 dark:text-slate-300 hover:bg-[#F0F8FF] dark:hover:bg-slate-900 hover:text-slate-900 dark:hover:text-white border border-transparent'
+                }`}
+              >
+                {/* Fixed Icon Container */}
+                <div
+                  className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 text-sm transition-transform group-hover:scale-105 ${item.iconBg}`}
+                >
+                  <i className={`${item.icon} ${item.iconColor}`} />
+                </div>
 
-          {/* 3. My Bookings / Dashboard */}
-          <button
-            type="button"
-            onClick={() => handleNavigate('/dashboard')}
-            className={`w-full group flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-semibold transition-all duration-150 ${
-              location.pathname === '/dashboard'
-                ? 'bg-[#0B3D91]/10 text-[#0B3D91] dark:bg-indigo-600/20 dark:text-indigo-300 font-bold'
-                : 'text-slate-700 dark:text-slate-300 hover:bg-[#F0F8FF] dark:hover:bg-slate-900 hover:text-slate-900 dark:hover:text-white'
-            }`}
-          >
-            <div className="flex items-center gap-3">
-              <i className="fa-solid fa-calendar-check w-4 text-center text-indigo-500 group-hover:scale-110 transition-transform" />
-              <span>{t('nav.myBookings') || 'My Bookings & Passes'}</span>
-            </div>
-            <i className="fa-solid fa-chevron-right text-[10px] text-slate-400 opacity-0 group-hover:opacity-100 transition-opacity" />
-          </button>
+                {/* Scaled Text & Subtitle Container (Always fits without breaking) */}
+                <div className="flex-1 min-w-0 pr-1">
+                  <div className="flex items-center justify-between gap-1.5">
+                    <span
+                      className={`text-xs sm:text-sm font-semibold truncate ${
+                        isActive
+                          ? 'text-[#0B3D91] dark:text-indigo-300 font-bold'
+                          : 'text-slate-900 dark:text-white'
+                      }`}
+                    >
+                      {item.label}
+                    </span>
+                    {item.badge && (
+                      <span
+                        className={`text-[9px] font-mono px-1.5 py-0.5 rounded-full font-bold border shrink-0 ${item.badgeStyle}`}
+                      >
+                        {item.badge}
+                      </span>
+                    )}
+                  </div>
+                  <p
+                    className={`text-[10px] sm:text-[11px] truncate mt-0.5 font-normal ${
+                      isActive
+                        ? 'text-[#0B3D91]/80 dark:text-indigo-300/80 font-medium'
+                        : 'text-slate-600 dark:text-slate-400'
+                    }`}
+                  >
+                    {item.subtitle}
+                  </p>
+                </div>
 
-          {/* 4. Host Portal & List Space */}
-          <button
-            type="button"
-            onClick={() => handleNavigate('/host/dashboard')}
-            className={`w-full group flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-semibold transition-all duration-150 ${
-              location.pathname.startsWith('/host')
-                ? 'bg-amber-500/15 text-amber-700 dark:text-amber-300 font-bold'
-                : 'text-slate-700 dark:text-slate-300 hover:bg-amber-50 dark:hover:bg-amber-950/20 hover:text-amber-700 dark:hover:text-amber-300'
-            }`}
-          >
-            <div className="flex items-center gap-3">
-              <i className="fa-solid fa-chart-pie w-4 text-center text-amber-500 group-hover:scale-110 transition-transform" />
-              <span>{t('nav.hostPortal') || 'Host Dashboard & Properties'}</span>
-            </div>
-            <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-700 dark:text-amber-400 font-bold border border-amber-500/20">
-              Host
-            </span>
-          </button>
-
-          {/* 5. List a New Space */}
-          <button
-            type="button"
-            onClick={() => handleNavigate('/list-space')}
-            className={`w-full group flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-semibold transition-all duration-150 ${
-              location.pathname === '/list-space'
-                ? 'bg-amber-500/15 text-amber-700 dark:text-amber-300 font-bold'
-                : 'text-slate-700 dark:text-slate-300 hover:bg-[#F0F8FF] dark:hover:bg-slate-900 hover:text-slate-900 dark:hover:text-white'
-            }`}
-          >
-            <div className="flex items-center gap-3">
-              <i className="fa-solid fa-plus-circle w-4 text-center text-amber-500 group-hover:scale-110 transition-transform" />
-              <span>{t('nav.listSpace') || 'List an Unused Space'}</span>
-            </div>
-            <i className="fa-solid fa-chevron-right text-[10px] text-slate-400 opacity-0 group-hover:opacity-100 transition-opacity" />
-          </button>
-
-          {/* 6. Yield Calculator */}
-          <button
-            type="button"
-            onClick={() => handleNavigate('/calculator')}
-            className={`w-full group flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-semibold transition-all duration-150 ${
-              location.pathname === '/calculator'
-                ? 'bg-[#0B3D91]/10 text-[#0B3D91] dark:bg-indigo-600/20 dark:text-indigo-300 font-bold'
-                : 'text-slate-700 dark:text-slate-300 hover:bg-[#F0F8FF] dark:hover:bg-slate-900 hover:text-slate-900 dark:hover:text-white'
-            }`}
-          >
-            <div className="flex items-center gap-3">
-              <i className="fa-solid fa-calculator w-4 text-center text-emerald-500 group-hover:scale-110 transition-transform" />
-              <span>{t('nav.calculator') || 'Earnings Yield Calculator'}</span>
-            </div>
-            <i className="fa-solid fa-chevron-right text-[10px] text-slate-400 opacity-0 group-hover:opacity-100 transition-opacity" />
-          </button>
-
-          {/* 7. Architecture & Team Directory */}
-          <button
-            type="button"
-            onClick={() => handleNavigate('/architecture')}
-            className={`w-full group flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-semibold transition-all duration-150 ${
-              location.pathname === '/architecture'
-                ? 'bg-[#0B3D91]/15 text-[#0B3D91] dark:bg-indigo-600/30 dark:text-indigo-200 font-bold border border-[#0B3D91]/30 dark:border-indigo-500/40 shadow-xs'
-                : 'text-slate-700 dark:text-slate-300 hover:bg-[#F0F8FF] dark:hover:bg-slate-900 hover:text-slate-900 dark:hover:text-white'
-            }`}
-          >
-            <div className="flex items-center gap-3">
-              <i className="fa-solid fa-cubes w-4 text-center text-[#0B3D91] dark:text-indigo-400 group-hover:scale-110 transition-transform" />
-              <span>{t('nav.architecture') || 'Architecture & Core Team'}</span>
-            </div>
-            <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-[#0B3D91]/10 text-[#0B3D91] dark:bg-indigo-500/20 dark:text-indigo-300 font-bold border border-[#0B3D91]/20 dark:border-indigo-500/30">
-              Team
-            </span>
-          </button>
-
-          {/* 8. Trust, Verification & KYC */}
-          <button
-            type="button"
-            onClick={() => handleNavigate('/verify')}
-            className={`w-full group flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-semibold transition-all duration-150 ${
-              location.pathname === '/verify'
-                ? 'bg-[#0B3D91]/10 text-[#0B3D91] dark:bg-indigo-600/20 dark:text-indigo-300 font-bold'
-                : 'text-slate-700 dark:text-slate-300 hover:bg-[#F0F8FF] dark:hover:bg-slate-900 hover:text-slate-900 dark:hover:text-white'
-            }`}
-          >
-            <div className="flex items-center gap-3">
-              <i className="fa-solid fa-shield-halved w-4 text-center text-rose-500 group-hover:scale-110 transition-transform" />
-              <span>{t('nav.verify') || 'Identity & Trust Verification'}</span>
-            </div>
-            <i className="fa-solid fa-chevron-right text-[10px] text-slate-400 opacity-0 group-hover:opacity-100 transition-opacity" />
-          </button>
-
-          {/* 9. How SpaceLoop Works */}
-          <button
-            type="button"
-            onClick={() => handleNavigate('/how-it-works')}
-            className={`w-full group flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-semibold transition-all duration-150 ${
-              location.pathname === '/how-it-works'
-                ? 'bg-[#0B3D91]/10 text-[#0B3D91] dark:bg-indigo-600/20 dark:text-indigo-300 font-bold'
-                : 'text-slate-700 dark:text-slate-300 hover:bg-[#F0F8FF] dark:hover:bg-slate-900 hover:text-slate-900 dark:hover:text-white'
-            }`}
-          >
-            <div className="flex items-center gap-3">
-              <i className="fa-solid fa-circle-question w-4 text-center text-violet-500 group-hover:scale-110 transition-transform" />
-              <span>{t('nav.howItWorks') || 'How SpaceLoop Works'}</span>
-            </div>
-            <i className="fa-solid fa-chevron-right text-[10px] text-slate-400 opacity-0 group-hover:opacity-100 transition-opacity" />
-          </button>
+                {/* Trailing Chevron */}
+                <i className="fa-solid fa-chevron-right text-[9px] text-slate-400 group-hover:translate-x-0.5 transition-transform shrink-0" />
+              </button>
+            );
+          })}
         </nav>
 
         {/* =====================================================================
             DRAWER FOOTER UTILITIES (Theme, Language, Portal Switcher)
             ===================================================================== */}
-        <div className="p-4 border-t border-[#D0E6F7] dark:border-slate-800/80 bg-[#E8F6FF]/40 dark:bg-slate-900/60 space-y-2.5">
-          {/* Theme & Language Bar */}
+        <div className="p-3 sm:p-4 border-t border-[#D0E6F7] dark:border-slate-800/80 bg-[#E8F6FF]/40 dark:bg-slate-900/60 space-y-2 shrink-0">
+          {/* Row 1: Theme & Language Bar */}
           <div className="flex items-center justify-between gap-2">
             <button
               type="button"
               onClick={toggleTheme}
-              className="flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold transition shadow-2xs border bg-white hover:bg-slate-50 dark:bg-slate-800 dark:hover:bg-slate-750 text-[#0B2545] dark:text-slate-200 border-[#D0E6F7] dark:border-slate-700"
+              className="flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition shadow-2xs border bg-white hover:bg-slate-50 dark:bg-slate-800 dark:hover:bg-slate-750 text-[#0B2545] dark:text-slate-200 border-[#D0E6F7] dark:border-slate-700"
               title={theme === 'dark' ? 'Switch to Light Theme (Ocean Breeze)' : 'Switch to Dark Theme (Midnight Neon)'}
             >
               {theme === 'dark' ? (
@@ -647,16 +623,16 @@ export const NavigationDrawer: React.FC<NavigationDrawerProps> = ({
             </button>
 
             <div className="shrink-0">
-              <LanguageSelector />
+              <LanguageSelector dropUp={true} />
             </div>
           </div>
 
-          {/* Portal Switch CTA */}
+          {/* Row 2: Portal Switch CTA */}
           {isHostPortal ? (
             <button
               type="button"
               onClick={() => handleNavigate('/explore')}
-              className="w-full py-2.5 px-3 rounded-xl bg-[#0B3D91]/10 hover:bg-[#0B3D91]/20 text-[#0B3D91] dark:bg-indigo-600/20 dark:hover:bg-indigo-600/30 dark:text-indigo-300 border border-[#0B3D91]/30 dark:border-indigo-500/30 text-xs font-bold transition flex items-center justify-center gap-2"
+              className="w-full py-2 px-3 rounded-xl bg-[#0B3D91]/10 hover:bg-[#0B3D91]/20 text-[#0B3D91] dark:bg-indigo-600/20 dark:hover:bg-indigo-600/30 dark:text-indigo-300 border border-[#0B3D91]/30 dark:border-indigo-500/30 text-xs font-bold transition flex items-center justify-center gap-1.5 shadow-2xs"
             >
               <span>🎓 Switch to Seeker Portal</span>
             </button>
@@ -664,13 +640,13 @@ export const NavigationDrawer: React.FC<NavigationDrawerProps> = ({
             <button
               type="button"
               onClick={() => handleNavigate('/host/dashboard')}
-              className="w-full py-2.5 px-3 rounded-xl bg-amber-500/15 hover:bg-amber-500/25 text-amber-700 dark:text-amber-300 border border-amber-500/30 text-xs font-bold transition flex items-center justify-center gap-2"
+              className="w-full py-2 px-3 rounded-xl bg-amber-500/15 hover:bg-amber-500/25 text-amber-700 dark:text-amber-300 border border-amber-500/30 text-xs font-bold transition flex items-center justify-center gap-1.5 shadow-2xs"
             >
               <span>🏡 Switch to Host Portal</span>
             </button>
           )}
 
-          <div className="text-[10px] text-center text-slate-500 dark:text-slate-400 font-mono pt-1">
+          <div className="text-[10px] text-center text-slate-500 dark:text-slate-400 font-mono">
             SpaceLoop • Section 52 Micro-Leasing
           </div>
         </div>
