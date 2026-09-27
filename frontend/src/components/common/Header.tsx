@@ -89,28 +89,25 @@ export const Header: React.FC<HeaderProps> = ({
             </div>
           </button>
 
-          {/* Portal Mode Indicator */}
-          <div className="hidden sm:flex items-center h-6 pl-2.5 border-l border-slate-800/80">
+          {/* Compact Native Portal Mode Indicator */}
+          <div className="hidden sm:flex items-center ml-1">
             <span
-              className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-[9px] font-mono tracking-widest font-semibold uppercase border select-none transition-colors duration-200 ${
+              className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-semibold tracking-tight border select-none transition-all duration-200 ${
                 isHostPortal
-                  ? 'bg-amber-500/10 text-amber-300 border-amber-500/25 shadow-[0_0_10px_rgba(245,158,11,0.08)]'
-                  : 'bg-indigo-500/10 text-indigo-300 border-indigo-500/25 shadow-[0_0_10px_rgba(99,102,241,0.08)]'
+                  ? 'bg-amber-500/[0.08] text-amber-300/90 border-amber-500/25 shadow-[0_0_10px_rgba(245,158,11,0.06)]'
+                  : 'bg-indigo-500/[0.08] text-indigo-300/90 border-indigo-500/25 shadow-[0_0_10px_rgba(99,102,241,0.06)]'
               }`}
             >
-              <span className="relative flex h-1.5 w-1.5">
-                <span
-                  className={`animate-ping absolute inline-flex h-full w-full rounded-full opacity-60 ${
-                    isHostPortal ? 'bg-amber-400' : 'bg-indigo-400'
-                  }`}
-                />
-                <span
-                  className={`relative inline-flex rounded-full h-1.5 w-1.5 ${
-                    isHostPortal ? 'bg-amber-400' : 'bg-indigo-400'
-                  }`}
-                />
+              <span
+                className={`w-1.5 h-1.5 rounded-full shrink-0 ${
+                  isHostPortal
+                    ? 'bg-amber-400 shadow-[0_0_6px_rgba(245,158,11,0.9)]'
+                    : 'bg-indigo-400 shadow-[0_0_6px_rgba(99,102,241,0.9)]'
+                }`}
+              />
+              <span className="leading-none">
+                {isHostPortal ? 'Host Mode' : 'Seeker Mode'}
               </span>
-              <span>{isHostPortal ? t('nav.hostPortal') : t('nav.seekerPortal')}</span>
             </span>
           </div>
         </div>
