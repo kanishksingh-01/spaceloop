@@ -112,6 +112,10 @@ npm run dev
 - **Frontend Web App:** `http://localhost:3000`
 - **Backend API & Admin Portal:** `http://localhost:5000`
 
+### Development
+
+SpaceLoop is developed collaboratively using Git and GitHub.
+
 ---
 
 ## 🔐 Authentication & Authorization Architecture
