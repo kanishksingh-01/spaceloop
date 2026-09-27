@@ -1,0 +1,168 @@
+/* ==========================================================================
+   SpaceLoop Architect Page — Antigravity-Inspired Scoped Styles
+   Page-scoped CSS stylesheet with unique 'ag-' prefixes.
+   Strictly scoped to the Architecture page; does not modify global design tokens.
+   ========================================================================== */
+
+/* Architectural Blueprint Grid Pattern */
+.ag-blueprint-grid {
+  background-size: 32px 32px;
+  background-image:
+    linear-gradient(to right, rgba(11, 61, 145, 0.07) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(11, 61, 145, 0.07) 1px, transparent 1px);
+}
+
+.dark .ag-blueprint-grid {
+  background-image:
+    linear-gradient(to right, rgba(255, 255, 255, 0.035) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(255, 255, 255, 0.035) 1px, transparent 1px);
+}
+
+/* Fine Coordinate Hairline Guides */
+.ag-guide-line-h {
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(11, 61, 145, 0.25) 30%,
+    rgba(59, 167, 242, 0.4) 50%,
+    rgba(11, 61, 145, 0.25) 70%,
+    transparent 100%
+  );
+}
+
+.dark .ag-guide-line-h {
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(99, 102, 241, 0.2) 30%,
+    rgba(6, 182, 212, 0.35) 50%,
+    rgba(99, 102, 241, 0.2) 70%,
+    transparent 100%
+  );
+}
+
+/* Calibration Sweep Bar (Step 8 — Lightweight Entrance) */
+.ag-calibration-bar {
+  animation: agCalibrationSweep 0.9s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes agCalibrationSweep {
+  0% {
+    width: 0%;
+    opacity: 1;
+  }
+  75% {
+    width: 100%;
+    opacity: 1;
+  }
+  100% {
+    width: 100%;
+    opacity: 0;
+  }
+}
+
+/* Glass Card Container */
+.ag-glass-card {
+  position: relative;
+  border-radius: 1.5rem;
+  transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1),
+              box-shadow 0.4s cubic-bezier(0.16, 1, 0.3, 1),
+              border-color 0.4s ease;
+  will-change: transform, box-shadow;
+  transform-style: preserve-3d;
+}
+
+/* Corner Crosshair Accents (+ marks at corners) */
+.ag-crosshair-corner {
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  pointer-events: none;
+  opacity: 0.45;
+  transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+.ag-crosshair-corner::before,
+.ag-crosshair-corner::after {
+  content: '';
+  position: absolute;
+  background-color: currentColor;
+}
+
+.ag-crosshair-corner::before {
+  top: 4px;
+  left: 0;
+  width: 10px;
+  height: 1.5px;
+}
+
+.ag-crosshair-corner::after {
+  top: 0;
+  left: 4px;
+  width: 1.5px;
+  height: 10px;
+}
+
+.ag-glass-card:hover .ag-crosshair-corner {
+  opacity: 0.9;
+  transform: scale(1.15);
+}
+
+/* Cursor-Reactive Spotlight Overlay */
+.ag-spotlight-surface {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  overflow: hidden;
+  z-index: 1;
+  transition: opacity 0.3s ease;
+}
+
+/* Floating Ambient Orbs */
+@keyframes agAmbientFloat {
+  0%, 100% {
+    transform: translate3d(0, 0, 0);
+  }
+  50% {
+    transform: translate3d(0, -15px, 0);
+  }
+}
+
+.ag-ambient-floating {
+  animation: agAmbientFloat 8s ease-in-out infinite;
+}
+
+/* Modal Backdrop Blur */
+.ag-modal-backdrop {
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+}
+
+/* Subsystem Console Grid Accent */
+.ag-subsystem-console {
+  background-size: 24px 24px;
+  background-image:
+    radial-gradient(circle, rgba(11, 61, 145, 0.08) 1px, transparent 1px);
+}
+
+.dark .ag-subsystem-console {
+  background-image:
+    radial-gradient(circle, rgba(255, 255, 255, 0.06) 1px, transparent 1px);
+}
+
+/* Custom Scrollbar for Modal content if overflow occurs */
+.ag-custom-scroll::-webkit-scrollbar {
+  width: 6px;
+}
+.ag-custom-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+.ag-custom-scroll::-webkit-scrollbar-thumb {
+  background: rgba(11, 61, 145, 0.2);
+  border-radius: 3px;
+}
+.dark .ag-custom-scroll::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.15);
+}
