@@ -112,11 +112,13 @@ class ListingAssistanceService:
         """
         Parses raw natural language text into a rich, structured listing with:
         - extracted_fields
+        - listing_draft (ready for host review before publishing)
         - missing_fields
         - clarifications
         - inconsistencies
         - generated_description (factually grounded)
         - improved_wording
+        - ai_provider (groq, gemini, or deterministic_rule_engine)
         """
         clean_text = sanitize_string(text or "", max_length=1500).strip()
         if not clean_text:
@@ -124,18 +126,35 @@ class ListingAssistanceService:
                 "success": False,
                 "error": "Listing text cannot be empty.",
                 "extracted_fields": {},
+                "listing_draft": {},
                 "missing_fields": ["title", "location", "rent", "property_type"],
-                "clarifications": ["Please describe your space (e.g., '2 bedroom flat in Pune, fully furnished, near IT park, 25k rent')."],
+                "clarifications": ["Please describe your space (e.g., '2 bedroom workspace in Pune for 4 people with fast WiFi and AC')."],
                 "inconsistencies": [],
                 "generated_description": "",
-                "improved_wording": ""
+                "improved_wording": "",
+                "ai_provider": "deterministic_rule_engine"
             }
 
         # Step 1: Detect Language
         detected_lang = cls._detect_language(clean_text)
 
-        # Step 2: Extract Structured Fields
-        extracted = cls._extract_fields(clean_text)
+        # Step 2: Multi-Tier NLP Extraction (Groq -> Gemini -> Deterministic)
+        ai_provider = "deterministic_rule_engine"
+        llm_extracted = cls._extract_with_llm(clean_text)
+
+        if llm_extracted:
+            ai_provider = llm_extracted.pop("_ai_provider", "groq")
+            # Baseline deterministic extraction ensures complete field keys
+            extracted = cls._extract_fields(clean_text)
+            for k, v in llm_extracted.items():
+                if v is not None:
+                    extracted[k] = v
+        else:
+            extracted = cls._extract_fields(clean_text)
+
+        # Format title if missing
+        if not extracted.get("title"):
+            extracted["title"] = cls._generate_suggested_title(extracted)
 
         # Step 3: Identify Missing Fields & Formulate Clarification Questions
         missing_fields, clarifications = cls._identify_missing_fields(extracted)
@@ -147,21 +166,163 @@ class ListingAssistanceService:
         generated_desc = cls._generate_factual_description(extracted, language=target_language)
         improved_wording = cls._generate_improved_wording(extracted, language=target_language)
 
-        # Format title if missing
-        if not extracted.get("title"):
-            extracted["title"] = cls._generate_suggested_title(extracted)
+        # Step 6: Construct Structured Listing Draft matching Space Schema
+        listing_draft = {
+            "title": extracted.get("title") or "",
+            "description": generated_desc or "",
+            "category": extracted.get("category") or "Workspace",
+            "hourly_rate": extracted.get("price_hourly"),
+            "price_hourly": extracted.get("price_hourly"),
+            "price_monthly": extracted.get("price_monthly") or extracted.get("rent"),
+            "location": extracted.get("location") or "",
+            "neighborhood": extracted.get("neighborhood") or extracted.get("location") or "",
+            "city": extracted.get("city") or "",
+            "address": extracted.get("address") or "",
+            "sqft": extracted.get("sqft"),
+            "max_capacity": extracted.get("max_capacity"),
+            "amenities": extracted.get("amenities") or [],
+            "bedrooms": extracted.get("bedrooms"),
+            "furnished": extracted.get("furnished"),
+        }
 
         return {
             "success": True,
             "extracted_fields": extracted,
+            "listing_draft": listing_draft,
             "missing_fields": missing_fields,
             "clarifications": clarifications,
             "inconsistencies": inconsistencies,
             "generated_description": generated_desc,
             "improved_wording": improved_wording,
             "detected_language": detected_lang,
-            "language": target_language
+            "language": target_language,
+            "ai_provider": ai_provider
         }
+
+    # =========================================================================
+    # Multi-Tier LLM Extraction Engine (Groq -> Gemini -> Fallback)
+    # =========================================================================
+
+    @classmethod
+    def _extract_with_llm(cls, text: str) -> Optional[Dict[str, Any]]:
+        """
+        Attempts LLM-based structured extraction with Groq (Primary) -> Gemini (Fallback).
+        Strictly zero hallucination: output null / empty for any unprovided details.
+        """
+        system_prompt = (
+            "You are SpaceLoop's intelligent listing extraction engine.\n"
+            "Extract ONLY information explicitly provided in the host's space description into valid JSON.\n"
+            "STRICT RULES:\n"
+            "1. NO HALLUCINATION: If a field (such as price, exact address, city, square footage, capacity, AC, parking) is not stated, set it to null (or empty array for amenities).\n"
+            "2. Allowed categories: Workspace, Meeting, Studio, Podcast, Workshop, Retail, Storage, Study Pod.\n"
+            "3. Output valid JSON only, without markdown fences or comments.\n\n"
+            "Keys required: title, description, category, property_type, location, city, neighborhood, address, near, bedrooms, max_capacity, sqft, price_hourly, rent, price_monthly, furnished, amenities (list), rules (list)."
+        )
+
+        user_prompt = f"Host space description:\n\"{text}\""
+
+        # Tier 1: Groq
+        try:
+            from space_ai import _call_groq
+            messages = [
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": user_prompt}
+            ]
+            raw = _call_groq(messages, json_mode=True, temperature=0.1)
+            if raw:
+                parsed = cls._parse_llm_json(raw, text)
+                if parsed:
+                    parsed["_ai_provider"] = "groq"
+                    return parsed
+        except Exception as e:
+            logger.warning(f"Groq listing extraction failed: {e}")
+
+        # Tier 2: Gemini
+        try:
+            from space_ai import _call_gemini
+            raw = _call_gemini(f"{system_prompt}\n\n{user_prompt}", temperature=0.1)
+            if raw:
+                parsed = cls._parse_llm_json(raw, text)
+                if parsed:
+                    parsed["_ai_provider"] = "gemini"
+                    return parsed
+        except Exception as e:
+            logger.warning(f"Gemini listing extraction failed: {e}")
+
+        return None
+
+    @classmethod
+    def _parse_llm_json(cls, raw: str, original_text: str) -> Optional[Dict[str, Any]]:
+        """Parses and sanitizes LLM JSON, verifying grounding against the input text."""
+        clean = raw.strip()
+        if clean.startswith("```"):
+            clean = re.sub(r"^```(?:json)?\s*", "", clean)
+            clean = re.sub(r"\s*```$", "", clean)
+        try:
+            data = json.loads(clean)
+            if not isinstance(data, dict):
+                return None
+
+            # Enforce clean types
+            for key in ["bedrooms", "max_capacity", "sqft"]:
+                if key in data and data[key] is not None:
+                    try:
+                        data[key] = int(data[key])
+                    except (ValueError, TypeError):
+                        data[key] = None
+
+            for key in ["rent", "price_hourly", "price_monthly"]:
+                if key in data and data[key] is not None:
+                    try:
+                        data[key] = float(data[key])
+                    except (ValueError, TypeError):
+                        data[key] = None
+
+            # Aliases & category mapping
+            if data.get("property_type") and not data.get("propertyType"):
+                data["propertyType"] = data["property_type"]
+            elif data.get("propertyType") and not data.get("property_type"):
+                data["property_type"] = data["propertyType"]
+
+            if data.get("rent") and not data.get("price_monthly"):
+                data["price_monthly"] = data["rent"]
+
+            if not isinstance(data.get("amenities"), list):
+                data["amenities"] = []
+
+            # Grounding check: ensure amenities are actually grounded in text keywords using word boundaries
+            grounded_amenities = []
+            orig_lower = original_text.lower()
+            def has_word(kw: str) -> bool:
+                return bool(re.search(rf'\b{re.escape(kw)}\b', orig_lower))
+
+            for amen in data["amenities"]:
+                amen_lower = str(amen).lower()
+                if any(has_word(kw) for kw in ["wifi", "wi-fi", "internet", "fiber"]) and "wi-fi" in amen_lower:
+                    grounded_amenities.append("High-speed Wi-Fi")
+                elif any(has_word(kw) for kw in ["ac", "air condition", "a/c"]) and ("air conditioning" in amen_lower or "ac" in amen_lower):
+                    grounded_amenities.append("Air Conditioning")
+                elif has_word("parking") and "parking" in amen_lower:
+                    grounded_amenities.append("Parking Available")
+                elif any(has_word(kw) for kw in ["power", "backup", "inverter"]) and "power" in amen_lower:
+                    grounded_amenities.append("Power Backup")
+                elif has_word("whiteboard") and "whiteboard" in amen_lower:
+                    grounded_amenities.append("Whiteboard")
+                elif any(has_word(kw) for kw in ["screen", "monitor", "display"]) and ("display" in amen_lower or "screen" in amen_lower):
+                    grounded_amenities.append("4K Presentation Display")
+                elif any(has_word(kw) for kw in ["tea", "coffee"]) and ("tea" in amen_lower or "coffee" in amen_lower):
+                    grounded_amenities.append("Tea & Coffee")
+                elif has_word("cctv") and "cctv" in amen_lower:
+                    grounded_amenities.append("CCTV Security")
+                elif any(has_word(kw) for kw in ["lift", "elevator"]) and ("lift" in amen_lower or "elevator" in amen_lower):
+                    grounded_amenities.append("Elevator Access")
+                elif has_word(amen_lower):
+                    grounded_amenities.append(str(amen).title())
+
+            data["amenities"] = list(dict.fromkeys(grounded_amenities))
+            return data
+        except Exception:
+            return None
 
     # =========================================================================
     # Extraction Logic
@@ -359,9 +520,6 @@ class ListingAssistanceService:
                 extracted["sqft"] = int(sqft_match.group(1))
             except ValueError:
                 pass
-        elif extracted.get("bedrooms"):
-            # Estimate realistic standard sqft based on bedroom count (1BHK ~ 550, 2BHK ~ 850, 3BHK ~ 1250)
-            extracted["sqft"] = 550 + (extracted["bedrooms"] - 1) * 350
 
         # 7. Capacity / Guest count
         cap_match = re.search(r'\b(?:for\s+|fits?\s+|capacity\s+(?:of\s+)?)(\d+)\s*(?:people|persons?|guests?|members?|seats?|log|व्यक्ती)?\b', t_lower)
@@ -370,8 +528,6 @@ class ListingAssistanceService:
                 extracted["max_capacity"] = int(cap_match.group(1))
             except ValueError:
                 pass
-        elif extracted.get("bedrooms"):
-            extracted["max_capacity"] = extracted["bedrooms"] * 2
 
         # 8. Amenities
         amenity_rules = [
@@ -592,16 +748,18 @@ class ListingAssistanceService:
     @classmethod
     def _generate_suggested_title(cls, extracted: Dict[str, Any]) -> str:
         bedrooms = extracted.get("bedrooms")
-        prop_type = extracted.get("propertyType", "Space").title()
-        loc = extracted.get("location") or extracted.get("city") or "Pune"
+        prop_type = (extracted.get("propertyType") or extracted.get("category") or "Space").title()
+        loc = extracted.get("location") or extracted.get("city")
         near = extracted.get("near")
         furnished = extracted.get("furnished")
 
         prefix = f"{bedrooms} BHK " if bedrooms else ""
         furnish_tag = "Furnished " if furnished else ""
+        loc_tag = f" in {loc}" if loc else ""
         near_tag = f" near {near}" if near else ""
 
-        return f"{furnish_tag}{prefix}{prop_type} in {loc}{near_tag}".strip()
+        title = f"{furnish_tag}{prefix}{prop_type}{loc_tag}{near_tag}".strip()
+        return title or "Space Listing"
 
     # =========================================================================
     # Language Detection & Translation Helper

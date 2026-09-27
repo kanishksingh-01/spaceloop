@@ -294,6 +294,23 @@ export interface ListingAssistanceResponse {
     amenities?: string[];
     title?: string;
   };
+  listing_draft?: {
+    title?: string;
+    description?: string;
+    category?: string;
+    hourly_rate?: number;
+    price_hourly?: number;
+    price_monthly?: number;
+    location?: string;
+    neighborhood?: string;
+    city?: string;
+    address?: string;
+    sqft?: number;
+    max_capacity?: number;
+    amenities?: string[];
+    bedrooms?: number;
+    furnished?: boolean;
+  };
   missing_fields: string[];
   clarifications: string[];
   inconsistencies: Array<{ field: string; message: string; severity?: string }>;
@@ -301,6 +318,7 @@ export interface ListingAssistanceResponse {
   improved_wording?: string;
   detected_language: string;
   language: string;
+  ai_provider?: string;
 }
 
 export async function assistListing(text: string, language?: string): Promise<ListingAssistanceResponse> {

@@ -184,7 +184,7 @@ export const ListSpacePage: React.FC<ListSpacePageProps> = ({ currentUser }) => 
 
   const handleNlDraft = async () => {
     if (!nlInput.trim()) {
-      setError('Please enter some space details in natural language (e.g. 2 bedroom flat in Pune, 25k rent).');
+      setError('Please enter some space details in natural language (e.g. 2 bedroom workspace in Pune for 4 people with fast WiFi and AC).');
       return;
     }
     setIsNlDrafting(true);
@@ -192,19 +192,24 @@ export const ListSpacePage: React.FC<ListSpacePageProps> = ({ currentUser }) => 
     try {
       const res = await assistListing(nlInput.trim());
       setNlAssistResult(res);
+      const draft = res.listing_draft || {};
       const fields = res.extracted_fields || {};
 
-      if (fields.title) setTitle(fields.title);
-      if (res.generated_description) setDescription(res.generated_description);
-      if (fields.category) setCategory(fields.category);
-      if (fields.price_hourly) setHourlyRate(String(Math.round(fields.price_hourly)));
-      if (fields.location) setLocation(fields.location);
-      if (fields.city) setCity(fields.city);
-      if (fields.amenities && fields.amenities.length > 0) {
-        setAmenities(fields.amenities.join(', '));
+      if (draft.title || fields.title) setTitle(draft.title || fields.title || '');
+      if (res.generated_description || draft.description) setDescription(res.generated_description || draft.description || '');
+      if (draft.category || fields.category) setCategory(draft.category || fields.category || 'Workspace');
+      if (draft.price_hourly || fields.price_hourly) {
+        setHourlyRate(String(Math.round(draft.price_hourly || fields.price_hourly || 0)));
       }
+      if (draft.location || fields.location) setLocation(draft.location || fields.location || '');
+      if (draft.city || fields.city) setCity(draft.city || fields.city || '');
+      const amenitiesToSet = draft.amenities || fields.amenities || [];
+      if (amenitiesToSet.length > 0) {
+        setAmenities(amenitiesToSet.join(', '));
+      }
+      const locDisplay = draft.location || fields.location;
       setScanMessage(
-        `✓ Listing drafted with AI! Extracted ${fields.propertyType || 'space'} in ${fields.location || 'your area'}.`
+        `✓ Listing draft created! Extracted ${draft.category || fields.propertyType || 'space'}${locDisplay ? ` in ${locDisplay}` : ''}. Review and confirm details below.`
       );
     } catch (err: any) {
       setError(err.message || 'Failed to analyze listing text with AI.');
@@ -403,10 +408,36 @@ export const ListSpacePage: React.FC<ListSpacePageProps> = ({ currentUser }) => 
               className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500"
             />
 
+            {/* Quick Test Prompts */}
+            <div className="flex flex-wrap items-center gap-1.5 pt-1">
+              <span className="text-[11px] text-slate-400 font-medium">Try prompt:</span>
+              <button
+                type="button"
+                onClick={() => setNlInput("2 bedroom workspace in Pune for 4 people with fast WiFi and AC")}
+                className="text-[11px] px-2.5 py-1 rounded-lg bg-slate-800/80 hover:bg-indigo-900/40 text-indigo-300 border border-slate-700 hover:border-indigo-500/40 transition"
+              >
+                &quot;2 bedroom workspace in Pune for 4 people with fast WiFi and AC&quot;
+              </button>
+              <button
+                type="button"
+                onClick={() => setNlInput("Workspace for 4 people with WiFi")}
+                className="text-[11px] px-2.5 py-1 rounded-lg bg-slate-800/80 hover:bg-indigo-900/40 text-indigo-300 border border-slate-700 hover:border-indigo-500/40 transition"
+              >
+                &quot;Workspace for 4 people with WiFi&quot;
+              </button>
+              <button
+                type="button"
+                onClick={() => setNlInput("पुणे में 2 कमरा फ्लैट, पूरी तरह सुसज्जित, 25000 किराया")}
+                className="text-[11px] px-2.5 py-1 rounded-lg bg-slate-800/80 hover:bg-indigo-900/40 text-indigo-300 border border-slate-700 hover:border-indigo-500/40 transition"
+              >
+                &quot;पुणे में 2 कमरा फ्लैट, 25000 किराया&quot;
+              </button>
+            </div>
+
             <div className="flex flex-wrap items-center justify-between gap-2">
               <div className="flex items-center gap-2 text-[11px] text-emerald-400 font-medium">
                 <i className="fa-solid fa-shield-halved" />
-                <span>Strict Factual Integrity: user rates &amp; dimensions are never altered.</span>
+                <span>Zero Hallucination: unmentioned fields are left blank for host review.</span>
               </div>
               <button
                 type="button"
@@ -435,49 +466,79 @@ export const ListSpacePage: React.FC<ListSpacePageProps> = ({ currentUser }) => 
 
           {/* AI Extraction Summary Banner */}
           {nlAssistResult && (
-            <div className="mt-4 p-4 rounded-xl bg-slate-950/80 border border-indigo-500/20 space-y-3">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-bold text-indigo-300">
-                  ⚡ Extracted Attributes ({(nlAssistResult.detected_language || 'EN').toUpperCase()})
-                </span>
-                <span className="text-[10px] text-slate-400">
-                  {nlAssistResult.missing_fields?.length === 0
-                    ? '✓ Core Fields Extracted'
-                    : `⚠️ ${nlAssistResult.missing_fields?.length} Recommended Fields Missing`}
+            <div className="mt-4 p-4 rounded-xl bg-slate-950/90 border border-indigo-500/30 space-y-3">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-bold text-indigo-300 flex items-center gap-1.5">
+                    <i className="fa-solid fa-file-pen text-indigo-400" />
+                    Listing Draft Generated
+                  </span>
+                  <span className="text-[10px] bg-indigo-500/20 text-indigo-300 px-2 py-0.5 rounded-full border border-indigo-500/30 font-semibold uppercase">
+                    {nlAssistResult.ai_provider || 'nlp'} • {(nlAssistResult.detected_language || 'EN').toUpperCase()}
+                  </span>
+                </div>
+                <span className="text-[10px] text-amber-300 bg-amber-500/10 px-2 py-0.5 rounded-md border border-amber-500/20">
+                  Host Review Required — confirm details in form below
                 </span>
               </div>
 
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
-                <div className="bg-slate-900/90 p-2 rounded-lg border border-slate-800">
-                  <span className="text-[10px] text-slate-400 block">Type</span>
+                <div className="bg-slate-900/90 p-2.5 rounded-lg border border-slate-800">
+                  <span className="text-[10px] text-slate-400 block mb-0.5">Category / Type</span>
                   <span className="text-white font-semibold">
-                    {nlAssistResult.extracted_fields?.propertyType || 'Space'}
+                    {nlAssistResult.listing_draft?.category || nlAssistResult.extracted_fields?.propertyType || (
+                      <span className="text-amber-400/80 italic">Unspecified</span>
+                    )}
                     {nlAssistResult.extracted_fields?.bedrooms ? ` (${nlAssistResult.extracted_fields.bedrooms} BHK)` : ''}
                   </span>
                 </div>
-                <div className="bg-slate-900/90 p-2 rounded-lg border border-slate-800">
-                  <span className="text-[10px] text-slate-400 block">Location</span>
+                <div className="bg-slate-900/90 p-2.5 rounded-lg border border-slate-800">
+                  <span className="text-[10px] text-slate-400 block mb-0.5">Location</span>
                   <span className="text-white font-semibold">
-                    {nlAssistResult.extracted_fields?.location || 'Pune'}
-                    {nlAssistResult.extracted_fields?.near ? ` (Near ${nlAssistResult.extracted_fields.near})` : ''}
+                    {nlAssistResult.listing_draft?.location || nlAssistResult.extracted_fields?.location ? (
+                      <>
+                        {nlAssistResult.listing_draft?.location || nlAssistResult.extracted_fields?.location}
+                        {nlAssistResult.extracted_fields?.near ? ` (Near ${nlAssistResult.extracted_fields.near})` : ''}
+                      </>
+                    ) : (
+                      <span className="text-amber-400/80 italic">Unspecified</span>
+                    )}
                   </span>
                 </div>
-                <div className="bg-slate-900/90 p-2 rounded-lg border border-slate-800">
-                  <span className="text-[10px] text-slate-400 block">Authoritative Rent</span>
-                  <span className="text-emerald-400 font-bold">
-                    {nlAssistResult.extracted_fields?.rent
-                      ? `₹${Number(nlAssistResult.extracted_fields.rent).toLocaleString()}/mo`
-                      : 'Not specified'}
+                <div className="bg-slate-900/90 p-2.5 rounded-lg border border-slate-800">
+                  <span className="text-[10px] text-slate-400 block mb-0.5">Capacity</span>
+                  <span className="text-white font-semibold">
+                    {nlAssistResult.listing_draft?.max_capacity || nlAssistResult.extracted_fields?.max_capacity ? (
+                      `${nlAssistResult.listing_draft?.max_capacity || nlAssistResult.extracted_fields?.max_capacity} people`
+                    ) : (
+                      <span className="text-amber-400/80 italic">Unspecified</span>
+                    )}
                   </span>
                 </div>
-                <div className="bg-slate-900/90 p-2 rounded-lg border border-slate-800">
-                  <span className="text-[10px] text-slate-400 block">Hourly Rate</span>
+                <div className="bg-slate-900/90 p-2.5 rounded-lg border border-slate-800">
+                  <span className="text-[10px] text-slate-400 block mb-0.5">Hourly Rate</span>
                   <span className="text-indigo-300 font-bold">
-                    {nlAssistResult.extracted_fields?.price_hourly
-                      ? `₹${Math.round(nlAssistResult.extracted_fields.price_hourly)}/hr`
-                      : '₹50/hr'}
+                    {nlAssistResult.listing_draft?.price_hourly || nlAssistResult.extracted_fields?.price_hourly ? (
+                      `₹${Math.round(nlAssistResult.listing_draft?.price_hourly || nlAssistResult.extracted_fields?.price_hourly || 0)}/hr`
+                    ) : (
+                      <span className="text-amber-400/80 italic font-normal">Unspecified</span>
+                    )}
                   </span>
                 </div>
+              </div>
+
+              {/* Mentioned Amenities */}
+              <div className="bg-slate-900/70 p-2 rounded-lg border border-slate-800/80 text-[11px] flex flex-wrap items-center gap-1.5">
+                <span className="text-slate-400 font-medium">Detected Amenities:</span>
+                {(nlAssistResult.listing_draft?.amenities || nlAssistResult.extracted_fields?.amenities || []).length > 0 ? (
+                  (nlAssistResult.listing_draft?.amenities || nlAssistResult.extracted_fields?.amenities || []).map((amen: string, idx: number) => (
+                    <span key={idx} className="bg-indigo-500/10 text-indigo-300 px-2 py-0.5 rounded border border-indigo-500/20 text-[10px] font-medium">
+                      ✓ {amen}
+                    </span>
+                  ))
+                ) : (
+                  <span className="text-slate-500 italic">None explicitly mentioned in description</span>
+                )}
               </div>
 
               {/* Clarification Questions if missing info */}
