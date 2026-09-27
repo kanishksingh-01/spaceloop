@@ -12,8 +12,7 @@ export const TEAM_MEMBERS: TeamMember[] = [
       'Architected SpaceLoop’s zero-trust security perimeter, DPDP Act 2023 tokenized Aadhaar identity verification, and multi-tier fraud & collusion detection engine.',
     email: 'aaryamaurya.dev@gmail.com',
     linkedin: 'https://www.linkedin.com/in/aarya-maurya',
-    photoUrl:
-      'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=900&q=85',
+    photoUrl: '/team/aarya.jpg',
     accent: 'amber',
     subsystem: {
       title: 'Zero-Trust Defense & Multi-Tier Anomaly Engine',
@@ -40,8 +39,7 @@ export const TEAM_MEMBERS: TeamMember[] = [
       'Engineered SpaceLoop’s high-performance Flask 3.0 backend, Section 52 revocable micro-leasing protocol under the Indian Easements Act (1882), automated ₹100 UPI micro-escrow holds, and hybrid semantic search engine.',
     email: 'kanishk@spaceloop.in',
     linkedin: 'https://www.linkedin.com/in/kanishksingh01',
-    photoUrl:
-      'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=900&q=85',
+    photoUrl: '/team/kanishk.png',
     accent: 'indigo',
     subsystem: {
       title: 'Section 52 Engine & UPI Micro-Escrow',
@@ -68,8 +66,7 @@ export const TEAM_MEMBERS: TeamMember[] = [
       'Crafted SpaceLoop’s responsive React 18 client architecture, Ocean Breeze light theme and Midnight Neon dark theme design systems, tactile glassmorphic controls, and mobile navigation HUD.',
     email: 'zara.quadri@spaceloop.in',
     linkedin: 'https://www.linkedin.com/in/zara-quadri',
-    photoUrl:
-      'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=900&q=85',
+    photoUrl: '/team/zara.jpg',
     accent: 'violet',
     subsystem: {
       title: 'Reactive Viewport & Dual-Theme System',
@@ -96,8 +93,7 @@ export const TEAM_MEMBERS: TeamMember[] = [
       'Leads SpaceLoop’s multimodal computer vision and spatial intelligence pipeline. Architected the post-occupancy room condition delta analyzer, automatic electrical appliance off-detection, and the Groq + Gemini dual-engine intent parser.',
     email: 'indrayani@spaceloop.in',
     linkedin: 'https://www.linkedin.com/in/indrayani-mazumder',
-    photoUrl:
-      'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=900&q=85',
+    photoUrl: '/team/indrayani.jpg',
     accent: 'cyan',
     subsystem: {
       title: 'Multimodal Room Vision & Semantic Matcher',
