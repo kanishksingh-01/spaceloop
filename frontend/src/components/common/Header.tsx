@@ -132,17 +132,6 @@ export const Header: React.FC<HeaderProps> = ({
                 <span>{t('nav.hostDashboard')}</span>
               </button>
               <button
-                onClick={() => navigate('/list-space')}
-                className={`px-3 py-1.5 rounded-lg transition flex items-center gap-1.5 ${
-                  location.pathname === '/list-space'
-                    ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
-                    : 'text-slate-300 hover:text-white hover:bg-slate-800/60'
-                }`}
-              >
-                <i className="fa-solid fa-plus-circle text-amber-400" />
-                <span>{t('nav.listSpace')}</span>
-              </button>
-              <button
                 onClick={() => navigate('/architecture')}
                 className={`px-3 py-1.5 rounded-lg transition flex items-center gap-1.5 ${
                   location.pathname === '/architecture'
@@ -247,13 +236,6 @@ export const Header: React.FC<HeaderProps> = ({
             /* HOST PORTAL AUTH CONTROLS */
             isVerifiedHost ? (
               <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
-                <button
-                  type="button"
-                  onClick={() => navigate('/list-space')}
-                  className="hidden sm:inline-flex items-center gap-1.5 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-bold text-xs px-3 py-1.5 rounded-xl shadow-md shadow-amber-500/20 transition"
-                >
-                  <i className="fa-solid fa-plus text-[10px]" /> Add Space
-                </button>
                 <div className="flex items-center gap-1.5 px-2 sm:px-2.5 py-1 rounded-xl bg-slate-900 border border-slate-800 text-xs font-bold text-slate-200">
                   <span>🏡 {currentUser?.name?.split(' ')[0] || 'Host'}</span>
                 </div>

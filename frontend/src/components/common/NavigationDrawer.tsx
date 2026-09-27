@@ -330,6 +330,16 @@ export const NavigationDrawer: React.FC<NavigationDrawerProps> = ({
       iconBg: 'bg-[#0B3D91]/10 dark:bg-indigo-500/15',
     },
     {
+      path: '/list-space',
+      label: t('nav.listSpace') || 'List a Space',
+      subtitle: 'Monetize unused desks, rooms & studios',
+      icon: 'fa-solid fa-plus-circle',
+      iconColor: 'text-amber-600 dark:text-amber-400',
+      iconBg: 'bg-amber-500/10 dark:bg-amber-500/15',
+      badge: 'Earn',
+      badgeStyle: 'bg-amber-500/10 text-amber-700 dark:text-amber-300 border-amber-500/25',
+    },
+    {
       path: '/calculator',
       label: t('nav.calculator') || 'Yield Calculator',
       subtitle: 'Calculate estimated host earnings',
