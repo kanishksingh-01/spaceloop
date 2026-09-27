@@ -632,18 +632,14 @@ def _handle_ask_location(params: dict, space_id: int | None, effective_lang: str
 
 
 def _handle_ask_amenities(query: str, space_id: int | None, effective_lang: str) -> str:
-    target_space = Space.query.get(space_id) if space_id else Space.query.filter_by(is_active=True).first()
-    space_title = target_space.title if target_space else "our verified spaces"
-    amen_list = target_space.amenities if target_space and target_space.amenities else ["High-speed fiber Wi-Fi", "4K presentation monitor", "Ergonomic seating", "Inverter power backup"]
-    amen_bullets = "\n".join([f"   • {a}" for a in amen_list])
-    return (
-        f"⚡ **Verified Amenities & Equipment for {space_title}:**\n\n"
-        f"{amen_bullets}\n\n"
-        f"• **Acoustic Environment**: {target_space.ai_noise_level if target_space else 'Quiet (<45 dB)'}\n"
-        f"• **Power Access**: {target_space.ai_power_access if target_space else 'Continuous power backup with dedicated surge-protected outlets'}\n"
-        f"• **Access Protocol**: Geofenced digital door pass with instant arrival PIN.\n\n"
-        f"Ready to book or would you like to know how much a session costs?"
+    from backend.modules.ai.rag_service import generate_rag_response
+    return generate_rag_response(
+        query=query,
+        target_space_id=space_id,
+        intent="ASK_AMENITIES",
+        effective_lang=effective_lang
     )
+
 
 
 def _handle_create_listing(query: str, params: dict, effective_lang: str) -> tuple[str, dict | None]:
@@ -787,7 +783,7 @@ def _handle_report_fraud(params: dict, effective_lang: str) -> str:
     )
 
 
-def _handle_ask_help(query: str, effective_lang: str) -> str:
+def _handle_ask_help(query: str, effective_lang: str, space_id: int | None = None) -> str:
     from backend.modules.nlp.i18n import MultilingualService
     if effective_lang != "en":
         return MultilingualService.get_localized_response("LEGAL_SAFETY", effective_lang)
@@ -853,18 +849,30 @@ def _handle_ask_help(query: str, effective_lang: str) -> str:
             "• **Payout Account**: UPI VPA to receive automated 95% revenue payouts."
         )
 
-    return (
-        "🤝 **SpaceLoop Help & Platform Guide:**\n\n"
-        "• **How SpaceLoop Works**: Discover and book verified physical spaces by the hour with zero hardware keys or physical handoffs.\n"
-        "• **Section 52 Legal Protection**: All reservations operate as non-possessory micro-licenses under Section 52 of the Indian Easements Act, 1882. No tenancy rights are created.\n"
-        "• **₹100 UPI Micro-Escrow**: Deposits are held safely in escrow and refunded within 120 seconds of on-time checkout.\n"
-        "• **Key Actions**:\n"
-        "  - Search spaces: Visit `/` or `/explore`\n"
-        "  - Calculate host earnings: Visit `/calculator`\n"
-        "  - List unused space: Visit `/list-space`\n"
-        "  - View your account: Visit `/dashboard`\n\n"
-        "What can I help you accomplish today?"
+    # 6. Generic high-level help trigger
+    if q in ["help", "platform guide", "support", "what can you do"]:
+        return (
+            "🤝 **SpaceLoop Help & Platform Guide:**\n\n"
+            "• **How SpaceLoop Works**: Discover and book verified physical spaces by the hour with zero hardware keys or physical handoffs.\n"
+            "• **Section 52 Legal Protection**: All reservations operate as non-possessory micro-licenses under Section 52 of the Indian Easements Act, 1882. No tenancy rights are created.\n"
+            "• **₹100 UPI Micro-Escrow**: Deposits are held safely in escrow and refunded within 120 seconds of on-time checkout.\n"
+            "• **Key Actions**:\n"
+            "  - Search spaces: Visit `/` or `/explore`\n"
+            "  - Calculate host earnings: Visit `/calculator`\n"
+            "  - List unused space: Visit `/list-space`\n"
+            "  - View your account: Visit `/dashboard`\n\n"
+            "What can I help you accomplish today?"
+        )
+
+    # 7. For all specific knowledge/policy/rule queries, retrieve exact context via RAG
+    from backend.modules.ai.rag_service import generate_rag_response
+    return generate_rag_response(
+        query=query,
+        target_space_id=space_id,
+        intent="ASK_HELP",
+        effective_lang=effective_lang
     )
+
 
 
 def _handle_general_conversation(effective_lang: str, context_data: dict | None) -> str:
@@ -956,7 +964,7 @@ def orchestrate_loopbot_query(
         elif canonical_intent == IntentType.REPORT_FRAUD.value:
             raw_reply = _handle_report_fraud(params, effective_lang)
         elif canonical_intent == IntentType.ASK_HELP.value:
-            raw_reply = _handle_ask_help(query, effective_lang)
+            raw_reply = _handle_ask_help(query, effective_lang, space_id=space_id)
         elif canonical_intent == IntentType.GENERAL_CONVERSATION.value:
             raw_reply = _handle_general_conversation(effective_lang, context_data)
         else:

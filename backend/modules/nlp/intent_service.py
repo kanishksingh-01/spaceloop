@@ -95,11 +95,11 @@ AMENITIES_PATTERNS = [
 
 RULES_PATTERNS = [
     # English
-    r"\b(?:bring\s+food|food\s+allowed|can\s+i\s+eat|smoking\s+policy|house\s+rules|pets\s+allowed|cancellation\s+policy|guest\s+policy)\b",
+    r"\b(?:bring\s+food|food\s+allowed|can\s+i\s+eat|smoking\s+policy|house\s+rules|pets\s+allowed|cancellation\s+policy|cancellation|cancel(?:ling)?|refund\s+policy|guest\s+policy|rules\s+for|what\s+are\s+the\s+rules)\b",
     # Hindi / Hinglish
-    r"\b(?:khana\s+la\s+sakte\s+hain|food\s+allowed\s+hai|smoking\s+kar\s+sakte\s+hain|house\s+rules\s+kya\s+hain|cancellation\s+rules)\b",
+    r"\b(?:khana\s+la\s+sakte\s+hain|food\s+allowed\s+hai|smoking\s+kar\s+sakte\s+hain|house\s+rules\s+kya\s+hain|cancellation\s+rules|cancel\s+kaise\s+kare)\b",
     # Marathi
-    r"\b(?:jevan\s+aanta\s+yeil\s+ka|niyam\s+kay\s+aahet|dhumrapan\s+chalel\s+ka|shashan\s+kay\s+aahe)\b",
+    r"\b(?:jevan\s+aanta\s+yeil\s+ka|niyam\s+kay\s+aahet|dhumrapan\s+chalel\s+ka|shashan\s+kay\s+aahe|cancel\s+kasa\s+karaycha)\b",
     # Pahari
     r"\b(?:khano\s+la\s+sakan\s+ki\s+na|niyam\s+kya\s+chhan)\b"
 ]
