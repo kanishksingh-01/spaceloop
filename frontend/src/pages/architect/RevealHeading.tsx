@@ -31,7 +31,7 @@ export const RevealHeading: React.FC<RevealHeadingProps> = ({
   const [isRevealing, setIsRevealing] = useState(false);
   const [hasStarted, setHasStarted] = useState(false);
 
-  // If reduced motion is requested, reveal immediately
+  // If reduced motion is active, reveal immediately
   useEffect(() => {
     if (prefersReducedMotion) {
       setProgress(1);
@@ -52,7 +52,7 @@ export const RevealHeading: React.FC<RevealHeadingProps> = ({
             observer.disconnect();
           }
         },
-        { threshold: 0.25 }
+        { threshold: 0.2 }
       );
 
       observer.observe(containerRef.current);
@@ -78,10 +78,7 @@ export const RevealHeading: React.FC<RevealHeadingProps> = ({
       const elapsed = timestamp - startTime;
       const rawProgress = Math.min(elapsed / duration, 1);
 
-      // Smooth cubic easing for natural deceleration
-      // easeOutCubic: 1 - Math.pow(1 - progress, 3)
-      const currentProgress = rawProgress;
-      setProgress(currentProgress);
+      setProgress(rawProgress);
 
       if (rawProgress < 1) {
         rafId = requestAnimationFrame(animate);
@@ -95,46 +92,58 @@ export const RevealHeading: React.FC<RevealHeadingProps> = ({
     return () => cancelAnimationFrame(rafId);
   }, [hasStarted, duration, prefersReducedMotion, onComplete]);
 
-  const chars = Array.from(text);
-  const totalChars = chars.length;
+  const totalChars = text.length;
+  const words = text.split(' ');
+  let charCounter = 0;
 
   return (
-    <Component
-      className={className}
-      aria-label={text}
-    >
+    <Component className={className} aria-label={text}>
       <div
         ref={containerRef}
         className="ag-reveal-heading-wrapper"
         aria-hidden="true"
       >
-        {/* Synchronized Scanner Reveal Bar */}
+        {/* Synchronized Scanner Reveal Bar (Section 3) */}
         <RevealBar
           leftPercent={progress * 100}
           isVisible={isRevealing}
           prefersReducedMotion={prefersReducedMotion}
         />
 
-        {/* Character-by-Character Elements */}
-        {chars.map((char, index) => {
-          const charThreshold = totalChars > 1 ? index / (totalChars - 1) : 0;
-          const isRevealed = prefersReducedMotion || progress >= charThreshold;
-          const isGradient = gradientFromIndex >= 0 && index >= gradientFromIndex;
+        {/* Word-grouped Character-by-Character Elements (Natural Responsive Wrapping) */}
+        {words.map((word, wordIdx) => {
+          const wordChars = Array.from(word);
+          const startIndex = charCounter;
+          charCounter += word.length + 1; // +1 for the space
 
           return (
-            <span
-              key={index}
-              className={`ag-reveal-char ${isRevealed ? 'ag-char-revealed' : ''} ${
-                isGradient ? gradientClassName : ''
-              }`}
-              style={{
-                // Preserve spaces with white-space pre
-                whiteSpace: char === ' ' ? 'pre' : 'normal',
-                transitionDelay: prefersReducedMotion ? '0ms' : `${Math.max(0, (index / totalChars) * 120)}ms`,
-              }}
-            >
-              {char}
-            </span>
+            <React.Fragment key={wordIdx}>
+              <span className="inline-block whitespace-nowrap">
+                {wordChars.map((char, charInWordIdx) => {
+                  const absoluteCharIdx = startIndex + charInWordIdx;
+                  const charThreshold = totalChars > 1 ? absoluteCharIdx / (totalChars - 1) : 0;
+                  const isRevealed = prefersReducedMotion || progress >= charThreshold;
+                  const isGradient = gradientFromIndex >= 0 && absoluteCharIdx >= gradientFromIndex;
+
+                  return (
+                    <span
+                      key={charInWordIdx}
+                      className={`ag-reveal-char ${isRevealed ? 'ag-char-revealed' : ''} ${
+                        isGradient ? gradientClassName : ''
+                      }`}
+                      style={{
+                        transitionDelay: prefersReducedMotion ? '0ms' : `${Math.max(0, (absoluteCharIdx / totalChars) * 110)}ms`,
+                      }}
+                    >
+                      {char}
+                    </span>
+                  );
+                })}
+              </span>
+              {wordIdx < words.length - 1 && (
+                <span className="ag-reveal-space"> </span>
+              )}
+            </React.Fragment>
           );
         })}
       </div>

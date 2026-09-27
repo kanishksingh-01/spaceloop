@@ -21,16 +21,18 @@ export const ArchitectLoader: React.FC<ArchitectLoaderProps> = ({
       return;
     }
 
-    // Phase 1 -> Phase 2 (Settle and start exit dissolve at 750ms)
+    // Sequence:
+    // 0ms - 750ms: Wordmark reveals + branded light movement
+    // 750ms: Wordmark settles, transition starts dissolving
     const exitTimer = setTimeout(() => {
       setIsExiting(true);
-    }, 750);
+    }, 850);
 
-    // Phase 3 (Completely dissolve and unmount at 1050ms)
+    // 1100ms: Loader completely dissolved into hero, unmounts
     const finishTimer = setTimeout(() => {
       setIsVisible(false);
       onComplete();
-    }, 1050);
+    }, 1120);
 
     return () => {
       clearTimeout(exitTimer);
@@ -45,27 +47,34 @@ export const ArchitectLoader: React.FC<ArchitectLoaderProps> = ({
       aria-hidden="true"
       className={`ag-loader-backdrop ${isExiting ? 'ag-loader-exit' : ''}`}
     >
-      {/* Soft Ambient Radial Glow */}
+      {/* Soft Ambient Radial Background Glow */}
       <div className="ag-loader-pulse-glow" />
 
-      {/* SpaceLoop Wordmark & Initialization Telemetry */}
+      {/* Center Wordmark & Calibration Sequence */}
       <div className="relative z-10 flex flex-col items-center text-center px-4 ag-loader-wordmark">
+        {/* Micro Telemetry Eyebrow */}
         <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#0B3D91]/10 dark:bg-white/10 border border-[#0B3D91]/20 dark:border-white/15 text-[#0B3D91] dark:text-cyan-400 text-[10px] font-mono font-bold tracking-widest uppercase mb-4 shadow-xs">
           <Sparkles className="w-3 h-3 text-[#3BA7F2] dark:text-cyan-400" />
           <span>SYSTEM CALIBRATION // 2026</span>
         </div>
 
-        {/* SpaceLoop App Wordmark with Theme Gradients */}
-        <h1 className="text-4xl sm:text-5xl md:text-6xl font-extrabold tracking-tight font-display select-none">
-          <span className="text-slate-900 dark:text-white">Space</span>
-          <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#0B3D91] via-[#1E40AF] to-[#3BA7F2] dark:from-cyan-400 dark:via-indigo-300 dark:to-violet-400">
-            Loop
-          </span>
-        </h1>
+        {/* SpaceLoop App Wordmark with Branded Light Movement Sweep */}
+        <div className="relative inline-block overflow-hidden py-1 px-3">
+          <h1 className="text-4xl sm:text-5xl md:text-6xl font-extrabold tracking-tight font-display select-none">
+            <span className="text-slate-900 dark:text-white">Space</span>
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#0B3D91] via-[#1E40AF] to-[#3BA7F2] dark:from-cyan-400 dark:via-indigo-300 dark:to-violet-400">
+              Loop
+            </span>
+          </h1>
 
+          {/* Branded Light Movement Beam across wordmark */}
+          <div className="ag-loader-light-sweep" />
+        </div>
+
+        {/* Technical Subtitle Indicator */}
         <div className="mt-3 flex items-center gap-2 text-xs font-mono font-medium text-slate-500 dark:text-slate-400">
           <span className="w-1.5 h-1.5 rounded-full bg-[#3BA7F2] dark:bg-cyan-400 animate-ping" />
-          <span>INITIALIZING ARCHITECTURAL DIRECTORY</span>
+          <span>INITIALIZING ARCHITECTURAL ENGINE</span>
         </div>
       </div>
     </div>

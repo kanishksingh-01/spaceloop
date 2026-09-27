@@ -15,16 +15,22 @@ export const RevealBar: React.FC<RevealBarProps> = ({
     return null;
   }
 
+  const clampedPercent = Math.min(Math.max(leftPercent, 0), 100);
+
   return (
     <div
       aria-hidden="true"
-      className="ag-reveal-scanner-bar"
+      className="ag-reveal-scanner-container"
       style={{
-        left: `${Math.min(Math.max(leftPercent, 0), 100)}%`,
-        opacity: isVisible && leftPercent < 100 ? 1 : 0,
-        transform: 'translateX(-50%)',
+        left: `${clampedPercent}%`,
+        opacity: isVisible && clampedPercent < 100 ? 1 : 0,
       }}
-    />
+    >
+      {/* Soft Blurred Duplicate / Glow Layer */}
+      <div className="ag-reveal-scanner-glow" />
+      {/* 1.5px Razor-Thin Crisp Scanner Core Line */}
+      <div className="ag-reveal-scanner-core" />
+    </div>
   );
 };
 

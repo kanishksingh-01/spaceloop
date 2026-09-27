@@ -24,16 +24,16 @@ import './ArchitecturePage.css';
  * ============================================================================
  * SPACELOOP ARCHITECT PAGE — ANTIGRAVITY-INSPIRED PRODUCTION EXPERIENCE
  * ----------------------------------------------------------------------------
- * Interaction & Motion Quality:
- * 1. Page Entry + Cinematic Wordmark Loader (700-1100ms smooth dissolve)
- * 2. Letter-by-Letter Progressive Heading Reveal (opacity + blur + translateY)
- * 3. Thin Colourful Reveal Scanner Bar synchronized with typography
- * 4. Performant Pointer Tracking (CSS variables & requestAnimationFrame)
- * 5. Multi-tiered Subtle Scroll & Mouse Parallax with coordinate marks
- * 6. 4 Real Architect Profiles with working LinkedIn & Email mailto links
- * 7. Interactive Glassmorphic Profile Surfaces with dampened 3D tilt
- * 8. Deep-Dive Full Subsystem Architecture Inspection Glass Modal
- * 9. Dual-Theme Support: Ocean Breeze (#0B3D91, #3BA7F2) & Midnight Neon (#020617)
+ * 1. Page Entry + Entrance Loader (plays fresh on every browser refresh F5/Ctrl+R)
+ * 2. SpaceLoop Wordmark with branded light sweep dissolving into Hero
+ * 3. Letter-by-Letter Progressive Heading Reveal (word-preserving wrapping)
+ * 4. Dual-layer Colourful Reveal Scanner Bar synchronized with typography
+ * 5. Performant Pointer Tracking (CSS custom properties & requestAnimationFrame)
+ * 6. Multi-tiered Subtle Scroll & Mouse Parallax with coordinate marks
+ * 7. 4 Real Architect Profiles with working LinkedIn & Email mailto links
+ * 8. Interactive Glassmorphic Profile Surfaces with dampened 3D tilt
+ * 9. Deep-Dive Full Subsystem Architecture Inspection Glass Modal
+ * 10. Dual-Theme Support: Ocean Breeze (#0B3D91, #3BA7F2) & Midnight Neon (#020617)
  * ============================================================================
  */
 
@@ -43,15 +43,10 @@ export const ArchitecturePage: React.FC = () => {
   const isLight = theme === 'light';
 
   // State Management
+  // Loader plays every time page is refreshed (F5/Ctrl+R). Zero localStorage/session suppression.
+  const [loaderComplete, setLoaderComplete] = useState<boolean>(false);
   const [copiedEmail, setCopiedEmail] = useState<string | null>(null);
   const [activeModalMember, setActiveModalMember] = useState<TeamMember | null>(null);
-  const [loaderComplete, setLoaderComplete] = useState<boolean>(() => {
-    // Check if previously loaded in session to prevent replay on simple re-renders (Section 1)
-    if (typeof window !== 'undefined') {
-      return sessionStorage.getItem('spaceloop_arch_loaded') === 'true';
-    }
-    return false;
-  });
   const [prefersReducedMotion, setPrefersReducedMotion] = useState(false);
   const [isTouchDevice, setIsTouchDevice] = useState(false);
   const [parallaxOffset, setParallaxOffset] = useState({ x: 0, y: 0, scrollY: 0 });
@@ -91,7 +86,7 @@ export const ArchitecturePage: React.FC = () => {
     const handleScroll = () => {
       cancelAnimationFrame(rafId);
       rafId = requestAnimationFrame(() => {
-        setParallaxOffset((prev) => ({ ...prev, scrollY: window.scrollY * 0.1 }));
+        setParallaxOffset((prev) => ({ ...prev, scrollY: window.scrollY * 0.08 }));
       });
     };
 
@@ -130,9 +125,6 @@ export const ArchitecturePage: React.FC = () => {
 
   const handleLoaderFinish = useCallback(() => {
     setLoaderComplete(true);
-    if (typeof window !== 'undefined') {
-      sessionStorage.setItem('spaceloop_arch_loaded', 'true');
-    }
   }, []);
 
   const handleCopyEmail = useCallback((email: string, id: string) => {
@@ -146,7 +138,7 @@ export const ArchitecturePage: React.FC = () => {
   return (
     <div className="min-h-screen ag-blueprint-grid bg-[#E8F6FF] dark:bg-[#020617] text-slate-800 dark:text-slate-100 flex flex-col antialiased selection:bg-[#0B3D91] selection:text-white dark:selection:bg-indigo-500 font-sans transition-colors duration-300 relative">
       {/* =========================================================================
-          1. CINEMATIC SPACELOOP WORDMARK LOADER (Section 1)
+          1. CINEMATIC SPACELOOP WORDMARK LOADER (Triggers on refresh, no suppression)
           ========================================================================= */}
       {!loaderComplete && (
         <ArchitectLoader
@@ -230,13 +222,13 @@ export const ArchitecturePage: React.FC = () => {
               <span className="tracking-widest uppercase">SPACE-TECH ARCHITECTURE // VOL. 2026</span>
             </div>
 
-            {/* Letter-by-Letter Hero Heading with Colourful Reveal Scanner Bar (Section 2 & 3) */}
+            {/* Letter-by-Letter Hero Heading with Colourful Dual-Layer Reveal Scanner Bar */}
             <div className="mb-4">
               <RevealHeading
                 text="Meet the Architects Behind SpaceLoop"
                 as="h1"
-                className="text-4xl sm:text-6xl lg:text-7xl font-extrabold tracking-tight text-slate-900 dark:text-white leading-[1.08] font-display"
-                delay={loaderComplete ? 100 : 900}
+                className="text-4xl sm:text-6xl lg:text-7xl font-extrabold tracking-tight text-slate-900 dark:text-white leading-[1.1] font-display"
+                delay={loaderComplete ? 100 : 950}
                 duration={900}
                 gradientFromIndex={20} // Starts gradient at "Behind SpaceLoop"
                 gradientClassName="text-transparent bg-clip-text bg-gradient-to-r from-[#0B3D91] via-[#1E40AF] to-[#3BA7F2] dark:from-cyan-400 dark:via-indigo-300 dark:to-violet-400"
@@ -332,11 +324,11 @@ export const ArchitecturePage: React.FC = () => {
           role="dialog"
           aria-modal="true"
           aria-labelledby={`modal-title-${activeModalMember.id}`}
-          className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 overflow-y-auto bg-slate-950/70 ag-modal-backdrop"
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 overflow-y-auto bg-slate-950/70 backdrop-blur-xl"
           onClick={() => setActiveModalMember(null)}
         >
           <div
-            className="relative w-full max-w-3xl rounded-3xl bg-white/95 dark:bg-[#0F172A]/95 border border-[#D0E6F7] dark:border-white/10 shadow-2xl p-6 sm:p-10 my-8 backdrop-blur-2xl transition-all duration-300 ag-custom-scroll"
+            className="relative w-full max-w-3xl rounded-3xl bg-white/95 dark:bg-[#0F172A]/95 border border-[#D0E6F7] dark:border-white/10 shadow-2xl p-6 sm:p-10 my-8 backdrop-blur-2xl transition-all duration-300"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Corner Crosshairs */}
