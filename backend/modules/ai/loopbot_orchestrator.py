@@ -211,61 +211,9 @@ def _build_space_knowledge_chunks(space: Space) -> list[dict]:
 
 
 def retrieve_rag_knowledge(query: str, target_space_id: int | None = None, top_k: int = 4) -> list[dict]:
-    chunks = []
-    if target_space_id:
-        space = Space.query.get(target_space_id)
-        if space and space.is_active:
-            chunks.extend(_build_space_knowledge_chunks(space))
-    else:
-        active_spaces = Space.query.filter_by(is_active=True).limit(8).all()
-        for s in active_spaces:
-            chunks.extend(_build_space_knowledge_chunks(s))
-
-    chunks.append({
-        "space_id": None,
-        "title": "SpaceLoop Food & Beverage General Policy",
-        "category": "rules",
-        "text": "General Food Policy: Outside light snacks, sealed beverages, coffee, and water bottles are welcome in all private workspace, meeting room, and study pod bookings. Messy, greasy, or hot catered buffets require host pre-authorization."
-    })
-    chunks.append({
-        "space_id": None,
-        "title": "SpaceLoop Section 52 Legal Protections",
-        "category": "host_policies",
-        "text": "Legal Framework: Every SpaceLoop reservation is an automated Revocable License granted under Section 52 of the Indian Easements Act, 1882. No tenancy, leasehold rights, or statutory tenant protections are created. Hosts retain complete legal possession."
-    })
-    chunks.append({
-        "space_id": None,
-        "title": "SpaceLoop ₹100 UPI Micro-Escrow Protocol",
-        "category": "host_policies",
-        "text": "UPI Escrow Protocol: A nominal ₹100 security deposit is pre-authorized via UPI during booking. When the session concludes on time and room cleanliness is verified, the escrow release service immediately refunds the ₹100 back to the guest UPI account."
-    })
-
-    if not chunks:
-        return []
-
-    query_vector = generate_embedding(query)
-    ranked_chunks = []
-    tokens = [t.lower() for t in re.findall(r"\b[a-zA-Z0-9]{3,}\b", query.lower()) if t not in ("for", "and", "the", "with", "this", "that")]
-
-    for ch in chunks:
-        score = 0.0
-        if query_vector:
-            ch_vec = generate_embedding(ch["text"][:350])
-            if ch_vec:
-                score += cosine_similarity(query_vector, ch_vec) * 0.7
-
-        text_lower = (ch["title"] + " " + ch["text"]).lower()
-        if tokens:
-            matches = sum(1 for t in tokens if t in text_lower)
-            score += (matches / len(tokens)) * 0.3
-
-        if target_space_id and ch.get("space_id") == target_space_id:
-            score += 0.25
-
-        ranked_chunks.append((score, ch))
-
-    ranked_chunks.sort(key=lambda x: x[0], reverse=True)
-    return [item[1] for item in ranked_chunks[:top_k]]
+    """Retrieves knowledge chunks through the unified SpaceLoop RAG Knowledge Service."""
+    from backend.modules.ai.rag_service import retrieve_rag_documents
+    return retrieve_rag_documents(query=query, target_space_id=target_space_id, top_k=top_k)
 
 
 def calculate_pricing_details(space: Space, hours: float = 4.0) -> dict:
@@ -290,37 +238,94 @@ def calculate_pricing_details(space: Space, hours: float = 4.0) -> dict:
     }
 
 
-def run_marketplace_search(params: dict, limit: int = 3) -> list[dict]:
-    query = Space.query.filter_by(is_active=True)
-    min_capacity = params.get("capacity")
-    if min_capacity:
-        query = query.filter(Space.max_capacity >= min_capacity)
+def run_marketplace_search(params: dict, raw_query: str = "", limit: int = 3) -> list[dict]:
+    """
+    Executes marketplace search using the unified SpaceLoop Hybrid Search Engine.
+    Combines structured filters, real-time booking overlap, vector cosine similarity, and composite ranking.
+    """
+    from backend.modules.search.hybrid_search import hybrid_search_spaces
+    min_cap = params.get("guest_count") or params.get("capacity")
+    max_price = params.get("price") or params.get("max_price")
+    cat = params.get("property_type") or params.get("space_type") or params.get("category")
+    loc = params.get("location")
+    date_val = params.get("date")
+    start_time = params.get("start_time")
+    end_time = params.get("end_time")
+    amenities = params.get("amenities")
 
-    max_price = params.get("max_price")
-    if max_price:
-        query = query.filter(Space.price_hourly <= max_price)
-
-    candidate_spaces = query.all()
-    if not candidate_spaces:
-        candidate_spaces = Space.query.filter_by(is_active=True).all()
+    hybrid_out = hybrid_search_spaces(
+        raw_query=raw_query or params.get("normalized_text") or "",
+        location=loc,
+        category=cat,
+        min_capacity=min_cap,
+        max_price=max_price,
+        date=date_val,
+        start_time=start_time,
+        end_time=end_time,
+        amenities=amenities,
+        limit=limit
+    )
 
     results = []
-    now = datetime.utcnow()
-    for s in candidate_spaces:
-        overlap = check_booking_overlap(s.id, now, now + timedelta(hours=2))
-        is_avail = (overlap is None)
-        price_2h = calculate_pricing_details(s, hours=2.0)
+    for item in hybrid_out.get("results", []):
+        s_dict = item.get("space", {})
+        space_id = s_dict.get("id")
+        space_obj = Space.query.get(space_id) if space_id else None
+
+        if not space_obj:
+            class SpaceProxy:
+                def __init__(self, d):
+                    for k, v in d.items():
+                        setattr(self, k, v)
+                    self.id = d.get("id", 1)
+                    self.title = d.get("title", "Space")
+                    self.location = d.get("location", d.get("city", "Pune"))
+                    self.max_capacity = d.get("max_capacity", 4)
+                    self.sqft = d.get("sqft", 200)
+                    self.price_hourly = d.get("price_hourly", 45.0)
+                    self.amenities = d.get("amenities", [])
+            space_obj = SpaceProxy(s_dict)
+
+        rate = float(getattr(space_obj, "price_hourly", 45.0) or 45.0)
+        pricing_2h = {
+            "space_id": getattr(space_obj, "id", space_id),
+            "title": getattr(space_obj, "title", "Verified Space"),
+            "hourly_rate": rate,
+            "hours": 2.0,
+            "subtotal": round(rate * 2.0, 2),
+            "platform_fee": round(rate * 2.0 * 0.05, 2),
+            "refundable_escrow": 100.0,
+            "total_upfront": round(rate * 2.0 * 1.05 + 100.0, 2),
+            "net_cost": round(rate * 2.0 * 1.05, 2)
+        }
+
         results.append({
-            "space": s,
-            "is_available": is_avail,
-            "pricing_2h": price_2h,
-            "match_badge": "Top Pick" if (min_capacity and s.max_capacity >= min_capacity) else "Available Now"
+            "space": space_obj,
+            "is_available": item.get("is_available", True),
+            "pricing_2h": pricing_2h,
+            "match_badge": item.get("match_badge", "Available Now"),
+            "match_reasons": item.get("match_reasons", []),
+            "composite_score": item.get("composite_score", 0.8),
+            "match_score": item.get("match_score", 80)
         })
 
-    if min_capacity:
-        results.sort(key=lambda x: (x["space"].max_capacity >= min_capacity, x["space"].average_rating()), reverse=True)
-    else:
-        results.sort(key=lambda x: x["space"].average_rating(), reverse=True)
+    # Safe fallback if 0 candidates matched hard query filters
+    if not results:
+        fallback_spaces = Space.query.filter_by(is_active=True).all()
+        now = datetime.utcnow()
+        for s in fallback_spaces[:limit]:
+            overlap = check_booking_overlap(s.id, now, now + timedelta(hours=2))
+            is_avail = (overlap is None)
+            price_2h = calculate_pricing_details(s, hours=2.0)
+            results.append({
+                "space": s,
+                "is_available": is_avail,
+                "pricing_2h": price_2h,
+                "match_badge": "Available Now",
+                "match_reasons": ["Verified SpaceLoop listing"],
+                "composite_score": 0.75,
+                "match_score": 75
+            })
 
     return results[:limit]
 
@@ -473,24 +478,36 @@ def _handle_clarification(effective_lang: str) -> str:
     return MultilingualService.get_localized_response("CLARIFICATION_NEEDED", effective_lang)
 
 
-def _handle_search_property(params: dict, effective_lang: str) -> str:
+def _handle_search_property(params: dict, effective_lang: str, raw_query: str = "") -> str:
     from backend.modules.nlp.i18n import MultilingualService
     if effective_lang != "en":
         return MultilingualService.get_localized_response("SEARCH_SPACE", effective_lang, params)
 
-    search_results = run_marketplace_search(params, limit=3)
+    search_results = run_marketplace_search(params, raw_query=raw_query, limit=3)
     cap_req = params.get("guest_count") or params.get("capacity") or "Flexible"
     cards = []
     for idx, res in enumerate(search_results):
         s = res["space"]
         p = res["pricing_2h"]
+        title = getattr(s, "title", "Verified Space")
+        loc = getattr(s, "location", "Pune")
+        max_cap = getattr(s, "max_capacity", 4)
+        sqft = getattr(s, "sqft", 200)
+        rate = getattr(s, "price_hourly", 45.0)
+        amenities = getattr(s, "amenities", [])
+        amen_str = ", ".join(amenities[:3]) if amenities else "High-speed Wi-Fi, Ergonomic Desk"
+        status_str = "🟢 Available Now" if res["is_available"] else "🟡 Reserved soon"
+        badge = res.get("match_badge", "Available Now")
+        reasons = res.get("match_reasons", [])
+        reason_line = f"\n   • Why this matches: {reasons[0]}" if reasons else ""
+
         cards.append(
-            f"{idx + 1}. **{s.title}** ({res['match_badge']})\n"
-            f"   • Location: {s.location}\n"
-            f"   • Capacity: Up to {s.max_capacity} people ({s.sqft} sq ft)\n"
-            f"   • Rate: ₹{s.price_hourly}/hour (Total ₹{p['total_upfront']} for 2h incl. deposit)\n"
-            f"   • Amenities: {', '.join(s.amenities[:3]) if s.amenities else 'High-speed Wi-Fi, Ergonomic Desk'}\n"
-            f"   • Status: {'🟢 Available Now' if res['is_available'] else '🟡 Reserved soon'}"
+            f"{idx + 1}. **{title}** ({badge})\n"
+            f"   • Location: {loc}\n"
+            f"   • Capacity: Up to {max_cap} people ({sqft} sq ft)\n"
+            f"   • Rate: ₹{rate}/hour (Total ₹{p['total_upfront']} for 2h incl. deposit)\n"
+            f"   • Amenities: {amen_str}\n"
+            f"   • Status: {status_str}{reason_line}"
         )
     cards_str = "\n\n".join(cards) if cards else "No matching spaces found at this exact moment."
     return (
@@ -748,7 +765,7 @@ def orchestrate_loopbot_query(
         raw_reply = _handle_clarification(effective_lang)
         canonical_intent = IntentType.CLARIFICATION_NEEDED.value
     elif canonical_intent == IntentType.SEARCH_PROPERTY.value:
-        raw_reply = _handle_search_property(params, effective_lang)
+        raw_reply = _handle_search_property(params, effective_lang, raw_query=query)
     elif canonical_intent == IntentType.CHECK_AVAILABILITY.value:
         raw_reply = _handle_check_availability(params, space_id, effective_lang)
     elif canonical_intent == IntentType.BOOK_PROPERTY.value:

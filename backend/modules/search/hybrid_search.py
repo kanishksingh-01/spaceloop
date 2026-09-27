@@ -322,9 +322,12 @@ def hybrid_search_spaces(
                     searchable_txt = build_searchable_representation(s)
                     listing_vector = generate_embedding(searchable_txt)
                     s.embedding = listing_vector
-                    db.session.commit()
+                    try:
+                        db.session.commit()
+                    except Exception:
+                        db.session.rollback()
                 except Exception:
-                    listing_vector = None
+                    pass
 
             if listing_vector:
                 semantic_sim = cosine_similarity(query_vector, listing_vector)

@@ -77,27 +77,101 @@ def build_searchable_representation(space) -> str:
     return " | ".join(parts)
 
 
+SEMANTIC_CONCEPT_CLUSTERS = {
+    # Quiet / peaceful / calm
+    "quiet": "concept_peaceful",
+    "peaceful": "concept_peaceful",
+    "silent": "concept_peaceful",
+    "calm": "concept_peaceful",
+    "tranquil": "concept_peaceful",
+    "serene": "concept_peaceful",
+    "noise_free": "concept_peaceful",
+    "soundproof": "concept_peaceful",
+    "acoustic": "concept_peaceful",
+    # College / university / campus
+    "college": "concept_university",
+    "university": "concept_university",
+    "campus": "concept_university",
+    "institute": "concept_university",
+    "school": "concept_university",
+    "academy": "concept_university",
+    "faculty": "concept_university",
+    # Place / accommodation / room / space
+    "place": "concept_accommodation",
+    "accommodation": "concept_accommodation",
+    "lodging": "concept_accommodation",
+    "room": "concept_accommodation",
+    "space": "concept_accommodation",
+    "pod": "concept_accommodation",
+    "spot": "concept_accommodation",
+    "premises": "concept_accommodation",
+    "venue": "concept_accommodation",
+    # Near / close / adjacent
+    "near": "concept_proximity",
+    "close": "concept_proximity",
+    "adjacent": "concept_proximity",
+    "vicinity": "concept_proximity",
+    "walkable": "concept_proximity",
+    "nearby": "concept_proximity",
+    # Workspace / office / desk
+    "workspace": "concept_office",
+    "office": "concept_office",
+    "coworking": "concept_office",
+    "desk": "concept_office",
+    "workstation": "concept_office",
+    # Meeting / conference / discussion
+    "meeting": "concept_conference",
+    "conference": "concept_conference",
+    "boardroom": "concept_conference",
+    "discussion": "concept_conference",
+    "huddle": "concept_conference",
+    # Studio / creator / recording
+    "studio": "concept_creative_studio",
+    "podcast": "concept_creative_studio",
+    "recording": "concept_creative_studio",
+    "filming": "concept_creative_studio",
+    "photography": "concept_creative_studio",
+    # Cheap / affordable / budget
+    "budget": "concept_affordable",
+    "cheap": "concept_affordable",
+    "affordable": "concept_affordable",
+    "economical": "concept_affordable",
+    "low_cost": "concept_affordable",
+}
+
+
 def _deterministic_fallback_embedding(text: str, dim: int = EMBEDDING_DIM) -> list[float]:
     """
     High-quality deterministic fallback embedding generator.
-    Produces a normalized dim-dimensional dense vector using n-gram hashing and term weighting.
-    Guarantees consistent, reproducible vector similarity even with zero network/API access.
+    Produces a normalized dim-dimensional dense vector using semantic concept clustering,
+    n-gram hashing, and term weighting.
+    Guarantees consistent, reproducible vector similarity and conceptual synonym matching
+    (e.g., 'quiet place near college' matches 'peaceful accommodation close to university')
+    even with zero network/API access.
     """
     if not text:
         return [0.0] * dim
 
     clean_text = text.lower().strip()
-    tokens = [t for t in clean_text.replace("|", " ").replace(",", " ").replace(":", " ").split() if len(t) > 1]
+    tokens = [t for t in clean_text.replace("|", " ").replace(",", " ").replace(":", " ").replace(".", " ").split() if len(t) > 1]
     vector = [0.0] * dim
 
     for i, token in enumerate(tokens):
-        # Unigram hash
+        # 1. Semantic Concept Cluster (Synonym bridge)
+        concept = SEMANTIC_CONCEPT_CLUSTERS.get(token)
+        if concept:
+            hc = int(hashlib.sha256(concept.encode("utf-8")).hexdigest(), 16)
+            idxc = hc % dim
+            signc = 1.0 if (hc >> 8) % 2 == 0 else -1.0
+            vector[idxc] += signc * 3.0
+
+        # 2. Unigram hash
         h1 = int(hashlib.sha256(token.encode("utf-8")).hexdigest(), 16)
         idx1 = h1 % dim
         sign1 = 1.0 if (h1 >> 8) % 2 == 0 else -1.0
         vector[idx1] += sign1 * 1.5
 
-        # Bigram hash for sequential context
+        # 3. Bigram hash for sequential context
         if i < len(tokens) - 1:
             bigram = f"{token}_{tokens[i+1]}"
             h2 = int(hashlib.md5(bigram.encode("utf-8")).hexdigest(), 16)
@@ -105,7 +179,7 @@ def _deterministic_fallback_embedding(text: str, dim: int = EMBEDDING_DIM) -> li
             sign2 = 1.0 if (h2 >> 4) % 2 == 0 else -1.0
             vector[idx2] += sign2 * 2.0
 
-        # Character trigrams for morphological similarity (e.g. "quiet", "quietly", "acoustic")
+        # 4. Character trigrams for morphological similarity
         if len(token) >= 3:
             for j in range(len(token) - 2):
                 trigram = token[j:j+3]

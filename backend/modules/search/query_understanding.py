@@ -189,6 +189,30 @@ def _deterministic_extract_constraints(query: str) -> dict:
             if label not in extracted["amenities"]:
                 extracted["amenities"].append(label)
 
+    # Integrate SpaceLoop NLPPipeline entities (Multilingual & Code-Mixed awareness)
+    try:
+        from backend.modules.nlp.pipeline import NLPPipeline
+        nlp_res = NLPPipeline.process(clean_q)
+        nlp_entities = nlp_res.entities or {}
+        if nlp_entities.get("location") and not extracted["location"]:
+            extracted["location"] = nlp_entities["location"]
+        if (nlp_entities.get("guest_count") or nlp_entities.get("capacity")) and not extracted["capacity"]:
+            extracted["capacity"] = nlp_entities.get("guest_count") or nlp_entities.get("capacity")
+        if (nlp_entities.get("price") or nlp_entities.get("max_price")) and not extracted["max_price"]:
+            extracted["max_price"] = nlp_entities.get("price") or nlp_entities.get("max_price")
+        if (nlp_entities.get("property_type") or nlp_entities.get("space_type")) and not extracted["space_type"]:
+            st = nlp_entities.get("property_type") or nlp_entities.get("space_type")
+            if isinstance(st, str) and st.title() in ("Workspace", "Meeting", "Studio", "Workshop", "Retail", "Storage", "Study", "Event"):
+                extracted["space_type"] = st.title()
+        if nlp_entities.get("amenities") and not extracted["amenities"]:
+            extracted["amenities"] = nlp_entities["amenities"]
+        if nlp_entities.get("date") and not extracted["date"]:
+            extracted["date"] = nlp_entities["date"]
+        if (nlp_entities.get("duration_hours") or nlp_entities.get("hours")) and not extracted["hours"]:
+            extracted["hours"] = nlp_entities.get("duration_hours") or nlp_entities.get("hours")
+    except Exception as e:
+        logger.debug(f"NLPPipeline constraint enrichment skipped: {e}")
+
     # Clean semantic query by stripping out extracted factual phrases
     semantic_cleaned = clean_q
     for s in to_strip:
