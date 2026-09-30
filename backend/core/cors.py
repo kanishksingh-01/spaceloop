@@ -16,7 +16,8 @@ def configure_cors(app):
         "http://127.0.0.1:3000",
         "http://localhost:5000",
         "http://127.0.0.1:5000",
-        "https://spaceloop.onrender.com"
+        "https://spaceloop.onrender.com",
+        "https://spaceloop.vercel.app"
     ]
     
     raw_origins = app.config.get("CORS_ORIGINS", default_trusted)
@@ -34,7 +35,11 @@ def configure_cors(app):
         if not origin_header:
             return False
         clean = origin_header.rstrip("/")
-        return clean in trusted_origins or any(clean == t.rstrip("/") for t in trusted_origins)
+        if clean in trusted_origins or any(clean == t.rstrip("/") for t in trusted_origins):
+            return True
+        if clean.endswith(".vercel.app") or clean.endswith(".onrender.com"):
+            return True
+        return False
 
     # Native robust CORS middleware
     @app.before_request

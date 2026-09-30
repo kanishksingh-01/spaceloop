@@ -1,62 +1,99 @@
 """
 Vercel Serverless Function Entrypoint for SpaceLoop API
-Integrates Flask WSGI application with Vercel's Python Serverless Runtime.
+Transparently forwards API requests to the production SpaceLoop backend on Render.
+Built using standard library urllib for zero-dependency high reliability and sub-second cold starts.
 """
 import os
-import sys
+import json
+import urllib.request
+import urllib.error
 from urllib.parse import parse_qs, urlencode
 
-# Ensure repository root is placed at the head of Python module search path
-root_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-if root_dir not in sys.path:
-    sys.path.insert(0, root_dir)
-
-from app import app
-from werkzeug.middleware.proxy_fix import ProxyFix
+BACKEND_URL = os.environ.get("RENDER_BACKEND_URL", "https://spaceloop.onrender.com").rstrip("/")
 
 
-class VercelWSGIMiddleware:
-    """
-    Normalizes WSGI PATH_INFO and SCRIPT_NAME for requests routed
-    through Vercel's edge network using rewrites or proxies.
-    """
-    def __init__(self, wsgi_app):
-        self.wsgi_app = wsgi_app
+def app(environ, start_response):
+    # 1. Resolve target path
+    path = environ.get("PATH_INFO", "")
+    qs = environ.get("QUERY_STRING", "")
 
-    def __call__(self, environ, start_response):
-        # 1. Check if route was forwarded via rewrite query parameters
-        qs = environ.get("QUERY_STRING", "")
-        extracted_path = None
+    # Handle rewrite query parameters (__path__, _vercel_path, slug, path)
+    if "__path__=" in qs or "_vercel_path=" in qs or "slug=" in qs or "path=" in qs:
+        params = parse_qs(qs, keep_blank_values=True)
         for key in ("__path__", "_vercel_path", "slug", "path"):
-            if f"{key}=" in qs:
-                params = parse_qs(qs, keep_blank_values=True)
-                if key in params:
-                    extracted_path = params.pop(key)[0]
-                    environ["QUERY_STRING"] = urlencode(params, doseq=True)
-                    break
+            if key in params:
+                path = params.pop(key)[0]
+                qs = urlencode(params, doseq=True)
+                break
 
-        if extracted_path:
-            if not extracted_path.startswith("/"):
-                extracted_path = "/" + extracted_path
-            environ["PATH_INFO"] = extracted_path
-        else:
-            # 2. Check if PATH_INFO was rewritten to the entrypoint filename
-            current_path = environ.get("PATH_INFO", "")
-            if current_path in ("/api/index", "/api/index.py", "/api"):
-                # Check Vercel routing headers
-                matched = environ.get("HTTP_X_MATCHED_PATH")
-                if matched and not matched.startswith("/api/index") and matched != "/":
-                    environ["PATH_INFO"] = matched
-                else:
-                    raw_uri = environ.get("RAW_URI") or environ.get("REQUEST_URI", "")
-                    if raw_uri:
-                        path_part = raw_uri.split("?")[0]
-                        if path_part and not path_part.startswith("/api/index") and path_part != "/":
-                            environ["PATH_INFO"] = path_part
+    if not path.startswith("/"):
+        path = "/" + path
 
-        return self.wsgi_app(environ, start_response)
+    # If routed directly to entrypoint without subpath, point to health
+    if path in ("/api/index", "/api/index.py", "/api"):
+        path = "/api/health"
 
+    # 2. Build target URL
+    target_url = f"{BACKEND_URL}{path}"
+    if qs:
+        target_url += f"?{qs}"
 
-# Apply standard reverse proxy header normalization and Vercel path resolver
-app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_prefix=1)
-app.wsgi_app = VercelWSGIMiddleware(app.wsgi_app)
+    method = environ.get("REQUEST_METHOD", "GET")
+
+    # 3. Read request body if present
+    body = None
+    try:
+        content_length = int(environ.get("CONTENT_LENGTH", 0))
+    except (ValueError, TypeError):
+        content_length = 0
+
+    if content_length > 0 and "wsgi.input" in environ:
+        body = environ["wsgi.input"].read(content_length)
+
+    # 4. Normalize and forward headers
+    headers = {}
+    for k, v in environ.items():
+        if k.startswith("HTTP_"):
+            header_name = k[5:].replace("_", "-").title()
+            if header_name.lower() not in ("host", "content-length"):
+                headers[header_name] = v
+        elif k in ("CONTENT_TYPE", "CONTENT_LENGTH") and v:
+            headers[k.replace("_", "-").title()] = v
+
+    headers["X-Forwarded-Host"] = environ.get("HTTP_HOST", "spaceloop.vercel.app")
+    headers["X-Forwarded-Proto"] = "https"
+
+    req = urllib.request.Request(target_url, data=body, headers=headers, method=method)
+
+    try:
+        with urllib.request.urlopen(req, timeout=45) as resp:
+            status_code = resp.status
+            reason = resp.reason
+            resp_body = resp.read()
+            resp_headers = []
+            for h, val in resp.getheaders():
+                if h.lower() not in ("transfer-encoding", "content-encoding", "content-length"):
+                    resp_headers.append((h, val))
+            resp_headers.append(("Content-Length", str(len(resp_body))))
+            start_response(f"{status_code} {reason}", resp_headers)
+            return [resp_body]
+    except urllib.error.HTTPError as e:
+        err_body = e.read()
+        resp_headers = []
+        for h, val in e.headers.items():
+            if h.lower() not in ("transfer-encoding", "content-encoding", "content-length"):
+                resp_headers.append((h, val))
+        resp_headers.append(("Content-Length", str(len(err_body))))
+        start_response(f"{e.code} {e.reason}", resp_headers)
+        return [err_body]
+    except Exception as e:
+        err_json = json.dumps({
+            "error": "Failed to connect to SpaceLoop backend on Render.",
+            "detail": str(e),
+            "backend_url": BACKEND_URL
+        }).encode("utf-8")
+        start_response("502 Bad Gateway", [
+            ("Content-Type", "application/json"),
+            ("Content-Length", str(len(err_json)))
+        ])
+        return [err_json]
