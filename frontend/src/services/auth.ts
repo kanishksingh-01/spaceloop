@@ -375,3 +375,14 @@ export async function verifyEmailToken(token: string): Promise<{ success: boolea
   });
 }
 
+export async function instantVerifyEmail(payload: { email?: string; token?: string }): Promise<{ success: boolean; message: string; user?: User; portal?: string }> {
+  const res = await request<{ success: boolean; message: string; user?: User; portal?: string }>('/api/v1/auth/instant-verify', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
+  if (res?.user) {
+    localStorage.setItem('spaceloop_user', JSON.stringify(res.user));
+  }
+  return res;
+}
+

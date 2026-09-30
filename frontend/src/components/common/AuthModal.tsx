@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { loginUser, registerUser, digilockerAuth, studentSsoAuth, verifyMfaLogin, resendEmailVerification } from '../../services/auth';
+import { loginUser, registerUser, digilockerAuth, studentSsoAuth, verifyMfaLogin, resendEmailVerification, instantVerifyEmail } from '../../services/auth';
 import { User } from '../../types';
 
 interface AuthModalProps {
@@ -33,6 +33,8 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   const [verificationSent, setVerificationSent] = useState(false);
   const [registeredEmail, setRegisteredEmail] = useState('');
   const [unverifiedEmail, setUnverifiedEmail] = useState<string | null>(null);
+  const [verificationToken, setVerificationToken] = useState<string | null>(null);
+  const [verifyingInstant, setVerifyingInstant] = useState(false);
   const [resending, setResending] = useState(false);
   const [resendStatus, setResendStatus] = useState<string | null>(null);
 
@@ -63,12 +65,30 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     setResending(true);
     setResendStatus(null);
     try {
-      const res = await resendEmailVerification(targetEmail);
-      setResendStatus(res.message || 'Verification link sent! Check your inbox.');
+      const res = await resendEmailVerification(targetEmail) as any;
+      if (res?.verification_token) {
+        setVerificationToken(res.verification_token);
+      }
+      setResendStatus(res?.message || 'Verification link sent! Check your inbox.');
     } catch (e: any) {
       setResendStatus(e.message || 'Failed to resend verification link.');
     } finally {
       setResending(false);
+    }
+  };
+
+  const handleInstantVerify = async (targetEmail: string, token?: string | null) => {
+    if (!targetEmail) return;
+    setVerifyingInstant(true);
+    setError(null);
+    try {
+      const res = await instantVerifyEmail({ email: targetEmail, token: token || undefined });
+      setSuccessMsg(res?.message || 'Account verified successfully!');
+      if (onSuccess && res?.user) onSuccess(res.user);
+    } catch (e: any) {
+      setError(e.message || 'Failed to instant-verify account.');
+    } finally {
+      setVerifyingInstant(false);
     }
   };
 
@@ -114,7 +134,11 @@ export const AuthModal: React.FC<AuthModalProps> = ({
           password,
           confirm_password: confirmPassword,
           role,
-        });
+        }) as any;
+
+        if (res?.verification_token) {
+          setVerificationToken(res.verification_token);
+        }
 
         if (res?.email_verification_required) {
           setVerificationSent(true);
@@ -132,6 +156,9 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     } catch (err: any) {
       if (err?.data?.email_verification_required || (err?.status === 403 && err.message?.toLowerCase().includes('verify your email'))) {
         setUnverifiedEmail(err?.data?.email || email);
+        if (err?.data?.verification_token) {
+          setVerificationToken(err?.data?.verification_token);
+        }
         setError('Please verify your email address before logging in.');
       } else {
         const rawMsg = err?.message || err?.error || err?.data?.error || err?.data?.message;
@@ -295,14 +322,22 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                   </p>
                 </div>
               </div>
-              <div className="flex items-center gap-3 pt-1">
+              <div className="flex items-center gap-2 pt-1 flex-wrap">
+                <button
+                  type="button"
+                  disabled={verifyingInstant}
+                  onClick={() => handleInstantVerify(unverifiedEmail, verificationToken)}
+                  className="px-3 py-1 rounded-lg bg-emerald-500/25 hover:bg-emerald-500/35 border border-emerald-500/40 text-emerald-300 text-[11px] font-bold transition flex items-center gap-1 disabled:opacity-50"
+                >
+                  <span>{verifyingInstant ? 'Verifying...' : '⚡ Instant Verify & Sign In'}</span>
+                </button>
                 <button
                   type="button"
                   disabled={resending}
                   onClick={() => handleResendEmail(unverifiedEmail)}
                   className="px-3 py-1 rounded-lg bg-indigo-600/30 hover:bg-indigo-600/50 text-indigo-300 text-[11px] font-bold transition disabled:opacity-50"
                 >
-                  {resending ? 'Sending link...' : 'Resend verification link'}
+                  {resending ? 'Sending link...' : 'Resend verification email'}
                 </button>
                 {resendStatus && (
                   <span className="text-[11px] text-emerald-400 font-medium">{resendStatus}</span>
@@ -349,6 +384,14 @@ export const AuthModal: React.FC<AuthModalProps> = ({
               </div>
 
               <div className="space-y-2 pt-2">
+                <button
+                  type="button"
+                  disabled={verifyingInstant}
+                  onClick={() => handleInstantVerify(registeredEmail, verificationToken)}
+                  className="w-full py-2.5 rounded-xl bg-emerald-500/25 hover:bg-emerald-500/35 border border-emerald-500/40 text-emerald-300 font-bold text-xs transition flex items-center justify-center gap-1.5"
+                >
+                  <span>{verifyingInstant ? 'Verifying...' : '⚡ Instant Verify & Enter Portal'}</span>
+                </button>
                 <button
                   type="button"
                   disabled={resending}

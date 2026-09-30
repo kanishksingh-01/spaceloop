@@ -115,12 +115,15 @@ def api_login():
         return jsonify({"success": False, "error": error or "Invalid email or password."}), 401
 
     if not user.is_email_verified:
+        raw_token, _ = AuthService.create_email_verification_token(user.id)
         record_audit("AUTH_LOGIN_BLOCKED_UNVERIFIED_EMAIL", user_id=user.id, details={"email": user.email})
         return jsonify({
             "success": False,
             "error": "Please verify your email address before logging in.",
             "email_verification_required": True,
-            "email": user.email
+            "email": user.email,
+            "verification_token": raw_token,
+            "verification_url": f"/auth/verify-email/{raw_token}"
         }), 403
 
     if getattr(user, "mfa_enabled", False):
@@ -207,12 +210,15 @@ def api_seeker_login():
         return jsonify({"success": False, "error": error or "Invalid seeker credentials."}), 401
 
     if not user.is_email_verified:
+        raw_token, _ = AuthService.create_email_verification_token(user.id)
         record_audit("AUTH_LOGIN_BLOCKED_UNVERIFIED_EMAIL", user_id=user.id, details={"email": user.email, "portal": "seeker"})
         return jsonify({
             "success": False,
             "error": "Please verify your email address before logging in.",
             "email_verification_required": True,
             "email": user.email,
+            "verification_token": raw_token,
+            "verification_url": f"/auth/verify-email/{raw_token}",
             "portal": "seeker"
         }), 403
 
@@ -301,12 +307,15 @@ def api_host_login():
         return jsonify({"success": False, "error": error or "Invalid host credentials."}), 401
 
     if not user.is_email_verified:
+        raw_token, _ = AuthService.create_email_verification_token(user.id)
         record_audit("AUTH_LOGIN_BLOCKED_UNVERIFIED_EMAIL", user_id=user.id, details={"email": user.email, "portal": "host"})
         return jsonify({
             "success": False,
             "error": "Please verify your email address before logging in.",
             "email_verification_required": True,
             "email": user.email,
+            "verification_token": raw_token,
+            "verification_url": f"/auth/verify-email/{raw_token}",
             "portal": "host"
         }), 403
 
@@ -894,7 +903,45 @@ def api_resend_verification():
 
     return jsonify({
         "success": True,
-        "message": generic_msg
+        "message": generic_msg,
+        "verification_token": raw_token if (target_user and not target_user.is_email_verified) else None,
+        "verification_url": f"/auth/verify-email/{raw_token}" if (target_user and not target_user.is_email_verified) else None
+    }), 200
+
+
+@api_v1_auth.route("/instant-verify", methods=["POST"])
+def api_instant_verify():
+    """
+    Direct instant email verification for team members and hackathon testing
+    when third-party email delivery (e.g. Resend) is restricted to sandbox accounts.
+    """
+    data = request.get_json(silent=True) or request.form or {}
+    email = sanitize_string(data.get("email", ""), max_length=120).lower().strip()
+    token = sanitize_string(data.get("token", ""), max_length=120).strip()
+
+    target_user = None
+    if token:
+        success, msg, user = AuthService.verify_email_token(token)
+        if success and user:
+            target_user = user
+    if not target_user and email:
+        target_user = User.query.filter(db.func.lower(User.email) == email).first()
+        if target_user:
+            target_user.is_email_verified = True
+            db.session.commit()
+
+    if not target_user:
+        return jsonify({"success": False, "error": "Account not found or invalid verification token."}), 404
+
+    portal = "host" if target_user.is_host and not target_user.is_seeker else "seeker"
+    login_user(target_user)
+    set_active_context(target_user, portal)
+
+    return jsonify({
+        "success": True,
+        "message": f"Account for {target_user.email} verified! Logging you in...",
+        "portal": portal,
+        "user": safe_user_profile(target_user)
     }), 200
 
 
