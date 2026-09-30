@@ -2,7 +2,13 @@ import React, { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Booking } from '../../../types';
 import { getHostBookings, disputeBooking } from '../../../services/host';
-import { StatusBadge } from '../components/StatusBadge';
+import {
+  HostPageHeader,
+  HostCard,
+  HostCardSkeleton,
+  HostTableSkeleton,
+  StatusBadge,
+} from '../components';
 
 export const ConditionEscrowView: React.FC = () => {
   const location = useLocation();
@@ -53,137 +59,132 @@ export const ConditionEscrowView: React.FC = () => {
   };
 
   return (
-    <div className="p-6 md:p-8 max-w-7xl mx-auto w-full space-y-8">
+    <div className="px-4 sm:px-6 lg:px-8 py-6 max-w-7xl mx-auto w-full space-y-6">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-800">
-        <div>
-          <div className="flex items-center gap-2 mb-1">
-            <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/15 text-amber-400 border border-amber-500/30 uppercase tracking-wider">
-              Settlement & Trust
-            </span>
-            <span className="text-slate-500 text-xs font-mono">₹100 Micro-Escrow • Automated Departure CV</span>
+      <HostPageHeader
+        category="Settlement & Trust"
+        title={activeTab === 'escrow' ? 'Escrow & Payout Ledger' : 'Condition Verification Reports'}
+        subtitle="Automated settlement releases, ₹100 micro-escrow holds, and AI computer vision condition audits."
+        badge={
+          <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/15 text-amber-400 border border-amber-500/30 uppercase tracking-wider">
+            ₹100 Micro-Escrow • Automated Departure CV
+          </span>
+        }
+        actions={
+          <div className="flex items-center bg-slate-900 border border-slate-800 rounded-xl p-1 text-xs">
+            <button
+              onClick={() => setActiveTab('condition')}
+              className={`px-3.5 py-1.5 rounded-lg font-semibold transition ${
+                activeTab === 'condition'
+                  ? 'bg-amber-500/15 text-amber-300 border border-amber-500/30'
+                  : 'text-slate-400 hover:text-white'
+              }`}
+            >
+              <i className="fa-solid fa-clipboard-check mr-1.5" />
+              Condition Reports
+            </button>
+            <button
+              onClick={() => setActiveTab('escrow')}
+              className={`px-3.5 py-1.5 rounded-lg font-semibold transition ${
+                activeTab === 'escrow'
+                  ? 'bg-amber-500/15 text-amber-300 border border-amber-500/30'
+                  : 'text-slate-400 hover:text-white'
+              }`}
+            >
+              <i className="fa-solid fa-vault mr-1.5" />
+              Escrow Ledger
+            </button>
           </div>
-          <h1 className="text-2xl md:text-3xl font-extrabold text-white tracking-tight">
-            {activeTab === 'escrow' ? 'Escrow & Payout Ledger' : 'Condition Verification Reports'}
-          </h1>
-          <p className="text-slate-400 text-xs md:text-sm mt-0.5">
-            Automated settlement releases, ₹100 micro-escrow holds, and AI computer vision condition audits.
-          </p>
-        </div>
-
-        {/* Tab Toggle */}
-        <div className="flex items-center bg-slate-900 border border-slate-800 rounded-xl p-1 text-xs">
-          <button
-            onClick={() => setActiveTab('condition')}
-            className={`px-4 py-1.5 rounded-lg font-semibold transition ${
-              activeTab === 'condition'
-                ? 'bg-amber-500/15 text-amber-300 border border-amber-500/30'
-                : 'text-slate-400 hover:text-white'
-            }`}
-          >
-            <i className="fa-solid fa-clipboard-check mr-1.5" />
-            Condition Reports
-          </button>
-          <button
-            onClick={() => setActiveTab('escrow')}
-            className={`px-4 py-1.5 rounded-lg font-semibold transition ${
-              activeTab === 'escrow'
-                ? 'bg-amber-500/15 text-amber-300 border border-amber-500/30'
-                : 'text-slate-400 hover:text-white'
-            }`}
-          >
-            <i className="fa-solid fa-vault mr-1.5" />
-            Escrow Ledger
-          </button>
-        </div>
-      </div>
+        }
+      />
 
       {loading ? (
-        <div className="py-20 text-center text-slate-400 text-xs font-mono">
-          <div className="w-8 h-8 border-2 border-amber-500 border-t-transparent rounded-full animate-spin mx-auto mb-3" />
-          FETCHING SETTLEMENT RECORDS...
-        </div>
+        activeTab === 'condition' ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+            <HostCardSkeleton lines={5} />
+            <HostCardSkeleton lines={5} />
+          </div>
+        ) : (
+          <HostTableSkeleton rows={5} cols={6} />
+        )
       ) : activeTab === 'condition' ? (
         /* CONDITION REPORTS SECTION */
         <div className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
             {bookings.slice(0, 4).map(b => (
-              <div
+              <HostCard
                 key={b.id}
-                className="bg-slate-900/70 border border-slate-800 rounded-2xl p-5 space-y-4 hover:border-slate-700 transition"
-              >
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h3 className="font-bold text-white text-sm">{b.space?.title || `Space #${b.space_id}`}</h3>
-                    <p className="text-[11px] text-slate-400">
-                      Booking #{b.id} • Renter: {b.renter?.name || b.user_name || 'Guest'}
-                    </p>
-                  </div>
+                title={b.space?.title || `Space #${b.space_id}`}
+                subtitle={`Booking #${b.id} • Renter: ${b.renter?.name || b.user_name || 'Guest'}`}
+                icon="fa-solid fa-camera-rotate"
+                action={
                   <span className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
                     CV MATCH: 98.4%
                   </span>
-                </div>
-
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <span className="text-[10px] text-slate-400 block mb-1">Check-in Photo</span>
-                    <div className="aspect-video rounded-xl overflow-hidden border border-slate-800 bg-slate-950">
-                      <img
-                        src="https://images.unsplash.com/photo-1527192491265-7e15c55b1ed2?auto=format&fit=crop&w=400&q=80"
-                        alt="Entry"
-                        className="w-full h-full object-cover"
-                      />
+                }
+              >
+                <div className="space-y-4">
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <span className="text-[10px] text-slate-400 block mb-1">Check-in Photo</span>
+                      <div className="aspect-video rounded-xl overflow-hidden border border-slate-800 bg-slate-950">
+                        <img
+                          src="https://images.unsplash.com/photo-1527192491265-7e15c55b1ed2?auto=format&fit=crop&w=400&q=80"
+                          alt="Entry"
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
+                    </div>
+                    <div>
+                      <span className="text-[10px] text-slate-400 block mb-1">Check-out Photo</span>
+                      <div className="aspect-video rounded-xl overflow-hidden border border-slate-800 bg-slate-950">
+                        <img
+                          src="https://images.unsplash.com/photo-1527192491265-7e15c55b1ed2?auto=format&fit=crop&w=400&q=80"
+                          alt="Exit"
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
                     </div>
                   </div>
-                  <div>
-                    <span className="text-[10px] text-slate-400 block mb-1">Check-out Photo</span>
-                    <div className="aspect-video rounded-xl overflow-hidden border border-slate-800 bg-slate-950">
-                      <img
-                        src="https://images.unsplash.com/photo-1527192491265-7e15c55b1ed2?auto=format&fit=crop&w=400&q=80"
-                        alt="Exit"
-                        className="w-full h-full object-cover"
-                      />
+
+                  <div className="p-3 rounded-xl bg-slate-950/70 border border-slate-800/80 text-xs space-y-1">
+                    <div className="flex items-center justify-between text-slate-300">
+                      <span>Electrical Appliance Check:</span>
+                      <span className="text-emerald-400 font-semibold">ALL OFF ✓</span>
+                    </div>
+                    <div className="flex items-center justify-between text-slate-300">
+                      <span>Structural Integrity Delta:</span>
+                      <span className="text-emerald-400 font-semibold">0% Damage</span>
                     </div>
                   </div>
-                </div>
 
-                <div className="p-3 rounded-xl bg-slate-950/70 border border-slate-800/80 text-xs space-y-1">
-                  <div className="flex items-center justify-between text-slate-300">
-                    <span>Electrical Appliance Check:</span>
-                    <span className="text-emerald-400 font-semibold">ALL OFF ✓</span>
-                  </div>
-                  <div className="flex items-center justify-between text-slate-300">
-                    <span>Structural Integrity Delta:</span>
-                    <span className="text-emerald-400 font-semibold">0% Damage</span>
+                  <div className="flex items-center justify-between pt-1">
+                    <span className="text-[11px] text-slate-500">
+                      Inspected via Computer Vision Model
+                    </span>
+                    <button
+                      onClick={() => navigate(`/host/bookings/${b.id}?tab=condition`)}
+                      className="text-xs text-amber-400 hover:text-amber-300 font-semibold transition"
+                    >
+                      View Full Report →
+                    </button>
                   </div>
                 </div>
-
-                <div className="flex items-center justify-between pt-1">
-                  <span className="text-[11px] text-slate-500">
-                    Inspected via Computer Vision Model
-                  </span>
-                  <button
-                    onClick={() => navigate(`/host/bookings/${b.id}?tab=condition`)}
-                    className="text-xs text-amber-400 hover:text-amber-300 font-semibold"
-                  >
-                    View Full Report →
-                  </button>
-                </div>
-              </div>
+              </HostCard>
             ))}
           </div>
         </div>
       ) : (
         /* ESCROW LEDGER SECTION */
-        <div className="bg-slate-900/60 border border-slate-800 rounded-2xl overflow-hidden">
-          <div className="p-5 border-b border-slate-800 flex items-center justify-between">
-            <h3 className="font-bold text-white text-base">₹100 Micro-Escrow Deposit Transactions</h3>
-            <span className="text-xs font-mono text-emerald-400">Automated UPI Payouts</span>
-          </div>
-
-          <div className="overflow-x-auto">
+        <HostCard
+          title="₹100 Micro-Escrow Deposit Transactions"
+          subtitle="Automated UPI micro-escrow deposits held and released"
+          icon="fa-solid fa-vault"
+          action={<span className="text-xs font-mono text-emerald-400 font-semibold">Automated UPI Payouts</span>}
+        >
+          <div className="overflow-x-auto -mx-5 -my-4 sm:-mx-6 sm:-my-5">
             <table className="w-full text-left text-xs">
-              <thead className="bg-slate-950 text-slate-400 font-semibold border-b border-slate-800">
+              <thead className="bg-slate-950 text-slate-400 font-semibold border-b border-slate-800 text-[11px] uppercase tracking-wider">
                 <tr>
                   <th className="p-3.5">Booking / Space</th>
                   <th className="p-3.5">Renter</th>
@@ -221,14 +222,14 @@ export const ConditionEscrowView: React.FC = () => {
                         {!isReleased && b.status === 'completed' ? (
                           <button
                             onClick={() => setSelectedBookingForDispute(b)}
-                            className="px-3 py-1 rounded-lg border border-amber-500/40 text-amber-300 text-xs font-semibold hover:bg-amber-500/10"
+                            className="px-3 py-1 rounded-xl border border-amber-500/40 text-amber-300 text-xs font-semibold hover:bg-amber-500/10 transition"
                           >
                             Dispute
                           </button>
                         ) : (
                           <button
                             onClick={() => navigate(`/host/bookings/${b.id}`)}
-                            className="px-3 py-1 rounded-lg bg-slate-800 text-slate-300 text-xs font-semibold hover:bg-slate-700"
+                            className="px-3 py-1 rounded-xl bg-slate-800 text-slate-300 text-xs font-semibold hover:bg-slate-700 transition border border-slate-700"
                           >
                             Details
                           </button>
@@ -240,13 +241,13 @@ export const ConditionEscrowView: React.FC = () => {
               </tbody>
             </table>
           </div>
-        </div>
+        </HostCard>
       )}
 
       {/* Dispute Modal */}
       {selectedBookingForDispute && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl max-w-md w-full p-6 space-y-4">
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl max-w-md w-full p-6 space-y-4 shadow-xl">
             <h3 className="text-base font-bold text-white">Raise Escrow Dispute</h3>
             <p className="text-xs text-slate-400">
               Dispute booking #{selectedBookingForDispute.id} deposit due to physical damage or appliances left on.
@@ -256,19 +257,19 @@ export const ConditionEscrowView: React.FC = () => {
               value={disputeReason}
               onChange={e => setDisputeReason(e.target.value)}
               placeholder="Explain the damage or reason..."
-              className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-xs text-white"
+              className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-xs text-white focus:outline-none focus:border-amber-500/50"
             />
             <div className="flex items-center justify-end gap-2">
               <button
                 onClick={() => setSelectedBookingForDispute(null)}
-                className="px-3 py-1.5 rounded-xl bg-slate-800 text-slate-300 text-xs"
+                className="px-3.5 py-1.5 rounded-xl bg-slate-800 text-slate-300 text-xs font-semibold border border-slate-700"
               >
                 Cancel
               </button>
               <button
                 onClick={handleRaiseDispute}
                 disabled={submittingDispute || !disputeReason.trim()}
-                className="px-4 py-1.5 rounded-xl bg-amber-500 text-slate-950 font-bold text-xs"
+                className="px-4 py-1.5 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-bold text-xs shadow-md transition disabled:opacity-50"
               >
                 {submittingDispute ? 'Submitting...' : 'Submit Dispute'}
               </button>

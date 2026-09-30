@@ -2,10 +2,16 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { Booking } from '../../../types';
 import { getHostBookingDetail, acceptBooking, rejectBooking, cancelBooking, disputeBooking } from '../../../services/host';
-import { ResourceHeader } from '../components/ResourceHeader';
-import { ContextTabs, TabItem } from '../components/ContextTabs';
-import { WorkflowBar, WorkflowStep } from '../components/WorkflowBar';
-import { StatusBadge } from '../components/StatusBadge';
+import {
+  ResourceHeader,
+  ContextTabs,
+  TabItem,
+  WorkflowBar,
+  WorkflowStep,
+  StatusBadge,
+  HostCard,
+  HostDetailSkeleton,
+} from '../components';
 
 export const BookingDetailView: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -186,11 +192,8 @@ export const BookingDetailView: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="flex-1 flex items-center justify-center py-24">
-        <div className="flex flex-col items-center gap-3">
-          <div className="w-8 h-8 border-2 border-amber-500 border-t-transparent rounded-full animate-spin" />
-          <span className="text-xs font-mono text-slate-400">LOADING BOOKING RECORD...</span>
-        </div>
+      <div className="px-4 sm:px-6 lg:px-8 py-6 max-w-7xl mx-auto w-full space-y-6">
+        <HostDetailSkeleton />
       </div>
     );
   }
@@ -255,7 +258,7 @@ export const BookingDetailView: React.FC = () => {
                 <button
                   onClick={handleAccept}
                   disabled={actionLoading}
-                  className="px-4 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs shadow-md shadow-amber-500/20 transition"
+                  className="px-4 py-1.5 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-bold text-xs shadow-md shadow-amber-500/20 transition"
                 >
                   Accept Booking
                 </button>
@@ -295,7 +298,7 @@ export const BookingDetailView: React.FC = () => {
       />
 
       {/* Level-3 Lifecycle Workflow Bar */}
-      <div className="px-6 md:px-8 pt-4">
+      <div className="px-4 sm:px-6 lg:px-8 pt-4">
         <WorkflowBar
           steps={getWorkflowSteps()}
           onStepClick={(stepId) => {
@@ -310,47 +313,52 @@ export const BookingDetailView: React.FC = () => {
       <ContextTabs tabs={tabs} activeTab={activeTab} onTabChange={handleTabChange} />
 
       {/* Tab Panels */}
-      <div className="p-6 md:p-8 max-w-6xl mx-auto w-full">
+      <div className="px-4 sm:px-6 lg:px-8 py-6 max-w-7xl mx-auto w-full space-y-6">
         {/* TAB 1: OVERVIEW */}
         {activeTab === 'overview' && (
           <div className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               {/* Left Column: Financial Breakdown */}
               <div className="md:col-span-1 space-y-4">
-                <div className="p-5 rounded-2xl bg-slate-900/60 border border-slate-800 space-y-3.5 text-xs">
-                  <h3 className="font-bold text-white text-sm">Escrow Settlement Ledger</h3>
+                <HostCard
+                  title="Escrow Settlement Ledger"
+                  icon="fa-solid fa-vault"
+                >
+                  <div className="space-y-3.5 text-xs">
+                    <div className="space-y-2 pt-1">
+                      <div className="flex items-center justify-between text-slate-300">
+                        <span>Rental Subtotal ({booking.total_hours} hrs)</span>
+                        <span className="font-mono">₹{subtotal}</span>
+                      </div>
+                      <div className="flex items-center justify-between text-slate-400">
+                        <span>SpaceLoop Platform Fee (5%)</span>
+                        <span className="font-mono">- ₹{platformFee}</span>
+                      </div>
+                      <div className="flex items-center justify-between text-amber-300 pt-1 border-t border-slate-800">
+                        <span className="flex items-center gap-1.5">
+                          <i className="fa-solid fa-vault text-[10px]" />
+                          <span>UPI Security Escrow</span>
+                        </span>
+                        <span className="font-mono">₹100 Held</span>
+                      </div>
+                      <div className="flex items-center justify-between text-emerald-400 font-bold text-sm pt-2 border-t border-slate-800">
+                        <span>Host Net Payout</span>
+                        <span className="font-mono">₹{netEarnings}</span>
+                      </div>
+                    </div>
 
-                  <div className="space-y-2 pt-1">
-                    <div className="flex items-center justify-between text-slate-300">
-                      <span>Rental Subtotal ({booking.total_hours} hrs)</span>
-                      <span className="font-mono">₹{subtotal}</span>
-                    </div>
-                    <div className="flex items-center justify-between text-slate-400">
-                      <span>SpaceLoop Platform Fee (5%)</span>
-                      <span className="font-mono">- ₹{platformFee}</span>
-                    </div>
-                    <div className="flex items-center justify-between text-amber-300 pt-1 border-t border-slate-800">
-                      <span className="flex items-center gap-1.5">
-                        <i className="fa-solid fa-vault text-[10px]" />
-                        <span>UPI Security Escrow</span>
-                      </span>
-                      <span className="font-mono">₹100 Held</span>
-                    </div>
-                    <div className="flex items-center justify-between text-emerald-400 font-bold text-sm pt-2 border-t border-slate-800">
-                      <span>Host Net Payout</span>
-                      <span className="font-mono">₹{netEarnings}</span>
+                    <div className="p-2.5 rounded-xl bg-slate-950/80 border border-slate-800/80 text-[10px] text-slate-400 flex items-center justify-between">
+                      <span>Payout Method:</span>
+                      <span className="font-mono text-white">Direct UPI (Host VPA)</span>
                     </div>
                   </div>
+                </HostCard>
 
-                  <div className="p-2.5 rounded-xl bg-slate-950/80 border border-slate-800/80 text-[10px] text-slate-400 flex items-center justify-between">
-                    <span>Payout Method:</span>
-                    <span className="font-mono text-white">Direct UPI (Host VPA)</span>
-                  </div>
-                </div>
-
-                <div className="p-5 rounded-2xl bg-slate-900/60 border border-slate-800 space-y-3 text-xs">
-                  <h3 className="font-bold text-white text-sm">Space Details</h3>
-                  <div className="space-y-2">
+                <HostCard
+                  title="Space Details"
+                  icon="fa-solid fa-building"
+                >
+                  <div className="space-y-2 text-xs">
                     <div className="text-white font-semibold">{space?.title || `Space #${booking.space_id}`}</div>
                     <div className="text-slate-400 text-[11px]">{space?.address || space?.location || 'Address registered'}</div>
                     <button
@@ -360,13 +368,15 @@ export const BookingDetailView: React.FC = () => {
                       Manage Space →
                     </button>
                   </div>
-                </div>
+                </HostCard>
               </div>
 
               {/* Right Column (2 Cols): Reservation Schedule & Check-in Rules */}
               <div className="md:col-span-2 space-y-6">
-                <div className="p-5 rounded-2xl bg-slate-900/60 border border-slate-800 space-y-4">
-                  <h3 className="font-bold text-white text-sm">Operational Schedule</h3>
+                <HostCard
+                  title="Operational Schedule"
+                  icon="fa-regular fa-clock"
+                >
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
                     <div className="p-3.5 rounded-xl bg-slate-950/60 border border-slate-800">
                       <span className="text-slate-500 text-[10px] uppercase font-mono block mb-1">Scheduled Start</span>
@@ -388,11 +398,13 @@ export const BookingDetailView: React.FC = () => {
                       </div>
                     </div>
                   </div>
-                </div>
+                </HostCard>
 
-                <div className="p-5 rounded-2xl bg-slate-900/60 border border-slate-800 space-y-3 text-xs">
-                  <h3 className="font-bold text-white text-sm">Access & Handshake Rules</h3>
-                  <div className="space-y-2 text-slate-300">
+                <HostCard
+                  title="Access & Handshake Rules"
+                  icon="fa-solid fa-shield-halved"
+                >
+                  <div className="space-y-2 text-xs text-slate-300">
                     <p className="flex items-center gap-2">
                       <i className="fa-solid fa-circle-check text-emerald-400 text-xs" />
                       <span>50-Meter Zero-Spoofing Perimeter enforced on arrival via seeker device GPS.</span>
@@ -406,7 +418,7 @@ export const BookingDetailView: React.FC = () => {
                       <span>₹100 Escrow released automatically on departure unless host logs damage dispute within 2 hours.</span>
                     </p>
                   </div>
-                </div>
+                </HostCard>
               </div>
             </div>
           </div>
@@ -414,185 +426,195 @@ export const BookingDetailView: React.FC = () => {
 
         {/* TAB 2: RENTER PROFILE */}
         {activeTab === 'renter' && (
-          <div className="bg-slate-900/60 border border-slate-800 p-6 rounded-2xl space-y-6">
-            <div className="flex items-center gap-4">
-              <div className="w-14 h-14 rounded-2xl bg-indigo-500/20 border border-indigo-500/40 text-indigo-400 flex items-center justify-center text-xl font-bold">
-                {(renter?.name || booking.user_name || 'U').charAt(0).toUpperCase()}
+          <HostCard
+            title="Occupant Profile & KYC"
+            subtitle="Verified identity parameters"
+            icon="fa-solid fa-user-shield"
+          >
+            <div className="space-y-6">
+              <div className="flex items-center gap-4">
+                <div className="w-14 h-14 rounded-2xl bg-indigo-500/20 border border-indigo-500/40 text-indigo-400 flex items-center justify-center text-xl font-bold font-mono">
+                  {(renter?.name || booking.user_name || 'U').charAt(0).toUpperCase()}
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-white flex items-center gap-2">
+                    <span>{renter?.name || booking.user_name || 'Verified Seeker'}</span>
+                    <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                      DigiLocker KYC Verified
+                    </span>
+                  </h3>
+                  <p className="text-xs text-slate-400 mt-0.5">
+                    Member since {renter?.created_at ? new Date(renter.created_at).getFullYear() : '2025'} • OTI Reputation Index: 96/100
+                  </p>
+                </div>
               </div>
-              <div>
-                <h3 className="text-base font-bold text-white flex items-center gap-2">
-                  <span>{renter?.name || booking.user_name || 'Verified Seeker'}</span>
-                  <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
-                    DigiLocker KYC Verified
-                  </span>
-                </h3>
-                <p className="text-xs text-slate-400 mt-0.5">
-                  Member since {renter?.created_at ? new Date(renter.created_at).getFullYear() : '2025'} • OTI Reputation Index: 96/100
-                </p>
-              </div>
-            </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs">
-              <div className="p-3.5 rounded-xl bg-slate-950/60 border border-slate-800">
-                <span className="text-slate-500 text-[10px] uppercase font-mono block mb-1">Email Address</span>
-                <span className="font-mono text-slate-200">{renter?.email || 'seeker@spaceloop.in'}</span>
-              </div>
-              <div className="p-3.5 rounded-xl bg-slate-950/60 border border-slate-800">
-                <span className="text-slate-500 text-[10px] uppercase font-mono block mb-1">Contact Phone</span>
-                <span className="font-mono text-slate-200">{renter?.phone || '+91 98765 43210'}</span>
-              </div>
-              <div className="p-3.5 rounded-xl bg-slate-950/60 border border-slate-800">
-                <span className="text-slate-500 text-[10px] uppercase font-mono block mb-1">Aadhaar Tokenized ID</span>
-                <span className="font-mono text-emerald-400">SHA256: 8f4c...d92a</span>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs">
+                <div className="p-3.5 rounded-xl bg-slate-950/60 border border-slate-800">
+                  <span className="text-slate-500 text-[10px] uppercase font-mono block mb-1">Email Address</span>
+                  <span className="font-mono text-slate-200">{renter?.email || 'seeker@spaceloop.in'}</span>
+                </div>
+                <div className="p-3.5 rounded-xl bg-slate-950/60 border border-slate-800">
+                  <span className="text-slate-500 text-[10px] uppercase font-mono block mb-1">Contact Phone</span>
+                  <span className="font-mono text-slate-200">{renter?.phone || '+91 98765 43210'}</span>
+                </div>
+                <div className="p-3.5 rounded-xl bg-slate-950/60 border border-slate-800">
+                  <span className="text-slate-500 text-[10px] uppercase font-mono block mb-1">Aadhaar Tokenized ID</span>
+                  <span className="font-mono text-emerald-400">SHA256: 8f4c...d92a</span>
+                </div>
               </div>
             </div>
-          </div>
+          </HostCard>
         )}
 
         {/* TAB 3: SESSION & ACCESS */}
         {activeTab === 'session' && (
           <div className="space-y-6">
-            <div className="bg-slate-900/60 border border-slate-800 p-6 rounded-2xl space-y-5">
-              <div>
-                <h3 className="text-base font-bold text-white">Physical Access Handshake & Geofence</h3>
-                <p className="text-xs text-slate-400">Monitors arrival within 50m and issues keybox or QR credentials.</p>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
-                <div className="p-4 rounded-xl bg-slate-950/60 border border-slate-800 space-y-2">
-                  <div className="text-[10px] text-slate-500 uppercase font-mono">Geofence Status</div>
-                  <div className="text-sm font-bold text-white flex items-center gap-2">
-                    <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-                    <span>50m Perimeter Active</span>
-                  </div>
-                  <div className="text-[11px] text-slate-400">
-                    Seeker coordinates match space lat/lng: {space?.lat || '12.9716'}, {space?.lng || '77.5946'}
-                  </div>
-                </div>
-
-                <div className="p-4 rounded-xl bg-slate-950/60 border border-slate-800 space-y-2">
-                  <div className="text-[10px] text-slate-500 uppercase font-mono">Entrance Mechanism</div>
-                  <div className="text-sm font-bold text-amber-400 font-mono">
-                    {space?.physical_access_type === 'keybox' ? `Keybox Code: ${space?.keybox_code || '4819'}` : 'Room Dynamic QR Token'}
-                  </div>
-                  <div className="text-[11px] text-slate-400">
-                    Handshake recorded cryptographically in operational audit log.
-                  </div>
-                </div>
-              </div>
-
-              {isActive && (
-                <div className="p-4 rounded-xl bg-emerald-950/30 border border-emerald-500/40 flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-lg bg-emerald-500/20 text-emerald-400 flex items-center justify-center text-sm">
-                      <i className="fa-solid fa-satellite-dish animate-pulse" />
+            <HostCard
+              title="Physical Access Handshake & Geofence"
+              subtitle="Monitors arrival within 50m and issues keybox or QR credentials"
+              icon="fa-solid fa-key"
+            >
+              <div className="space-y-5">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
+                  <div className="p-4 rounded-xl bg-slate-950/60 border border-slate-800 space-y-2">
+                    <div className="text-[10px] text-slate-500 uppercase font-mono">Geofence Status</div>
+                    <div className="text-sm font-bold text-white flex items-center gap-2">
+                      <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                      <span>50m Perimeter Active</span>
                     </div>
-                    <div>
-                      <div className="text-xs font-bold text-white">Active Session In Progress</div>
-                      <div className="text-[11px] text-slate-400">Renter is currently inside the space.</div>
+                    <div className="text-[11px] text-slate-400">
+                      Seeker coordinates match space lat/lng: {space?.lat || '12.9716'}, {space?.lng || '77.5946'}
                     </div>
                   </div>
-                  <button
-                    onClick={() => navigate(`/host/live-sessions/${booking.id}`)}
-                    className="px-4 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs shadow-md transition"
-                  >
-                    Open Live Cockpit
-                  </button>
+
+                  <div className="p-4 rounded-xl bg-slate-950/60 border border-slate-800 space-y-2">
+                    <div className="text-[10px] text-slate-500 uppercase font-mono">Entrance Mechanism</div>
+                    <div className="text-sm font-bold text-amber-400 font-mono">
+                      {space?.physical_access_type === 'keybox' ? `Keybox Code: ${space?.keybox_code || '4819'}` : 'Room Dynamic QR Token'}
+                    </div>
+                    <div className="text-[11px] text-slate-400">
+                      Handshake recorded cryptographically in operational audit log.
+                    </div>
+                  </div>
                 </div>
-              )}
-            </div>
+
+                {isActive && (
+                  <div className="p-4 rounded-xl bg-emerald-950/30 border border-emerald-500/40 flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-lg bg-emerald-500/20 text-emerald-400 flex items-center justify-center text-sm">
+                        <i className="fa-solid fa-satellite-dish animate-pulse" />
+                      </div>
+                      <div>
+                        <div className="text-xs font-bold text-white">Active Session In Progress</div>
+                        <div className="text-[11px] text-slate-400">Renter is currently inside the space.</div>
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => navigate(`/host/live-sessions/${booking.id}`)}
+                      className="px-4 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs shadow-md transition"
+                    >
+                      Open Live Cockpit
+                    </button>
+                  </div>
+                )}
+              </div>
+            </HostCard>
           </div>
         )}
 
         {/* TAB 4: CONDITION REPORTS */}
         {activeTab === 'condition' && (
-          <div className="space-y-6 bg-slate-900/60 border border-slate-800 p-6 rounded-2xl">
-            <div>
-              <h3 className="text-base font-bold text-white">Visual Condition Delta & Electrical Check</h3>
-              <p className="text-xs text-slate-400">Automated computer vision comparison between arrival and departure photos.</p>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <span className="text-xs font-semibold text-slate-300">Check-in Photo (Arrival Baseline)</span>
-                <div className="aspect-video rounded-xl overflow-hidden border border-slate-800 bg-slate-950">
-                  <img
-                    src="https://images.unsplash.com/photo-1527192491265-7e15c55b1ed2?auto=format&fit=crop&w=600&q=80"
-                    alt="Check-in condition"
-                    className="w-full h-full object-cover"
-                  />
+          <HostCard
+            title="Visual Condition Delta & Electrical Check"
+            subtitle="Automated computer vision comparison between arrival and departure photos"
+            icon="fa-solid fa-clipboard-check"
+          >
+            <div className="space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <span className="text-xs font-semibold text-slate-300">Check-in Photo (Arrival Baseline)</span>
+                  <div className="aspect-video rounded-xl overflow-hidden border border-slate-800 bg-slate-950">
+                    <img
+                      src="https://images.unsplash.com/photo-1527192491265-7e15c55b1ed2?auto=format&fit=crop&w=600&q=80"
+                      alt="Check-in condition"
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                  <span className="text-[11px] text-slate-500">Captured: Baseline verified at entry</span>
                 </div>
-                <span className="text-[11px] text-slate-500">Captured: Baseline verified at entry</span>
-              </div>
 
-              <div className="space-y-2">
-                <span className="text-xs font-semibold text-slate-300">Check-out Photo (Departure Inspection)</span>
-                <div className="aspect-video rounded-xl overflow-hidden border border-slate-800 bg-slate-950">
-                  <img
-                    src="https://images.unsplash.com/photo-1527192491265-7e15c55b1ed2?auto=format&fit=crop&w=600&q=80"
-                    alt="Check-out condition"
-                    className="w-full h-full object-cover"
-                  />
+                <div className="space-y-2">
+                  <span className="text-xs font-semibold text-slate-300">Check-out Photo (Departure Inspection)</span>
+                  <div className="aspect-video rounded-xl overflow-hidden border border-slate-800 bg-slate-950">
+                    <img
+                      src="https://images.unsplash.com/photo-1527192491265-7e15c55b1ed2?auto=format&fit=crop&w=600&q=80"
+                      alt="Check-out condition"
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                  <span className="text-[11px] text-slate-500">Captured: Departure photo</span>
                 </div>
-                <span className="text-[11px] text-slate-500">Captured: Departure photo</span>
               </div>
-            </div>
 
-            <div className="p-4 rounded-xl bg-slate-950/70 border border-slate-800 flex items-center justify-between text-xs">
-              <div className="space-y-1">
-                <div className="font-bold text-white">Computer Vision Match Confidence: <span className="text-emerald-400">98.6%</span></div>
-                <div className="text-[11px] text-slate-400">Appliance Electrical Off Status: Verified (0 active loads detected)</div>
+              <div className="p-4 rounded-xl bg-slate-950/70 border border-slate-800 flex items-center justify-between text-xs">
+                <div className="space-y-1">
+                  <div className="font-bold text-white">Computer Vision Match Confidence: <span className="text-emerald-400 font-mono">98.6%</span></div>
+                  <div className="text-[11px] text-slate-400">Appliance Electrical Off Status: Verified (0 active loads detected)</div>
+                </div>
+                <span className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                  PASSED NO DAMAGE
+                </span>
               </div>
-              <span className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
-                PASSED NO DAMAGE
-              </span>
             </div>
-          </div>
+          </HostCard>
         )}
 
         {/* TAB 5: ESCROW & PAYOUT */}
         {activeTab === 'escrow' && (
-          <div className="space-y-6 bg-slate-900/60 border border-slate-800 p-6 rounded-2xl">
-            <div className="flex items-center justify-between">
-              <div>
-                <h3 className="text-base font-bold text-white">UPI Micro-Escrow Hold</h3>
-                <p className="text-xs text-slate-400">₹100 security deposit managed automatically by the SpaceLoop Escrow engine.</p>
+          <HostCard
+            title="UPI Micro-Escrow Hold"
+            subtitle="₹100 security deposit managed automatically by the SpaceLoop Escrow engine"
+            icon="fa-solid fa-vault"
+            action={<StatusBadge status={booking.escrow_released ? 'released' : 'held'} type="escrow" />}
+          >
+            <div className="space-y-5">
+              <div className="p-4 rounded-xl bg-slate-950/70 border border-slate-800 space-y-3 text-xs">
+                <div className="flex items-center justify-between">
+                  <span className="text-slate-400">Escrow Hold Amount:</span>
+                  <span className="font-mono font-bold text-amber-400">₹100.00</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-slate-400">Host Net Rental Payout (95%):</span>
+                  <span className="font-mono font-bold text-emerald-400">₹{netEarnings}</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-slate-400">Settlement Target UPI:</span>
+                  <span className="font-mono text-white">Host Registered VPA</span>
+                </div>
               </div>
-              <StatusBadge status={booking.escrow_released ? 'released' : 'held'} type="escrow" />
-            </div>
 
-            <div className="p-4 rounded-xl bg-slate-950/70 border border-slate-800 space-y-3 text-xs">
-              <div className="flex items-center justify-between">
-                <span className="text-slate-400">Escrow Hold Amount:</span>
-                <span className="font-mono font-bold text-amber-400">₹100.00</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-slate-400">Host Net Rental Payout (95%):</span>
-                <span className="font-mono font-bold text-emerald-400">₹{netEarnings}</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-slate-400">Settlement Target UPI:</span>
-                <span className="font-mono text-white">Host Registered VPA</span>
-              </div>
+              {!booking.escrow_released && isCompleted && (
+                <div className="flex items-center gap-3 pt-2">
+                  <button
+                    onClick={() => setShowDisputeModal(true)}
+                    className="px-4 py-2 rounded-xl border border-amber-500/40 hover:bg-amber-500/10 text-amber-300 text-xs font-semibold transition"
+                  >
+                    Raise Escrow Dispute
+                  </button>
+                </div>
+              )}
             </div>
-
-            {!booking.escrow_released && isCompleted && (
-              <div className="flex items-center gap-3 pt-2">
-                <button
-                  onClick={() => setShowDisputeModal(true)}
-                  className="px-4 py-2 rounded-xl border border-amber-500/40 hover:bg-amber-500/10 text-amber-300 text-xs font-semibold transition"
-                >
-                  Raise Escrow Dispute
-                </button>
-              </div>
-            )}
-          </div>
+          </HostCard>
         )}
 
         {/* TAB 6: ACTIVITY */}
         {activeTab === 'activity' && (
-          <div className="bg-slate-900/60 border border-slate-800 p-6 rounded-2xl space-y-4">
-            <h3 className="text-base font-bold text-white">Booking Audit & Telemetry Log</h3>
+          <HostCard
+            title="Booking Audit & Telemetry Log"
+            subtitle="Immutable event trail for this reservation"
+            icon="fa-solid fa-clock-rotate-left"
+          >
             {activity.length === 0 ? (
               <div className="py-8 text-center text-slate-500 text-xs">
                 No activity records logged for this booking yet.
@@ -600,8 +622,8 @@ export const BookingDetailView: React.FC = () => {
             ) : (
               <div className="space-y-3">
                 {activity.map((ev, idx) => (
-                  <div key={idx} className="flex items-start gap-3 text-xs border-b border-slate-800 pb-3 last:border-0">
-                    <div className="w-6 h-6 rounded-lg bg-slate-800 text-amber-400 flex items-center justify-center shrink-0 mt-0.5">
+                  <div key={idx} className="flex items-start gap-3 text-xs border-b border-slate-800/80 pb-3 last:border-0">
+                    <div className="w-6 h-6 rounded-lg bg-slate-950 border border-slate-800 text-amber-400 flex items-center justify-center shrink-0 mt-0.5">
                       <i className="fa-solid fa-clock-rotate-left text-[10px]" />
                     </div>
                     <div className="flex-1 min-w-0">
@@ -614,7 +636,7 @@ export const BookingDetailView: React.FC = () => {
                 ))}
               </div>
             )}
-          </div>
+          </HostCard>
         )}
       </div>
 

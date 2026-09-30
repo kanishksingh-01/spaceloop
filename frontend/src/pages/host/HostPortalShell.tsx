@@ -33,6 +33,8 @@ export const HostPortalShell: React.FC<HostPortalShellProps> = ({
         const bData = await getHostBookings({ status: 'active' });
         if (bData && bData.bookings && bData.bookings.length > 0) {
           setActiveSession(bData.bookings[0]);
+        } else {
+          setActiveSession(null);
         }
       } catch (err) {
         console.warn('Host shell poll error:', err);
@@ -87,14 +89,14 @@ export const HostPortalShell: React.FC<HostPortalShellProps> = ({
       group: 'Settlement',
       items: [
         { path: '/host/condition-reports', label: 'Condition Reports', icon: 'fa-solid fa-clipboard-check' },
-        { path: '/host/escrow', label: 'Escrow', icon: 'fa-solid fa-vault' },
+        { path: '/host/escrow', label: 'Escrow Ledger', icon: 'fa-solid fa-vault' },
       ],
     },
     {
       group: 'Insights',
       items: [
         { path: '/host/analytics', label: 'Analytics', icon: 'fa-solid fa-chart-line' },
-        { path: '/host/activity', label: 'Activity', icon: 'fa-solid fa-list-check' },
+        { path: '/host/activity', label: 'Activity Trail', icon: 'fa-solid fa-list-check' },
       ],
     },
     {
@@ -174,9 +176,9 @@ export const HostPortalShell: React.FC<HostPortalShellProps> = ({
               <i className="fa-solid fa-infinity text-xs" />
             </div>
             <div className="text-left hidden sm:block">
-              <span className="text-sm font-bold tracking-tight text-white flex items-center gap-1">
+              <span className="text-sm font-bold tracking-tight text-white flex items-center gap-1.5">
                 SpaceLoop
-                <span className="text-amber-400 font-black text-[11px] px-1.5 py-0.5 rounded bg-amber-500/10 border border-amber-500/20">
+                <span className="text-amber-400 font-extrabold text-[10px] px-1.5 py-0.5 rounded bg-amber-500/10 border border-amber-500/20 tracking-wider">
                   HOST
                 </span>
               </span>
@@ -184,33 +186,33 @@ export const HostPortalShell: React.FC<HostPortalShellProps> = ({
           </button>
         </div>
 
-        {/* Center: Active Session Live Beacon if active */}
+        {/* Center: Active Session Live Beacon or Network Status */}
         <div className="hidden md:flex items-center">
           {activeSession ? (
             <button
               type="button"
               onClick={() => navigate(`/host/live-sessions/${activeSession.id}`)}
-              className="flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 text-xs font-bold shadow-[0_0_15px_rgba(16,185,129,0.15)] hover:bg-emerald-500/20 transition cursor-pointer"
+              className="flex items-center gap-2.5 px-3.5 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/25 text-emerald-300 text-xs font-semibold hover:bg-emerald-500/15 transition cursor-pointer"
             >
-              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
-              <span>Active In-Room Session #{activeSession.id}</span>
-              <span className="text-[10px] text-emerald-400/80 font-mono">→ View Cockpit</span>
+              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping shrink-0" />
+              <span>Session #{activeSession.id} Active</span>
+              <span className="text-[10px] text-emerald-400/80 font-mono">View Cockpit →</span>
             </button>
           ) : (
-            <div className="flex items-center gap-2 text-xs text-slate-400">
+            <div className="flex items-center gap-2 text-xs text-slate-400 bg-slate-900/60 border border-slate-800/60 px-3 py-1 rounded-full">
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
-              <span>Discom Meter & NPCI Verified Host Environment</span>
+              <span className="text-[11px] font-medium text-slate-300">Discom & DigiLocker Verified Network</span>
             </div>
           )}
         </div>
 
-        {/* Right Action Icons & Controls */}
+        {/* Right Action Controls */}
         <div className="flex items-center gap-2.5">
           {/* Quick Create Space */}
           <button
             type="button"
             onClick={() => navigate('/host/spaces/create')}
-            className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-bold text-xs shadow-md shadow-amber-500/20 transition"
+            className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-bold text-xs shadow-md shadow-amber-500/15 transition"
           >
             <i className="fa-solid fa-plus text-[10px]" />
             <span>List Space</span>
@@ -235,7 +237,7 @@ export const HostPortalShell: React.FC<HostPortalShellProps> = ({
           <button
             type="button"
             onClick={() => navigate('/explore')}
-            className="px-2.5 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-800 text-slate-300 text-xs font-semibold transition hidden sm:flex items-center gap-1.5"
+            className="px-2.5 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-850 border border-slate-800 text-slate-300 text-xs font-semibold transition hidden sm:flex items-center gap-1.5"
             title="Switch to Seeker Portal"
           >
             <i className="fa-solid fa-compass text-indigo-400 text-xs" />
@@ -266,12 +268,12 @@ export const HostPortalShell: React.FC<HostPortalShellProps> = ({
       {/* Main Container with Sidebar + Content */}
       <div className="flex-1 flex overflow-hidden">
         {/* Desktop Sidebar Navigation */}
-        <aside className="hidden lg:flex w-64 flex-col bg-slate-950 border-r border-slate-800/80 shrink-0 overflow-y-auto">
-          <div className="p-4 space-y-6">
+        <aside className="hidden lg:flex w-60 flex-col bg-slate-950 border-r border-slate-800/80 shrink-0 overflow-y-auto">
+          <div className="p-3.5 space-y-5">
             {navGroups.map((group, gIdx) => (
-              <div key={gIdx} className="space-y-1">
+              <div key={gIdx} className="space-y-0.5">
                 {group.group && (
-                  <div className="px-3 text-[10px] font-extrabold uppercase tracking-wider text-slate-500 mb-1.5">
+                  <div className="px-3 pt-2 text-[10px] font-mono uppercase tracking-widest text-slate-500 mb-1">
                     {group.group}
                   </div>
                 )}
@@ -282,10 +284,10 @@ export const HostPortalShell: React.FC<HostPortalShellProps> = ({
                       key={item.path}
                       type="button"
                       onClick={() => navigate(item.path)}
-                      className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-semibold transition-all ${
+                      className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-medium transition-all ${
                         active
-                          ? 'bg-amber-500/15 text-amber-300 border border-amber-500/30 shadow-[0_0_12px_rgba(245,158,11,0.06)]'
-                          : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900/80 border border-transparent'
+                          ? 'bg-amber-500/10 text-amber-400 font-bold border border-amber-500/25 shadow-sm'
+                          : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900/60 border border-transparent'
                       }`}
                     >
                       <div className="flex items-center gap-2.5 min-w-0">
@@ -297,7 +299,11 @@ export const HostPortalShell: React.FC<HostPortalShellProps> = ({
                         <span className="truncate">{item.label}</span>
                       </div>
                       {item.badge && (
-                        <span className={`px-1.5 py-0.5 rounded text-[9px] font-bold ${item.badgeColor || 'bg-slate-800 text-slate-300'}`}>
+                        <span
+                          className={`px-1.5 py-0.2 rounded-full text-[10px] font-bold ${
+                            item.badgeColor || 'bg-slate-800 text-slate-400'
+                          }`}
+                        >
                           {item.badge}
                         </span>
                       )}
@@ -309,11 +315,14 @@ export const HostPortalShell: React.FC<HostPortalShellProps> = ({
           </div>
 
           {/* Sidebar Host Status Footnote */}
-          <div className="mt-auto p-4 border-t border-slate-800/80 bg-slate-950/60">
-            <div className="p-3 rounded-xl bg-slate-900/80 border border-slate-800 space-y-1.5">
+          <div className="mt-auto p-3.5 border-t border-slate-800/80 bg-slate-950/60">
+            <div className="p-3 rounded-xl bg-slate-900/60 border border-slate-800/80 space-y-1">
               <div className="flex items-center justify-between text-[11px]">
                 <span className="text-slate-400 font-medium">Sec 52 License</span>
-                <span className="text-emerald-400 font-bold">Active</span>
+                <span className="text-emerald-400 font-semibold flex items-center gap-1">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                  Active
+                </span>
               </div>
               <div className="text-[10px] text-slate-500 leading-tight">
                 Section 52 Indian Easements Act protected day licenses.
@@ -342,7 +351,7 @@ export const HostPortalShell: React.FC<HostPortalShellProps> = ({
                 {navGroups.map((group, gIdx) => (
                   <div key={gIdx} className="space-y-1">
                     {group.group && (
-                      <div className="px-2 text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1">
+                      <div className="px-2 text-[10px] font-mono uppercase tracking-widest text-slate-500 mb-1">
                         {group.group}
                       </div>
                     )}
@@ -358,7 +367,7 @@ export const HostPortalShell: React.FC<HostPortalShellProps> = ({
                           }}
                           className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-semibold transition ${
                             active
-                              ? 'bg-amber-500/15 text-amber-300 border border-amber-500/30'
+                              ? 'bg-amber-500/10 text-amber-300 border border-amber-500/30'
                               : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800'
                           }`}
                         >
@@ -382,7 +391,7 @@ export const HostPortalShell: React.FC<HostPortalShellProps> = ({
         )}
 
         {/* Primary Operational Content Surface */}
-        <main className="flex-1 flex flex-col overflow-y-auto bg-slate-950">
+        <main className="flex-1 flex flex-col overflow-y-auto bg-slate-950 min-h-0">
           <Outlet />
         </main>
       </div>

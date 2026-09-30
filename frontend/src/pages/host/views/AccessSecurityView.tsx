@@ -1,6 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { Space } from '../../../types';
 import { getHostSpaces, editSpace, getHostActivity } from '../../../services/host';
+import {
+  HostPageHeader,
+  HostCard,
+  HostCardSkeleton,
+} from '../components';
 
 export const AccessSecurityView: React.FC = () => {
   const [spaces, setSpaces] = useState<Space[]>([]);
@@ -78,22 +83,18 @@ export const AccessSecurityView: React.FC = () => {
   };
 
   return (
-    <div className="p-6 md:p-8 max-w-7xl mx-auto w-full space-y-8">
+    <div className="px-4 sm:px-6 lg:px-8 py-6 max-w-7xl mx-auto w-full space-y-6">
       {/* Header */}
-      <div className="pb-4 border-b border-slate-800">
-        <div className="flex items-center gap-2 mb-1">
-          <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/15 text-amber-400 border border-amber-500/30 uppercase tracking-wider">
-            Physical Access & Security
+      <HostPageHeader
+        category="Physical Access & Security"
+        title="Access Control Console"
+        subtitle="Configure physical door unlocks, 50-meter arrival geofences, and inspect entry attempt telemetry."
+        badge={
+          <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/15 text-amber-400 border border-amber-500/30 uppercase tracking-wider">
+            Haversine GPS Perimeter • Dynamic Credentialing
           </span>
-          <span className="text-slate-500 text-xs font-mono">Haversine GPS Perimeter • Dynamic Credentialing</span>
-        </div>
-        <h1 className="text-2xl md:text-3xl font-extrabold text-white tracking-tight">
-          Access Control Console
-        </h1>
-        <p className="text-slate-400 text-xs md:text-sm mt-0.5">
-          Configure physical door unlocks, 50-meter arrival geofences, and inspect entry attempt telemetry.
-        </p>
-      </div>
+        }
+      />
 
       {successMsg && (
         <div className="p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 text-xs flex items-center gap-2.5">
@@ -107,9 +108,9 @@ export const AccessSecurityView: React.FC = () => {
         <h2 className="text-base font-bold text-white">Space Physical Doors & Perimeter Rules</h2>
 
         {loading ? (
-          <div className="py-16 text-center text-slate-400 text-xs font-mono">
-            <div className="w-8 h-8 border-2 border-amber-500 border-t-transparent rounded-full animate-spin mx-auto mb-3" />
-            LOADING PHYSICAL ACCESS CONTROLS...
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+            <HostCardSkeleton lines={4} />
+            <HostCardSkeleton lines={4} />
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
@@ -120,24 +121,23 @@ export const AccessSecurityView: React.FC = () => {
               const isSaving = savingSpaceId === space.id;
 
               return (
-                <div
+                <HostCard
                   key={space.id}
-                  className="p-5 rounded-2xl bg-slate-900/70 border border-slate-800 space-y-4 hover:border-slate-700 transition"
-                >
-                  <div className="flex items-center justify-between">
-                    <h3 className="font-bold text-white text-sm truncate">{space.title}</h3>
+                  title={space.title}
+                  icon="fa-solid fa-door-open"
+                  action={
                     <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-amber-500/15 text-amber-300 border border-amber-500/30">
                       ID #{space.id}
                     </span>
-                  </div>
-
-                  <div className="space-y-3 text-xs">
+                  }
+                >
+                  <div className="space-y-4 text-xs">
                     <div>
-                      <label className="text-slate-400 block mb-1">Access Method</label>
+                      <label className="text-slate-400 font-semibold block mb-1">Access Method</label>
                       <select
                         value={currentType}
                         onChange={e => handleUpdateAccess(space, e.target.value)}
-                        className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-1.5 text-white"
+                        className="w-full bg-slate-950 border border-slate-800 focus:border-amber-500/50 rounded-xl px-3.5 py-2 text-white transition focus:outline-none"
                       >
                         <option value="room_qr">Room Dynamic QR Code</option>
                         <option value="keybox">Keybox / Lockbox PIN</option>
@@ -147,19 +147,19 @@ export const AccessSecurityView: React.FC = () => {
                     </div>
 
                     {currentType === 'room_qr' && (
-                      <div className="p-3 rounded-xl bg-slate-950 border border-slate-800 space-y-2">
+                      <div className="p-3.5 rounded-xl bg-slate-950/80 border border-slate-800 space-y-2">
                         <div className="flex items-center justify-between">
                           <span className="text-slate-400 text-[11px]">Room QR Token:</span>
                           <button
                             type="button"
                             onClick={() => handleRegenerateQrToken(space)}
                             disabled={isSaving}
-                            className="text-[10px] text-amber-400 hover:text-amber-300 font-semibold"
+                            className="text-[10px] text-amber-400 hover:text-amber-300 font-semibold transition"
                           >
                             Regenerate
                           </button>
                         </div>
-                        <div className="font-mono text-xs text-amber-300 bg-slate-900 px-2 py-1 rounded border border-slate-800 select-all">
+                        <div className="font-mono text-xs text-amber-300 bg-slate-900 px-3 py-1.5 rounded-lg border border-slate-800 select-all">
                           {qrToken}
                         </div>
                       </div>
@@ -167,20 +167,22 @@ export const AccessSecurityView: React.FC = () => {
 
                     {currentType === 'keybox' && (
                       <div>
-                        <label className="text-slate-400 block mb-1">Keybox Lock PIN</label>
+                        <label className="text-slate-400 font-semibold block mb-1">Keybox Lock PIN</label>
                         <input
                           type="text"
                           defaultValue={space.keybox_code || '4819'}
                           onBlur={e => handleUpdateAccess(space, currentType, e.target.value)}
-                          className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-1.5 text-white font-mono"
+                          className="w-full bg-slate-950 border border-slate-800 focus:border-amber-500/50 rounded-xl px-3.5 py-2 text-white font-mono transition focus:outline-none"
                         />
                       </div>
                     )}
 
                     <div>
-                      <div className="flex items-center justify-between mb-1">
-                        <label className="text-slate-400">Arrival Perimeter</label>
-                        <span className="font-mono text-amber-400 font-bold">{radius}m</span>
+                      <div className="flex items-center justify-between mb-1.5">
+                        <label className="text-slate-400 font-semibold">Arrival Perimeter</label>
+                        <span className="font-mono text-amber-400 font-bold bg-slate-950 px-2 py-0.5 rounded border border-slate-800">
+                          {radius}m
+                        </span>
                       </div>
                       <input
                         type="range"
@@ -193,7 +195,7 @@ export const AccessSecurityView: React.FC = () => {
                       />
                     </div>
                   </div>
-                </div>
+                </HostCard>
               );
             })}
           </div>
@@ -201,8 +203,11 @@ export const AccessSecurityView: React.FC = () => {
       </div>
 
       {/* Access Attempts & Telemetry Audit Log */}
-      <div className="bg-slate-900/60 border border-slate-800 rounded-2xl p-6 space-y-4">
-        <h3 className="text-base font-bold text-white">Physical Access Attempt History</h3>
+      <HostCard
+        title="Physical Access Attempt History"
+        subtitle="Recent proximity handshakes and credential unlocks"
+        icon="fa-solid fa-clock-rotate-left"
+      >
         {accessLogs.length === 0 ? (
           <div className="py-8 text-center text-slate-500 text-xs">
             No access handshake attempts recorded in the audit log yet.
@@ -210,9 +215,9 @@ export const AccessSecurityView: React.FC = () => {
         ) : (
           <div className="divide-y divide-slate-800/80">
             {accessLogs.map((log, idx) => (
-              <div key={idx} className="py-3 flex items-center justify-between text-xs">
+              <div key={idx} className="py-3.5 flex items-center justify-between text-xs">
                 <div className="flex items-center gap-3">
-                  <div className="w-7 h-7 rounded-lg bg-emerald-500/15 text-emerald-400 flex items-center justify-center text-xs">
+                  <div className="w-8 h-8 rounded-xl bg-emerald-500/15 text-emerald-400 flex items-center justify-center text-xs">
                     <i className="fa-solid fa-key" />
                   </div>
                   <div>
@@ -222,14 +227,14 @@ export const AccessSecurityView: React.FC = () => {
                     </div>
                   </div>
                 </div>
-                <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                <span className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
                   50m Verified
                 </span>
               </div>
             ))}
           </div>
         )}
-      </div>
+      </HostCard>
     </div>
   );
 };

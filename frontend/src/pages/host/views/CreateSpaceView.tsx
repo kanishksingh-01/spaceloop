@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { createSpace, uploadSpacePhoto, aiScanSpace } from '../../../services/spaces';
 import { estimateRevenue } from '../../../services/calculator';
+import { HostPageHeader, HostCard } from '../components';
 
 const STEPS = [
   { id: 1, label: 'Basic Info', icon: 'fa-solid fa-circle-info' },
@@ -117,7 +118,6 @@ export const CreateSpaceView: React.FC = () => {
       }
     } catch (err: any) {
       setError('Photo upload failed. Using fallback preview.');
-      // Create local object URL for preview if upload fails
       const localUrl = URL.createObjectURL(file);
       setPhotos(prev => [...prev, localUrl]);
     } finally {
@@ -207,84 +207,79 @@ export const CreateSpaceView: React.FC = () => {
   };
 
   return (
-    <div className="p-6 md:p-8 max-w-4xl mx-auto w-full space-y-8">
-      {/* Wizard Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-800">
-        <div>
-          <button
-            onClick={() => navigate('/host/spaces')}
-            className="text-xs text-slate-400 hover:text-slate-200 flex items-center gap-1.5 mb-1"
-          >
-            <i className="fa-solid fa-arrow-left text-[10px]" />
-            <span>Back to My Spaces</span>
-          </button>
-          <h1 className="text-2xl font-black text-white tracking-tight">List a Physical Space</h1>
-          <p className="text-slate-400 text-xs">
-            Step {currentStep} of {STEPS.length}: <strong className="text-amber-400">{STEPS[currentStep - 1].label}</strong>
-          </p>
-        </div>
-
-        {/* Action Controls */}
-        <div className="flex items-center gap-2">
-          {currentStep > 1 && (
-            <button
-              type="button"
-              onClick={handleBack}
-              className="px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold border border-slate-700 transition"
-            >
-              Back
-            </button>
-          )}
-
-          {currentStep < STEPS.length ? (
-            <button
-              type="button"
-              onClick={handleNext}
-              className="px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs shadow-md shadow-amber-500/20 transition flex items-center gap-1.5"
-            >
-              <span>Continue</span>
-              <i className="fa-solid fa-arrow-right text-[10px]" />
-            </button>
-          ) : (
-            <div className="flex items-center gap-2">
+    <div className="px-4 sm:px-6 lg:px-8 py-6 max-w-5xl mx-auto w-full space-y-6">
+      {/* Header */}
+      <HostPageHeader
+        breadcrumbs={[
+          { label: 'My Spaces', onClick: () => navigate('/host/spaces') },
+          { label: 'List New Space', active: true },
+        ]}
+        category="Space Onboarding Wizard"
+        title="List a Physical Space"
+        subtitle={`Step ${currentStep} of ${STEPS.length}: ${STEPS[currentStep - 1].label}`}
+        actions={
+          <div className="flex items-center gap-2">
+            {currentStep > 1 && (
               <button
                 type="button"
-                onClick={() => handlePublish(true)}
-                disabled={submitting}
-                className="px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold border border-slate-700 transition"
+                onClick={handleBack}
+                className="px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold border border-slate-700 transition"
               >
-                Save Draft
+                Back
               </button>
+            )}
+
+            {currentStep < STEPS.length ? (
               <button
                 type="button"
-                onClick={() => handlePublish(false)}
-                disabled={submitting}
-                className="px-5 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs shadow-lg shadow-amber-500/25 transition flex items-center gap-1.5 disabled:opacity-50"
+                onClick={handleNext}
+                className="px-4 py-2 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-bold text-xs shadow-md shadow-amber-500/20 transition flex items-center gap-1.5"
               >
-                <i className={`fa-solid ${submitting ? 'fa-spinner animate-spin' : 'fa-check'} text-xs`} />
-                <span>{submitting ? 'Publishing...' : 'Publish Space'}</span>
+                <span>Continue</span>
+                <i className="fa-solid fa-arrow-right text-[10px]" />
               </button>
-            </div>
-          )}
-        </div>
-      </div>
+            ) : (
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => handlePublish(true)}
+                  disabled={submitting}
+                  className="px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold border border-slate-700 transition"
+                >
+                  Save Draft
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handlePublish(false)}
+                  disabled={submitting}
+                  className="px-5 py-2 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-bold text-xs shadow-lg shadow-amber-500/25 transition flex items-center gap-1.5 disabled:opacity-50"
+                >
+                  <i className={`fa-solid ${submitting ? 'fa-spinner animate-spin' : 'fa-check'} text-xs`} />
+                  <span>{submitting ? 'Publishing...' : 'Publish Space'}</span>
+                </button>
+              </div>
+            )}
+          </div>
+        }
+      />
 
       {/* Progress Stepper Bar */}
-      <div className="overflow-x-auto pb-2 scrollbar-none">
-        <div className="flex items-center gap-1 min-w-[720px]">
+      <div className="overflow-x-auto pb-1 scrollbar-none">
+        <div className="flex items-center gap-1.5 min-w-[760px]">
           {STEPS.map(step => {
             const active = step.id === currentStep;
             const completed = step.id < currentStep;
             return (
               <button
                 key={step.id}
+                type="button"
                 onClick={() => setCurrentStep(step.id)}
                 className={`flex-1 flex items-center gap-2 px-3 py-2 rounded-xl border text-xs font-medium transition ${
                   active
-                    ? 'bg-amber-500/15 border-amber-500/40 text-amber-300'
+                    ? 'bg-amber-500/15 border-amber-500/40 text-amber-300 shadow-sm'
                     : completed
-                    ? 'bg-slate-900 border-slate-700 text-emerald-400'
-                    : 'bg-slate-950/40 border-slate-800/80 text-slate-500'
+                    ? 'bg-slate-900/80 border-slate-700/80 text-emerald-400 hover:border-slate-600'
+                    : 'bg-slate-950/40 border-slate-800/80 text-slate-500 hover:text-slate-400'
                 }`}
               >
                 <i className={`${step.icon} text-xs ${active ? 'text-amber-400' : completed ? 'text-emerald-400' : 'text-slate-600'}`} />
@@ -297,18 +292,21 @@ export const CreateSpaceView: React.FC = () => {
 
       {/* Error Notice */}
       {error && (
-        <div className="p-3 bg-rose-500/10 border border-rose-500/30 rounded-xl text-xs text-rose-300 flex items-center gap-2">
-          <i className="fa-solid fa-triangle-exclamation" />
+        <div className="p-3.5 bg-rose-500/10 border border-rose-500/30 rounded-xl text-xs text-rose-300 flex items-center gap-2.5">
+          <i className="fa-solid fa-triangle-exclamation text-rose-400" />
           <span>{error}</span>
         </div>
       )}
 
-      {/* Step Panels */}
-      <div className="bg-slate-900/60 border border-slate-800 p-6 md:p-8 rounded-2xl">
+      {/* Step Panels inside HostCard */}
+      <HostCard
+        title={STEPS[currentStep - 1].label}
+        subtitle={`Stage ${currentStep} of ${STEPS.length}`}
+        icon={STEPS[currentStep - 1].icon}
+      >
         {/* STEP 1: BASIC INFO */}
         {currentStep === 1 && (
           <div className="space-y-5">
-            <h3 className="text-base font-bold text-white">Basic Information</h3>
             <div>
               <label className="text-xs font-semibold text-slate-300 block mb-1">
                 Listing Title <span className="text-amber-400">*</span>
@@ -318,7 +316,7 @@ export const CreateSpaceView: React.FC = () => {
                 value={title}
                 onChange={e => setTitle(e.target.value)}
                 placeholder="e.g. Ergonomic Coding Pod & Ultra High-Speed Fiber"
-                className="w-full bg-slate-950 border border-slate-800 focus:border-amber-500/60 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none"
+                className="w-full bg-slate-950 border border-slate-800 focus:border-amber-500/60 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none transition"
               />
             </div>
 
@@ -327,7 +325,7 @@ export const CreateSpaceView: React.FC = () => {
               <select
                 value={category}
                 onChange={e => setCategory(e.target.value)}
-                className="w-full bg-slate-950 border border-slate-800 focus:border-amber-500/60 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none"
+                className="w-full bg-slate-950 border border-slate-800 focus:border-amber-500/60 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none transition"
               >
                 <option value="Workspace">Workspace / Private Desk</option>
                 <option value="Studio">Studio / Podcast Room</option>
@@ -346,7 +344,7 @@ export const CreateSpaceView: React.FC = () => {
                 value={description}
                 onChange={e => setDescription(e.target.value)}
                 placeholder="Describe lighting, noise level, ideal tasks, and access guidelines..."
-                className="w-full bg-slate-950 border border-slate-800 focus:border-amber-500/60 rounded-xl p-3.5 text-xs text-white focus:outline-none leading-relaxed"
+                className="w-full bg-slate-950 border border-slate-800 focus:border-amber-500/60 rounded-xl p-3.5 text-xs text-white focus:outline-none leading-relaxed transition"
               />
             </div>
           </div>
@@ -355,7 +353,6 @@ export const CreateSpaceView: React.FC = () => {
         {/* STEP 2: CAPACITY & SIZE */}
         {currentStep === 2 && (
           <div className="space-y-5">
-            <h3 className="text-base font-bold text-white">Space Capacity & Dimensions</h3>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
               <div>
                 <label className="text-xs font-semibold text-slate-300 block mb-1">Square Feet (Sq. Ft)</label>
@@ -363,7 +360,7 @@ export const CreateSpaceView: React.FC = () => {
                   type="number"
                   value={sqft}
                   onChange={e => setSqft(Number(e.target.value))}
-                  className="w-full bg-slate-950 border border-slate-800 focus:border-amber-500/60 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none"
+                  className="w-full bg-slate-950 border border-slate-800 focus:border-amber-500/60 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none transition"
                 />
               </div>
               <div>
@@ -372,7 +369,7 @@ export const CreateSpaceView: React.FC = () => {
                   type="number"
                   value={capacity}
                   onChange={e => setCapacity(Number(e.target.value))}
-                  className="w-full bg-slate-950 border border-slate-800 focus:border-amber-500/60 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none"
+                  className="w-full bg-slate-950 border border-slate-800 focus:border-amber-500/60 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none transition"
                 />
               </div>
             </div>
@@ -382,7 +379,6 @@ export const CreateSpaceView: React.FC = () => {
         {/* STEP 3: AMENITIES */}
         {currentStep === 3 && (
           <div className="space-y-5">
-            <h3 className="text-base font-bold text-white">Select Included Amenities</h3>
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
               {PRESET_AMENITIES.map(item => {
                 const checked = amenities.includes(item);
@@ -411,12 +407,12 @@ export const CreateSpaceView: React.FC = () => {
                 onChange={e => setCustomAmenity(e.target.value)}
                 onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), addCustomAmenity())}
                 placeholder="Add other amenity (e.g. Ring light, 3D printer)..."
-                className="flex-1 bg-slate-950 border border-slate-800 focus:border-amber-500/60 rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none"
+                className="flex-1 bg-slate-950 border border-slate-800 focus:border-amber-500/60 rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none transition"
               />
               <button
                 type="button"
                 onClick={addCustomAmenity}
-                className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold border border-slate-700"
+                className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold border border-slate-700 transition"
               >
                 Add
               </button>
@@ -429,14 +425,13 @@ export const CreateSpaceView: React.FC = () => {
           <div className="space-y-6">
             <div className="flex items-center justify-between">
               <div>
-                <h3 className="text-base font-bold text-white">Photos & AI Condition Analysis</h3>
                 <p className="text-xs text-slate-400">Upload clear photos of the space entrance, workspace, and seating.</p>
               </div>
               <button
                 type="button"
                 onClick={handleRunAiSpatialScan}
                 disabled={aiScanning}
-                className="px-3.5 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs transition flex items-center gap-1.5"
+                className="px-3.5 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs transition flex items-center gap-1.5 shadow-md"
               >
                 <i className={`fa-solid ${aiScanning ? 'fa-spinner animate-spin' : 'fa-wand-magic-sparkles'} text-xs`} />
                 <span>{aiScanning ? 'Scanning...' : 'AI Spatial Tagging'}</span>
@@ -482,7 +477,6 @@ export const CreateSpaceView: React.FC = () => {
         {/* STEP 5: LOCATION & GEOFENCE */}
         {currentStep === 5 && (
           <div className="space-y-5">
-            <h3 className="text-base font-bold text-white">Physical Location & 50m Perimeter</h3>
             <div>
               <label className="text-xs font-semibold text-slate-300 block mb-1">
                 Street Address <span className="text-amber-400">*</span>
@@ -492,7 +486,7 @@ export const CreateSpaceView: React.FC = () => {
                 value={address}
                 onChange={e => setAddress(e.target.value)}
                 placeholder="e.g. 42 Indiranagar 100 Feet Road"
-                className="w-full bg-slate-950 border border-slate-800 focus:border-amber-500/60 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none"
+                className="w-full bg-slate-950 border border-slate-800 focus:border-amber-500/60 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none transition"
               />
             </div>
 
@@ -503,7 +497,7 @@ export const CreateSpaceView: React.FC = () => {
                   type="text"
                   value={city}
                   onChange={e => setCity(e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2 text-xs text-white"
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2 text-xs text-white transition"
                 />
               </div>
               <div>
@@ -512,7 +506,7 @@ export const CreateSpaceView: React.FC = () => {
                   type="text"
                   value={lat}
                   onChange={e => setLat(e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2 text-xs text-white font-mono"
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2 text-xs text-white font-mono transition"
                 />
               </div>
               <div>
@@ -521,7 +515,7 @@ export const CreateSpaceView: React.FC = () => {
                   type="text"
                   value={lng}
                   onChange={e => setLng(e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2 text-xs text-white font-mono"
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2 text-xs text-white font-mono transition"
                 />
               </div>
             </div>
@@ -549,7 +543,6 @@ export const CreateSpaceView: React.FC = () => {
         {/* STEP 6: OPERATING HOURS */}
         {currentStep === 6 && (
           <div className="space-y-5">
-            <h3 className="text-base font-bold text-white">Daily Operational Window</h3>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <div>
                 <label className="text-xs font-semibold text-slate-300 block mb-1">Daily Opening Time</label>
@@ -557,7 +550,7 @@ export const CreateSpaceView: React.FC = () => {
                   type="time"
                   value={startTime}
                   onChange={e => setStartTime(e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2 text-xs text-white"
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2 text-xs text-white transition"
                 />
               </div>
               <div>
@@ -566,7 +559,7 @@ export const CreateSpaceView: React.FC = () => {
                   type="time"
                   value={endTime}
                   onChange={e => setEndTime(e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2 text-xs text-white"
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2 text-xs text-white transition"
                 />
               </div>
               <div>
@@ -574,7 +567,7 @@ export const CreateSpaceView: React.FC = () => {
                 <select
                   value={bufferMinutes}
                   onChange={e => setBufferMinutes(Number(e.target.value))}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2 text-xs text-white"
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2 text-xs text-white transition"
                 >
                   <option value={15}>15 Minutes (Standard)</option>
                   <option value={30}>30 Minutes (Cleaning)</option>
@@ -590,7 +583,6 @@ export const CreateSpaceView: React.FC = () => {
           <div className="space-y-5">
             <div className="flex items-center justify-between">
               <div>
-                <h3 className="text-base font-bold text-white">Pricing & Payout Model</h3>
                 <p className="text-xs text-slate-400">95% net payout released automatically to host UPI upon session checkout.</p>
               </div>
               <button
@@ -612,7 +604,7 @@ export const CreateSpaceView: React.FC = () => {
                     type="number"
                     value={hourlyRate}
                     onChange={e => setHourlyRate(Number(e.target.value))}
-                    className="w-full bg-slate-950 border border-slate-800 focus:border-amber-500/60 rounded-xl pl-8 pr-3 py-2 text-xs text-white focus:outline-none"
+                    className="w-full bg-slate-950 border border-slate-800 focus:border-amber-500/60 rounded-xl pl-8 pr-3 py-2 text-xs text-white focus:outline-none transition"
                   />
                 </div>
               </div>
@@ -626,7 +618,7 @@ export const CreateSpaceView: React.FC = () => {
                     value={dailyRate}
                     onChange={e => setDailyRate(e.target.value)}
                     placeholder="e.g. 400"
-                    className="w-full bg-slate-950 border border-slate-800 focus:border-amber-500/60 rounded-xl pl-8 pr-3 py-2 text-xs text-white focus:outline-none"
+                    className="w-full bg-slate-950 border border-slate-800 focus:border-amber-500/60 rounded-xl pl-8 pr-3 py-2 text-xs text-white focus:outline-none transition"
                   />
                 </div>
               </div>
@@ -634,7 +626,7 @@ export const CreateSpaceView: React.FC = () => {
 
             {yieldEstimate && (
               <div className="p-4 rounded-xl bg-emerald-950/30 border border-emerald-500/30 text-xs text-emerald-300 flex items-center justify-between">
-                <span>Estimated Monthly Earnings: <strong>₹{yieldEstimate.estimated_monthly_earnings?.toLocaleString('en-IN') || '12,500'}</strong></span>
+                <span>Estimated Monthly Earnings: <strong className="font-mono">₹{yieldEstimate.estimated_monthly_earnings?.toLocaleString('en-IN') || '12,500'}</strong></span>
                 <span className="text-slate-400 font-mono">Suggested: ₹{yieldEstimate.suggested_hourly_rate}/hr</span>
               </div>
             )}
@@ -644,14 +636,13 @@ export const CreateSpaceView: React.FC = () => {
         {/* STEP 8: ACCESS & VERIFICATION */}
         {currentStep === 8 && (
           <div className="space-y-5">
-            <h3 className="text-base font-bold text-white">Access Protocol & Discom Verification</h3>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className="text-xs font-semibold text-slate-300 block mb-1">Access Method</label>
                 <select
                   value={accessType}
                   onChange={e => setAccessType(e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2 text-xs text-white"
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2 text-xs text-white transition"
                 >
                   <option value="room_qr">Room Dynamic QR Code (Scanned on Door)</option>
                   <option value="keybox">Keybox PIN Code</option>
@@ -668,7 +659,7 @@ export const CreateSpaceView: React.FC = () => {
                     value={keyboxCode}
                     onChange={e => setKeyboxCode(e.target.value)}
                     placeholder="e.g. 4920"
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2 text-xs text-white font-mono"
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2 text-xs text-white font-mono transition"
                   />
                 </div>
               )}
@@ -680,7 +671,7 @@ export const CreateSpaceView: React.FC = () => {
                   value={discomCaNumber}
                   onChange={e => setDiscomCaNumber(e.target.value)}
                   placeholder="e.g. 100293847"
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2 text-xs text-white font-mono"
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2 text-xs text-white font-mono transition"
                 />
               </div>
 
@@ -691,7 +682,7 @@ export const CreateSpaceView: React.FC = () => {
                   value={discomConsumerName}
                   onChange={e => setDiscomConsumerName(e.target.value)}
                   placeholder="e.g. Rajesh Sharma"
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2 text-xs text-white"
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2 text-xs text-white transition"
                 />
               </div>
             </div>
@@ -701,26 +692,24 @@ export const CreateSpaceView: React.FC = () => {
         {/* STEP 9: REVIEW & PUBLISH */}
         {currentStep === 9 && (
           <div className="space-y-6">
-            <h3 className="text-base font-bold text-white">Review Listing & Publication Checklist</h3>
-
             <div className="p-5 rounded-2xl bg-slate-950/70 border border-slate-800 space-y-3 text-xs">
-              <div className="flex items-center justify-between pb-2 border-b border-slate-800">
+              <div className="flex items-center justify-between pb-2 border-b border-slate-800/80">
                 <span className="text-slate-400">Space Title:</span>
                 <span className="font-bold text-white">{title || 'Untitled Space'}</span>
               </div>
-              <div className="flex items-center justify-between pb-2 border-b border-slate-800">
+              <div className="flex items-center justify-between pb-2 border-b border-slate-800/80">
                 <span className="text-slate-400">Category & Size:</span>
                 <span className="font-medium text-slate-200">{category} • {sqft} sqft • Max {capacity} occupants</span>
               </div>
-              <div className="flex items-center justify-between pb-2 border-b border-slate-800">
+              <div className="flex items-center justify-between pb-2 border-b border-slate-800/80">
                 <span className="text-slate-400">Physical Address:</span>
                 <span className="font-medium text-slate-200">{address}, {city}</span>
               </div>
-              <div className="flex items-center justify-between pb-2 border-b border-slate-800">
+              <div className="flex items-center justify-between pb-2 border-b border-slate-800/80">
                 <span className="text-slate-400">Hourly Pricing:</span>
-                <span className="font-bold text-emerald-400">₹{hourlyRate}/hr</span>
+                <span className="font-bold text-emerald-400 font-mono">₹{hourlyRate}/hr</span>
               </div>
-              <div className="flex items-center justify-between pb-2 border-b border-slate-800">
+              <div className="flex items-center justify-between pb-2 border-b border-slate-800/80">
                 <span className="text-slate-400">Zero-Spoofing Perimeter:</span>
                 <span className="font-mono text-amber-400">{geofenceRadius}m Haversine Radius</span>
               </div>
@@ -738,7 +727,7 @@ export const CreateSpaceView: React.FC = () => {
             </div>
           </div>
         )}
-      </div>
+      </HostCard>
     </div>
   );
 };

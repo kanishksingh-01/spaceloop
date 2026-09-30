@@ -1,6 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getHostActivity, HostActivityEvent } from '../../../services/host';
+import {
+  HostPageHeader,
+  HostCard,
+  HostCardSkeleton,
+  HostEmptyState,
+} from '../components';
 
 export const ActivityAuditView: React.FC = () => {
   const navigate = useNavigate();
@@ -37,56 +43,58 @@ export const ActivityAuditView: React.FC = () => {
   ];
 
   return (
-    <div className="p-6 md:p-8 max-w-7xl mx-auto w-full space-y-8">
+    <div className="px-4 sm:px-6 lg:px-8 py-6 max-w-7xl mx-auto w-full space-y-6">
       {/* Header */}
-      <div className="pb-4 border-b border-slate-800">
-        <div className="flex items-center gap-2 mb-1">
-          <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/15 text-amber-400 border border-amber-500/30 uppercase tracking-wider">
-            Operational Audit Trail
+      <HostPageHeader
+        category="Operational Audit Trail"
+        title="System Activity & Audit Log"
+        subtitle="Chronological record of every check-in handshake, escrow release, and property modification."
+        badge={
+          <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/15 text-amber-400 border border-amber-500/30 uppercase tracking-wider">
+            Immutable SQLite WAL Telemetry
           </span>
-          <span className="text-slate-500 text-xs font-mono">Immutable SQLite WAL Telemetry</span>
-        </div>
-        <h1 className="text-2xl md:text-3xl font-extrabold text-white tracking-tight">
-          System Activity & Audit Log
-        </h1>
-        <p className="text-slate-400 text-xs md:text-sm mt-0.5">
-          Chronological record of every check-in handshake, escrow release, and property modification.
-        </p>
-      </div>
+        }
+      />
 
       {/* Category Filter Tabs */}
       <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none">
-        {categories.map(cat => (
-          <button
-            key={cat.id}
-            onClick={() => setCategory(cat.id)}
-            className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition ${
-              category === cat.id
-                ? 'bg-amber-500/15 text-amber-300 border border-amber-500/30'
-                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800'
-            }`}
-          >
-            {cat.label}
-          </button>
-        ))}
+        {categories.map(cat => {
+          const active = category === cat.id;
+          return (
+            <button
+              key={cat.id}
+              onClick={() => setCategory(cat.id)}
+              className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition ${
+                active
+                  ? 'bg-amber-500/15 text-amber-300 border border-amber-500/30'
+                  : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60 border border-transparent'
+              }`}
+            >
+              {cat.label}
+            </button>
+          );
+        })}
       </div>
 
       {/* Activity Timeline */}
       {loading ? (
-        <div className="py-20 text-center text-slate-400 text-xs font-mono">
-          <div className="w-8 h-8 border-2 border-amber-500 border-t-transparent rounded-full animate-spin mx-auto mb-3" />
-          FETCHING AUDIT TRAIL...
-        </div>
+        <HostCardSkeleton lines={6} />
       ) : events.length === 0 ? (
-        <div className="p-12 text-center bg-slate-900/40 border border-slate-800/80 rounded-2xl">
-          <i className="fa-solid fa-clock-rotate-left text-3xl text-slate-600 mb-3 block" />
-          <h3 className="text-base font-bold text-white mb-1">No Activity Logged</h3>
-          <p className="text-xs text-slate-400 max-w-sm mx-auto">
-            No events match your current filter category.
-          </p>
-        </div>
+        <HostEmptyState
+          icon="fa-solid fa-clock-rotate-left"
+          title="No Activity Logged"
+          description="No operations match your current filter category."
+          secondaryAction={{
+            label: 'View All Operations',
+            onClick: () => setCategory('all'),
+          }}
+        />
       ) : (
-        <div className="bg-slate-900/60 border border-slate-800 rounded-2xl p-6">
+        <HostCard
+          title="Chronological Telemetry Stream"
+          subtitle={`${events.length} system events recorded`}
+          icon="fa-solid fa-clock-rotate-left"
+        >
           <div className="relative pl-6 space-y-6 before:absolute before:left-2.5 before:top-2 before:bottom-2 before:w-0.5 before:bg-slate-800">
             {events.map((ev) => {
               const hasResource = Boolean(ev.resource_id);
@@ -142,7 +150,7 @@ export const ActivityAuditView: React.FC = () => {
               );
             })}
           </div>
-        </div>
+        </HostCard>
       )}
     </div>
   );

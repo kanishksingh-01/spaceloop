@@ -2,7 +2,12 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Booking, Space } from '../../../types';
 import { getHostBookings, acceptBooking, rejectBooking, getHostSpaces } from '../../../services/host';
-import { StatusBadge } from '../components/StatusBadge';
+import {
+  HostPageHeader,
+  HostCardSkeleton,
+  HostEmptyState,
+  StatusBadge,
+} from '../components';
 
 export const BookingsView: React.FC = () => {
   const navigate = useNavigate();
@@ -107,29 +112,27 @@ export const BookingsView: React.FC = () => {
   });
 
   return (
-    <div className="p-6 md:p-8 max-w-7xl mx-auto w-full space-y-6">
+    <div className="px-4 sm:px-6 lg:px-8 py-6 max-w-7xl mx-auto w-full space-y-6">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-black text-white tracking-tight">Booking Management</h1>
-          <p className="text-slate-400 text-xs md:text-sm mt-0.5">
-            Operational queue for approvals, arrival tracking, live sessions, and escrow payouts.
-          </p>
-        </div>
-
-        <button
-          onClick={() => navigate('/host/calendar')}
-          className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold text-xs border border-slate-700 transition flex items-center gap-2 self-start sm:self-auto"
-        >
-          <i className="fa-regular fa-calendar-days text-amber-400 text-xs" />
-          <span>View Calendar</span>
-        </button>
-      </div>
+      <HostPageHeader
+        category="Operational Workflow"
+        title="Booking Management"
+        subtitle="Operational queue for approvals, arrival tracking, live sessions, and escrow payouts."
+        actions={
+          <button
+            onClick={() => navigate('/host/calendar')}
+            className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold text-xs border border-slate-700 transition flex items-center gap-2"
+          >
+            <i className="fa-regular fa-calendar-days text-amber-400 text-xs" />
+            <span>View Calendar</span>
+          </button>
+        }
+      />
 
       {/* Filter and Control Bar */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-slate-900/60 border border-slate-800 p-3.5 rounded-2xl">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-slate-900/60 border border-slate-800/80 p-3.5 rounded-2xl">
         {/* Status Filter Tabs */}
-        <div className="flex items-center gap-1 overflow-x-auto pb-1 md:pb-0 scrollbar-none">
+        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 md:pb-0 scrollbar-none">
           {[
             { id: 'all', label: 'All Bookings' },
             { id: 'pending', label: 'Pending Approval' },
@@ -137,29 +140,32 @@ export const BookingsView: React.FC = () => {
             { id: 'active', label: 'Active Now' },
             { id: 'completed', label: 'Completed' },
             { id: 'cancelled', label: 'Cancelled' },
-          ].map(tab => (
-            <button
-              key={tab.id}
-              onClick={() => handleStatusFilterChange(tab.id)}
-              className={`px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition ${
-                currentStatusFilter === tab.id
-                  ? 'bg-amber-500/15 text-amber-300 border border-amber-500/30'
-                  : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800'
-              }`}
-            >
-              {tab.label}
-            </button>
-          ))}
+          ].map(tab => {
+            const active = currentStatusFilter === tab.id;
+            return (
+              <button
+                key={tab.id}
+                onClick={() => handleStatusFilterChange(tab.id)}
+                className={`px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition ${
+                  active
+                    ? 'bg-amber-500/15 text-amber-300 border border-amber-500/30'
+                    : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60 border border-transparent'
+                }`}
+              >
+                {tab.label}
+              </button>
+            );
+          })}
         </div>
 
         {/* Space Selector & Search */}
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2.5">
           <select
             value={selectedSpaceId}
             onChange={e => setSelectedSpaceId(e.target.value)}
-            className="bg-slate-950 border border-slate-800 rounded-xl px-3 py-1.5 text-xs text-slate-200 focus:outline-none"
+            className="bg-slate-950 border border-slate-800 rounded-xl px-3 py-1.5 text-xs text-slate-200 focus:outline-none transition"
           >
-            <option value="all">All Spaces</option>
+            <option value="all">All Spaces ({spaces.length})</option>
             {spaces.map(s => (
               <option key={s.id} value={s.id}>
                 {s.title}
@@ -174,7 +180,7 @@ export const BookingsView: React.FC = () => {
               value={searchQuery}
               onChange={e => setSearchQuery(e.target.value)}
               placeholder="Search seeker, ID..."
-              className="w-full bg-slate-950 border border-slate-800 focus:border-amber-500/50 rounded-xl pl-8 pr-3 py-1.5 text-xs text-slate-200 placeholder:text-slate-500 focus:outline-none"
+              className="w-full bg-slate-950 border border-slate-800 focus:border-amber-500/50 rounded-xl pl-8 pr-3 py-1.5 text-xs text-slate-200 placeholder:text-slate-500 focus:outline-none transition"
             />
           </div>
         </div>
@@ -182,20 +188,34 @@ export const BookingsView: React.FC = () => {
 
       {/* Bookings Queue */}
       {loading ? (
-        <div className="py-20 text-center text-slate-400 text-xs font-mono">
-          <div className="w-8 h-8 border-2 border-amber-500 border-t-transparent rounded-full animate-spin mx-auto mb-3" />
-          FETCHING BOOKINGS QUEUE...
+        <div className="space-y-3">
+          <HostCardSkeleton lines={3} />
+          <HostCardSkeleton lines={3} />
+          <HostCardSkeleton lines={3} />
         </div>
       ) : filteredBookings.length === 0 ? (
-        <div className="p-12 text-center bg-slate-900/40 border border-slate-800/80 rounded-2xl">
-          <i className="fa-regular fa-calendar-xmark text-3xl text-slate-600 mb-3 block" />
-          <h3 className="text-base font-bold text-white mb-1">No Bookings Found</h3>
-          <p className="text-xs text-slate-400 max-w-sm mx-auto">
-            {searchQuery
+        <HostEmptyState
+          icon="fa-regular fa-calendar-xmark"
+          title="No Bookings Found"
+          description={
+            searchQuery
               ? 'No bookings match your current search query.'
-              : 'There are no bookings under this status tab currently.'}
-          </p>
-        </div>
+              : 'There are no bookings matching this status category.'
+          }
+          primaryAction={{
+            label: 'View Calendar',
+            onClick: () => navigate('/host/calendar'),
+            icon: 'fa-regular fa-calendar',
+          }}
+          secondaryAction={
+            searchQuery
+              ? {
+                  label: 'Clear Search',
+                  onClick: () => setSearchQuery(''),
+                }
+              : undefined
+          }
+        />
       ) : (
         <div className="space-y-3">
           {filteredBookings.map(b => {
@@ -206,12 +226,12 @@ export const BookingsView: React.FC = () => {
               <div
                 key={b.id}
                 onClick={() => navigate(`/host/bookings/${b.id}`)}
-                className={`p-4 rounded-2xl border transition-all duration-150 cursor-pointer group hover:bg-slate-900/80 ${
+                className={`p-4 rounded-2xl border transition-all duration-150 cursor-pointer group ${
                   isLive
                     ? 'bg-slate-900/90 border-emerald-500/40 shadow-lg shadow-emerald-500/5'
                     : isPending
                     ? 'bg-slate-900/70 border-amber-500/30'
-                    : 'bg-slate-900/50 border-slate-800 hover:border-slate-700'
+                    : 'bg-slate-900/60 border-slate-800/80 hover:border-slate-700 hover:bg-slate-900/90'
                 }`}
               >
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -268,7 +288,7 @@ export const BookingsView: React.FC = () => {
                       <div className="text-base font-black text-white font-mono">
                         ₹{b.total_price}
                       </div>
-                      <div className="text-[10px] text-emerald-400 font-semibold">
+                      <div className="text-[10px] text-emerald-400 font-semibold font-mono">
                         Host Payout: ₹{Math.round(b.total_price * 0.95)}
                       </div>
                     </div>
@@ -279,14 +299,14 @@ export const BookingsView: React.FC = () => {
                           <button
                             onClick={(e) => handleReject(e, b.id)}
                             disabled={actionLoadingId === b.id}
-                            className="px-3 py-1.5 rounded-xl border border-slate-700 hover:border-rose-500/40 text-slate-400 hover:text-rose-400 text-xs font-semibold transition"
+                            className="px-3.5 py-1.5 rounded-xl border border-slate-700 hover:border-rose-500/40 text-slate-400 hover:text-rose-400 text-xs font-semibold transition"
                           >
                             Decline
                           </button>
                           <button
                             onClick={(e) => handleAccept(e, b.id)}
                             disabled={actionLoadingId === b.id}
-                            className="px-4 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs shadow-md shadow-amber-500/20 transition"
+                            className="px-4 py-1.5 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-bold text-xs shadow-md shadow-amber-500/20 transition"
                           >
                             {actionLoadingId === b.id ? 'Accepting...' : 'Accept'}
                           </button>
@@ -311,7 +331,7 @@ export const BookingsView: React.FC = () => {
                           e.stopPropagation();
                           navigate(`/host/bookings/${b.id}`);
                         }}
-                        className="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold border border-slate-700 transition"
+                        className="px-3.5 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold border border-slate-700 transition"
                       >
                         Details →
                       </button>
