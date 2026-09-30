@@ -6,7 +6,7 @@ geofenced in-room check-in handshakes, AI micro-lease generation, and check-out 
 from datetime import datetime, timedelta, timezone
 from flask import Blueprint, request, jsonify, current_app
 from flask_login import login_required, current_user
-from models import db, Booking, Space, User
+from models import db, Booking, Space, User, AuditLog
 from backend.modules.auth import authorize, Permission, ForbiddenError
 from backend.core.geo import haversine_distance
 from space_ai import (
@@ -719,5 +719,130 @@ def api_booking_send_reminder(booking_id):
         "success": True,
         "message": f"Upcoming session reminder dispatched for Booking #{booking.id}.",
         "dispatched": dispatched,
+        "booking": booking.to_dict()
+    }), 200
+
+
+@api_v1_bookings.route("/api/host/bookings", methods=["GET"])
+@login_required
+def get_host_bookings():
+    """Returns all bookings for spaces owned by the authenticated host, with filtering by status and space_id."""
+    if not current_user.is_host:
+        return jsonify({"success": False, "error": "Host authorization required."}), 403
+
+    status_filter = request.args.get("status")
+    space_id_filter = request.args.get("space_id")
+    q = request.args.get("q")
+
+    query = Booking.query.join(Space).filter(Space.owner_id == current_user.id)
+
+    if space_id_filter:
+        try:
+            query = query.filter(Booking.space_id == int(space_id_filter))
+        except (ValueError, TypeError):
+            pass
+
+    if status_filter and status_filter.lower() != "all":
+        st = status_filter.lower()
+        if st == "active":
+            query = query.filter(db.or_(Booking.status == "active", Booking.session_state == "checked_in"))
+        elif st == "upcoming":
+            query = query.filter(Booking.status == "confirmed", Booking.start_time > datetime.utcnow(), Booking.session_state != "checked_in")
+        elif st == "completed":
+            query = query.filter(Booking.status == "completed")
+        elif st == "pending":
+            query = query.filter(Booking.status == "pending")
+        elif st == "cancelled":
+            query = query.filter(Booking.status.in_(["cancelled", "rejected", "refunded"]))
+        elif st == "disputed":
+            query = query.filter(Booking.session_state == "disputed")
+        else:
+            query = query.filter(Booking.status == st)
+
+    bookings = query.order_by(Booking.start_time.desc()).all()
+    booking_list = []
+    for b in bookings:
+        b_dict = b.to_dict()
+        if b.renter:
+            b_dict["renter"] = {
+                "id": b.renter.id,
+                "name": b.renter.name,
+                "email": b.renter.email,
+                "avatar_url": b.renter.avatar_url,
+                "phone": b.renter.phone,
+                "is_verified": b.renter.is_student_verified or b.renter.is_aadhaar_verified,
+                "trust_score": round(b.renter.objective_trust_score, 1)
+            }
+        booking_list.append(b_dict)
+
+    return jsonify({
+        "success": True,
+        "bookings": booking_list,
+        "count": len(booking_list)
+    }), 200
+
+
+@api_v1_bookings.route("/api/host/bookings/<int:booking_id>", methods=["GET"])
+@login_required
+def get_host_booking_detail(booking_id):
+    booking = Booking.query.get_or_404(booking_id)
+    if booking.space.owner_id != current_user.id and not current_user.is_admin:
+        return jsonify({"success": False, "error": "Access denied: You do not host this booking."}), 403
+
+    b_dict = booking.to_dict()
+    s_dict = booking.space.to_dict() if booking.space else {}
+    renter_dict = booking.renter.to_dict() if booking.renter else {}
+
+    activity_query = AuditLog.query.filter(
+        db.or_(
+            AuditLog.details.ilike(f'%booking_id": {booking.id}%'),
+            AuditLog.details.ilike(f'%Booking #{booking.id}%')
+        )
+    ).order_by(AuditLog.created_at.desc()).limit(15).all()
+
+    return jsonify({
+        "success": True,
+        "booking": b_dict,
+        "space": s_dict,
+        "renter": renter_dict,
+        "activity": [a.to_dict() for a in activity_query]
+    }), 200
+
+
+@api_v1_bookings.route("/api/booking/<int:booking_id>/dispute", methods=["POST"])
+@login_required
+def api_booking_dispute(booking_id):
+    booking = Booking.query.get_or_404(booking_id)
+    if not (current_user.id == booking.space.owner_id or current_user.id == booking.renter_id or current_user.is_admin):
+        return jsonify({"error": "Unauthorized"}), 403
+
+    data = request.get_json(silent=True) or {}
+    reason = sanitize_string(data.get("reason", "Host reported condition discrepancy"), max_length=500)
+    action = data.get("action", "raise")
+
+    if action == "resolve":
+        booking.session_state = "checked_out"
+        booking.escrow_status = "released"
+        resolution = sanitize_string(data.get("resolution", "Dispute resolved amicably"), max_length=500)
+        db.session.commit()
+        try:
+            from backend.modules.auth.audit import record_audit
+            record_audit("booking_dispute_resolved", user_id=current_user.id, details={"booking_id": booking.id, "resolution": resolution})
+        except Exception:
+            pass
+        return jsonify({"success": True, "message": "Dispute resolved and escrow settlement completed.", "booking": booking.to_dict()}), 200
+
+    booking.session_state = "disputed"
+    booking.escrow_status = "held"
+    db.session.commit()
+    try:
+        from backend.modules.auth.audit import record_audit
+        record_audit("booking_dispute_opened", user_id=current_user.id, details={"booking_id": booking.id, "reason": reason})
+    except Exception:
+        pass
+
+    return jsonify({
+        "success": True,
+        "message": f"Dispute recorded for Booking #{booking.id}. ₹100 escrow held pending verification.",
         "booking": booking.to_dict()
     }), 200

@@ -4,10 +4,10 @@ Handles platform telemetry, health checks, dashboard metrics, LoopBot chat,
 India Stack KYC verification, and dynamic yield estimation.
 """
 import logging
-from datetime import datetime
+from datetime import datetime, timedelta
 from flask import Blueprint, request, jsonify, session, redirect, url_for
 from flask_login import login_required, current_user
-from models import db, Booking, Space, SpaceInquiry, User
+from models import db, Booking, Space, SpaceInquiry, User, AuditLog
 
 logger = logging.getLogger(__name__)
 from backend.modules.auth import set_active_context
@@ -63,6 +63,213 @@ def api_dashboard():
         "host_bookings": [b.to_dict() for b in host_bookings],
         "host_spaces": [s.to_dict() for s in host_spaces],
         "host_metrics": host_metrics,
+        "user": current_user.to_dict()
+    }), 200
+
+
+@api_v1_system.route("/api/host/activity", methods=["GET"])
+@login_required
+def get_host_activity():
+    if not current_user.is_host:
+        return jsonify({"success": False, "error": "Host authorization required."}), 403
+
+    host_spaces = Space.query.filter_by(owner_id=current_user.id).all()
+    space_ids = [s.id for s in host_spaces]
+
+    host_bookings = Booking.query.join(Space).filter(Space.owner_id == current_user.id).order_by(Booking.created_at.desc()).limit(35).all()
+
+    events = []
+    for b in host_bookings:
+        events.append({
+            "id": f"b-create-{b.id}",
+            "type": "booking",
+            "category": "booking",
+            "title": f"New Reservation #{b.id}",
+            "description": f"Seeker {b.renter.name if b.renter else 'Guest'} booked {b.space.title if b.space else 'Space'} for {b.hours_booked}h",
+            "timestamp": b.created_at.isoformat() if b.created_at else None,
+            "resource_type": "booking",
+            "resource_id": b.id,
+            "space_id": b.space_id,
+            "status": b.status,
+            "icon": "fa-calendar-check",
+            "color": "emerald" if b.status == "confirmed" else "amber"
+        })
+        if b.arrival_time:
+            events.append({
+                "id": f"b-checkin-{b.id}",
+                "type": "access",
+                "category": "access",
+                "title": f"Check-In Verified #{b.id}",
+                "description": f"Physical handshake completed at {b.space.title if b.space else 'Premise'}. PIN / QR validated.",
+                "timestamp": b.arrival_time.isoformat(),
+                "resource_type": "booking",
+                "resource_id": b.id,
+                "space_id": b.space_id,
+                "status": "checked_in",
+                "icon": "fa-door-open",
+                "color": "sky"
+            })
+        if b.departure_time:
+            events.append({
+                "id": f"b-checkout-{b.id}",
+                "type": "settlement",
+                "category": "settlement",
+                "title": f"Check-Out & CV Inspection #{b.id}",
+                "description": f"Exit scan analyzed. Condition score: {round(b.condition_match_score, 1)}%. Escrow: {b.escrow_status}.",
+                "timestamp": b.departure_time.isoformat(),
+                "resource_type": "booking",
+                "resource_id": b.id,
+                "space_id": b.space_id,
+                "status": "checked_out",
+                "icon": "fa-shield-halved",
+                "color": "emerald" if b.escrow_status == "released" else "amber"
+            })
+
+    for s in host_spaces:
+        events.append({
+            "id": f"s-create-{s.id}",
+            "type": "space",
+            "category": "space",
+            "title": f"Listing: {s.title}",
+            "description": f"Space listed in {s.category} category. Status: {'Published' if s.is_active else 'Paused'}.",
+            "timestamp": s.created_at.isoformat() if s.created_at else None,
+            "resource_type": "space",
+            "resource_id": s.id,
+            "space_id": s.id,
+            "status": "active" if s.is_active else "inactive",
+            "icon": "fa-building",
+            "color": "amber"
+        })
+
+    events.sort(key=lambda x: x.get("timestamp") or "", reverse=True)
+
+    category_filter = request.args.get("category")
+    if category_filter and category_filter != "all":
+        events = [e for e in events if e.get("category") == category_filter]
+
+    return jsonify({
+        "success": True,
+        "events": events[:40]
+    }), 200
+
+
+@api_v1_system.route("/api/host/notifications", methods=["GET"])
+@login_required
+def get_host_notifications():
+    if not current_user.is_host:
+        return jsonify({"success": False, "notifications": [], "unread_count": 0}), 200
+
+    now = datetime.utcnow()
+    notifications = []
+
+    pending_bookings = Booking.query.join(Space).filter(
+        Space.owner_id == current_user.id,
+        Booking.status == "pending"
+    ).all()
+    for pb in pending_bookings:
+        notifications.append({
+            "id": f"notif-pending-{pb.id}",
+            "type": "new_booking",
+            "title": "New Booking Request",
+            "message": f"{pb.renter.name if pb.renter else 'A guest'} requested to book {pb.space.title if pb.space else 'your space'} for {pb.hours_booked}h.",
+            "timestamp": pb.created_at.isoformat() if pb.created_at else now.isoformat(),
+            "unread": True,
+            "action_url": f"/host/bookings/{pb.id}",
+            "priority": "high",
+            "icon": "fa-bell",
+            "color": "amber"
+        })
+
+    today_start = datetime(now.year, now.month, now.day)
+    today_end = today_start + timedelta(days=1)
+    upcoming_today = Booking.query.join(Space).filter(
+        Space.owner_id == current_user.id,
+        Booking.status == "confirmed",
+        Booking.start_time >= today_start,
+        Booking.start_time <= today_end,
+        Booking.session_state != "checked_in"
+    ).all()
+    for ub in upcoming_today:
+        notifications.append({
+            "id": f"notif-arrival-{ub.id}",
+            "type": "check_in",
+            "title": "Scheduled Arrival Today",
+            "message": f"{ub.renter.name if ub.renter else 'Guest'} arriving at {ub.start_time.strftime('%I:%M %p')} at {ub.space.title if ub.space else 'space'}.",
+            "timestamp": ub.start_time.isoformat(),
+            "unread": True,
+            "action_url": f"/host/live-sessions/{ub.id}",
+            "priority": "medium",
+            "icon": "fa-clock",
+            "color": "sky"
+        })
+
+    active_sessions = Booking.query.join(Space).filter(
+        Space.owner_id == current_user.id,
+        Booking.session_state == "checked_in"
+    ).all()
+    for asess in active_sessions:
+        notifications.append({
+            "id": f"notif-active-{asess.id}",
+            "type": "active_session",
+            "title": "Live Session in Progress",
+            "message": f"Active session ongoing at {asess.space.title if asess.space else 'space'}. PIN handshake verified.",
+            "timestamp": asess.arrival_time.isoformat() if asess.arrival_time else now.isoformat(),
+            "unread": False,
+            "action_url": f"/host/live-sessions/{asess.id}",
+            "priority": "high",
+            "icon": "fa-play",
+            "color": "emerald"
+        })
+
+    if not current_user.is_host_verified:
+        notifications.append({
+            "id": "notif-kyc-pending",
+            "type": "verification",
+            "title": "Complete Discom Verification",
+            "message": "Link your State Electricity Board consumer account (CA#) and UPI account to activate instant daily payouts.",
+            "timestamp": now.isoformat(),
+            "unread": True,
+            "action_url": "/host/verification",
+            "priority": "medium",
+            "icon": "fa-shield-halved",
+            "color": "amber"
+        })
+
+    return jsonify({
+        "success": True,
+        "notifications": notifications,
+        "unread_count": len([n for n in notifications if n.get("unread")])
+    }), 200
+
+
+@api_v1_system.route("/api/host/settings", methods=["POST"])
+@login_required
+def update_host_settings():
+    if not current_user.is_host:
+        return jsonify({"success": False, "error": "Host authorization required."}), 403
+
+    data = request.get_json(silent=True) or {}
+    if data.get("name"):
+        current_user.name = sanitize_string(data.get("name"), max_length=120)
+    if data.get("phone"):
+        current_user.phone = sanitize_string(data.get("phone"), max_length=40)
+    if data.get("bio"):
+        current_user.bio = sanitize_string(data.get("bio"), max_length=1000)
+    if data.get("upi_vpa"):
+        current_user.upi_vpa_masked = sanitize_string(data.get("upi_vpa"), max_length=80)
+    if data.get("bank_beneficiary_name"):
+        current_user.bank_beneficiary_name = sanitize_string(data.get("bank_beneficiary_name"), max_length=120)
+
+    db.session.commit()
+    try:
+        from backend.modules.auth.audit import record_audit
+        record_audit("host_settings_updated", user_id=current_user.id, details={"updated": list(data.keys())})
+    except Exception:
+        pass
+
+    return jsonify({
+        "success": True,
+        "message": "Host settings updated successfully.",
         "user": current_user.to_dict()
     }), 200
 

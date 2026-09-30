@@ -5,9 +5,10 @@ Handles space exploration, AI scanning, space registration, editing, photo uploa
 import os
 import re
 import uuid
+from datetime import datetime
 from flask import Blueprint, request, jsonify, redirect, url_for, flash, current_app
 from flask_login import login_required, current_user
-from models import db, Space, User, SpaceInquiry, Booking, Review
+from models import db, Space, User, SpaceInquiry, Booking, Review, AuditLog
 from backend.modules.auth import authorize, Permission, ForbiddenError, set_active_context
 from backend.core.geo import haversine_distance, resolve_location_coordinates
 from space_ai import analyze_space_features, match_spaces_with_ai
@@ -433,6 +434,29 @@ def api_edit_space(space_id):
     if "is_active" in data:
         space.is_active = bool(data.get("is_active"))
 
+    if data.get("geofence_radius_meters") is not None and str(data.get("geofence_radius_meters")).strip() != "":
+        space.geofence_radius_meters = int(validate_numeric(data.get("geofence_radius_meters"), min_val=10, max_val=500, default=space.geofence_radius_meters or 30))
+    if data.get("physical_access_type"):
+        space.physical_access_type = sanitize_string(data.get("physical_access_type"), max_length=50)
+    if data.get("keybox_code") is not None:
+        space.keybox_code = sanitize_string(data.get("keybox_code"), max_length=20)
+    if data.get("discom_ca_number") is not None:
+        space.discom_ca_number = sanitize_string(data.get("discom_ca_number"), max_length=50)
+    if data.get("discom_consumer_name") is not None:
+        space.discom_consumer_name = sanitize_string(data.get("discom_consumer_name"), max_length=120)
+    if data.get("room_qr_token") is not None:
+        space.room_qr_token = sanitize_string(data.get("room_qr_token"), max_length=64)
+    if data.get("latitude") is not None or data.get("lat") is not None:
+        raw_lat = data.get("latitude") if data.get("latitude") is not None else data.get("lat")
+        val_lat = validate_numeric(raw_lat, min_val=-90.0, max_val=90.0, default=None)
+        if val_lat is not None:
+            space.latitude = float(val_lat)
+    if data.get("longitude") is not None or data.get("lng") is not None:
+        raw_lng = data.get("longitude") if data.get("longitude") is not None else data.get("lng")
+        val_lng = validate_numeric(raw_lng, min_val=-180.0, max_val=180.0, default=None)
+        if val_lng is not None:
+            space.longitude = float(val_lng)
+
     # Regenerate dense vector embedding for semantic search
     try:
         from backend.modules.search.embedding import build_searchable_representation, generate_embedding
@@ -442,6 +466,13 @@ def api_edit_space(space_id):
         pass
 
     db.session.commit()
+
+    # Record Audit Event
+    try:
+        from backend.modules.auth.audit import record_audit
+        record_audit("space_updated", user_id=current_user.id, details={"space_id": space.id, "title": space.title})
+    except Exception:
+        pass
 
     # Trust & Safety Listing Evaluation on update
     from backend.modules.trust_safety import TrustSafetyEngine
@@ -461,6 +492,74 @@ def api_edit_space(space_id):
             }
         }), 200
     return redirect(url_for("dashboard_page"))
+
+
+@api_v1_spaces.route("/api/host/spaces", methods=["GET"])
+@login_required
+def get_host_spaces():
+    """Returns all spaces owned by the authenticated host, including drafts and inactive spaces, with operational telemetry."""
+    if not current_user.is_host:
+        return jsonify({"success": False, "error": "Host authorization required."}), 403
+
+    spaces = Space.query.filter_by(owner_id=current_user.id).order_by(Space.created_at.desc()).all()
+    results = []
+    now = datetime.utcnow()
+
+    for s in spaces:
+        s_dict = s.to_dict()
+        bookings = Booking.query.filter_by(space_id=s.id).all()
+        confirmed_bookings = [b for b in bookings if b.status in ("confirmed", "active")]
+        completed_bookings = [b for b in bookings if b.status == "completed"]
+        upcoming_bookings = [b for b in confirmed_bookings if b.start_time and b.start_time > now]
+        active_session = next((b for b in bookings if b.session_state == "checked_in" or (b.status == "active" and b.session_state != "checked_out")), None)
+        total_revenue = sum(b.total_price for b in completed_bookings)
+
+        s_dict["bookings_count"] = len(bookings)
+        s_dict["upcoming_bookings_count"] = len(upcoming_bookings)
+        s_dict["active_session"] = active_session.to_dict() if active_session else None
+        s_dict["total_revenue"] = round(total_revenue, 2)
+        s_dict["is_discom_verified"] = bool(s.discom_ca_number or (s.owner and s.owner.is_host_verified))
+        s_dict["status"] = "published" if s.is_active else "unavailable"
+        results.append(s_dict)
+
+    return jsonify({
+        "success": True,
+        "spaces": results,
+        "count": len(results)
+    }), 200
+
+
+@api_v1_spaces.route("/api/host/spaces/<int:space_id>", methods=["GET"])
+@login_required
+def get_host_space_detail(space_id):
+    space = Space.query.get_or_404(space_id)
+    if space.owner_id != current_user.id and not current_user.is_admin:
+        return jsonify({"success": False, "error": "Access denied: You do not own this space."}), 403
+
+    bookings = Booking.query.filter_by(space_id=space.id).order_by(Booking.start_time.desc()).all()
+    now = datetime.utcnow()
+    active_session = next((b for b in bookings if b.session_state == "checked_in" or (b.status == "active" and b.session_state != "checked_out")), None)
+
+    # Activity/audit records for this space
+    activity_query = AuditLog.query.filter(
+        db.or_(
+            AuditLog.details.ilike(f'%space_id": {space.id}%'),
+            AuditLog.details.ilike(f'%Space #{space.id}%'),
+            AuditLog.action.ilike(f'%space%')
+        )
+    ).order_by(AuditLog.created_at.desc()).limit(20).all()
+
+    s_dict = space.to_dict()
+    s_dict["bookings_count"] = len(bookings)
+    s_dict["active_session"] = active_session.to_dict() if active_session else None
+    s_dict["is_discom_verified"] = bool(space.discom_ca_number or (space.owner and space.owner.is_host_verified))
+
+    return jsonify({
+        "success": True,
+        "space": s_dict,
+        "bookings": [b.to_dict() for b in bookings],
+        "activity": [a.to_dict() for a in activity_query]
+    }), 200
 
 
 @api_v1_spaces.route("/api/spaces/<int:space_id>/toggle-status", methods=["POST"])

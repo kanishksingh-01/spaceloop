@@ -107,3 +107,45 @@ export async function rejectBooking(bookingId: number): Promise<{ success: boole
   });
 }
 
+export async function getHostBookings(params?: {
+  status?: string;
+  space_id?: number;
+  q?: string;
+}): Promise<{ success: boolean; bookings: Booking[]; count: number }> {
+  const query = new URLSearchParams();
+  if (params?.status && params.status !== 'all') query.append('status', params.status);
+  if (params?.space_id) query.append('space_id', String(params.space_id));
+  if (params?.q) query.append('q', params.q);
+
+  const qs = query.toString();
+  return request<{ success: boolean; bookings: Booking[]; count: number }>(`/api/host/bookings${qs ? `?${qs}` : ''}`);
+}
+
+export async function getHostBookingDetail(bookingId: number): Promise<{
+  success: boolean;
+  booking: Booking;
+  space?: any;
+  renter?: any;
+  activity?: any[];
+}> {
+  return request<{
+    success: boolean;
+    booking: Booking;
+    space?: any;
+    renter?: any;
+    activity?: any[];
+  }>(`/api/host/bookings/${bookingId}`);
+}
+
+export async function disputeBooking(
+  bookingId: number,
+  reason: string,
+  action: 'raise' | 'resolve' = 'raise',
+  resolution?: string
+): Promise<{ success: boolean; message: string; booking: Booking }> {
+  return request(`/api/booking/${bookingId}/dispute`, {
+    method: 'POST',
+    body: JSON.stringify({ reason, action, resolution }),
+  });
+}
+

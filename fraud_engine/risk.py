@@ -2,7 +2,7 @@
 SpaceLoop Fraud Engine Risk Engine Layer
 Calculates non-linear composite risk scores, statistical confidence, and automated policy actions.
 """
-from typing import List, Dict, Any, Tuple
+from typing import List, Dict, Any, Tuple, Optional
 from fraud_engine.schemas import RuleResult, FraudSeverity, FraudRiskLevel, FraudDecision
 from fraud_engine.config import FraudEngineConfig
 

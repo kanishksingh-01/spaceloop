@@ -274,6 +274,59 @@ export async function editSpace(spaceId: number, payload: Partial<Space> & Recor
   });
 }
 
+export async function getHostSpaces(): Promise<{ success: boolean; spaces: Space[]; count: number }> {
+  const data = await request<{ success: boolean; spaces: any[]; count: number }>('/api/host/spaces');
+  const normalizedSpaces = (data.spaces || []).map((s: any) => ({
+    ...normalizeSpace(s),
+    bookings_count: s.bookings_count,
+    upcoming_bookings_count: s.upcoming_bookings_count,
+    active_session: s.active_session,
+    total_revenue: s.total_revenue,
+    is_discom_verified: s.is_discom_verified,
+    status: s.status || (s.is_active ? 'published' : 'unavailable'),
+    geofence_radius_meters: s.geofence_radius_meters || 30,
+    physical_access_type: s.physical_access_type || 'caretaker_handshake',
+    keybox_code: s.keybox_code || '',
+    discom_ca_number: s.discom_ca_number || '',
+    room_qr_token: s.room_qr_token || '',
+  }));
+  return {
+    success: data.success,
+    spaces: normalizedSpaces,
+    count: normalizedSpaces.length,
+  };
+}
+
+export async function getHostSpaceDetail(spaceId: number): Promise<{
+  success: boolean;
+  space: Space;
+  bookings: any[];
+  activity: any[];
+}> {
+  const data = await request<{
+    success: boolean;
+    space: any;
+    bookings: any[];
+    activity: any[];
+  }>(`/api/host/spaces/${spaceId}`);
+  return {
+    success: data.success,
+    space: {
+      ...normalizeSpace(data.space),
+      bookings_count: data.space?.bookings_count,
+      active_session: data.space?.active_session,
+      is_discom_verified: data.space?.is_discom_verified,
+      geofence_radius_meters: data.space?.geofence_radius_meters || 30,
+      physical_access_type: data.space?.physical_access_type || 'caretaker_handshake',
+      keybox_code: data.space?.keybox_code || '',
+      discom_ca_number: data.space?.discom_ca_number || '',
+      room_qr_token: data.space?.room_qr_token || '',
+    },
+    bookings: data.bookings || [],
+    activity: data.activity || [],
+  };
+}
+
 export interface ListingAssistanceResponse {
   success: boolean;
   extracted_fields: {

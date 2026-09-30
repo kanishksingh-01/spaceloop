@@ -116,6 +116,16 @@ def ensure_database_schema(app, db):
                         except Exception:
                             pass
 
+            if "space_inquiries" in table_names:
+                inq_cols = {col["name"]: col for col in inspector.get_columns("space_inquiries")}
+                if "response" not in inq_cols:
+                    with db.engine.connect() as conn:
+                        try:
+                            conn.execute(db.text("ALTER TABLE space_inquiries ADD COLUMN response TEXT DEFAULT ''"))
+                            conn.commit()
+                        except Exception:
+                            pass
+
             # Ensure public_id is populated for all existing users
             from models import User
             users_without_pid = User.query.filter((User.public_id == None) | (User.public_id == "")).all()

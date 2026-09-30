@@ -76,6 +76,26 @@ export interface Space {
   pros?: string[];
   cons?: string[];
   created_at?: string;
+  bookings_count?: number;
+  upcoming_bookings_count?: number;
+  active_session?: any;
+  total_revenue?: number;
+  is_discom_verified?: boolean;
+  status?: string;
+  geofence_radius_meters?: number;
+  physical_access_type?: string;
+  keybox_code?: string;
+  discom_ca_number?: string;
+  discom_consumer_name?: string;
+  room_qr_token?: string;
+  image_url?: string;
+  is_verified?: boolean;
+  square_feet?: number;
+  capacity?: number;
+  upcoming_count?: number;
+  oti_score?: number;
+  lat?: number;
+  lng?: number;
 }
 
 export interface Booking {
@@ -84,29 +104,52 @@ export interface Booking {
   space_title?: string;
   space_photo?: string;
   space_address?: string;
-  seeker_id: number;
+  space_category?: string;
+  seeker_id?: number;
+  renter_id?: number;
   seeker_name?: string;
+  renter_name?: string;
   seeker_email?: string;
   user_name?: string;
+  renter?: {
+    id: number;
+    name: string;
+    email: string;
+    avatar_url?: string;
+    phone?: string;
+    is_verified?: boolean;
+    trust_score?: number;
+  };
   start_time: string;
   end_time: string;
   start_iso?: string;
   end_iso?: string;
   end_timestamp_ms?: number;
   hours_booked?: number;
+  total_hours?: number;
   total_price: number;
   deposit_held: number;
   escrow_deposit_amount?: number;
-  status: 'pending' | 'confirmed' | 'active' | 'completed' | 'cancelled';
+  status: 'pending' | 'confirmed' | 'active' | 'completed' | 'cancelled' | 'rejected' | string;
   session_state?: string;
   arrival_pin?: string;
   room_qr_token?: string;
   qr_code_hash?: string;
   checked_in_at?: string;
   checked_out_at?: string;
+  check_in_time?: string;
+  check_out_time?: string;
+  condition_verified?: boolean;
+  escrow_released?: boolean;
+  arrival_time?: string;
+  departure_time?: string;
+  entry_scan_photo?: string;
+  exit_scan_photo?: string;
+  fans_lights_cleared?: boolean;
   created_at?: string;
   space?: Space;
   intended_purpose?: string;
+  special_requests?: string;
   micro_lease_agreement?: string;
   condition_match_score?: number;
   escrow_status?: string;
@@ -135,6 +178,9 @@ export interface CalculatorEstimate {
   estimated_hourly_inr: number;
   occupancy_rate_pct: number;
   peer_comparison: string;
+  suggested_hourly_rate?: number;
+  estimated_monthly_earnings?: number;
+  estimated_occupancy_rate?: number;
 }
 
 export interface Inquiry {

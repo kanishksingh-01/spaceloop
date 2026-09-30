@@ -15,6 +15,23 @@ import { SpaceDetailPage } from './pages/SpaceDetailPage';
 import { ListSpacePage } from './pages/ListSpacePage';
 import { DashboardPage } from './pages/DashboardPage';
 import { HostDashboardPage } from './pages/HostDashboardPage';
+import { HostPortalShell } from './pages/host/HostPortalShell';
+import {
+  OverviewView,
+  MySpacesView,
+  SpaceDetailView,
+  CreateSpaceView,
+  BookingsView,
+  BookingDetailView,
+  CalendarView,
+  LiveSessionsView,
+  SpaceVerificationView,
+  AccessSecurityView,
+  ConditionEscrowView,
+  AnalyticsView,
+  ActivityAuditView,
+  HostSettingsView,
+} from './pages/host/views';
 import { SessionPage } from './pages/SessionPage';
 import { CalculatorPage } from './pages/CalculatorPage';
 import { VerifyPage } from './pages/VerifyPage';
@@ -217,7 +234,7 @@ export const App: React.FC = () => {
               />
               <Route path="/how-it-works" element={<HowItWorksPage />} />
 
-              {/* Host Dedicated Routes */}
+              {/* Host Dedicated Portal Routes */}
               <Route
                 path="/host"
                 element={
@@ -226,28 +243,33 @@ export const App: React.FC = () => {
                     initializing={initializing}
                     onRequireAuth={() => setHostAuthModalOpen(true)}
                   >
-                    <HostDashboardPage
+                    <HostPortalShell
                       currentUser={currentUser}
                       onOpenHostAuthModal={() => setHostAuthModalOpen(true)}
                     />
                   </ProtectedRoute>
                 }
-              />
-              <Route
-                path="/host/dashboard"
-                element={
-                  <ProtectedRoute
-                    currentUser={currentUser}
-                    initializing={initializing}
-                    onRequireAuth={() => setHostAuthModalOpen(true)}
-                  >
-                    <HostDashboardPage
-                      currentUser={currentUser}
-                      onOpenHostAuthModal={() => setHostAuthModalOpen(true)}
-                    />
-                  </ProtectedRoute>
-                }
-              />
+              >
+                <Route index element={<OverviewView currentUser={currentUser} />} />
+                <Route path="overview" element={<OverviewView currentUser={currentUser} />} />
+                <Route path="dashboard" element={<OverviewView currentUser={currentUser} />} />
+                <Route path="spaces" element={<MySpacesView />} />
+                <Route path="spaces/create" element={<CreateSpaceView />} />
+                <Route path="spaces/:id" element={<SpaceDetailView />} />
+                <Route path="bookings" element={<BookingsView />} />
+                <Route path="bookings/:id" element={<BookingDetailView />} />
+                <Route path="calendar" element={<CalendarView />} />
+                <Route path="live-sessions" element={<LiveSessionsView />} />
+                <Route path="live-sessions/:id" element={<LiveSessionsView />} />
+                <Route path="verification" element={<SpaceVerificationView />} />
+                <Route path="access" element={<AccessSecurityView />} />
+                <Route path="condition-reports" element={<ConditionEscrowView />} />
+                <Route path="escrow" element={<ConditionEscrowView />} />
+                <Route path="analytics" element={<AnalyticsView />} />
+                <Route path="activity" element={<ActivityAuditView />} />
+                <Route path="settings" element={<HostSettingsView />} />
+                <Route path="help" element={<HostSettingsView />} />
+              </Route>
 
               {/* Email Verification Routes (Resend Link Handlers) */}
               <Route

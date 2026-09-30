@@ -1,0 +1,328 @@
+import React, { useState, useEffect } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
+import { Booking, Space } from '../../../types';
+import { getHostBookings, acceptBooking, rejectBooking, getHostSpaces } from '../../../services/host';
+import { StatusBadge } from '../components/StatusBadge';
+
+export const BookingsView: React.FC = () => {
+  const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  const currentStatusFilter = searchParams.get('status') || 'all';
+
+  const [bookings, setBookings] = useState<Booking[]>([]);
+  const [spaces, setSpaces] = useState<Space[]>([]);
+  const [selectedSpaceId, setSelectedSpaceId] = useState<string>('all');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [loading, setLoading] = useState(true);
+  const [actionLoadingId, setActionLoadingId] = useState<number | null>(null);
+
+  useEffect(() => {
+    loadSpaces();
+  }, []);
+
+  useEffect(() => {
+    loadBookings();
+  }, [currentStatusFilter, selectedSpaceId]);
+
+  const loadSpaces = async () => {
+    try {
+      const res = await getHostSpaces();
+      if (res && res.spaces) {
+        setSpaces(res.spaces);
+      }
+    } catch (err) {
+      console.warn('Failed to load host spaces:', err);
+    }
+  };
+
+  const loadBookings = async () => {
+    try {
+      setLoading(true);
+      const params: any = {};
+      if (currentStatusFilter !== 'all') {
+        params.status = currentStatusFilter;
+      }
+      if (selectedSpaceId !== 'all') {
+        params.space_id = Number(selectedSpaceId);
+      }
+
+      const res = await getHostBookings(params);
+      if (res && res.bookings) {
+        setBookings(res.bookings);
+      }
+    } catch (err) {
+      console.error('Failed to load host bookings:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleStatusFilterChange = (status: string) => {
+    if (status === 'all') {
+      searchParams.delete('status');
+      setSearchParams(searchParams);
+    } else {
+      setSearchParams({ status });
+    }
+  };
+
+  const handleAccept = async (e: React.MouseEvent, id: number) => {
+    e.stopPropagation();
+    try {
+      setActionLoadingId(id);
+      await acceptBooking(id);
+      setBookings(prev =>
+        prev.map(b => (b.id === id ? { ...b, status: 'confirmed' } : b))
+      );
+    } catch (err) {
+      console.error('Failed to accept booking:', err);
+    } finally {
+      setActionLoadingId(null);
+    }
+  };
+
+  const handleReject = async (e: React.MouseEvent, id: number) => {
+    e.stopPropagation();
+    try {
+      setActionLoadingId(id);
+      await rejectBooking(id);
+      setBookings(prev =>
+        prev.map(b => (b.id === id ? { ...b, status: 'rejected' } : b))
+      );
+    } catch (err) {
+      console.error('Failed to reject booking:', err);
+    } finally {
+      setActionLoadingId(null);
+    }
+  };
+
+  const filteredBookings = bookings.filter(b => {
+    if (!searchQuery.trim()) return true;
+    const q = searchQuery.toLowerCase();
+    const matchId = String(b.id).includes(q);
+    const matchUser = (b.renter?.name || b.user_name || '').toLowerCase().includes(q);
+    const matchSpace = (b.space?.title || '').toLowerCase().includes(q);
+    return matchId || matchUser || matchSpace;
+  });
+
+  return (
+    <div className="p-6 md:p-8 max-w-7xl mx-auto w-full space-y-6">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-black text-white tracking-tight">Booking Management</h1>
+          <p className="text-slate-400 text-xs md:text-sm mt-0.5">
+            Operational queue for approvals, arrival tracking, live sessions, and escrow payouts.
+          </p>
+        </div>
+
+        <button
+          onClick={() => navigate('/host/calendar')}
+          className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold text-xs border border-slate-700 transition flex items-center gap-2 self-start sm:self-auto"
+        >
+          <i className="fa-regular fa-calendar-days text-amber-400 text-xs" />
+          <span>View Calendar</span>
+        </button>
+      </div>
+
+      {/* Filter and Control Bar */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-slate-900/60 border border-slate-800 p-3.5 rounded-2xl">
+        {/* Status Filter Tabs */}
+        <div className="flex items-center gap-1 overflow-x-auto pb-1 md:pb-0 scrollbar-none">
+          {[
+            { id: 'all', label: 'All Bookings' },
+            { id: 'pending', label: 'Pending Approval' },
+            { id: 'confirmed', label: 'Confirmed' },
+            { id: 'active', label: 'Active Now' },
+            { id: 'completed', label: 'Completed' },
+            { id: 'cancelled', label: 'Cancelled' },
+          ].map(tab => (
+            <button
+              key={tab.id}
+              onClick={() => handleStatusFilterChange(tab.id)}
+              className={`px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition ${
+                currentStatusFilter === tab.id
+                  ? 'bg-amber-500/15 text-amber-300 border border-amber-500/30'
+                  : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800'
+              }`}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
+
+        {/* Space Selector & Search */}
+        <div className="flex items-center gap-3">
+          <select
+            value={selectedSpaceId}
+            onChange={e => setSelectedSpaceId(e.target.value)}
+            className="bg-slate-950 border border-slate-800 rounded-xl px-3 py-1.5 text-xs text-slate-200 focus:outline-none"
+          >
+            <option value="all">All Spaces</option>
+            {spaces.map(s => (
+              <option key={s.id} value={s.id}>
+                {s.title}
+              </option>
+            ))}
+          </select>
+
+          <div className="relative flex-1 sm:w-56">
+            <i className="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 text-xs" />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={e => setSearchQuery(e.target.value)}
+              placeholder="Search seeker, ID..."
+              className="w-full bg-slate-950 border border-slate-800 focus:border-amber-500/50 rounded-xl pl-8 pr-3 py-1.5 text-xs text-slate-200 placeholder:text-slate-500 focus:outline-none"
+            />
+          </div>
+        </div>
+      </div>
+
+      {/* Bookings Queue */}
+      {loading ? (
+        <div className="py-20 text-center text-slate-400 text-xs font-mono">
+          <div className="w-8 h-8 border-2 border-amber-500 border-t-transparent rounded-full animate-spin mx-auto mb-3" />
+          FETCHING BOOKINGS QUEUE...
+        </div>
+      ) : filteredBookings.length === 0 ? (
+        <div className="p-12 text-center bg-slate-900/40 border border-slate-800/80 rounded-2xl">
+          <i className="fa-regular fa-calendar-xmark text-3xl text-slate-600 mb-3 block" />
+          <h3 className="text-base font-bold text-white mb-1">No Bookings Found</h3>
+          <p className="text-xs text-slate-400 max-w-sm mx-auto">
+            {searchQuery
+              ? 'No bookings match your current search query.'
+              : 'There are no bookings under this status tab currently.'}
+          </p>
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {filteredBookings.map(b => {
+            const isLive = b.status === 'active';
+            const isPending = b.status === 'pending';
+
+            return (
+              <div
+                key={b.id}
+                onClick={() => navigate(`/host/bookings/${b.id}`)}
+                className={`p-4 rounded-2xl border transition-all duration-150 cursor-pointer group hover:bg-slate-900/80 ${
+                  isLive
+                    ? 'bg-slate-900/90 border-emerald-500/40 shadow-lg shadow-emerald-500/5'
+                    : isPending
+                    ? 'bg-slate-900/70 border-amber-500/30'
+                    : 'bg-slate-900/50 border-slate-800 hover:border-slate-700'
+                }`}
+              >
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                  {/* Left: Space info & Seeker */}
+                  <div className="flex items-start gap-3.5">
+                    <img
+                      src={b.space?.image_url || 'https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&w=150&q=80'}
+                      alt="Space"
+                      className="w-14 h-14 rounded-xl object-cover border border-slate-800 shrink-0"
+                    />
+                    <div>
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="font-bold text-white text-sm group-hover:text-amber-400 transition">
+                          {b.space?.title || `Space #${b.space_id}`}
+                        </span>
+                        <StatusBadge status={b.status} type="booking" />
+                        {isLive && (
+                          <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 uppercase animate-pulse">
+                            Active Now
+                          </span>
+                        )}
+                      </div>
+
+                      <div className="text-xs text-slate-300">
+                        Seeker: <strong className="text-white">{b.renter?.name || b.user_name || 'Guest'}</strong>
+                        {b.renter?.is_verified && (
+                          <i className="fa-solid fa-circle-check text-emerald-400 ml-1 text-[11px]" title="Aadhaar KYC Verified" />
+                        )}
+                        <span className="text-slate-500 mx-2">•</span>
+                        <span>Booking #{b.id}</span>
+                      </div>
+
+                      <div className="text-[11px] text-slate-400 mt-1 flex items-center gap-3 flex-wrap">
+                        <span>
+                          <i className="fa-regular fa-calendar mr-1 text-slate-500" />
+                          {new Date(b.start_time).toLocaleDateString()}
+                        </span>
+                        <span>
+                          <i className="fa-regular fa-clock mr-1 text-slate-500" />
+                          {new Date(b.start_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} -{' '}
+                          {new Date(b.end_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} ({b.total_hours} hrs)
+                        </span>
+                        <span className="text-emerald-400 font-mono">
+                          <i className="fa-solid fa-vault mr-1 text-[10px]" />
+                          ₹100 Micro-Escrow Held
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Right: Price & Quick Action Buttons */}
+                  <div className="flex items-center gap-4 self-end md:self-center shrink-0">
+                    <div className="text-right">
+                      <div className="text-base font-black text-white font-mono">
+                        ₹{b.total_price}
+                      </div>
+                      <div className="text-[10px] text-emerald-400 font-semibold">
+                        Host Payout: ₹{Math.round(b.total_price * 0.95)}
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      {isPending && (
+                        <>
+                          <button
+                            onClick={(e) => handleReject(e, b.id)}
+                            disabled={actionLoadingId === b.id}
+                            className="px-3 py-1.5 rounded-xl border border-slate-700 hover:border-rose-500/40 text-slate-400 hover:text-rose-400 text-xs font-semibold transition"
+                          >
+                            Decline
+                          </button>
+                          <button
+                            onClick={(e) => handleAccept(e, b.id)}
+                            disabled={actionLoadingId === b.id}
+                            className="px-4 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs shadow-md shadow-amber-500/20 transition"
+                          >
+                            {actionLoadingId === b.id ? 'Accepting...' : 'Accept'}
+                          </button>
+                        </>
+                      )}
+
+                      {isLive && (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            navigate(`/host/live-sessions/${b.id}`);
+                          }}
+                          className="px-4 py-1.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs shadow-lg shadow-emerald-500/20 transition flex items-center gap-1.5"
+                        >
+                          <i className="fa-solid fa-satellite-dish text-xs" />
+                          <span>Cockpit</span>
+                        </button>
+                      )}
+
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          navigate(`/host/bookings/${b.id}`);
+                        }}
+                        className="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold border border-slate-700 transition"
+                      >
+                        Details →
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+};
