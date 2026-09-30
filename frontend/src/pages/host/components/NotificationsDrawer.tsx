@@ -1,6 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { HostNotification, getHostNotifications } from '../../../services/host';
+import {
+  HostNotification,
+  getHostNotifications,
+  markNotificationRead,
+  markAllNotificationsRead,
+} from '../../../services/host';
 
 interface NotificationsDrawerProps {
   isOpen: boolean;
@@ -45,20 +50,33 @@ export const NotificationsDrawer: React.FC<NotificationsDrawerProps> = ({
 
   const filtered = filter === 'all' ? notifications : notifications.filter((n) => n.type === filter);
 
-  const handleNotificationClick = (notif: HostNotification) => {
+  const handleNotificationClick = async (notif: HostNotification) => {
+    const id = (notif as any).db_id || notif.id;
     // Mark as read locally
     setNotifications((prev) =>
       prev.map((n) => (n.id === notif.id ? { ...n, unread: false } : n))
     );
+    if (typeof id === 'number' || (!isNaN(Number(id)) && !String(id).startsWith('dyn-'))) {
+      try {
+        await markNotificationRead(id);
+      } catch (err) {
+        console.warn('Failed to mark notification read:', err);
+      }
+    }
     onClose();
     if (notif.action_url) {
       navigate(notif.action_url);
     }
   };
 
-  const markAllRead = () => {
+  const markAllRead = async () => {
     setNotifications((prev) => prev.map((n) => ({ ...n, unread: false })));
     if (onNotificationsUpdated) onNotificationsUpdated(0);
+    try {
+      await markAllNotificationsRead();
+    } catch (err) {
+      console.warn('Failed to mark all notifications read:', err);
+    }
   };
 
   return (
@@ -178,6 +196,21 @@ export const NotificationsDrawer: React.FC<NotificationsDrawerProps> = ({
                 </div>
               ))
             )}
+          </div>
+
+          {/* Footer with link to full notifications view */}
+          <div className="p-3 border-t border-slate-800 bg-slate-950/80 text-center shrink-0">
+            <button
+              type="button"
+              onClick={() => {
+                onClose();
+                navigate('/host/notifications');
+              }}
+              className="w-full py-2 px-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-semibold text-slate-300 hover:text-white transition flex items-center justify-center gap-2"
+            >
+              <span>Open Full Notifications Hub</span>
+              <i className="fa-solid fa-arrow-up-right-from-square text-[10px]" />
+            </button>
           </div>
         </div>
       </div>

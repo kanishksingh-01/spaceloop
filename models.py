@@ -215,6 +215,12 @@ class Space(db.Model):
     ai_suitability_score = db.Column(db.Integer, default=95)
 
     is_active = db.Column(db.Boolean, default=True)
+    is_verified = db.Column(db.Boolean, default=False)
+    draft = db.Column(db.Boolean, default=False)
+    operating_hours_start = db.Column(db.String(10), default="08:00")
+    operating_hours_end = db.Column(db.String(10), default="22:00")
+    buffer_minutes = db.Column(db.Integer, default=15)
+    instant_booking_enabled = db.Column(db.Boolean, default=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     
     # Semantic Vector Search (dense vector embedding stored as JSON array, pgvector compatible)
@@ -402,6 +408,12 @@ class Space(db.Model):
             "rating": self.average_rating(),
             "reviews_count": len(self.reviews),
             "is_active": self.is_active,
+            "is_verified": bool(self.is_verified or self.discom_ca_number),
+            "draft": bool(self.draft),
+            "operating_hours_start": self.operating_hours_start or "08:00",
+            "operating_hours_end": self.operating_hours_end or "22:00",
+            "buffer_minutes": self.buffer_minutes or 15,
+            "instant_booking_enabled": self.instant_booking_enabled if self.instant_booking_enabled is not None else True,
             "created_at": self.created_at.isoformat() if self.created_at else None,
             # Zero-Hardware India Stack & Telemetry
             "latitude": self.latitude,
@@ -463,6 +475,17 @@ class Booking(db.Model):
     escrow_status = db.Column(db.String(30), default="held")  # 'held', 'released', 'claimed'
     objective_punctuality_score = db.Column(db.Float, default=100.0)
 
+    # Disputes & Micro-Escrow Settlement
+    dispute_reason = db.Column(db.Text, default="")
+    dispute_status = db.Column(db.String(30), default="none")  # 'none', 'opened', 'resolved', 'forfeited'
+    dispute_resolution = db.Column(db.Text, default="")
+    dispute_opened_at = db.Column(db.DateTime, nullable=True)
+    dispute_resolved_at = db.Column(db.DateTime, nullable=True)
+    settled_at = db.Column(db.DateTime, nullable=True)
+    payout_vpa = db.Column(db.String(120), default="")
+    net_payout_amount = db.Column(db.Float, default=0.0)
+    platform_fee_amount = db.Column(db.Float, default=0.0)
+
     __table_args__ = (
         db.Index("idx_booking_space_time", "space_id", "start_time", "end_time"),
         db.Index("idx_booking_renter_status", "renter_id", "status"),
@@ -503,7 +526,18 @@ class Booking(db.Model):
             "escrow_deposit_amount": self.escrow_deposit_amount,
             "deposit_held": self.escrow_deposit_amount,
             "escrow_status": self.escrow_status,
+            "escrow_released": self.escrow_status in ("released", "refunded") or self.status == "completed",
             "objective_punctuality_score": round(self.objective_punctuality_score, 1),
+            # Dispute & Payout Info
+            "dispute_reason": self.dispute_reason or "",
+            "dispute_status": self.dispute_status or "none",
+            "dispute_resolution": self.dispute_resolution or "",
+            "dispute_opened_at": self.dispute_opened_at.isoformat() if self.dispute_opened_at else None,
+            "dispute_resolved_at": self.dispute_resolved_at.isoformat() if self.dispute_resolved_at else None,
+            "settled_at": self.settled_at.isoformat() if self.settled_at else None,
+            "payout_vpa": self.payout_vpa or (self.space.owner.upi_vpa_masked if self.space and self.space.owner else ""),
+            "net_payout_amount": self.net_payout_amount or round(self.total_price * 0.95, 2),
+            "platform_fee_amount": self.platform_fee_amount or round(self.total_price * 0.05, 2),
         }
 
 
@@ -866,5 +900,104 @@ class FraudAlertRecord(db.Model):
             "created_at": self.created_at.isoformat() if self.created_at else None,
             "resolved_at": self.resolved_at.isoformat() if self.resolved_at else None,
         }
+
+
+class Notification(db.Model):
+    __tablename__ = "notifications"
+
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    type = db.Column(db.String(50), nullable=False, index=True)
+    title = db.Column(db.String(200), nullable=False)
+    message = db.Column(db.Text, nullable=False)
+    priority = db.Column(db.String(20), default="medium")
+    action_url = db.Column(db.String(255), default="")
+    unread = db.Column(db.Boolean, default=True, index=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow, index=True)
+
+    user = db.relationship("User", backref=db.backref("notifications", lazy=True, cascade="all, delete-orphan"))
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "user_id": self.user_id,
+            "type": self.type,
+            "title": self.title,
+            "message": self.message,
+            "priority": self.priority,
+            "action_url": self.action_url,
+            "unread": self.unread,
+            "timestamp": self.created_at.isoformat() if self.created_at else None,
+            "created_at": self.created_at.isoformat() if self.created_at else None,
+        }
+
+
+class AccessLog(db.Model):
+    __tablename__ = "access_logs"
+
+    id = db.Column(db.Integer, primary_key=True)
+    space_id = db.Column(db.Integer, db.ForeignKey("spaces.id", ondelete="CASCADE"), nullable=False, index=True)
+    booking_id = db.Column(db.Integer, db.ForeignKey("bookings.id", ondelete="SET NULL"), nullable=True, index=True)
+    user_id = db.Column(db.Integer, db.ForeignKey("users.id", ondelete="SET NULL"), nullable=True, index=True)
+    access_type = db.Column(db.String(50), default="room_qr")
+    credential_used = db.Column(db.String(100), default="")
+    status = db.Column(db.String(50), default="granted")
+    distance_meters = db.Column(db.Float, nullable=True)
+    ip_address = db.Column(db.String(45), default="")
+    user_agent = db.Column(db.String(255), default="")
+    details = db.Column(db.Text, default="")
+    created_at = db.Column(db.DateTime, default=datetime.utcnow, index=True)
+
+    space = db.relationship("Space", backref=db.backref("access_logs", lazy=True, cascade="all, delete-orphan"))
+    booking = db.relationship("Booking", backref=db.backref("access_logs", lazy=True))
+    user = db.relationship("User", backref=db.backref("access_logs", lazy=True))
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "space_id": self.space_id,
+            "space_title": self.space.title if self.space else "Space",
+            "booking_id": self.booking_id,
+            "user_id": self.user_id,
+            "user_name": self.user.name if self.user else "Seeker",
+            "access_type": self.access_type,
+            "credential_used": self.credential_used,
+            "status": self.status,
+            "distance_meters": round(self.distance_meters, 1) if self.distance_meters is not None else None,
+            "details": self.details,
+            "timestamp": self.created_at.isoformat() if self.created_at else None,
+            "created_at": self.created_at.isoformat() if self.created_at else None,
+        }
+
+
+class EscrowTransaction(db.Model):
+    __tablename__ = "escrow_transactions"
+
+    id = db.Column(db.Integer, primary_key=True)
+    booking_id = db.Column(db.Integer, db.ForeignKey("bookings.id", ondelete="CASCADE"), nullable=False, index=True)
+    user_id = db.Column(db.Integer, db.ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    amount = db.Column(db.Float, default=100.0)
+    transaction_type = db.Column(db.String(30), default="hold")
+    status = db.Column(db.String(30), default="completed")
+    reference_id = db.Column(db.String(100), default="")
+    details = db.Column(db.Text, default="")
+    created_at = db.Column(db.DateTime, default=datetime.utcnow, index=True)
+
+    booking = db.relationship("Booking", backref=db.backref("escrow_transactions", lazy=True, cascade="all, delete-orphan"))
+    user = db.relationship("User", backref=db.backref("escrow_transactions", lazy=True))
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "booking_id": self.booking_id,
+            "amount": self.amount,
+            "transaction_type": self.transaction_type,
+            "status": self.status,
+            "reference_id": self.reference_id,
+            "details": self.details,
+            "timestamp": self.created_at.isoformat() if self.created_at else None,
+            "created_at": self.created_at.isoformat() if self.created_at else None,
+        }
+
 
 

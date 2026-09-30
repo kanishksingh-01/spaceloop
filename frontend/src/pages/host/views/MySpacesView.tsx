@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Space } from '../../../types';
-import { getHostSpaces, toggleSpaceStatus } from '../../../services/host';
+import { getHostSpaces, toggleSpaceStatus, publishSpace, unpublishSpace } from '../../../services/host';
 import { StatusBadge } from '../components/StatusBadge';
 
 export const MySpacesView: React.FC = () => {
@@ -36,10 +36,17 @@ export const MySpacesView: React.FC = () => {
     e.stopPropagation();
     try {
       setTogglingId(space.id);
-      await toggleSpaceStatus(space.id);
-      setSpaces(prev =>
-        prev.map(s => (s.id === space.id ? { ...s, is_active: !s.is_active } : s))
-      );
+      if (space.is_active) {
+        await unpublishSpace(space.id);
+        setSpaces(prev =>
+          prev.map(s => (s.id === space.id ? { ...s, is_active: false, status: 'unavailable' } : s))
+        );
+      } else {
+        await publishSpace(space.id);
+        setSpaces(prev =>
+          prev.map(s => (s.id === space.id ? { ...s, is_active: true, status: 'published' } : s))
+        );
+      }
     } catch (err) {
       console.error('Failed to toggle space status:', err);
     } finally {

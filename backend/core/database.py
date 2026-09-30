@@ -97,14 +97,46 @@ def ensure_database_schema(app, db):
 
             if "spaces" in table_names:
                 space_cols = {col["name"]: col for col in inspector.get_columns("spaces")}
-                if "embedding_json" not in space_cols:
-                    with db.engine.connect() as conn:
-                        try:
-                            col_type = "JSON" if "postgres" in str(db.engine.url).lower() else "TEXT"
-                            conn.execute(db.text(f"ALTER TABLE spaces ADD COLUMN embedding_json {col_type}"))
-                            conn.commit()
-                        except Exception:
-                            pass
+                space_cols_to_ensure = [
+                    ("embedding_json", "JSON" if "postgres" in str(db.engine.url).lower() else "TEXT"),
+                    ("is_verified", "BOOLEAN DEFAULT 0"),
+                    ("draft", "BOOLEAN DEFAULT 0"),
+                    ("operating_hours_start", "VARCHAR(10) DEFAULT '08:00'"),
+                    ("operating_hours_end", "VARCHAR(10) DEFAULT '20:00'"),
+                    ("buffer_minutes", "INTEGER DEFAULT 15"),
+                    ("instant_booking_enabled", "BOOLEAN DEFAULT 1"),
+                ]
+                with db.engine.connect() as conn:
+                    for col_name, col_type in space_cols_to_ensure:
+                        if col_name not in space_cols:
+                            try:
+                                conn.execute(db.text(f"ALTER TABLE spaces ADD COLUMN {col_name} {col_type}"))
+                                conn.commit()
+                            except Exception:
+                                pass
+
+            if "bookings" in table_names:
+                booking_cols = {col["name"]: col for col in inspector.get_columns("bookings")}
+                booking_cols_to_ensure = [
+                    ("dispute_reason", "TEXT"),
+                    ("dispute_status", "VARCHAR(30) DEFAULT 'none'"),
+                    ("dispute_resolution", "TEXT"),
+                    ("dispute_opened_at", "DATETIME"),
+                    ("dispute_resolved_at", "DATETIME"),
+                    ("settled_at", "DATETIME"),
+                    ("payout_vpa", "VARCHAR(80)"),
+                    ("net_payout_amount", "FLOAT"),
+                    ("platform_fee_amount", "FLOAT"),
+                    ("escrow_released", "BOOLEAN DEFAULT 0"),
+                ]
+                with db.engine.connect() as conn:
+                    for col_name, col_type in booking_cols_to_ensure:
+                        if col_name not in booking_cols:
+                            try:
+                                conn.execute(db.text(f"ALTER TABLE bookings ADD COLUMN {col_name} {col_type}"))
+                                conn.commit()
+                            except Exception:
+                                pass
 
             if "reviews" in table_names:
                 rev_cols = {col["name"]: col for col in inspector.get_columns("reviews")}

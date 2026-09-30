@@ -1,7 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { Space, Booking } from '../../../types';
-import { getHostSpaceDetail, editSpace, toggleSpaceStatus, assistListing } from '../../../services/spaces';
+import {
+  getHostSpaceDetail,
+  editSpace,
+  toggleSpaceStatus,
+  publishSpace,
+  unpublishSpace,
+  assistListing,
+} from '../../../services/spaces';
 import { estimateRevenue } from '../../../services/calculator';
 import { ResourceHeader } from '../components/ResourceHeader';
 import { ContextTabs, TabItem } from '../components/ContextTabs';
@@ -143,10 +150,15 @@ export const SpaceDetailView: React.FC = () => {
   const handleToggleStatus = async () => {
     if (!space) return;
     try {
-      await toggleSpaceStatus(space.id);
-      setSpace({ ...space, is_active: !space.is_active });
+      if (space.is_active) {
+        const res = await unpublishSpace(space.id);
+        setSpace(res.space);
+      } else {
+        const res = await publishSpace(space.id);
+        setSpace(res.space);
+      }
     } catch (err: any) {
-      setError(err.message || 'Failed to toggle status.');
+      setError(err.message || 'Failed to update space status.');
     }
   };
 

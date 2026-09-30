@@ -3,10 +3,11 @@ SpaceLoop Bookings REST Blueprint
 Handles reservations, precheck quotes, double-booking concurrency validation,
 geofenced in-room check-in handshakes, AI micro-lease generation, and check-out escrow settlement.
 """
+import uuid
 from datetime import datetime, timedelta, timezone
 from flask import Blueprint, request, jsonify, current_app
 from flask_login import login_required, current_user
-from models import db, Booking, Space, User, AuditLog
+from models import db, Booking, Space, User, AuditLog, Notification, AccessLog, EscrowTransaction
 from backend.modules.auth import authorize, Permission, ForbiddenError
 from backend.core.geo import haversine_distance
 from space_ai import (
@@ -315,6 +316,29 @@ def create_booking():
     db.session.add(new_booking)
     lease_agreement = generate_micro_lease(space.to_dict(), new_booking.to_dict())
     new_booking.micro_lease_agreement = lease_agreement
+
+    # Record initial ₹100 micro-escrow hold transaction
+    escrow_hold = EscrowTransaction(
+        booking_id=new_booking.id,
+        user_id=renter.id,
+        amount=escrow_deposit,
+        transaction_type="hold",
+        status="completed",
+        reference_id=f"esc_{uuid.uuid4().hex[:12]}",
+        details=f"₹{escrow_deposit} Micro-escrow deposit secured for booking #{new_booking.id}."
+    )
+    db.session.add(escrow_hold)
+
+    # Notify space owner
+    host_notif = Notification(
+        user_id=space.owner_id,
+        type="new_booking",
+        title="New Reservation Confirmed",
+        message=f"{renter.name} confirmed a booking for '{space.title}' ({hours}h, ₹{total_price}).",
+        priority="high",
+        action_url=f"/host/bookings/{new_booking.id}"
+    )
+    db.session.add(host_notif)
     db.session.commit()
 
     # Transactional Email Notification (Non-blocking / fault-isolated)
@@ -530,6 +554,22 @@ def api_booking_checkin(booking_id):
         handshake_method = "GPS_PROXIMITY_OVERRIDE"
 
     if not access_granted:
+        # Record failed access attempt
+        failed_log = AccessLog(
+            space_id=space.id,
+            booking_id=booking.id,
+            user_id=current_user.id,
+            access_type=space.physical_access_type or "room_qr",
+            credential_used=client_pin or client_qr or "geofence_probe",
+            status="denied_out_of_geofence" if actual_distance > max_allowed_dist else "denied_invalid_credentials",
+            distance_meters=actual_distance,
+            ip_address=request.remote_addr or "",
+            user_agent=request.user_agent.string if request.user_agent else "",
+            details=f"Check-in denied. Distance: {round(actual_distance, 1)}m (max {int(max_allowed_dist)}m)."
+        )
+        db.session.add(failed_log)
+        db.session.commit()
+
         dist_desc = f"{int(actual_distance)}m away (max {int(max_allowed_dist)}m)" if actual_distance > 0 else "Location unavailable"
         return jsonify({
             "success": False,
@@ -547,6 +587,32 @@ def api_booking_checkin(booking_id):
     booking.arrival_time = now
     booking.checkin_gps_lat = float(device_lat) if device_lat is not None else space.latitude
     booking.checkin_gps_lng = float(device_lng) if device_lng is not None else space.longitude
+
+    # Record successful physical access event in AccessLog
+    success_log = AccessLog(
+        space_id=space.id,
+        booking_id=booking.id,
+        user_id=current_user.id,
+        access_type=space.physical_access_type or "room_qr",
+        credential_used=handshake_method,
+        status="granted",
+        distance_meters=actual_distance,
+        ip_address=request.remote_addr or "",
+        user_agent=request.user_agent.string if request.user_agent else "",
+        details=f"In-room access granted via {handshake_method}. Distance: {round(actual_distance, 1)}m."
+    )
+    db.session.add(success_log)
+
+    # Notify property host of guest arrival
+    checkin_notif = Notification(
+        user_id=space.owner_id,
+        type="checkin",
+        title="Guest In-Room Session Active",
+        message=f"{current_user.name} checked in to '{space.title}' ({handshake_method}).",
+        priority="medium",
+        action_url=f"/host/live-sessions"
+    )
+    db.session.add(checkin_notif)
     db.session.commit()
 
     return jsonify({
@@ -631,8 +697,68 @@ def api_booking_checkout(booking_id):
     checkout_assessment = TrustSafetyEngine.evaluate_checkout(booking)
     if checkout_assessment.recommended_action in ("hold_transaction", "restrict_action") or checkout_assessment.risk_level in ("high_risk", "suspicious"):
         booking.escrow_status = "held"
-        refund_state = "Review required"
-        msg = f"Check-out recorded. Trust & Safety review flagged: {checkout_assessment.evidence_text}. ₹100 deposit held for manual verification."
+    booking.settled_at = now
+    booking.net_payout_amount = round(booking.total_price * 0.95, 2)
+    booking.platform_fee_amount = round(booking.total_price * 0.05, 2)
+
+    if booking.escrow_status == "released":
+        booking.escrow_released = True
+        # Escrow deposit release to renter
+        escrow_release_tx = EscrowTransaction(
+            booking_id=booking.id,
+            user_id=booking.renter_id,
+            amount=booking.escrow_deposit_amount or 100.0,
+            transaction_type="release_to_renter",
+            status="completed",
+            reference_id=f"esc_rel_{uuid.uuid4().hex[:12]}",
+            details=f"₹{booking.escrow_deposit_amount or 100.0} Micro-escrow returned to {booking.renter.name if booking.renter else 'Guest'} (condition score {booking.condition_match_score}%)."
+        )
+        db.session.add(escrow_release_tx)
+
+        # Host net earnings payout transaction
+        host_payout_tx = EscrowTransaction(
+            booking_id=booking.id,
+            user_id=space.owner_id,
+            amount=booking.net_payout_amount,
+            transaction_type="payout_to_host",
+            status="completed",
+            reference_id=f"pay_{uuid.uuid4().hex[:12]}",
+            details=f"Net earnings of ₹{booking.net_payout_amount} settled to host {space.owner.name if space.owner else 'Host'} (95% payout)."
+        )
+        db.session.add(host_payout_tx)
+
+        # Notify host of session completion & payout
+        checkout_notif = Notification(
+            user_id=space.owner_id,
+            type="checkout",
+            title="Session Completed & Payout Settled",
+            message=f"{booking.renter.name if booking.renter else 'Guest'} checked out of '{space.title}'. ₹{booking.net_payout_amount} earnings settled.",
+            priority="medium",
+            action_url=f"/host/bookings/{booking.id}"
+        )
+        db.session.add(checkout_notif)
+    else:
+        booking.escrow_released = False
+        escrow_hold_tx = EscrowTransaction(
+            booking_id=booking.id,
+            user_id=booking.renter_id,
+            amount=booking.escrow_deposit_amount or 100.0,
+            transaction_type="escrow_held",
+            status="held",
+            reference_id=f"esc_flag_{uuid.uuid4().hex[:12]}",
+            details=f"Deposit held for host inspection: Condition discrepancy flagged ({round(booking.condition_match_score, 1)}% match)."
+        )
+        db.session.add(escrow_hold_tx)
+
+        flag_notif = Notification(
+            user_id=space.owner_id,
+            type="inspection_alert",
+            title="Inspection Discrepancy Flagged",
+            message=f"Departure inspection for '{space.title}' flagged discrepancies ({round(booking.condition_match_score, 1)}% match). Deposit held.",
+            priority="urgent",
+            action_url=f"/host/bookings/{booking.id}"
+        )
+        db.session.add(flag_notif)
 
     renter = booking.renter
     if renter:
@@ -824,7 +950,35 @@ def api_booking_dispute(booking_id):
         booking.session_state = "checked_out"
         booking.escrow_status = "released"
         resolution = sanitize_string(data.get("resolution", "Dispute resolved amicably"), max_length=500)
+        booking.dispute_status = "resolved"
+        booking.dispute_resolution = resolution
+        booking.dispute_resolved_at = datetime.utcnow()
+        booking.escrow_released = True
+
+        # Log escrow release on dispute resolution
+        dispute_release_tx = EscrowTransaction(
+            booking_id=booking.id,
+            user_id=booking.renter_id,
+            amount=booking.escrow_deposit_amount or 100.0,
+            transaction_type="dispute_resolved_release",
+            status="completed",
+            reference_id=f"esc_res_{uuid.uuid4().hex[:12]}",
+            details=f"Dispute resolved: {resolution}. Escrow released."
+        )
+        db.session.add(dispute_release_tx)
+
+        # Notify host
+        notif = Notification(
+            user_id=booking.space.owner_id,
+            type="dispute_resolved",
+            title="Dispute Resolved",
+            message=f"Dispute on Booking #{booking.id} was marked resolved: {resolution}.",
+            priority="medium",
+            action_url=f"/host/bookings/{booking.id}"
+        )
+        db.session.add(notif)
         db.session.commit()
+
         try:
             from backend.modules.auth.audit import record_audit
             record_audit("booking_dispute_resolved", user_id=current_user.id, details={"booking_id": booking.id, "resolution": resolution})
@@ -834,7 +988,33 @@ def api_booking_dispute(booking_id):
 
     booking.session_state = "disputed"
     booking.escrow_status = "held"
+    booking.dispute_reason = reason
+    booking.dispute_status = "investigating"
+    booking.dispute_opened_at = datetime.utcnow()
+
+    # Log escrow hold on dispute
+    dispute_hold_tx = EscrowTransaction(
+        booking_id=booking.id,
+        user_id=booking.renter_id,
+        amount=booking.escrow_deposit_amount or 100.0,
+        transaction_type="dispute_hold",
+        status="held",
+        reference_id=f"esc_disp_{uuid.uuid4().hex[:12]}",
+        details=f"Dispute opened: {reason}. Escrow held pending platform investigation."
+    )
+    db.session.add(dispute_hold_tx)
+
+    notif = Notification(
+        user_id=booking.space.owner_id,
+        type="dispute",
+        title="Dispute Opened",
+        message=f"Dispute opened for Booking #{booking.id}: {reason}.",
+        priority="urgent",
+        action_url=f"/host/bookings/{booking.id}"
+    )
+    db.session.add(notif)
     db.session.commit()
+
     try:
         from backend.modules.auth.audit import record_audit
         record_audit("booking_dispute_opened", user_id=current_user.id, details={"booking_id": booking.id, "reason": reason})

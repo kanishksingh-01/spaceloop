@@ -31,6 +31,7 @@ import {
   AnalyticsView,
   ActivityAuditView,
   HostSettingsView,
+  NotificationsView,
 } from './pages/host/views';
 import { SessionPage } from './pages/SessionPage';
 import { CalculatorPage } from './pages/CalculatorPage';
@@ -267,6 +268,7 @@ export const App: React.FC = () => {
                 <Route path="escrow" element={<ConditionEscrowView />} />
                 <Route path="analytics" element={<AnalyticsView />} />
                 <Route path="activity" element={<ActivityAuditView />} />
+                <Route path="notifications" element={<NotificationsView />} />
                 <Route path="settings" element={<HostSettingsView />} />
                 <Route path="help" element={<HostSettingsView />} />
               </Route>

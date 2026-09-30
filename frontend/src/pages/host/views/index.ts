@@ -12,3 +12,4 @@ export { ConditionEscrowView } from './ConditionEscrowView';
 export { AnalyticsView } from './AnalyticsView';
 export { ActivityAuditView } from './ActivityAuditView';
 export { HostSettingsView } from './HostSettingsView';
+export { NotificationsView } from './NotificationsView';

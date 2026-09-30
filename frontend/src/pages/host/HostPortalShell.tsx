@@ -46,6 +46,13 @@ export const HostPortalShell: React.FC<HostPortalShellProps> = ({
       label: null,
       items: [
         { path: '/host', label: 'Overview', icon: 'fa-solid fa-gauge-high', exact: true },
+        {
+          path: '/host/notifications',
+          label: 'Notifications',
+          icon: 'fa-solid fa-bell',
+          badge: unreadNotifsCount > 0 ? `${unreadNotifsCount}` : undefined,
+          badgeColor: 'bg-amber-500 text-slate-950 font-black',
+        },
       ],
     },
     {

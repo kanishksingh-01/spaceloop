@@ -327,6 +327,38 @@ export async function getHostSpaceDetail(spaceId: number): Promise<{
   };
 }
 
+export async function publishSpace(spaceId: number): Promise<{ success: boolean; message: string; space: Space }> {
+  const data = await request<{ success: boolean; message: string; space: any }>(`/api/host/spaces/${spaceId}/publish`, {
+    method: 'POST',
+  });
+  return {
+    ...data,
+    space: normalizeSpace(data.space),
+  };
+}
+
+export async function unpublishSpace(spaceId: number): Promise<{ success: boolean; message: string; space: Space }> {
+  const data = await request<{ success: boolean; message: string; space: any }>(`/api/host/spaces/${spaceId}/unpublish`, {
+    method: 'POST',
+  });
+  return {
+    ...data,
+    space: normalizeSpace(data.space),
+  };
+}
+
+export async function checkSpaceAvailability(
+  spaceId: number,
+  startTime: string,
+  endTime: string
+): Promise<{ available: boolean; status: string; conflict?: any }> {
+  return request(`/api/spaces/${spaceId}/check-availability?start_time=${encodeURIComponent(startTime)}&end_time=${encodeURIComponent(endTime)}`);
+}
+
+export async function getSpaceAccessLogs(spaceId: number): Promise<{ success: boolean; space_id: number; access_logs: any[]; count: number }> {
+  return request(`/api/host/spaces/${spaceId}/access-logs`);
+}
+
 export interface ListingAssistanceResponse {
   success: boolean;
   extracted_fields: {

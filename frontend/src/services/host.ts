@@ -1,6 +1,18 @@
 import { request } from './api';
 import { Space, Booking } from '../types';
-import { getHostSpaces, getHostSpaceDetail, editSpace, toggleSpaceStatus, createSpace, uploadSpacePhoto, aiScanSpace } from './spaces';
+import {
+  getHostSpaces,
+  getHostSpaceDetail,
+  editSpace,
+  toggleSpaceStatus,
+  createSpace,
+  uploadSpacePhoto,
+  aiScanSpace,
+  publishSpace,
+  unpublishSpace,
+  checkSpaceAvailability,
+  getSpaceAccessLogs,
+} from './spaces';
 import { getHostBookings, getHostBookingDetail, acceptBooking, rejectBooking, cancelBooking, checkInBooking, checkOutBooking, disputeBooking } from './bookings';
 
 export interface HostMetricData {
@@ -17,16 +29,17 @@ export interface HostMetricData {
 }
 
 export interface HostNotification {
-  id: string;
-  type: 'new_booking' | 'check_in' | 'active_session' | 'checkout' | 'verification' | 'system';
+  id: string | number;
+  db_id?: number | null;
+  type: string;
   title: string;
   message: string;
   timestamp: string;
   unread: boolean;
   action_url: string;
-  priority: 'low' | 'medium' | 'high';
+  priority: 'low' | 'medium' | 'high' | string;
   icon?: string;
-  color?: 'amber' | 'emerald' | 'sky' | 'rose' | 'indigo';
+  color?: string;
 }
 
 export interface HostActivityEvent {
@@ -62,6 +75,46 @@ export async function getHostNotifications(): Promise<{
   return request('/api/host/notifications');
 }
 
+export async function markNotificationRead(notificationId: number | string): Promise<{ success: boolean; message: string }> {
+  return request(`/api/host/notifications/${notificationId}/read`, {
+    method: 'POST',
+  });
+}
+
+export async function markAllNotificationsRead(): Promise<{ success: boolean; message: string }> {
+  return request('/api/host/notifications/read-all', {
+    method: 'POST',
+  });
+}
+
+export async function deleteNotification(notificationId: number | string): Promise<{ success: boolean; message: string }> {
+  return request(`/api/host/notifications/${notificationId}`, {
+    method: 'DELETE',
+  });
+}
+
+export async function getHostEscrowLedger(): Promise<{
+  success: boolean;
+  transactions: any[];
+  metrics: {
+    total_held: number;
+    total_released: number;
+    settled_payouts: number;
+    escrow_unit_inr: number;
+    dispute_count: number;
+  };
+}> {
+  return request('/api/host/escrow/ledger');
+}
+
+export async function getHostAccessLogs(): Promise<{
+  success: boolean;
+  access_logs: any[];
+  count: number;
+}> {
+  return request('/api/host/access-logs');
+}
+
 export async function getHostActivity(category?: string): Promise<{
   success: boolean;
   events: HostActivityEvent[];
@@ -70,13 +123,15 @@ export async function getHostActivity(category?: string): Promise<{
   return request(`/api/host/activity${qs}`);
 }
 
-export async function updateHostSettings(settings: {
-  name?: string;
-  phone?: string;
-  bio?: string;
-  upi_vpa?: string;
-  bank_beneficiary_name?: string;
-}): Promise<{
+export async function getHostSettings(): Promise<{
+  success: boolean;
+  settings: Record<string, any>;
+  user: any;
+}> {
+  return request('/api/host/settings');
+}
+
+export async function updateHostSettings(settings: Record<string, any>): Promise<{
   success: boolean;
   message: string;
   user: any;
@@ -96,6 +151,10 @@ export {
   createSpace,
   uploadSpacePhoto,
   aiScanSpace,
+  publishSpace,
+  unpublishSpace,
+  checkSpaceAvailability,
+  getSpaceAccessLogs,
   getHostBookings,
   getHostBookingDetail,
   acceptBooking,
@@ -105,3 +164,4 @@ export {
   checkOutBooking,
   disputeBooking,
 };
+

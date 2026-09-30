@@ -5,10 +5,10 @@ Handles space exploration, AI scanning, space registration, editing, photo uploa
 import os
 import re
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone, timedelta
 from flask import Blueprint, request, jsonify, redirect, url_for, flash, current_app
 from flask_login import login_required, current_user
-from models import db, Space, User, SpaceInquiry, Booking, Review, AuditLog
+from models import db, Space, User, SpaceInquiry, Booking, Review, AuditLog, AccessLog
 from backend.modules.auth import authorize, Permission, ForbiddenError, set_active_context
 from backend.core.geo import haversine_distance, resolve_location_coordinates
 from space_ai import analyze_space_features, match_spaces_with_ai
@@ -433,6 +433,18 @@ def api_edit_space(space_id):
 
     if "is_active" in data:
         space.is_active = bool(data.get("is_active"))
+    if "draft" in data:
+        space.draft = bool(data.get("draft"))
+    if "is_verified" in data and current_user.is_admin:
+        space.is_verified = bool(data.get("is_verified"))
+    if data.get("operating_hours_start"):
+        space.operating_hours_start = sanitize_string(data.get("operating_hours_start"), max_length=10)
+    if data.get("operating_hours_end"):
+        space.operating_hours_end = sanitize_string(data.get("operating_hours_end"), max_length=10)
+    if data.get("buffer_minutes") is not None:
+        space.buffer_minutes = int(validate_numeric(data.get("buffer_minutes"), min_val=0, max_val=120, default=15))
+    if "instant_booking_enabled" in data:
+        space.instant_booking_enabled = bool(data.get("instant_booking_enabled"))
 
     if data.get("geofence_radius_meters") is not None and str(data.get("geofence_radius_meters")).strip() != "":
         space.geofence_radius_meters = int(validate_numeric(data.get("geofence_radius_meters"), min_val=10, max_val=500, default=space.geofence_radius_meters or 30))
@@ -577,6 +589,144 @@ def toggle_space_status(space_id):
         return jsonify({"success": True, "is_active": space.is_active, "space_id": space.id})
     flash(f"Space '{space.title}' is now {'Active & Discoverable' if space.is_active else 'Paused'}.", "success")
     return redirect(request.referrer or url_for("dashboard_page"))
+
+
+@api_v1_spaces.route("/api/spaces/<int:space_id>/check-availability", methods=["GET"])
+@api_v1_spaces.route("/api/v1/spaces/<int:space_id>/check-availability", methods=["GET"])
+def check_space_availability(space_id):
+    space = Space.query.get_or_404(space_id)
+    raw_st = request.args.get("start_time") or request.args.get("start")
+    raw_et = request.args.get("end_time") or request.args.get("end")
+
+    if not raw_st or not raw_et:
+        return jsonify({
+            "available": False,
+            "error": "Both start_time and end_time query parameters are required."
+        }), 400
+
+    try:
+        st = datetime.fromisoformat(str(raw_st).replace("Z", "+00:00"))
+        if st.tzinfo:
+            st = st.astimezone(timezone.utc).replace(tzinfo=None)
+        et = datetime.fromisoformat(str(raw_et).replace("Z", "+00:00"))
+        if et.tzinfo:
+            et = et.astimezone(timezone.utc).replace(tzinfo=None)
+    except Exception:
+        return jsonify({"available": False, "error": "Invalid ISO format for start_time or end_time."}), 400
+
+    if st >= et:
+        return jsonify({"available": False, "error": "start_time must be strictly before end_time."}), 400
+
+    # Check for overlapping confirmed or active bookings
+    conflict = Booking.query.filter(
+        Booking.space_id == space.id,
+        Booking.status.in_(["confirmed", "active"]),
+        Booking.start_time < et,
+        Booking.end_time > st
+    ).order_by(Booking.start_time.asc()).first()
+
+    if conflict:
+        return jsonify({
+            "available": False,
+            "status": "CONFLICT",
+            "space_id": space.id,
+            "conflict": {
+                "booking_id": conflict.id,
+                "start_time": conflict.start_time.isoformat() if conflict.start_time else None,
+                "end_time": conflict.end_time.isoformat() if conflict.end_time else None
+            }
+        }), 409
+
+    return jsonify({
+        "available": True,
+        "status": "AVAILABLE",
+        "space_id": space.id,
+        "start_time": st.isoformat(),
+        "end_time": et.isoformat()
+    }), 200
+
+
+@api_v1_spaces.route("/api/host/spaces/<int:space_id>/publish", methods=["POST"])
+@login_required
+def publish_host_space(space_id):
+    space = Space.query.get_or_404(space_id)
+    if space.owner_id != current_user.id and not current_user.is_admin:
+        return jsonify({"success": False, "error": "Unauthorized: You do not own this space."}), 403
+
+    # Server-side validation of mandatory fields before activating
+    missing_fields = []
+    if not space.title or len(space.title.strip()) < 3:
+        missing_fields.append("Title (at least 3 characters)")
+    if not space.category:
+        missing_fields.append("Space Category")
+    if not space.price_hourly or space.price_hourly <= 0:
+        missing_fields.append("Valid Hourly Rate (> 0)")
+    if not space.address and not space.city and not space.location:
+        missing_fields.append("Physical Location / Address")
+    if not space.photos or len(space.photos) == 0:
+        missing_fields.append("At least 1 premise photograph")
+
+    if missing_fields:
+        return jsonify({
+            "success": False,
+            "error": "Listing incomplete. Please configure required fields before publishing.",
+            "missing_fields": missing_fields
+        }), 400
+
+    space.is_active = True
+    space.draft = False
+    audit = AuditLog(
+        user_id=current_user.id,
+        action="space_published",
+        details=f"Space #{space.id} '{space.title}' published by host {current_user.name}"
+    )
+    db.session.add(audit)
+    db.session.commit()
+
+    return jsonify({
+        "success": True,
+        "message": f"Space '{space.title}' is now published and accepting bookings!",
+        "space": space.to_dict()
+    }), 200
+
+
+@api_v1_spaces.route("/api/host/spaces/<int:space_id>/unpublish", methods=["POST"])
+@login_required
+def unpublish_host_space(space_id):
+    space = Space.query.get_or_404(space_id)
+    if space.owner_id != current_user.id and not current_user.is_admin:
+        return jsonify({"success": False, "error": "Unauthorized: You do not own this space."}), 403
+
+    space.is_active = False
+    audit = AuditLog(
+        user_id=current_user.id,
+        action="space_unpublished",
+        details=f"Space #{space.id} '{space.title}' unpublished/paused by host {current_user.name}"
+    )
+    db.session.add(audit)
+    db.session.commit()
+
+    return jsonify({
+        "success": True,
+        "message": f"Space '{space.title}' has been paused and hidden from search.",
+        "space": space.to_dict()
+    }), 200
+
+
+@api_v1_spaces.route("/api/host/spaces/<int:space_id>/access-logs", methods=["GET"])
+@login_required
+def get_space_access_logs(space_id):
+    space = Space.query.get_or_404(space_id)
+    if space.owner_id != current_user.id and not current_user.is_admin:
+        return jsonify({"success": False, "error": "Unauthorized: You do not own this space."}), 403
+
+    logs = AccessLog.query.filter_by(space_id=space.id).order_by(AccessLog.created_at.desc()).limit(100).all()
+    return jsonify({
+        "success": True,
+        "space_id": space.id,
+        "access_logs": [log.to_dict() for log in logs],
+        "count": len(logs)
+    }), 200
 
 
 # =========================================================================
