@@ -37,26 +37,42 @@ class EmailService:
 
     @classmethod
     def get_adapter(cls) -> BaseEmailAdapter:
+        provider = (os.environ.get("EMAIL_PROVIDER") or getattr(Config, "EMAIL_PROVIDER", "")).strip().lower()
         resend_key = (os.environ.get("RESEND_API_KEY") or getattr(Config, "RESEND_API_KEY", "")).strip()
-        from_email = os.environ.get("EMAIL_FROM") or os.environ.get("RESEND_FROM_EMAIL") or getattr(Config, "EMAIL_FROM", "SpaceLoop <onboarding@resend.dev>")
+        smtp_host = (os.environ.get("SMTP_HOST") or getattr(Config, "SMTP_HOST", "")).strip()
+        smtp_port = int(os.environ.get("SMTP_PORT") or getattr(Config, "SMTP_PORT", 587))
+        smtp_user = (os.environ.get("SMTP_USER") or getattr(Config, "SMTP_USER", "")).strip()
+        smtp_password = (os.environ.get("SMTP_PASSWORD") or getattr(Config, "SMTP_PASSWORD", "")).strip()
+        from_email = (os.environ.get("EMAIL_FROM") or os.environ.get("RESEND_FROM_EMAIL") or getattr(Config, "EMAIL_FROM", "")).strip()
 
-        # If adapter is not set, or was previously DevelopmentEmailAdapter and a key is now supplied
-        if cls._adapter is None or (isinstance(cls._adapter, DevelopmentEmailAdapter) and resend_key):
-            if resend_key:
-                logger.info("[EMAIL_SERVICE] Initializing ResendEmailAdapter with configured API key")
-                cls._adapter = ResendEmailAdapter(api_key=resend_key, from_email=from_email)
-            elif os.environ.get("SMTP_HOST"):
-                logger.info("[EMAIL_SERVICE] Initializing SMTPEmailAdapter")
+        # Determine desired adapter type
+        if provider == "smtp" or (smtp_host and smtp_user and provider != "resend"):
+            target_class = SMTPEmailAdapter
+        elif resend_key and provider != "smtp":
+            target_class = ResendEmailAdapter
+        else:
+            target_class = DevelopmentEmailAdapter
+
+        # Reinitialize if not initialized or if adapter type has changed
+        if cls._adapter is None or not isinstance(cls._adapter, target_class):
+            if target_class is SMTPEmailAdapter:
+                effective_from = from_email or (f"SpaceLoop <{smtp_user}>" if smtp_user else "SpaceLoop <noreply@spaceloop.in>")
+                logger.info(f"[EMAIL_SERVICE] Initializing SMTPEmailAdapter (host: {smtp_host}:{smtp_port}, user: {smtp_user})")
                 cls._adapter = SMTPEmailAdapter(
-                    host=os.environ.get("SMTP_HOST"),
-                    port=int(os.environ.get("SMTP_PORT", 587)),
-                    user=os.environ.get("SMTP_USER", ""),
-                    password=os.environ.get("SMTP_PASSWORD", ""),
-                    from_email=from_email
+                    host=smtp_host,
+                    port=smtp_port,
+                    user=smtp_user,
+                    password=smtp_password,
+                    from_email=effective_from,
                 )
+            elif target_class is ResendEmailAdapter:
+                effective_from = from_email or "SpaceLoop <onboarding@resend.dev>"
+                logger.info("[EMAIL_SERVICE] Initializing ResendEmailAdapter with configured API key")
+                cls._adapter = ResendEmailAdapter(api_key=resend_key, from_email=effective_from)
             else:
                 logger.info("[EMAIL_SERVICE] Initializing DevelopmentEmailAdapter (in-memory mode)")
                 cls._adapter = DevelopmentEmailAdapter()
+
         return cls._adapter
 
     @classmethod
@@ -179,7 +195,7 @@ class EmailService:
                 except Exception:
                     pass
             if not base_url:
-                base_url = "http://localhost:5000"
+                base_url = "https://spaceloop.vercel.app" if (os.environ.get("RENDER") or os.environ.get("VERCEL")) else "http://localhost:5000"
             if ("onrender.com" in base_url or os.environ.get("RENDER")) and base_url.startswith("http://"):
                 base_url = "https://" + base_url[len("http://"):]
             verify_url = f"{base_url}/auth/verify-email/{raw_token}"
@@ -202,7 +218,12 @@ class EmailService:
 
     @classmethod
     def notify_password_reset(cls, to_email: str, raw_token: str, reset_url: str = None, user_id: int = None) -> bool:
-        link = reset_url or f"https://spaceloop.in/auth/reset-password/{raw_token}"
+        if not reset_url:
+            base_url = (os.environ.get("APP_URL") or os.environ.get("BASE_URL") or os.environ.get("FRONTEND_URL") or "").rstrip("/")
+            if not base_url:
+                base_url = "https://spaceloop.vercel.app" if os.environ.get("RENDER") else "http://localhost:5000"
+            reset_url = f"{base_url}/auth/reset-password/{raw_token}"
+        link = reset_url
         subject = "SpaceLoop — Password Reset Request"
         html_body = f"""
         <h1 style="color: #0B2545; font-size: 20px;">Password Reset Request</h1>

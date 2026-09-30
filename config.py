@@ -88,9 +88,14 @@ class Config:
     # AI Rate Limit
     AI_RATE_LIMIT = os.environ.get("AI_RATE_LIMIT", "200 per minute")
 
-    # Transactional Email (Resend)
+    # Transactional Email (Resend or SMTP)
+    EMAIL_PROVIDER = os.environ.get("EMAIL_PROVIDER", "").strip().lower()
     RESEND_API_KEY = os.environ.get("RESEND_API_KEY", "")
     EMAIL_FROM = os.environ.get("EMAIL_FROM", os.environ.get("RESEND_FROM_EMAIL", "SpaceLoop <onboarding@resend.dev>"))
+    SMTP_HOST = os.environ.get("SMTP_HOST", "")
+    SMTP_PORT = int(os.environ.get("SMTP_PORT", 587))
+    SMTP_USER = os.environ.get("SMTP_USER", "")
+    SMTP_PASSWORD = os.environ.get("SMTP_PASSWORD", "")
 
     # CORS Configuration
     CORS_ORIGINS = os.environ.get(

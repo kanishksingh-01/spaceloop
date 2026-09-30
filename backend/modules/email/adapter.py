@@ -189,14 +189,26 @@ class DevelopmentEmailAdapter(BaseEmailAdapter):
 
 class SMTPEmailAdapter(BaseEmailAdapter):
     """
-    SMTP fallback adapter using Python standard library smtplib.
+    SMTP email adapter using Python standard library smtplib.
+    Supports STARTTLS (port 587) and SSL (port 465).
+    Automatically strips whitespace from Google App Passwords.
     """
-    def __init__(self, host: str, port: int, user: str, password: str, from_email: str):
-        self.host = host
-        self.port = port
-        self.user = user
-        self.password = password
-        self.from_email = from_email
+    def __init__(
+        self,
+        host: str,
+        port: int = 587,
+        user: str = "",
+        password: str = "",
+        from_email: str = "",
+        timeout: float = 12.0
+    ):
+        self.host = (host or "").strip()
+        self.port = int(port or 587)
+        self.user = (user or "").strip()
+        # Google App Passwords are 16 letters with spaces (e.g. "abcd efgh ijkl mnop") - remove all whitespace
+        self.password = re.sub(r"\s+", "", password or "")
+        self.from_email = (from_email or "").strip() or (f"SpaceLoop <{self.user}>" if self.user else "SpaceLoop <noreply@spaceloop.in>")
+        self.timeout = float(timeout or 12.0)
 
     def send_email(
         self,
@@ -207,8 +219,14 @@ class SMTPEmailAdapter(BaseEmailAdapter):
         idempotency_key: str = None
     ) -> tuple[bool, str | None, str | None]:
         import smtplib
+        import ssl
         from email.mime.text import MIMEText
         from email.mime.multipart import MIMEMultipart
+
+        if not self.host or not self.user or not self.password:
+            err = "SMTP configuration incomplete: SMTP_HOST, SMTP_USER, and SMTP_PASSWORD are required."
+            logger.error(f"[SMTP_ADAPTER] {err}")
+            return False, None, err
 
         try:
             msg = MIMEMultipart("alternative")
@@ -219,19 +237,31 @@ class SMTPEmailAdapter(BaseEmailAdapter):
                 msg["X-Idempotency-Key"] = idempotency_key
 
             if text_body:
-                msg.attach(MIMEText(text_body, "plain"))
+                msg.attach(MIMEText(text_body, "plain", "utf-8"))
             if html_body:
-                msg.attach(MIMEText(html_body, "html"))
+                msg.attach(MIMEText(html_body, "html", "utf-8"))
 
-            with smtplib.SMTP(self.host, self.port) as server:
-                if self.user and self.password:
-                    server.starttls()
+            if self.port == 465:
+                # SSL direct connection
+                context = ssl.create_default_context()
+                with smtplib.SMTP_SSL(self.host, self.port, timeout=self.timeout, context=context) as server:
                     server.login(self.user, self.password)
-                server.send_message(msg)
-            
+                    server.send_message(msg)
+            else:
+                # Standard STARTTLS connection (typically port 587)
+                with smtplib.SMTP(self.host, self.port, timeout=self.timeout) as server:
+                    server.ehlo()
+                    context = ssl.create_default_context()
+                    server.starttls(context=context)
+                    server.ehlo()
+                    server.login(self.user, self.password)
+                    server.send_message(msg)
+
             smtp_id = f"smtp_{uuid.uuid4().hex[:12]}"
+            logger.info(f"[SMTP_ADAPTER] Successfully dispatched email to {to_email} via SMTP (id: {smtp_id})")
             return True, smtp_id, None
         except Exception as e:
             err = f"Failed to send email to {to_email} via SMTP: {e}"
             logger.error(f"[SMTP_ADAPTER] {err}")
             return False, None, err
+

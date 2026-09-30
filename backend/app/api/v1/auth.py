@@ -945,6 +945,48 @@ def api_instant_verify():
     }), 200
 
 
+@api_v1_auth.route("/test-email", methods=["POST"])
+@limiter.limit("10 per minute")
+def api_test_email():
+    """
+    Test transactional email configuration (SMTP / Resend).
+    Usage: POST /api/v1/auth/test-email {"to_email": "teammate@example.com"}
+    """
+    data = request.get_json(silent=True) or request.form or {}
+    to_email = sanitize_string(data.get("email") or data.get("to_email", ""), max_length=120).lower().strip()
+    if not to_email:
+        return jsonify({"success": False, "error": "Email address is required (e.g. {'to_email': 'user@example.com'})"}), 400
+
+    adapter = EmailService.get_adapter()
+    adapter_name = adapter.__class__.__name__
+
+    success, msg_id, err = adapter.send_email(
+        to_email=to_email,
+        subject="SpaceLoop — Test Notification",
+        html_body="""
+        <div style="font-family: sans-serif; padding: 20px; color: #0B2545;">
+            <h2>SpaceLoop Email Dispatch Active</h2>
+            <p>This is a test notification confirming that transactional email delivery is functioning properly.</p>
+            <p style="color: #64748B; font-size: 12px;">Sent from SpaceLoop Platform</p>
+        </div>
+        """,
+        text_body="SpaceLoop Email Dispatch Active\n\nThis is a test notification confirming that transactional email delivery is functioning properly."
+    )
+    if success:
+        return jsonify({
+            "success": True,
+            "message": f"Test email sent successfully to {to_email}",
+            "adapter": adapter_name,
+            "message_id": msg_id
+        }), 200
+    else:
+        return jsonify({
+            "success": False,
+            "error": err or "Failed to send email",
+            "adapter": adapter_name
+        }), 500
+
+
 @api_v1_auth.route("/verify-email", methods=["GET", "POST"])
 @limiter.limit("10 per minute")
 def api_verify_email():
