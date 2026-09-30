@@ -237,6 +237,8 @@ def create_app():
     @app.route("/react/<path:path>")
     @app.route("/app")
     @app.route("/app/<path:path>")
+    @app.route("/host")
+    @app.route("/host/<path:path>")
     def serve_react_explicit(path=""):
         return _serve_spa_index()
 
