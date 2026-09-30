@@ -24,3 +24,8 @@ instance/
 static/uploads/spaces/*
 !static/uploads/spaces/.gitkeep
 frontend/dist/
+
+# PDF Documents (Do not deploy or commit PDFs)
+*.pdf
+**/*.pdf
+generate_*_pdf.py

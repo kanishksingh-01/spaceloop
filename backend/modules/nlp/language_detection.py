@@ -15,34 +15,38 @@ from backend.modules.nlp.schemas import LanguageCode
 # Marathi distinctive tokens (Devanagari)
 MARATHI_DEVANAGARI_TOKENS = {
     "आहे", "नाही", "पाहिजे", "कुठे", "कसे", "किती", "खोली", "जागा", "मला", "कधी",
-    "करावे", "मिळेल", "असेल", "नका", "शोधतो", "शोधत", "स्वस्त", "भाडे", "कार्यालय"
+    "करावे", "मिळेल", "असेल", "नका", "शोधतो", "शोधत", "स्वस्त", "भाडे", "कार्यालय",
+    "पुण्यात", "मुंबईत", "लोकांसाठी", "लोकांना", "साठी", "आणि", "सह", "असलेली",
+    "असलेला", "हवी", "हवे", "वर्कस्पेस", "नमस्कार", "तास", "तासाला", "खोल्या"
 }
 
 # Garhwali distinctive tokens (Devanagari - Central Pahari / Uttarakhand)
 GARHWALI_DEVANAGARI_TOKENS = {
     "कख", "कन", "कैक", "च्यांद", "च्यांदा", "भैजी", "दीदी", "ह्वैल", "छौ", "छन",
     "छी", "बथौ", "बथों", "घौर", "कमरो", "डांडा", "गौं", "कौथिग", "थै", "म्येरु", "त्वेरु",
-    "देहरादून", "जनूं", "कुणी"
+    "देहरादून", "जनूं", "कुणी", "दगड्या", "बथावा", "बथवा", "रंदु", "हुंदै", "जालो", "ह्वे"
 }
 
 # Kumaoni distinctive tokens (Devanagari - Central Pahari / Uttarakhand)
 KUMAONI_DEVANAGARI_TOKENS = {
     "कसिक", "कसिकै", "कैले", "कथु", "छ्या", "छौ", "भला", "च्यांहूं", "कौतु",
     "जौ", "मेर", "तेर", "कुकुर", "हिट", "भासा", "नैनीताल", "अल्मोड़ा", "हल्द्वानी",
-    "कुणी", "बैठकी", "छन"
+    "कुणी", "बैठकी", "छन", "दाज्यु", "पैलाग", "तुम्हरो", "तुमरो", "तुमरी", "रूँछ", "भई"
 }
 
 # Jaunsari distinctive tokens (Devanagari - Western/Central Pahari / Jaunsar-Bawar)
 JAUNSARI_DEVANAGARI_TOKENS = {
     "केथा", "किए", "छा", "बासा", "जोड़ा", "रोउं", "ओर", "रोणी", "तेउं", "मेउं",
-    "जौंसार", "दियूं", "बैठक"
+    "जौंसार", "दियूं", "बैठक", "माठू", "दगड्या"
 }
 
 # Hindi standard tokens (Devanagari)
 HINDI_DEVANAGARI_TOKENS = {
     "है", "हैं", "हूँ", "हो", "था", "थी", "थे", "कहाँ", "कैसे", "कितना", "कितने",
     "कितनी", "चाहिए", "कमरा", "कमरे", "जगह", "किराया", "बताओ", "मिलेगा", "करो",
-    "सकते", "सकता", "सकती", "कृपया", "नमस्ते", "खोजो", "ढूंढो", "घंटे", "लोग"
+    "सकते", "सकता", "सकती", "कृपया", "नमस्ते", "खोजो", "ढूंढो", "घंटे", "लोग",
+    "लोगों", "लिए", "वाला", "वाली", "वाले", "और", "साथ", "खोजें", "ढूंढें",
+    "सस्ता", "सस्ती", "बेडरूम", "दफ्तर"
 }
 
 # Romanized Hinglish tokens (Latin)
@@ -121,9 +125,9 @@ class LanguageDetectionService:
         devanagari_ratio = devanagari_chars / total_letters
 
         # ---------------------------------------------------------------------
-        # BRANCH A: DEVANAGARI SCRIPT (Devanagari Ratio >= 0.40)
+        # BRANCH A: DEVANAGARI SCRIPT
         # ---------------------------------------------------------------------
-        if devanagari_ratio >= 0.40:
+        if devanagari_ratio >= 0.30 or (devanagari_chars >= 3 and devanagari_chars >= latin_chars * 0.3):
             tokens = set(re.findall(r"[\u0900-\u097F]+", clean_text))
             
             # Check unique Marathi phoneme ळ (U+0933)

@@ -74,7 +74,8 @@ SPACE_TYPES_MAP: Dict[str, str] = {
     # Workspace
     "workspace": "Workspace", "office": "Workspace", "desk": "Workspace",
     "coworking": "Workspace", "desk space": "Workspace", "कार्यालय": "Workspace",
-    "दफ्तर": "Workspace", "table": "Workspace",
+    "दफ्तर": "Workspace", "table": "Workspace", "वर्कस्पेस": "Workspace",
+    "ऑफिस": "Workspace", "काम करण्याची जागा": "Workspace",
     # Meeting
     "meeting": "Meeting", "conference": "Meeting", "boardroom": "Meeting",
     "collab": "Meeting", "discussion": "Meeting", "बैठक": "Meeting",
@@ -83,9 +84,11 @@ SPACE_TYPES_MAP: Dict[str, str] = {
     # Studio
     "studio": "Studio", "podcast": "Studio", "recording": "Studio",
     "photography": "Studio", "photo": "Studio", "vocal": "Studio",
+    "स्टूडियो": "Studio", "स्टुडिओ": "Studio",
     # Study
     "study": "Study", "library": "Study", "quiet pod": "Study",
     "study desk": "Study", "padhai": "Study", "अभ्यास": "Study", "वाचनालय": "Study",
+    "कक्षा": "Study", "पुस्तकालय": "Study",
     # Workshop
     "workshop": "Workshop", "maker": "Workshop", "hardware": "Workshop", "proto": "Workshop",
     # Retail
@@ -107,7 +110,14 @@ KNOWN_AMENITIES_MAP: Dict[str, str] = {
     "generator": "Power Backup", "whiteboard": "Whiteboard", "marker": "Whiteboard",
     "projector": "Projector", "screen": "Presentation Monitor", "tv": "Presentation Monitor",
     "monitor": "Presentation Monitor", "parking": "Parking Available", "ergonomic": "Ergonomic Chairs",
-    "coffee": "Coffee/Tea Station", "tea": "Coffee/Tea Station", "water": "Drinking Water"
+    "coffee": "Coffee/Tea Station", "tea": "Coffee/Tea Station", "water": "Drinking Water",
+    # Indic Devanagari Amenities
+    "वायफाय": "High-Speed Wi-Fi", "वाईफाई": "High-Speed Wi-Fi", "इंटरनेट": "High-Speed Wi-Fi",
+    "एसी": "Air Conditioning", "वातानुकूलित": "Air Conditioning", "वातानुकूलन": "Air Conditioning",
+    "पार्किंग": "Parking Available", "व्हाइटबोर्ड": "Whiteboard", "प्रोजेक्टर": "Projector",
+    "मॉनिटर": "Presentation Monitor", "स्क्रीन": "Presentation Monitor", "पाणी": "Drinking Water",
+    "पानी": "Drinking Water", "चहा": "Coffee/Tea Station", "चाय": "Coffee/Tea Station",
+    "कॉफी": "Coffee/Tea Station", "बिजली बैकअप": "Power Backup", "वीज बैकअप": "Power Backup"
 }
 
 
@@ -260,8 +270,12 @@ class EntityExtractionService:
         # ---------------------------------------------------------------------
         found_amenities = set()
         for kw, canonical_amenity in KNOWN_AMENITIES_MAP.items():
-            if re.search(rf"\b{re.escape(kw)}\b", clean):
-                found_amenities.add(canonical_amenity)
+            if any('\u0900' <= c <= '\u097f' for c in kw):
+                if re.search(rf"(?:^|[^\u0900-\u097f]){re.escape(kw)}(?:$|[^\u0900-\u097f])", clean):
+                    found_amenities.add(canonical_amenity)
+            else:
+                if re.search(rf"\b{re.escape(kw)}\b", clean):
+                    found_amenities.add(canonical_amenity)
         if found_amenities:
             entities.amenities = sorted(list(found_amenities))
 

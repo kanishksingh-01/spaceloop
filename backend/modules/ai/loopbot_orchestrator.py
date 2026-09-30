@@ -509,13 +509,13 @@ def _handle_clarification(effective_lang: str, raw_query: str = "") -> str:
 
 
 def _handle_search_property(params: dict, effective_lang: str, raw_query: str = "") -> str:
-    from backend.modules.nlp.i18n import MultilingualService
-    if effective_lang != "en":
-        return MultilingualService.get_localized_response("SEARCH_SPACE", effective_lang, params)
-
     search_results = run_marketplace_search(params, raw_query=raw_query, limit=3)
     cap_req = params.get("guest_count") or params.get("capacity") or "Flexible"
     cards = []
+
+    is_hi = effective_lang in ("hi", "hi-Latn", "gar", "gbm", "kfy", "jns")
+    is_mr = effective_lang in ("mr", "mr-Latn")
+
     for idx, res in enumerate(search_results):
         s = res["space"]
         p = res["pricing_2h"]
@@ -525,21 +525,66 @@ def _handle_search_property(params: dict, effective_lang: str, raw_query: str = 
         sqft = getattr(s, "sqft", 200)
         rate = getattr(s, "price_hourly", 45.0)
         amenities = getattr(s, "amenities", [])
-        amen_str = ", ".join(amenities[:3]) if amenities else "High-speed Wi-Fi, Ergonomic Desk"
-        status_str = "🟢 Available Now" if res["is_available"] else "🟡 Reserved soon"
         badge = res.get("match_badge", "Available Now")
         reasons = res.get("match_reasons", [])
-        reason_line = f"\n   • Why this matches: {reasons[0]}" if reasons else ""
 
-        cards.append(
-            f"{idx + 1}. **{title}** ({badge})\n"
-            f"   • Location: {loc}\n"
-            f"   • Capacity: Up to {max_cap} people ({sqft} sq ft)\n"
-            f"   • Rate: ₹{rate}/hour (Total ₹{p['total_upfront']} for 2h incl. deposit)\n"
-            f"   • Amenities: {amen_str}\n"
-            f"   • Status: {status_str}{reason_line}"
+        if is_hi:
+            amen_str = ", ".join(amenities[:3]) if amenities else "हाई-स्पीड वाई-फाई, एर्गोनॉमिक डेस्क"
+            status_str = "🟢 अभी उपलब्ध" if res["is_available"] else "🟡 जल्द आरक्षित"
+            reason_line = f"\n   • मैच का कारण: {reasons[0]}" if reasons else ""
+            cards.append(
+                f"{idx + 1}. **{title}** ({badge})\n"
+                f"   • स्थान: {loc}\n"
+                f"   • क्षमता: {max_cap} व्यक्ति तक ({sqft} वर्ग फुट)\n"
+                f"   • दर: ₹{rate}/घंटा (कुल ₹{p['total_upfront']} - 2 घंटे के लिए ₹100 रिफ़ंडेबल एस्क्रो सहित)\n"
+                f"   • सुविधाएं: {amen_str}\n"
+                f"   • स्थिति: {status_str}{reason_line}"
+            )
+        elif is_mr:
+            amen_str = ", ".join(amenities[:3]) if amenities else "हाय-स्पीड वाय-फाय, डेस्क"
+            status_str = "🟢 आता उपलब्ध" if res["is_available"] else "🟡 लवकरच आरक्षित"
+            reason_line = f"\n   • मॅचचे कारण: {reasons[0]}" if reasons else ""
+            cards.append(
+                f"{idx + 1}. **{title}** ({badge})\n"
+                f"   • स्थान: {loc}\n"
+                f"   • क्षमता: {max_cap} व्यक्तींपर्यंत ({sqft} चौ. फूट)\n"
+                f"   • दर: ₹{rate}/तास (एकूण ₹{p['total_upfront']} - २ तासांसाठी ₹१०० परत मिळणाऱ्या एस्क्रोसह)\n"
+                f"   • सुविधा: {amen_str}\n"
+                f"   • स्थिती: {status_str}{reason_line}"
+            )
+        else:
+            amen_str = ", ".join(amenities[:3]) if amenities else "High-speed Wi-Fi, Ergonomic Desk"
+            status_str = "🟢 Available Now" if res["is_available"] else "🟡 Reserved soon"
+            reason_line = f"\n   • Why this matches: {reasons[0]}" if reasons else ""
+            cards.append(
+                f"{idx + 1}. **{title}** ({badge})\n"
+                f"   • Location: {loc}\n"
+                f"   • Capacity: Up to {max_cap} people ({sqft} sq ft)\n"
+                f"   • Rate: ₹{rate}/hour (Total ₹{p['total_upfront']} for 2h incl. deposit)\n"
+                f"   • Amenities: {amen_str}\n"
+                f"   • Status: {status_str}{reason_line}"
+            )
+
+    if not cards:
+        if is_hi:
+            return "🔍 वर्तमान समय में आपकी खोज के अनुसार कोई स्थान उपलब्ध नहीं मिला। कृपया अपना बजट या क्षेत्र बदलकर पुनः प्रयास करें।"
+        elif is_mr:
+            return "🔍 सध्या आपल्या शोधानुसार कोणतीही जागा उपलब्ध नाही. कृपया आपले बजेट किंवा परिसर बदलून पुन्हा शोधा."
+        return "No matching spaces found at this exact moment."
+
+    cards_str = "\n\n".join(cards)
+    if is_hi:
+        return (
+            f"🔍 **{cap_req} लोगों के लिए खोज परिणाम:**\n\n"
+            f"{cards_str}\n\n"
+            f"सभी स्थान धारा 52 के तहत लाइसेंस प्राप्त और डिजिटल पास द्वारा सुरक्षित हैं। क्या आप इनमें से कोई बुक करना चाहते हैं?"
         )
-    cards_str = "\n\n".join(cards) if cards else "No matching spaces found at this exact moment."
+    elif is_mr:
+        return (
+            f"🔍 **{cap_req} व्यक्तींसाठी शोध निकाल:**\n\n"
+            f"{cards_str}\n\n"
+            f"सर्व जागा कलम ५२ अन्वये परवानाधारक असून डिजिटल पासने सुरक्षित आहेत. आपण यापैकी कोणती जागा बुक करू इच्छिता?"
+        )
     return (
         f"🔍 **Marketplace Search Results for {cap_req} People:**\n\n"
         f"{cards_str}\n\n"
@@ -785,13 +830,34 @@ def _handle_report_fraud(params: dict, effective_lang: str) -> str:
 
 def _handle_ask_help(query: str, effective_lang: str, space_id: int | None = None) -> str:
     from backend.modules.nlp.i18n import MultilingualService
-    if effective_lang != "en":
-        return MultilingualService.get_localized_response("LEGAL_SAFETY", effective_lang)
+    from backend.modules.ai.rag_service import generate_rag_response
 
     q = (query or "").lower().strip()
+    is_hi = effective_lang in ("hi", "hi-Latn", "gar", "gbm", "kfy", "jns")
+    is_mr = effective_lang in ("mr", "mr-Latn")
 
     # 1. "What is SpaceLoop?"
-    if any(k in q for k in ["what is spaceloop", "tell me about spaceloop", "about spaceloop", "spaceloop overview"]):
+    if any(k in q for k in ["what is spaceloop", "tell me about spaceloop", "about spaceloop", "spaceloop overview", "क्या है", "काय आहे"]):
+        if is_hi:
+            return (
+                "🏢 **SpaceLoop क्या है?**\n\n"
+                "SpaceLoop अप्रयुक्त भौतिक स्थानों (वर्कस्पेस, मीटिंग रूम, पॉडकास्ट केबिन, फोटो स्टूडियो) को घंटे के हिसाब से खोजने, बुक करने और कमाई करने का भारत का प्रमुख पीयर-टू-पीयर प्लेटफ़ॉर्म है।\n\n"
+                "• **लचीले स्थान**: 30 मिनट से लेकर 7 दिन तक तात्कालिक बुकिंग (कोई दीर्घकालिक अनुबंध नहीं)।\n"
+                "• **स्मार्ट डिजिटल पास**: 50m जीपीएस जियोफेंस और डायनामिक क्यूआर कोड आधारित आगमन।\n"
+                "• **धारा 52 कानूनी सुरक्षा**: भारतीय सुखाधिकार अधिनियम, 1882 की धारा 52 के तहत लाइसेंस (किराएदारी का कोई प्रतिकूल दावा नहीं)।\n"
+                "• **₹100 यूपीआई एस्क्रो**: समय पर चेकआउट के 120 सेकंड में पूर्ण रिफ़ंड।\n\n"
+                "क्या आप कोई स्थान खोजना चाहते हैं या अपनी खाली जगह लिस्ट करना चाहते हैं?"
+            )
+        elif is_mr:
+            return (
+                "🏢 **SpaceLoop काय आहे?**\n\n"
+                "SpaceLoop हे मोकळ्या जागा (वर्कस्पेस, मीटिंग रूम, स्टुडिओ, वर्कशॉप) तासाप्रमाणे शोधण्यासाठी आणि बुक करण्यासाठी भारतातील आघाडीचे पीयर-टू-पीयर प्लॅटफॉर्म आहे.\n\n"
+                "• **लवचिक जागा**: ३० मिनिटांपासून ते ७ दिवसांपर्यंत तात्काळ बुकिंग.\n"
+                "• **स्मार्ट डिजिटल पास**: कोणत्याही हार्डवेअरशिवाय ५० मीटर जीपीएस आणि क्यूआर आधारित प्रवेश.\n"
+                "• **कलम ५२ कायदेशीर संरक्षण**: भारतीय सुखाधिकार कायदा, १८८२ च्या कलम ५२ अन्वये परवाना (भाडेकरूचे अधिकार निर्माण होत नाहीत).\n"
+                "• **₹१०० यूपीआय एस्क्रो**: चेकआउटनंतर १२० सेकंदांत संपूर्ण परतावा.\n\n"
+                "आपण जागा शोधू इच्छिता की आपली जागा लिस्ट करू इच्छिता?"
+            )
         return (
             "🏢 **What is SpaceLoop?**\n\n"
             "SpaceLoop is India's premier peer-to-peer marketplace for discovering, booking, and monetizing unused physical spaces by the hour.\n\n"

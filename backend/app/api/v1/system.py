@@ -249,6 +249,29 @@ def ai_chat():
     }), 200
 
 
+@api_v1_system.route("/api/nlp/dispatch", methods=["POST"])
+@rate_limit_ai
+def api_nlp_dispatch():
+    """
+    Unified NLP Router endpoint.
+    Routes user query to LoopBot RAG, Semantic Search, or Listing Assistance
+    based on intent recognition or explicit caller action.
+    """
+    data = request.get_json(silent=True) or request.form or {}
+    query = sanitize_string(data.get("query") or data.get("text") or data.get("message") or "", max_length=1000)
+    context_data = data.get("context_data") or {}
+    if not isinstance(context_data, dict):
+        context_data = {}
+
+    if current_user.is_authenticated:
+        context_data["user_id"] = current_user.id
+        context_data["role"] = current_user.role
+
+    from backend.modules.nlp.pipeline import NLPPipeline
+    result = NLPPipeline.dispatch(query, context_data=context_data)
+    return jsonify(result), 200
+
+
 @api_v1_system.route("/api/system/status", methods=["GET"])
 def api_system_status():
     sim = session.get("simulate_ai_failure", False)

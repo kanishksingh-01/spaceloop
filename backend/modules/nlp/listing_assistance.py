@@ -290,31 +290,33 @@ class ListingAssistanceService:
             if not isinstance(data.get("amenities"), list):
                 data["amenities"] = []
 
-            # Grounding check: ensure amenities are actually grounded in text keywords using word boundaries
+            # Grounding check: ensure amenities are actually grounded in text keywords using word or script boundaries
             grounded_amenities = []
             orig_lower = original_text.lower()
             def has_word(kw: str) -> bool:
+                if any('\u0900' <= c <= '\u097f' for c in kw):
+                    return bool(re.search(rf'(?:^|[^\u0900-\u097f]){re.escape(kw)}(?:$|[^\u0900-\u097f])', orig_lower))
                 return bool(re.search(rf'\b{re.escape(kw)}\b', orig_lower))
 
             for amen in data["amenities"]:
                 amen_lower = str(amen).lower()
-                if any(has_word(kw) for kw in ["wifi", "wi-fi", "internet", "fiber"]) and "wi-fi" in amen_lower:
+                if any(has_word(kw) for kw in ["wifi", "wi-fi", "internet", "fiber", "वायफाय", "वाईफाई"]) and ("wi-fi" in amen_lower or "wifi" in amen_lower or "वायफाय" in amen_lower or "वाईफाई" in amen_lower):
                     grounded_amenities.append("High-speed Wi-Fi")
-                elif any(has_word(kw) for kw in ["ac", "air condition", "a/c"]) and ("air conditioning" in amen_lower or "ac" in amen_lower):
+                elif any(has_word(kw) for kw in ["ac", "air condition", "a/c", "एसी", "वातानुकूलित", "वातानुकूलन"]) and ("air conditioning" in amen_lower or "ac" in amen_lower or "एसी" in amen_lower):
                     grounded_amenities.append("Air Conditioning")
-                elif has_word("parking") and "parking" in amen_lower:
+                elif any(has_word(kw) for kw in ["parking", "पार्किंग"]) and ("parking" in amen_lower or "पार्किंग" in amen_lower):
                     grounded_amenities.append("Parking Available")
-                elif any(has_word(kw) for kw in ["power", "backup", "inverter"]) and "power" in amen_lower:
+                elif any(has_word(kw) for kw in ["power", "backup", "inverter", "बिजली", "वीज"]) and "power" in amen_lower:
                     grounded_amenities.append("Power Backup")
-                elif has_word("whiteboard") and "whiteboard" in amen_lower:
+                elif any(has_word(kw) for kw in ["whiteboard", "व्हाइटबोर्ड"]) and ("whiteboard" in amen_lower or "व्हाइटबोर्ड" in amen_lower):
                     grounded_amenities.append("Whiteboard")
-                elif any(has_word(kw) for kw in ["screen", "monitor", "display"]) and ("display" in amen_lower or "screen" in amen_lower):
+                elif any(has_word(kw) for kw in ["screen", "monitor", "display", "स्क्रीन", "मॉनिटर"]) and ("display" in amen_lower or "screen" in amen_lower):
                     grounded_amenities.append("4K Presentation Display")
-                elif any(has_word(kw) for kw in ["tea", "coffee"]) and ("tea" in amen_lower or "coffee" in amen_lower):
+                elif any(has_word(kw) for kw in ["tea", "coffee", "चहा", "चाय", "कॉफी"]) and ("tea" in amen_lower or "coffee" in amen_lower):
                     grounded_amenities.append("Tea & Coffee")
                 elif has_word("cctv") and "cctv" in amen_lower:
                     grounded_amenities.append("CCTV Security")
-                elif any(has_word(kw) for kw in ["lift", "elevator"]) and ("lift" in amen_lower or "elevator" in amen_lower):
+                elif any(has_word(kw) for kw in ["lift", "elevator", "लिफ्ट"]) and ("lift" in amen_lower or "elevator" in amen_lower):
                     grounded_amenities.append("Elevator Access")
                 elif has_word(amen_lower):
                     grounded_amenities.append(str(amen).title())
@@ -363,7 +365,10 @@ class ListingAssistanceService:
         "जागा": "space",
         "खोली": "room",
         "घर": "flat",
-        "काम करण्याची जागा": "workspace"
+        "काम करण्याची जागा": "workspace",
+        "वर्कस्पेस": "workspace",
+        "ऑफिस": "office",
+        "दफ्तर": "office"
     }
 
     @classmethod
@@ -387,8 +392,8 @@ class ListingAssistanceService:
             "amenities": []
         }
 
-        # 1. Bedrooms / BHK (e.g. "2 bedroom", "2bhk", "3 bhk", "2 bed", "2 कमरा", "2 खोल्या", "2 बीएचके")
-        bhk_match = re.search(r'(?:^|[^\d])(\d+)\s*(?:bhk|bedroom|bed\s*room|beds?|room\s+flat|कमरा|कमरे|खोली|खोल्या|बीएचके)', text, re.IGNORECASE)
+        # 1. Bedrooms / BHK (e.g. "2 bedroom", "2bhk", "3 bhk", "2 bed", "2 कमरा", "2 खोल्या", "2 बीएचके", "2 बेडरूम")
+        bhk_match = re.search(r'(?:^|[^\d])(\d+)\s*(?:bhk|bedroom|bed\s*room|beds?|room\s+flat|कमरा|कमरे|खोली|खोल्या|बीएचके|बेडरूम|बैडरूम|बेड\s*रूम)', text, re.IGNORECASE)
         if bhk_match:
             try:
                 extracted["bedrooms"] = int(bhk_match.group(1))
@@ -522,7 +527,9 @@ class ListingAssistanceService:
                 pass
 
         # 7. Capacity / Guest count
-        cap_match = re.search(r'\b(?:for\s+|fits?\s+|capacity\s+(?:of\s+)?)(\d+)\s*(?:people|persons?|guests?|members?|seats?|log|व्यक्ती)?\b', t_lower)
+        cap_match = re.search(r'(?:for\s+|fits?\s+|capacity\s+(?:of\s+)?)?(\d+)\s*(?:people|persons?|guests?|members?|seats?|log|व्यक्ती|लोगों\s*(?:के\s*लिए)?|लोकांसाठी|लोकांना|व्यक्तियों)(?!\w)', t_lower)
+        if not cap_match:
+            cap_match = re.search(r'\b(?:for\s+|fits?\s+|capacity\s+(?:of\s+)?)(\d+)\s*(?:people|persons?|guests?|members?|seats?|log|व्यक्ती)?\b', t_lower)
         if cap_match:
             try:
                 extracted["max_capacity"] = int(cap_match.group(1))
@@ -535,25 +542,43 @@ class ListingAssistanceService:
             ("wi-fi", "High-speed Wi-Fi"),
             ("internet", "High-speed Wi-Fi"),
             ("fiber", "High-speed Wi-Fi"),
+            ("वायफाय", "High-speed Wi-Fi"),
+            ("वाईफाई", "High-speed Wi-Fi"),
             ("ac", "Air Conditioning"),
             ("air condition", "Air Conditioning"),
+            ("एसी", "Air Conditioning"),
+            ("वातानुकूलित", "Air Conditioning"),
             ("parking", "Parking Available"),
+            ("पार्किंग", "Parking Available"),
             ("power backup", "Power Backup"),
             ("inverter", "Power Backup"),
+            ("बिजली", "Power Backup"),
+            ("वीज", "Power Backup"),
             ("whiteboard", "Whiteboard"),
+            ("व्हाइटबोर्ड", "Whiteboard"),
             ("monitor", "4K Presentation Display"),
             ("display", "4K Presentation Display"),
             ("screen", "Presentation Screen"),
+            ("स्क्रीन", "Presentation Screen"),
             ("tea", "Tea & Coffee"),
             ("coffee", "Tea & Coffee"),
+            ("चहा", "Tea & Coffee"),
+            ("चाय", "Tea & Coffee"),
+            ("कॉफी", "Tea & Coffee"),
             ("cctv", "CCTV Security"),
             ("lift", "Elevator Access"),
-            ("elevator", "Elevator Access")
+            ("elevator", "Elevator Access"),
+            ("लिफ्ट", "Elevator Access")
         ]
         for kw, a_label in amenity_rules:
-            if re.search(rf'\b{re.escape(kw)}\b', t_lower):
-                if a_label not in extracted["amenities"]:
-                    extracted["amenities"].append(a_label)
+            if any('\u0900' <= c <= '\u097f' for c in kw):
+                if re.search(rf'(?:^|[^\u0900-\u097f]){re.escape(kw)}(?:$|[^\u0900-\u097f])', t_lower):
+                    if a_label not in extracted["amenities"]:
+                        extracted["amenities"].append(a_label)
+            else:
+                if re.search(rf'\b{re.escape(kw)}\b', t_lower):
+                    if a_label not in extracted["amenities"]:
+                        extracted["amenities"].append(a_label)
 
         return extracted
 
@@ -767,47 +792,40 @@ class ListingAssistanceService:
 
     @classmethod
     def _detect_language(cls, text: str) -> str:
-        if re.search(r'[\u0900-\u097F]', text):
-            # Check for Marathi markers
-            if "ळ" in text or any(w in text for w in ["आहे", "नाही", "पाहिजे", "जवळ", "भाडे"]):
-                return "mr"
-            return "hi"
-        # Romanized Indic detection
-        t_low = text.lower()
-        if any(w in t_low for w in ["aahe", "pahije", "javal", "madhe", "bhade"]):
-            return "mr-Latn"
-        if any(w in t_low for w in ["chahiye", "ke paas", "kiraya", "kamra"]):
-            return "hi-Latn"
-        return "en"
+        from backend.modules.nlp.language_detection import LanguageDetectionService
+        lang_code, _, _, _ = LanguageDetectionService.detect_language(text or "")
+        return lang_code if isinstance(lang_code, str) else lang_code.value
 
     @classmethod
     def translate_listing_content(cls, title: str, description: str, amenities: List[str], target_language: str = "hi") -> Dict[str, Any]:
-        """Translates listing title, description, and amenities into the target language."""
+        """
+        Translates listing title, description, and amenities into the target language.
+        CRITICAL DATA PRESERVATION RULE:
+        Prices, numbers, addresses, URLs, listing IDs, and technical identifiers are NEVER altered.
+        """
         WORD_MAP_HI = {
-            "pune": "पुणे", "mumbai": "मुंबई", "delhi": "दिल्ली", "bengaluru": "बेंगलुरु",
-            "bangalore": "बेंगलुरु", "flat": "फ्लैट", "apartment": "अपार्टमेंट", "room": "कमरा",
+            "flat": "फ्लैट", "apartment": "अपार्टमेंट", "room": "कमरा",
             "furnished": "सुसज्जित", "unfurnished": "असुसज्जित", "high-speed wi-fi": "हाई-स्पीड वाई-फाई",
             "wi-fi": "वाई-फाई", "wifi": "वाई-फाई", "air conditioning": "वातानुकूलन (AC)", "ac": "एसी",
             "parking": "पार्किंग", "desk": "डेस्क", "office": "कार्यालय", "studio": "स्टूडियो"
         }
         WORD_MAP_MR = {
-            "pune": "पुणे", "mumbai": "मुंबई", "delhi": "दिल्ली", "bengaluru": "बेंगळुरू",
-            "bangalore": "बेंगळुरू", "flat": "फ्लॅट", "apartment": "अपार्टमेंट", "room": "खोली",
+            "flat": "फ्लॅट", "apartment": "अपार्टमेंट", "room": "खोली",
             "furnished": "सुसज्ज", "unfurnished": "असुसज्ज", "high-speed wi-fi": "हाय-स्पीड वाय-फाय",
             "wi-fi": "वाय-फाय", "wifi": "वाय-फाय", "air conditioning": "वातानुकूलन (AC)", "ac": "एसी",
             "parking": "पार्किंग", "desk": "डेस्क", "office": "कार्यालय", "studio": "स्टुडिओ"
         }
 
-        word_map = WORD_MAP_HI if target_language == "hi" else (WORD_MAP_MR if target_language == "mr" else {})
+        word_map = WORD_MAP_HI if target_language in ("hi", "hi-Latn", "gar", "gbm", "kfy", "jns") else (WORD_MAP_MR if target_language in ("mr", "mr-Latn") else {})
 
         def _translate_phrase(text_val: str) -> str:
             res = text_val
             for eng, ind in word_map.items():
-                pattern = re.compile(re.escape(eng), re.IGNORECASE)
+                pattern = re.compile(rf'\b{re.escape(eng)}\b', re.IGNORECASE)
                 res = pattern.sub(ind, res)
             return res
 
-        if target_language == "hi":
+        if target_language in ("hi", "hi-Latn", "gar", "gbm", "kfy", "jns"):
             translated_title = _translate_phrase(title)
             if "सत्यापित" not in translated_title:
                 translated_title = f"{translated_title} (सत्यापित स्पेस)"
@@ -816,7 +834,7 @@ class ListingAssistanceService:
                 f"[अनुवादित विवरण]: यह स्पेस स्पेस लूप पर सत्यापित है और धारा 52 के तहत सुरक्षित है।"
             )
             translated_amenities = [_translate_phrase(a) for a in amenities]
-        elif target_language == "mr":
+        elif target_language in ("mr", "mr-Latn"):
             translated_title = _translate_phrase(title)
             if "सत्यापित" not in translated_title:
                 translated_title = f"{translated_title} (सत्यापित जागा)"

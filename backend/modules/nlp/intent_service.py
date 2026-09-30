@@ -108,6 +108,7 @@ HOST_MONETIZE_PATTERNS = [
     # English
     r"\b(?:how\s+to\s+(?:host|monetize|rent\s+out)|monetiz\w*|list\s+(?:my\s+)?(?:\w+\s+)?(?:space|room|garage|office|property|terrace|hall|land|rooftop)|earn\s+(?:money|passive\s+income|income)|earnings\s+calculator|host\s+calculator)\b",
     r"\b(?:(?:i\s+)?(?:want\s+to\s+)?(?:list|create\s+listing|add\s+listing|draft\s+listing|put\s+on\s+rent|rent\s+out)(?:\s+(?:a|an|my))?.*?(?:space|room|flat|apartment|bhk|garage|office|property|terrace|hall|studio|desk))\b",
+    r"\b(?:\d+\s*(?:bhk|bedroom|bed\s+room))\b.*?\b(?:workspace|flat|apartment|house|hall|studio|office|property|space)\b",
     # Hindi / Hinglish
     r"\b(?:apni\s+jagah\s+rent\s+pe\s+kaise\s+du|garage\s+se\s+kamai|space\s+list\s+karna\s+hai|host\s+kaise\s+banein|kitna\s+kama\s+sakte\s+hain|kamai\s+kaise\s+kare)\b",
     r"\b(?:\w+\s+)?(?:list\s+karna\s+hai|listing\s+banani\s+hai|rent\s+pe\s+dena\s+hai)\b",
@@ -201,8 +202,10 @@ HELP_PATTERNS = [
     r"\b(?:help|how\s+does\s+spaceloop\s+work|what\s+is\s+spaceloop|how\s+spaceloop\s+works|how\s+(?:do\s+i|to)\s+(?:find|search)\s+(?:a\s+)?space|how\s+(?:do\s+i|to)\s+book\s+(?:a\s+)?space|what\s+information\s+(?:is\s+)?(?:required|needed)|what\s+(?:is|do\s+i)\s+need(?:ed)?\s+to\s+book|what\s+documents\s+(?:are\s+)?(?:required|needed)|platform\s+guide|how\s+it\s+works|support|contact\s+support|section\s+52\s+protection|terms\s+and\s+conditions|what\s+can\s+you\s+do)\b",
     # Hindi / Hinglish
     r"\b(?:help\s+chahiye|madad\s+chahiye|spaceloop\s+kya\s+hai|spaceloop\s+kaise\s+kam\s+karta\s+hai|booking\s+ke\s+liye\s+kya\s+chahiye|support\s+se\s+baat\s+karni\s+hai|madad\s+karo)\b",
+    r"(?:(?:स्पेस\s*लूप|spaceloop)\s+)?(?:क्या\s+है|कैसे\s+काम\s+करता\s+है|मदद\s*चाहिए|मदद\s+करो|सहायता|धारा\s*52|कानूनी\s*सुरक्षा)",
     # Marathi
-    r"\b(?:madat\s+pahije|spaceloop\s+kay\s+aahe|spaceloop\s+kasa\s+chalto|sahayyata)\b"
+    r"\b(?:madat\s+pahije|spaceloop\s+kay\s+aahe|spaceloop\s+kasa\s+chalto|sahayyata)\b",
+    r"(?:(?:स्पेस\s*लूप|spaceloop)\s+)?(?:काय\s+आहे|कसे\s+चालते|मदत\s*हवी|मदत\s+करा|कलम\s*52|कायदेशीर\s*संरक्षण)"
 ]
 
 CANONICAL_INTENTS_MAP = {
@@ -240,6 +243,7 @@ class IntentService:
     INTENT_MAP = [
         (IntentType.REPORT_FRAUD.value, REPORT_FRAUD_PATTERNS, 0.96),
         (IntentType.BOOK_SPACE.value, BOOKING_PATTERNS, 0.96),
+        (IntentType.HOST_MONETIZE.value, HOST_MONETIZE_PATTERNS, 0.95),
         (IntentType.EDIT_LISTING.value, EDIT_LISTING_PATTERNS, 0.95),
         (IntentType.ASK_BOOKING_STATUS.value, BOOKING_STATUS_PATTERNS, 0.95),
         (IntentType.ASK_PAYMENT_STATUS.value, PAYMENT_STATUS_PATTERNS, 0.95),
@@ -249,7 +253,6 @@ class IntentService:
         (IntentType.ASK_LOCATION.value, LOCATION_PATTERNS, 0.94),
         (IntentType.INQUIRE_AMENITIES.value, AMENITIES_PATTERNS, 0.93),
         (IntentType.INQUIRE_RULES.value, RULES_PATTERNS, 0.93),
-        (IntentType.HOST_MONETIZE.value, HOST_MONETIZE_PATTERNS, 0.95),
         (IntentType.LEGAL_SAFETY.value, LEGAL_SAFETY_PATTERNS, 0.92),
         (IntentType.ASK_HELP.value, HELP_PATTERNS, 0.92),
         (IntentType.SEARCH_SPACE.value, SEARCH_SPACE_PATTERNS, 0.94),

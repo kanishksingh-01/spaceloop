@@ -81,3 +81,67 @@ class NLPPipeline:
                 "has_entities": bool(entities_dict)
             }
         )
+
+    @classmethod
+    def dispatch(cls, query: str, context_data: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+        """
+        Unified 3-branch NLP router connecting:
+          - LoopBot / RAG (grounded questions, rules, amenities, assistance)
+          - Semantic Search (property search queries against live listings)
+          - Listing Assistance (natural language space drafts for hosts)
+        """
+        context_data = context_data or {}
+        nlp_result = cls.process(query, context_data=context_data)
+        canonical_intent = IntentService.canonicalize_intent(nlp_result.intent)
+        explicit_action = context_data.get("action")
+
+        # 1. Listing Assistance Branch
+        if explicit_action == "assist_listing" or canonical_intent == IntentType.CREATE_LISTING.value:
+            from backend.modules.nlp.listing_assistance import ListingAssistanceService
+            draft_res = ListingAssistanceService.assist_listing(query, target_language=nlp_result.language)
+            return {
+                "success": True,
+                "route": "listing_assistance",
+                "nlp_result": nlp_result.to_dict(),
+                "listing_draft": draft_res,
+                "clean_response": draft_res.get("generated_description", ""),
+            }
+
+        # 2. Semantic Search Branch
+        elif explicit_action == "search" or canonical_intent in (IntentType.SEARCH_SPACE.value, IntentType.SEARCH_PROPERTY.value):
+            from backend.modules.search.hybrid_search import hybrid_search_spaces
+            entities = nlp_result.entities or {}
+            search_res = hybrid_search_spaces(
+                raw_query=query,
+                location=entities.get("location"),
+                category=entities.get("property_type") or entities.get("space_type"),
+                min_capacity=entities.get("capacity") or entities.get("guest_count"),
+                max_price=entities.get("price") or entities.get("max_price"),
+                limit=context_data.get("limit", 10),
+            )
+            return {
+                "success": True,
+                "route": "semantic_search",
+                "nlp_result": nlp_result.to_dict(),
+                "search_results": search_res,
+                "clean_response": search_res.get("match_summary", ""),
+            }
+
+        # 3. LoopBot / RAG Branch (Conversational, amenities, policies, pricing, help)
+        else:
+            from backend.modules.ai.loopbot_orchestrator import orchestrate_loopbot_query
+            loopbot_res = orchestrate_loopbot_query(
+                query,
+                history=context_data.get("history", []),
+                context_data=context_data,
+                return_dict=True,
+            )
+            reply = loopbot_res.get("reply", "") if isinstance(loopbot_res, dict) else str(loopbot_res)
+            return {
+                "success": True,
+                "route": "loopbot",
+                "nlp_result": nlp_result.to_dict(),
+                "loopbot_result": loopbot_res if isinstance(loopbot_res, dict) else {"reply": reply},
+                "clean_response": reply,
+            }
+

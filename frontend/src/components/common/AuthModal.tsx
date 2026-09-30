@@ -134,7 +134,11 @@ export const AuthModal: React.FC<AuthModalProps> = ({
         setUnverifiedEmail(err?.data?.email || email);
         setError('Please verify your email address before logging in.');
       } else {
-        setError(err.message || 'Authentication failed. Please check your credentials.');
+        const rawMsg = err?.message || err?.error || err?.data?.error || err?.data?.message;
+        const finalMsg = typeof rawMsg === 'string' && rawMsg !== '[object Object]' && rawMsg.trim()
+          ? rawMsg
+          : 'Authentication failed. Please ensure the backend server is running and check your credentials.';
+        setError(finalMsg);
       }
       setLoading(false);
     }

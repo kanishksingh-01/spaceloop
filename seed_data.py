@@ -308,6 +308,36 @@ def seed_database(force=False):
             "upi_verified": True,
             "objective_trust_score": 100.0,
             "is_admin": True
+        },
+        {
+            "name": "Demo Master User",
+            "first_name": "Demo",
+            "last_name": "User",
+            "email": "demo@spaceloop.in",
+            "role": "both",
+            "bio": "Universal SpaceLoop Master Demo Account with full Host, Seeker, and Administrator permissions.",
+            "phone": "+91 99999 88888",
+            "avatar_url": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80",
+            "is_host_verified": True,
+            "discom_provider": "BESCOM (Bangalore)",
+            "discom_ca_masked": "***9948",
+            "upi_verified": True,
+            "upi_vpa_masked": "demo@okaxis",
+            "bank_beneficiary_name": "Demo Master User",
+            "is_student_verified": True,
+            "college_name": "IIT Delhi / COEP Pune",
+            "college_email": "demo@iitd.ac.in",
+            "student_id_masked": "STU-DEMO-999",
+            "is_aadhaar_verified": True,
+            "aadhaar_masked": "XXXX-XXXX-8888",
+            "aadhaar_token_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "objective_trust_score": 99.5,
+            "on_time_vacate_rate": 100.0,
+            "cleanliness_match_rate": 99.0,
+            "total_completed_hours": 50.0,
+            "dispute_count": 0,
+            "mfa_enabled": False,
+            "is_admin": True
         }
     ]
 

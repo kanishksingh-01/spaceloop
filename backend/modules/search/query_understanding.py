@@ -19,17 +19,32 @@ KNOWN_CATEGORIES = {
     "office": "Workspace",
     "desk": "Workspace",
     "coworking": "Workspace",
+    "कार्यालय": "Workspace",
+    "दफ्तर": "Workspace",
+    "वर्कस्पेस": "Workspace",
+    "ऑफिस": "Workspace",
+    "काम करण्याची जागा": "Workspace",
     "meeting": "Meeting",
     "conference": "Meeting",
     "boardroom": "Meeting",
+    "बैठक": "Meeting",
+    "कमरा": "Meeting",
+    "कमरे": "Meeting",
+    "खोली": "Meeting",
+    "खोल्या": "Meeting",
     "studio": "Studio",
     "podcast": "Studio",
     "recording": "Studio",
     "photography": "Studio",
     "photo": "Studio",
+    "स्टुडिओ": "Studio",
+    "स्टूडियो": "Studio",
     "study": "Study",
     "library": "Study",
     "quiet pod": "Study",
+    "अभ्यास": "Study",
+    "वाचनालय": "Study",
+    "कक्षा": "Study",
     "workshop": "Workshop",
     "maker": "Workshop",
     "hardware": "Workshop",
@@ -37,20 +52,26 @@ KNOWN_CATEGORIES = {
     "pop-up": "Retail",
     "store": "Retail",
     "stall": "Retail",
+    "दुकान": "Retail",
     "storage": "Storage",
     "warehouse": "Storage",
+    "गैराज": "Storage",
+    "गोदाम": "Storage",
     "event": "Event",
     "hall": "Event",
-    "gathering": "Event"
+    "gathering": "Event",
+    "सभागृह": "Event"
 }
 
 # Known locations & tech hubs
 KNOWN_HUBS = [
     "kharadi", "wagholi", "viman nagar", "kothrud", "aundh", "baner", "hinjewadi", "shivajinagar", "pune",
+    "पुणे", "पुण्यात", "बाणेर", "खराडी", "कोथरूड", "वाघोली",
     "hauz khas", "iit delhi", "north campus", "south campus", "connaught place", "nehru place", "delhi", "new delhi",
-    "noida", "sector 62", "gurgaon", "cyber city",
+    "दिल्ली", "दिल्लीत", "noida", "sector 62", "gurgaon", "cyber city",
     "koramangala", "indiranagar", "whitefield", "hanyur", "hsr layout", "electronic city", "bangalore", "bengaluru",
-    "bandra", "powai", "andheri", "dadar", "mumbai"
+    "बेंगलुरु", "बेंगळुरू", "bandra", "powai", "andheri", "dadar", "mumbai", "मुंबई", "मुंबईत",
+    "dehradun", "देहरादून", "rishikesh", "ऋषिकेश", "nainital", "नैनीताल", "mussoorie", "मसूरी"
 ]
 
 
@@ -77,8 +98,8 @@ def _deterministic_extract_constraints(query: str) -> dict:
     # Track portions of text to remove from semantic query
     to_strip = []
 
-    # 1. Capacity extraction (e.g. "for 6 people", "5 persons", "team of 10", "4 seats", "seats 8")
-    cap_match = re.search(r'\b(?:for\s+)?(\d+)\s*(?:people|persons?|guests?|members?|attendees?|seats?|pax)\b', lower_q)
+    # 1. Capacity extraction (e.g. "for 6 people", "5 persons", "team of 10", "4 seats", "4 लोगों के लिए", "4 लोकांसाठी")
+    cap_match = re.search(r'(?:for\s+)?(\d+)\s*(?:people|persons?|guests?|members?|attendees?|seats?|pax|लोगों|लोग|व्यक्तियों|व्यक्ती|लोकांसाठी|लोकांना|माणस)(?!\w)', lower_q)
     if cap_match:
         try:
             extracted["capacity"] = int(cap_match.group(1))
@@ -94,18 +115,18 @@ def _deterministic_extract_constraints(query: str) -> dict:
             except ValueError:
                 pass
 
-    # 2. Duration hours extraction (e.g. "4-hour", "4 hours", "2 hr", "half day")
-    hours_match = re.search(r'\b(\d+)(?:\s*|-)(?:hours?|hrs?)\b', lower_q)
+    # 2. Duration hours extraction (e.g. "4-hour", "4 hours", "2 hr", "half day", "4 तास", "4 घंटे")
+    hours_match = re.search(r'\b(\d+)(?:\s*|-)(?:hours?|hrs?|घंटे|तास)\b', lower_q)
     if hours_match:
         try:
             extracted["hours"] = float(hours_match.group(1))
             to_strip.append(hours_match.group(0))
         except ValueError:
             pass
-    elif "half day" in lower_q:
+    elif "half day" in lower_q or "आधा दिन" in lower_q:
         extracted["hours"] = 4.0
         to_strip.append("half day")
-    elif "full day" in lower_q:
+    elif "full day" in lower_q or "पूरा दिन" in lower_q:
         extracted["hours"] = 8.0
         to_strip.append("full day")
 
@@ -122,15 +143,27 @@ def _deterministic_extract_constraints(query: str) -> dict:
     # Check known hubs first
     matched_hub = None
     for hub in sorted(KNOWN_HUBS, key=len, reverse=True):
-        pattern = rf'\b(?:in|near|at|around)?\s*({re.escape(hub)})\b'
-        loc_search = re.search(pattern, lower_q)
-        if loc_search:
-            matched_hub = hub.title()
-            to_strip.append(loc_search.group(0))
-            break
+        if any('\u0900' <= c <= '\u097f' for c in hub):
+            if re.search(rf"(?:^|[^\u0900-\u097f]){re.escape(hub)}(?:$|[^\u0900-\u097f])", lower_q):
+                matched_hub = hub.title()
+                to_strip.append(hub)
+                break
+        else:
+            pattern = rf'\b(?:in|near|at|around)?\s*({re.escape(hub)})\b'
+            loc_search = re.search(pattern, lower_q)
+            if loc_search:
+                matched_hub = hub.title()
+                to_strip.append(loc_search.group(0))
+                break
     
     if matched_hub:
-        extracted["location"] = matched_hub
+        from backend.modules.nlp.entity_extraction import KNOWN_HUBS_MAP
+        canonical_loc = KNOWN_HUBS_MAP.get(matched_hub.lower()) or KNOWN_HUBS_MAP.get(matched_hub)
+        if canonical_loc:
+            # e.g. "Kharadi, Pune" -> "Kharadi" or "Pune" -> "Pune"
+            extracted["location"] = canonical_loc.split(",")[0].strip() if "," in canonical_loc and matched_hub.lower() in ("kharadi", "बाणेर", "baner", "वाघोली", "wagholi", "kothrud", "कोथरूड") else canonical_loc
+        else:
+            extracted["location"] = matched_hub
     else:
         # Generic "near <Location>" or "in <Location>"
         generic_loc = re.search(r'\b(?:in|near|around|at)\s+([A-Z][a-zA-Z0-9_\-\s]+?)(?=\s+(?:for|under|below|with|tomorrow|today|\d)|$)', clean_q)
@@ -142,15 +175,20 @@ def _deterministic_extract_constraints(query: str) -> dict:
 
     # 5. Space Type extraction
     for keyword, cat_name in KNOWN_CATEGORIES.items():
-        if re.search(rf'\b{re.escape(keyword)}\b', lower_q):
-            extracted["space_type"] = cat_name
-            break
+        if any('\u0900' <= c <= '\u097f' for c in keyword):
+            if re.search(rf"(?:^|[^\u0900-\u097f]){re.escape(keyword)}(?:$|[^\u0900-\u097f])", lower_q):
+                extracted["space_type"] = cat_name
+                break
+        else:
+            if re.search(rf'\b{re.escape(keyword)}\b', lower_q):
+                extracted["space_type"] = cat_name
+                break
 
     # 6. Date extraction
-    if re.search(r'\btomorrow\b', lower_q):
+    if re.search(r'\btomorrow\b', lower_q) or "कल" in lower_q or "उद्या" in lower_q:
         extracted["date"] = "tomorrow"
         to_strip.append("tomorrow")
-    elif re.search(r'\btoday\b', lower_q):
+    elif re.search(r'\btoday\b', lower_q) or "आज" in lower_q:
         extracted["date"] = "today"
         to_strip.append("today")
     elif re.search(r'\bthis\s+weekend\b', lower_q):
@@ -158,16 +196,16 @@ def _deterministic_extract_constraints(query: str) -> dict:
         to_strip.append("this weekend")
 
     # 7. Time range extraction
-    if re.search(r'\bafternoon\b', lower_q):
+    if re.search(r'\bafternoon\b', lower_q) or "दोपहर" in lower_q or "दुपारी" in lower_q:
         extracted["time_range"] = "afternoon"
         to_strip.append("afternoon")
-    elif re.search(r'\bmorning\b', lower_q):
+    elif re.search(r'\bmorning\b', lower_q) or "सुबह" in lower_q or "सकाळी" in lower_q:
         extracted["time_range"] = "morning"
         to_strip.append("morning")
-    elif re.search(r'\bevening\b', lower_q):
+    elif re.search(r'\bevening\b', lower_q) or "शाम" in lower_q or "संध्याकाळी" in lower_q:
         extracted["time_range"] = "evening"
         to_strip.append("evening")
-    elif re.search(r'\bnight\b', lower_q):
+    elif re.search(r'\bnight\b', lower_q) or "रात" in lower_q or "रात्री" in lower_q:
         extracted["time_range"] = "night"
         to_strip.append("night")
 
@@ -182,12 +220,23 @@ def _deterministic_extract_constraints(query: str) -> dict:
         "ac": "Air Conditioning",
         "air conditioning": "Air Conditioning",
         "power": "Power Outlets",
-        "monitor": "External Monitor"
+        "monitor": "External Monitor",
+        "वायफाय": "Wi-Fi",
+        "वाईफाई": "Wi-Fi",
+        "एसी": "Air Conditioning",
+        "वातानुकूलित": "Air Conditioning",
+        "पार्किंग": "Parking",
+        "व्हाइटबोर्ड": "Whiteboard"
     }
     for kw, label in amenity_keywords.items():
-        if re.search(rf'\b{re.escape(kw)}\b', lower_q):
-            if label not in extracted["amenities"]:
-                extracted["amenities"].append(label)
+        if any('\u0900' <= c <= '\u097f' for c in kw):
+            if re.search(rf"(?:^|[^\u0900-\u097f]){re.escape(kw)}(?:$|[^\u0900-\u097f])", lower_q):
+                if label not in extracted["amenities"]:
+                    extracted["amenities"].append(label)
+        else:
+            if re.search(rf'\b{re.escape(kw)}\b', lower_q):
+                if label not in extracted["amenities"]:
+                    extracted["amenities"].append(label)
 
     # Integrate SpaceLoop NLPPipeline entities (Multilingual & Code-Mixed awareness)
     try:
@@ -220,10 +269,26 @@ def _deterministic_extract_constraints(query: str) -> dict:
         semantic_cleaned = re.sub(re.escape(s), " ", semantic_cleaned, flags=re.IGNORECASE)
 
     # Clean residual filler words like "I need a", "looking for a", "place for", "near"
-    semantic_cleaned = re.sub(r'\b(?:i\s+need|looking\s+for|want|searching\s+for|a|an|the|near|in|at|for)\b', " ", semantic_cleaned, flags=re.IGNORECASE)
+    semantic_cleaned = re.sub(r'\b(?:i\s+need|looking\s+for|want|searching\s+for|a|an|the|near|in|at|for|के लिए|साठी)\b', " ", semantic_cleaned, flags=re.IGNORECASE)
     semantic_cleaned = re.sub(r'\s+', " ", semantic_cleaned).strip()
 
-    extracted["semantic_query"] = semantic_cleaned if len(semantic_cleaned) > 2 else clean_q
+    # If query contains Devanagari, bridge semantic query with English concepts so vector & keyword search against English listings succeed
+    if any('\u0900' <= c <= '\u097f' for c in clean_q):
+        bridge_tokens = []
+        if extracted.get("space_type"):
+            bridge_tokens.append(extracted["space_type"])
+        if extracted.get("amenities"):
+            bridge_tokens.extend(extracted["amenities"])
+        if any(w in clean_q for w in ["शांत", "शांतता", "एकांत"]):
+            bridge_tokens.append("Quiet")
+        if any(w in clean_q for w in ["सस्ता", "स्वस्त", "बजट"]):
+            bridge_tokens.append("Affordable")
+        if bridge_tokens:
+            extracted["semantic_query"] = f"{semantic_cleaned} {' '.join(bridge_tokens)}".strip()
+        else:
+            extracted["semantic_query"] = semantic_cleaned if len(semantic_cleaned) > 2 else clean_q
+    else:
+        extracted["semantic_query"] = semantic_cleaned if len(semantic_cleaned) > 2 else clean_q
     return extracted
 
 
