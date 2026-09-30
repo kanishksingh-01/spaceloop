@@ -294,6 +294,32 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => 
 
   return (
     <View className="min-h-screen bg-slate-950 pb-20">
+      {/* SpaceLoop Host Operating System Callout Banner */}
+      <div className="bg-gradient-to-r from-amber-500/15 via-indigo-600/15 to-violet-600/15 border-b border-amber-500/30 px-4 py-3">
+        <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <span className="w-8 h-8 rounded-lg bg-amber-500/20 text-amber-300 flex items-center justify-center font-bold text-base border border-amber-500/40">
+              🏡
+            </span>
+            <div>
+              <div className="text-xs font-bold text-white flex items-center gap-2">
+                SpaceLoop Host Operating System
+                <span className="px-1.5 py-0.5 rounded bg-amber-400/20 text-amber-300 text-[10px] font-mono font-bold uppercase">Dedicated Portal</span>
+              </div>
+              <p className="text-[11px] text-slate-400">
+                Manage your spaces, check-in codes, live IoT telemetry, escrows, and instant UPI payouts in the Host OS.
+              </p>
+            </div>
+          </div>
+          <button
+            onClick={() => navigate('/host')}
+            className="w-full sm:w-auto px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs shadow-lg shadow-amber-500/20 transition flex items-center justify-center gap-1.5 whitespace-nowrap cursor-pointer"
+          >
+            Launch Host Portal →
+          </button>
+        </div>
+      </div>
+
       {/* Header Profile Summary */}
       <View className="bg-slate-900 border-b border-slate-800 px-4 py-8">
         <View className="max-w-7xl mx-auto flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
@@ -484,11 +510,11 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => 
           </Pressable>
 
           <Pressable
-            onPress={() => navigate('/host/dashboard')}
-            className="px-4 py-2 rounded-xl border border-amber-500/30 bg-amber-500/10 text-amber-300 hover:bg-amber-500/20 transition flex-row items-center gap-1.5 ml-auto"
+            onPress={() => navigate('/host')}
+            className="px-4 py-2 rounded-xl border border-amber-500/30 bg-amber-500/10 text-amber-300 hover:bg-amber-500/20 transition flex-row items-center gap-1.5 ml-auto cursor-pointer"
           >
             <Text className="text-xs font-bold text-amber-300">
-              🏡 Switch to Host Portal & Dashboard →
+              🏡 Switch to Host Operating System →
             </Text>
           </Pressable>
         </View>

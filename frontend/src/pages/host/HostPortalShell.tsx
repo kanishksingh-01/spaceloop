@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation, Outlet } from 'react-router-dom';
 import { User, Booking } from '../../types';
 import { getHostNotifications, getHostBookings } from '../../services/host';
+import { MASTER_DEMO_USER } from '../../services/auth';
 import { NotificationsDrawer } from './components/NotificationsDrawer';
 
 interface HostPortalShellProps {
@@ -115,46 +116,28 @@ export const HostPortalShell: React.FC<HostPortalShellProps> = ({
     return location.pathname.startsWith(path);
   };
 
-  // If user is not authenticated or not a host, gate with verification card
-  if (!currentUser || !currentUser.is_host) {
-    return (
-      <div className="min-h-screen bg-slate-950 text-white flex items-center justify-center p-4">
-        <div className="max-w-xl w-full bg-slate-900 border border-amber-500/30 rounded-3xl p-8 space-y-6 text-center shadow-2xl relative overflow-hidden">
-          <div className="w-16 h-16 rounded-2xl bg-amber-500/15 border border-amber-500/30 flex items-center justify-center text-amber-400 text-3xl mx-auto shadow-inner">
-            <i className="fa-solid fa-house-chimney-user" />
-          </div>
-          <div className="space-y-2">
-            <span className="px-3 py-1 rounded-full text-[11px] font-bold uppercase tracking-wider bg-amber-500/10 text-amber-400 border border-amber-500/20">
-              Host Portal Access
-            </span>
-            <h2 className="text-2xl font-black text-white">Host Authentication Required</h2>
-            <p className="text-slate-400 text-xs sm:text-sm leading-relaxed max-w-md mx-auto">
-              The SpaceLoop Host Portal provides operations, real-time in-room check-in telemetry, CV exit condition verification, and instant UPI micro-escrow payouts under Section 52 of the Indian Easements Act.
-            </p>
-          </div>
-          <div className="pt-4 border-t border-slate-800 flex flex-col sm:flex-row gap-3 justify-center">
-            <button
-              type="button"
-              onClick={() => navigate('/dashboard')}
-              className="px-5 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold text-xs border border-slate-700 transition"
-            >
-              Back to Seeker Portal
-            </button>
-            <button
-              type="button"
-              onClick={onOpenHostAuthModal}
-              className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-bold text-xs shadow-lg shadow-amber-500/25 transition"
-            >
-              Sign In as Host / Upgrade Account →
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-  }
+  const effectiveUser = (currentUser && currentUser.is_host) ? currentUser : MASTER_DEMO_USER;
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col antialiased selection:bg-amber-500 selection:text-slate-950">
+      {/* Optional Preview Mode Ribbon for unauthenticated visitors */}
+      {(!currentUser || !currentUser.is_host) && (
+        <div className="bg-amber-500/10 border-b border-amber-500/25 px-4 py-2 flex items-center justify-between text-xs text-amber-300 flex-wrap gap-2">
+          <div className="flex items-center gap-2">
+            <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse shrink-0" />
+            <span>
+              <strong>Host Interactive Preview Mode:</strong> Active host telemetry loaded with verified Discom CA and ₹100 UPI Micro-Escrow.
+            </span>
+          </div>
+          <button
+            onClick={onOpenHostAuthModal}
+            className="px-3 py-1 rounded-lg bg-amber-500 text-slate-950 font-bold text-[11px] hover:bg-amber-400 transition"
+          >
+            Sign In to Your Host Account
+          </button>
+        </div>
+      )}
+
       {/* Top Application Header */}
       <header className="sticky top-0 z-40 h-16 bg-slate-950/95 backdrop-blur-md border-b border-slate-800/80 px-4 sm:px-6 lg:px-8 flex items-center justify-between gap-4">
         {/* Left: Mobile hamburger & Logo */}
@@ -252,12 +235,12 @@ export const HostPortalShell: React.FC<HostPortalShellProps> = ({
               className="flex items-center gap-2 p-1 rounded-xl hover:bg-slate-900 transition text-left"
             >
               <div className="w-7 h-7 rounded-lg bg-amber-500/20 border border-amber-500/40 text-amber-400 font-bold text-xs flex items-center justify-center">
-                {currentUser.name ? currentUser.name.charAt(0).toUpperCase() : 'H'}
+                {effectiveUser?.name ? effectiveUser.name.charAt(0).toUpperCase() : 'H'}
               </div>
               <div className="hidden xl:block">
-                <div className="text-xs font-bold text-white line-clamp-1">{currentUser.name || 'Host'}</div>
+                <div className="text-xs font-bold text-white line-clamp-1">{effectiveUser?.name || 'Host'}</div>
                 <div className="text-[10px] text-amber-400 font-mono font-semibold">
-                  OTI {(currentUser as any)?.objective_trust_score ?? 99.2}/100
+                  OTI {(effectiveUser as any)?.objective_trust_score ?? 99.2}/100
                 </div>
               </div>
             </button>

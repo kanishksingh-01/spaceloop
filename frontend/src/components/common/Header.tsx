@@ -118,15 +118,48 @@ export const Header: React.FC<HeaderProps> = ({
             /* HOST PORTAL NAVIGATION */
             <>
               <button
-                onClick={() => navigate('/host/dashboard')}
+                onClick={() => navigate('/host')}
                 className={`px-3 py-1.5 rounded-lg transition flex items-center gap-1.5 ${
-                  location.pathname === '/host/dashboard' || location.pathname === '/host'
+                  location.pathname === '/host' || location.pathname === '/host/overview' || location.pathname === '/host/dashboard'
                     ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
                     : 'text-slate-300 hover:text-white hover:bg-slate-800/60'
                 }`}
               >
-                <i className="fa-solid fa-chart-pie text-amber-400" />
-                <span>{t('nav.hostDashboard')}</span>
+                <i className="fa-solid fa-gauge-high text-amber-400" />
+                <span>Overview</span>
+              </button>
+              <button
+                onClick={() => navigate('/host/spaces')}
+                className={`px-3 py-1.5 rounded-lg transition flex items-center gap-1.5 ${
+                  location.pathname.startsWith('/host/spaces')
+                    ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
+                    : 'text-slate-300 hover:text-white hover:bg-slate-800/60'
+                }`}
+              >
+                <i className="fa-solid fa-building text-amber-400" />
+                <span>My Spaces</span>
+              </button>
+              <button
+                onClick={() => navigate('/host/bookings')}
+                className={`px-3 py-1.5 rounded-lg transition flex items-center gap-1.5 ${
+                  location.pathname.startsWith('/host/bookings')
+                    ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
+                    : 'text-slate-300 hover:text-white hover:bg-slate-800/60'
+                }`}
+              >
+                <i className="fa-solid fa-calendar-check text-amber-400" />
+                <span>Bookings</span>
+              </button>
+              <button
+                onClick={() => navigate('/host/live-sessions')}
+                className={`px-3 py-1.5 rounded-lg transition flex items-center gap-1.5 ${
+                  location.pathname.startsWith('/host/live-sessions')
+                    ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
+                    : 'text-slate-300 hover:text-white hover:bg-slate-800/60'
+                }`}
+              >
+                <i className="fa-solid fa-satellite-dish text-emerald-400" />
+                <span>Live Sessions</span>
               </button>
               <button
                 onClick={() => navigate('/architecture')}
@@ -139,9 +172,6 @@ export const Header: React.FC<HeaderProps> = ({
               >
                 <i className="fa-solid fa-cubes text-amber-400" />
                 <span>{t('nav.architecture')}</span>
-                <span className="px-1.5 py-0.5 rounded text-[9px] font-mono font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30">
-                  Team
-                </span>
               </button>
             </>
           ) : (
@@ -157,6 +187,14 @@ export const Header: React.FC<HeaderProps> = ({
               >
                 <i className="fa-solid fa-compass text-indigo-400" />
                 <span>{t('nav.explore')}</span>
+              </button>
+              <button
+                onClick={() => navigate('/host')}
+                className="px-3 py-1.5 rounded-lg transition flex items-center gap-1.5 text-amber-300 hover:text-white hover:bg-amber-500/10 border border-amber-500/20 font-bold"
+                title="Launch SpaceLoop Host Operating System"
+              >
+                <i className="fa-solid fa-house-chimney-user text-amber-400" />
+                <span>Host Portal</span>
               </button>
               <button
                 onClick={() => navigate('/architecture')}
@@ -207,24 +245,25 @@ export const Header: React.FC<HeaderProps> = ({
             )}
           </button>
 
-          {/* Portal Switcher Button (Visible on large screens; Drawer has dedicated switcher for mobile/tablet) */}
+          {/* Portal Switcher Button (Visible across all form factors) */}
           {isHostPortal ? (
             <button
               type="button"
               onClick={() => navigate('/explore')}
-              className="hidden lg:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-indigo-600/10 hover:bg-indigo-600/20 text-indigo-300 border border-indigo-500/30 text-xs font-bold transition shrink-0"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-indigo-600/10 hover:bg-indigo-600/20 text-indigo-300 border border-indigo-500/30 text-xs font-bold transition shrink-0"
               title="Switch to Seeker Portal"
             >
-              <span>🎓 {t('nav.switchToSeeker')}</span>
+              <span>🎓 <span className="hidden sm:inline">{t('nav.switchToSeeker')}</span><span className="sm:hidden">Seeker</span></span>
             </button>
           ) : (
             <button
               type="button"
-              onClick={() => navigate('/host/dashboard')}
-              className="hidden lg:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border border-amber-500/30 text-xs font-bold transition shrink-0"
-              title="Switch to Host Portal"
+              onClick={() => navigate('/host')}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-bold text-xs shadow-md shadow-amber-500/20 transition shrink-0"
+              title="Launch SpaceLoop Host Operating System"
             >
-              <span>🏡 {t('nav.switchToHost')}</span>
+              <i className="fa-solid fa-gauge-high text-[10px]" />
+              <span>Host Portal</span>
             </button>
           )}
 

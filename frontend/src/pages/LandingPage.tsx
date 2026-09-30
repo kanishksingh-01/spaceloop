@@ -208,11 +208,11 @@ export const LandingPage: React.FC<LandingPageProps> = ({ currentUser }) => {
 
             <button
               type="button"
-              onClick={() => navigate(currentUser ? '/list-space' : '/dashboard')}
-              className="w-full sm:w-auto px-8 py-4 rounded-2xl bg-slate-900/90 hover:bg-amber-500/10 text-amber-300 hover:text-amber-200 font-bold text-base border border-amber-500/30 hover:border-amber-400 shadow-lg flex items-center justify-center gap-3 transition transform hover:-translate-y-0.5 active:translate-y-0"
+              onClick={() => navigate('/host')}
+              className="w-full sm:w-auto px-8 py-4 rounded-2xl bg-slate-900/90 hover:bg-amber-500/10 text-amber-300 hover:text-amber-200 font-bold text-base border border-amber-500/30 hover:border-amber-400 shadow-lg flex items-center justify-center gap-3 transition transform hover:-translate-y-0.5 active:translate-y-0 cursor-pointer"
             >
               <i className="fa-solid fa-warehouse text-amber-400" />
-              <span>Become a Host</span>
+              <span>Become a Host / Host OS</span>
             </button>
           </div>
 
@@ -421,10 +421,10 @@ export const LandingPage: React.FC<LandingPageProps> = ({ currentUser }) => {
 
               <button
                 type="button"
-                onClick={() => navigate('/list-space')}
-                className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-500 hover:to-orange-500 text-white font-bold text-xs shadow-md transition"
+                onClick={() => navigate('/host/spaces/create')}
+                className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-500 hover:to-orange-500 text-white font-bold text-xs shadow-md transition cursor-pointer"
               >
-                <span>List Your Space</span>
+                <span>List Your Space in Host OS</span>
                 <i className="fa-solid fa-arrow-right text-[10px]" />
               </button>
             </div>
@@ -587,10 +587,10 @@ export const LandingPage: React.FC<LandingPageProps> = ({ currentUser }) => {
               </button>
               <button
                 type="button"
-                onClick={() => navigate('/list-space')}
-                className="w-full sm:w-auto px-8 py-4 rounded-xl bg-slate-950 text-white font-bold text-sm border border-slate-700 hover:bg-slate-800 transition"
+                onClick={() => navigate('/host')}
+                className="w-full sm:w-auto px-8 py-4 rounded-xl bg-slate-950 text-amber-300 font-bold text-sm border border-amber-500/40 hover:bg-slate-800 transition cursor-pointer"
               >
-                Become a Host
+                Launch Host Portal
               </button>
             </div>
           </div>

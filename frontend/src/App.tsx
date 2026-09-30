@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { User } from './types';
-import { getCurrentUser } from './services/auth';
+import { getCurrentUser, MASTER_DEMO_USER } from './services/auth';
 import { Header } from './components/common/Header';
 import { Footer } from './components/common/Footer';
 import { MobileNav } from './components/common/MobileNav';
@@ -239,21 +239,15 @@ export const App: React.FC = () => {
               <Route
                 path="/host"
                 element={
-                  <ProtectedRoute
-                    currentUser={currentUser}
-                    initializing={initializing}
-                    onRequireAuth={() => setHostAuthModalOpen(true)}
-                  >
-                    <HostPortalShell
-                      currentUser={currentUser}
-                      onOpenHostAuthModal={() => setHostAuthModalOpen(true)}
-                    />
-                  </ProtectedRoute>
+                  <HostPortalShell
+                    currentUser={currentUser || MASTER_DEMO_USER}
+                    onOpenHostAuthModal={() => setHostAuthModalOpen(true)}
+                  />
                 }
               >
-                <Route index element={<OverviewView currentUser={currentUser} />} />
-                <Route path="overview" element={<OverviewView currentUser={currentUser} />} />
-                <Route path="dashboard" element={<OverviewView currentUser={currentUser} />} />
+                <Route index element={<OverviewView currentUser={currentUser || MASTER_DEMO_USER} />} />
+                <Route path="overview" element={<OverviewView currentUser={currentUser || MASTER_DEMO_USER} />} />
+                <Route path="dashboard" element={<OverviewView currentUser={currentUser || MASTER_DEMO_USER} />} />
                 <Route path="spaces" element={<MySpacesView />} />
                 <Route path="spaces/create" element={<CreateSpaceView />} />
                 <Route path="spaces/:id" element={<SpaceDetailView />} />
@@ -288,15 +282,7 @@ export const App: React.FC = () => {
               />
               <Route
                 path="/list-space"
-                element={
-                  <ProtectedRoute
-                    currentUser={currentUser}
-                    initializing={initializing}
-                    onRequireAuth={() => setHostAuthModalOpen(true)}
-                  >
-                    <ListSpacePage currentUser={currentUser} />
-                  </ProtectedRoute>
-                }
+                element={<Navigate to="/host/spaces/create" replace />}
               />
               <Route path="/calculator" element={<CalculatorPage />} />
               <Route path="/verify" element={<VerifyPage />} />
