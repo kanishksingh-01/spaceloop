@@ -196,6 +196,9 @@ def get_host_notifications():
         elif dn.type == "verification":
             color = "amber"
             icon = "fa-shield-halved"
+        elif dn.type in ("inquiry", "new_inquiry"):
+            color = "indigo"
+            icon = "fa-comments"
 
         notifications.append({
             "id": dn.id,
@@ -233,6 +236,28 @@ def get_host_notifications():
                 "color": "amber"
             })
 
+    # Add dynamic alert for recent inquiries if no notification exists
+    recent_inquiries = SpaceInquiry.query.join(Space).filter(
+        Space.owner_id == current_user.id
+    ).order_by(SpaceInquiry.created_at.desc()).limit(10).all()
+    for inq in recent_inquiries:
+        notif_msg_snip = inq.question[:40] if inq.question else ""
+        if not any(notif_msg_snip and notif_msg_snip in (n.get("message") or "") for n in notifications):
+            seeker_name = inq.user.name if (inq.user and inq.user.name) else "A seeker"
+            notifications.insert(0, {
+                "id": f"dyn-inq-{inq.id}",
+                "db_id": None,
+                "type": "inquiry",
+                "title": f"New Inquiry: {inq.space.title if inq.space else 'Your Space'}",
+                "message": f"{seeker_name} asked: \"{inq.question[:120]}{'...' if len(inq.question) > 120 else ''}\"",
+                "timestamp": inq.created_at.isoformat() if inq.created_at else now.isoformat(),
+                "unread": True,
+                "action_url": "/host/overview",
+                "priority": "medium",
+                "icon": "fa-comments",
+                "color": "indigo"
+            })
+
     if not current_user.is_host_verified and not any(n.get("type") == "verification" for n in notifications):
         notifications.append({
             "id": "dyn-kyc-pending",
@@ -257,13 +282,17 @@ def get_host_notifications():
     }), 200
 
 
-@api_v1_system.route("/api/host/notifications/<int:notification_id>/read", methods=["POST"])
+@api_v1_system.route("/api/host/notifications/<notification_id>/read", methods=["POST"])
 @login_required
 def mark_notification_read(notification_id):
-    notif = Notification.query.get(notification_id)
-    if notif and (notif.user_id == current_user.id or current_user.is_admin):
-        notif.unread = False
-        db.session.commit()
+    try:
+        n_id = int(notification_id)
+        notif = Notification.query.get(n_id)
+        if notif and (notif.user_id == current_user.id or current_user.is_admin):
+            notif.unread = False
+            db.session.commit()
+    except (ValueError, TypeError):
+        pass
     return jsonify({"success": True, "message": "Notification marked as read."}), 200
 
 
@@ -275,13 +304,17 @@ def mark_all_notifications_read():
     return jsonify({"success": True, "message": "All notifications marked as read."}), 200
 
 
-@api_v1_system.route("/api/host/notifications/<int:notification_id>", methods=["DELETE"])
+@api_v1_system.route("/api/host/notifications/<notification_id>", methods=["DELETE"])
 @login_required
 def delete_notification(notification_id):
-    notif = Notification.query.get(notification_id)
-    if notif and (notif.user_id == current_user.id or current_user.is_admin):
-        db.session.delete(notif)
-        db.session.commit()
+    try:
+        n_id = int(notification_id)
+        notif = Notification.query.get(n_id)
+        if notif and (notif.user_id == current_user.id or current_user.is_admin):
+            db.session.delete(notif)
+            db.session.commit()
+    except (ValueError, TypeError):
+        pass
     return jsonify({"success": True, "message": "Notification dismissed."}), 200
 
 
@@ -765,6 +798,22 @@ def api_inquiries():
             ai_answer=answer
         )
         db.session.add(inquiry)
+
+        # Create host notification
+        if space and space.owner_id:
+            seeker_name = current_user.name or current_user.email or "A seeker"
+            notif = Notification(
+                user_id=space.owner_id,
+                type="inquiry",
+                title=f"New Inquiry: {space.title}",
+                message=f"{seeker_name} asked: \"{question[:120]}{'...' if len(question) > 120 else ''}\"",
+                priority="medium",
+                action_url="/host/overview",
+                unread=True,
+                created_at=datetime.utcnow()
+            )
+            db.session.add(notif)
+
         db.session.commit()
 
         return jsonify({

@@ -89,6 +89,8 @@ export const NotificationsView: React.FC = () => {
         ? n.unread
         : filter === 'booking'
         ? n.type === 'new_booking' || n.type === 'booking'
+        : filter === 'inquiry'
+        ? n.type === 'inquiry' || n.type === 'new_inquiry'
         : filter === 'access'
         ? n.type === 'check_in' || n.type === 'checkin' || n.type === 'active_session'
         : filter === 'settlement'
@@ -153,6 +155,7 @@ export const NotificationsView: React.FC = () => {
           {[
             { id: 'all', label: 'All Alerts', icon: 'fa-solid fa-layer-group' },
             { id: 'unread', label: `Unread (${unreadCount})`, icon: 'fa-solid fa-envelope' },
+            { id: 'inquiry', label: 'Inquiries', icon: 'fa-solid fa-comments' },
             { id: 'booking', label: 'Bookings', icon: 'fa-solid fa-calendar-check' },
             { id: 'access', label: 'Check-in & Sessions', icon: 'fa-solid fa-door-open' },
             { id: 'settlement', label: 'Settlement & Escrow', icon: 'fa-solid fa-vault' },

@@ -8,7 +8,7 @@ import uuid
 from datetime import datetime, timezone, timedelta
 from flask import Blueprint, request, jsonify, redirect, url_for, flash, current_app
 from flask_login import login_required, current_user
-from models import db, Space, User, SpaceInquiry, Booking, Review, AuditLog, AccessLog
+from models import db, Space, User, SpaceInquiry, Booking, Review, AuditLog, AccessLog, Notification
 from backend.modules.auth import authorize, Permission, AuthError, ForbiddenError, set_active_context
 from backend.core.geo import haversine_distance, resolve_location_coordinates
 from space_ai import analyze_space_features, match_spaces_with_ai
@@ -852,6 +852,22 @@ def api_inquiries():
             ai_answer=ai_ans or "Inquiry dispatched to property host."
         )
         db.session.add(inquiry)
+
+        # Create host notification
+        if space and space.owner_id:
+            seeker_name = current_user.name or current_user.email or "A seeker"
+            notif = Notification(
+                user_id=space.owner_id,
+                type="inquiry",
+                title=f"New Inquiry: {space.title}",
+                message=f"{seeker_name} asked: \"{question[:120]}{'...' if len(question) > 120 else ''}\"",
+                priority="medium",
+                action_url="/host/overview",
+                unread=True,
+                created_at=datetime.utcnow()
+            )
+            db.session.add(notif)
+
         db.session.commit()
 
         return jsonify({

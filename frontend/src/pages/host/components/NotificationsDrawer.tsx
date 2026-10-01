@@ -20,7 +20,7 @@ export const NotificationsDrawer: React.FC<NotificationsDrawerProps> = ({
 }) => {
   const navigate = useNavigate();
   const [notifications, setNotifications] = useState<HostNotification[]>([]);
-  const [filter, setFilter] = useState<'all' | 'new_booking' | 'check_in' | 'active_session' | 'verification'>('all');
+  const [filter, setFilter] = useState<'all' | 'inquiry' | 'new_booking' | 'check_in' | 'active_session' | 'verification'>('all');
   const [loading, setLoading] = useState(false);
 
   const fetchNotifs = async () => {
@@ -48,7 +48,13 @@ export const NotificationsDrawer: React.FC<NotificationsDrawerProps> = ({
 
   if (!isOpen) return null;
 
-  const filtered = filter === 'all' ? notifications : notifications.filter((n) => n.type === filter);
+  const filtered = filter === 'all'
+    ? notifications
+    : notifications.filter((n) => {
+        if (filter === 'inquiry') return n.type === 'inquiry' || n.type === 'new_inquiry';
+        if (filter === 'new_booking') return n.type === 'new_booking' || n.type === 'booking';
+        return n.type === filter;
+      });
 
   const handleNotificationClick = async (notif: HostNotification) => {
     const id = (notif as any).db_id || notif.id;
@@ -121,7 +127,7 @@ export const NotificationsDrawer: React.FC<NotificationsDrawerProps> = ({
 
           {/* Filter Pills */}
           <div className="px-5 py-3 border-b border-slate-800/80 bg-slate-950/30 flex items-center gap-1.5 overflow-x-auto no-scrollbar">
-            {(['all', 'new_booking', 'check_in', 'active_session', 'verification'] as const).map((f) => (
+            {(['all', 'inquiry', 'new_booking', 'check_in', 'active_session', 'verification'] as const).map((f) => (
               <button
                 key={f}
                 type="button"
@@ -134,6 +140,8 @@ export const NotificationsDrawer: React.FC<NotificationsDrawerProps> = ({
               >
                 {f === 'all'
                   ? 'All'
+                  : f === 'inquiry'
+                  ? 'Inquiries'
                   : f === 'new_booking'
                   ? 'Bookings'
                   : f === 'check_in'

@@ -42,6 +42,8 @@ export const HostPortalShell: React.FC<HostPortalShellProps> = ({
       }
     };
     checkState();
+    const interval = setInterval(checkState, 15000);
+    return () => clearInterval(interval);
   }, [location.pathname]);
 
   const navGroups = [
