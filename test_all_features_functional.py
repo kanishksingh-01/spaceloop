@@ -1,8 +1,11 @@
 import sys
 import os
 
+if hasattr(sys.stdout, 'reconfigure'):
+    sys.stdout.reconfigure(encoding='utf-8')
+
 # Add root directory to python path
-sys.path.insert(0, "/Users/kanishksingh/Downloads/hack2ignite")
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from datetime import datetime, timedelta
 from app import create_app
