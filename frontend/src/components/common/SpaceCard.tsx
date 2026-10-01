@@ -24,16 +24,8 @@ export const SpaceCard: React.FC<SpaceCardProps> = ({ space, onPress }) => {
     space.location ||
     (space.neighborhood ? `${space.neighborhood}, ${space.city}` : space.city || 'Pune');
   const hourlyRate = Math.round(space.hourly_rate ?? space.price_hourly ?? 50);
-  const getMatchBadge = () => {
-    if (space.ai_match_score !== undefined && space.ai_match_score !== null) {
-      if (space.ai_match_score >= 80) return 'Top Match';
-      if (space.ai_match_score >= 60) return 'Great Match';
-      return 'Matched';
-    }
-    return 'Verified';
-  };
 
-  const matchBadgeLabel = getMatchBadge();
+  const isTopMatch = space.ai_match_score !== undefined && space.ai_match_score !== null && space.ai_match_score >= 80;
 
   const handleImageError = () => {
     if (!triedFallback) {
@@ -56,149 +48,113 @@ export const SpaceCard: React.FC<SpaceCardProps> = ({ space, onPress }) => {
           onPress(space.id);
         }
       }}
-      className="space-card floating-card group flex flex-col bg-slate-900/90 hover:bg-slate-850 border border-slate-800/80 hover:border-indigo-500/40 rounded-2xl overflow-hidden cursor-pointer"
+      className="group flex flex-col bg-slate-900 border border-slate-800 hover:border-indigo-500/50 rounded-xl overflow-hidden cursor-pointer transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg"
     >
       {/* Photo Container */}
-      <div
-        onClick={() => onPress(space.id)}
-        className="relative w-full aspect-[16/10] bg-slate-950 overflow-hidden cursor-pointer"
-      >
+      <div className="relative w-full aspect-[16/10] bg-slate-950 overflow-hidden">
         {!loaded && !error && (
-          <div className="absolute inset-0 bg-slate-800/60 animate-pulse flex items-center justify-center">
-            <span className="text-[11px] font-medium text-slate-400">Loading preview...</span>
-          </div>
+          <div className="absolute inset-0 bg-slate-800/40 animate-pulse" />
         )}
 
         {error ? (
-          <div className="absolute inset-0 flex flex-col items-center justify-center bg-slate-900 text-slate-400 p-4 text-center">
-            <svg className="w-8 h-8 mb-1.5 opacity-60 stroke-current" fill="none" viewBox="0 0 24 24">
-              <rect width="18" height="18" x="3" y="3" rx="2" strokeWidth="2" />
-              <path d="m3 15 5-5 4 4 6-6" strokeWidth="2" strokeLinecap="round" />
-            </svg>
-            <span className="text-[11px] font-medium">SpaceLoop Verified Asset</span>
+          <div className="absolute inset-0 flex flex-col items-center justify-center bg-slate-900 text-slate-500 text-xs">
+            <i className="fa-solid fa-image text-xl mb-1 text-slate-600" />
+            <span>Space Photo</span>
           </div>
         ) : (
           <img
             src={imgSrc}
-            alt={`${space.title} - ${space.category} in ${locationText}`}
+            alt={space.title}
             loading="lazy"
             decoding="async"
             onLoad={() => setLoaded(true)}
             onError={handleImageError}
-            className={`w-full h-full object-cover object-center transform transition-transform duration-500 ease-out group-hover:scale-[1.03] ${
+            className={`w-full h-full object-cover transition-transform duration-300 group-hover:scale-105 ${
               loaded ? 'opacity-100' : 'opacity-0'
             }`}
           />
         )}
 
-        {/* Subtle Bottom Vignette */}
-        <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-transparent to-black/30 pointer-events-none" />
-
-        {/* Category Pill Tag (Top Left) */}
-        <div className="absolute top-3 left-3 z-10">
-          <span className="inline-flex items-center px-2.5 py-0.5 rounded bg-slate-900/90 backdrop-blur-md border border-slate-700/60 text-[10px] font-bold tracking-wider text-indigo-300 uppercase shadow-sm">
-            {space.category}
+        {/* Top Badges (Subtle & Clean) */}
+        <div className="absolute top-2.5 left-2.5 right-2.5 flex items-center justify-between pointer-events-none">
+          <span className="px-2 py-0.5 rounded bg-slate-900/90 backdrop-blur-sm border border-slate-800 text-[10px] font-semibold text-slate-200">
+            {space.category || 'Workspace'}
           </span>
-        </div>
 
-        {/* Match / Verified Pill (Top Right) */}
-        <div className="absolute top-3 right-3 z-10 flex items-center gap-1.5">
-          <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full backdrop-blur-md text-[10px] font-bold shadow-sm ${
-            matchBadgeLabel === 'Top Match'
-              ? 'bg-indigo-500/25 border border-indigo-400/50 text-indigo-200'
-              : 'bg-emerald-500/20 border border-emerald-500/40 text-emerald-300'
-          }`}>
-            <span>✨</span>
-            <span className="match-score-text">{matchBadgeLabel}</span>
-          </span>
-        </div>
-
-        {/* Location Tag (Bottom Left) */}
-        <div className="absolute bottom-3 left-3 z-10">
-          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-slate-950/85 backdrop-blur-md border border-slate-700/60 text-[11px] font-medium text-slate-200">
-            <span className="text-indigo-400">📍</span>
-            <span>{locationText}</span>
-          </span>
-        </div>
-
-        {/* Rating Pill (Bottom Right) */}
-        <div className="absolute bottom-3 right-3 z-10">
-          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-black/60 backdrop-blur-sm text-[11px] font-medium text-amber-300">
-            <span>★</span>
-            <span>{rating}</span>
-          </span>
+          {isTopMatch ? (
+            <span className="px-2 py-0.5 rounded bg-indigo-600/90 text-white text-[10px] font-bold shadow-sm">
+              ✨ Top Match
+            </span>
+          ) : (
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-slate-900/90 backdrop-blur-sm text-[10px] font-bold text-amber-300">
+              <span>★</span> {rating}
+            </span>
+          )}
         </div>
       </div>
 
-      {/* Card Content Body */}
-      <div className="flex flex-col flex-1 p-5">
-        <div className="flex items-start justify-between gap-3 mb-2">
-          <h3
-            onClick={() => onPress(space.id)}
-            className="text-base font-semibold text-white tracking-tight leading-snug line-clamp-1 group-hover:text-indigo-400 transition-colors cursor-pointer"
-          >
-            {space.title}
-          </h3>
-          <div className="shrink-0 text-right">
-            <span className="text-base font-bold text-white tracking-tight">₹{hourlyRate}</span>
-            <span className="text-[11px] text-slate-400 font-normal">/hr</span>
-          </div>
-        </div>
-
-        <p className="text-xs text-slate-300 leading-relaxed line-clamp-2 mb-3">
-          {space.description}
-        </p>
-
-        {/* Space Meta specs */}
-        <div className="flex items-center gap-2 text-[11px] text-slate-400 mb-3 flex-wrap">
-          {space.distance_km !== undefined && (
-            <span className="px-2 py-0.5 rounded bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 font-medium flex items-center gap-1">
-              <span>⚡</span> {space.distance_km} km away
-            </span>
-          )}
-          <span className="px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-medium flex items-center gap-1">
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-            <span>{space.availability_status || 'Available Now'}</span>
-          </span>
-          <span>{space.sqft || 240} sqft</span>
-          <span>•</span>
-          <span>Up to {space.max_capacity || 4} ppl</span>
-        </div>
-
-        {/* AI Match Reasoning if present */}
-        {space.ai_match_reasoning && (
-          <div className="mb-3 p-2.5 rounded-lg bg-indigo-950/40 border border-indigo-500/25 text-xs text-indigo-300">
-            <div className="flex items-center gap-1.5 font-semibold text-emerald-400 text-[11px] mb-1">
-              <i className="fa-solid fa-sparkles text-[10px]" />
-              <span>Why this matches:</span>
+      {/* Content Body */}
+      <div className="p-4 flex flex-col flex-1 justify-between gap-3">
+        <div>
+          {/* Header Row: Title & Price */}
+          <div className="flex items-start justify-between gap-2 mb-1">
+            <h3 className="text-sm font-bold text-white group-hover:text-indigo-400 transition-colors line-clamp-1">
+              {space.title}
+            </h3>
+            <div className="text-right shrink-0">
+              <span className="text-sm font-extrabold text-white">₹{hourlyRate}</span>
+              <span className="text-[11px] text-slate-400 font-normal">/hr</span>
             </div>
-            <p className="text-[11px] leading-relaxed text-indigo-200">
-              {space.ai_match_reasoning}
-            </p>
           </div>
-        )}
 
-        {/* Trust & CTA Row */}
-        <div className="mt-auto pt-3.5 border-t border-slate-800/80 flex items-center justify-between">
-          <div className="flex items-center gap-1.5 text-[11px] font-medium text-emerald-400">
-            <svg className="w-3.5 h-3.5 fill-current" viewBox="0 0 20 20">
-              <path
-                fillRule="evenodd"
-                d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.857-9.809a.75.75 0 00-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 10-1.06 1.061l2.5 2.5a.75.75 0 001.137-.089l4-5.5z"
-                clipRule="evenodd"
-              />
-            </svg>
+          {/* Location */}
+          <p className="text-xs text-slate-400 line-clamp-1 mb-2">
+            <i className="fa-solid fa-location-dot text-slate-500 text-[10px] mr-1" />
+            {locationText}
+          </p>
+
+          {/* Description */}
+          <p className="text-xs text-slate-300 line-clamp-2 leading-relaxed mb-3">
+            {space.description}
+          </p>
+
+          {/* Specs Ribbon */}
+          <div className="flex items-center gap-2 text-[11px] text-slate-400 flex-wrap">
+            {space.distance_km !== undefined && (
+              <span className="px-1.5 py-0.5 rounded bg-slate-800 text-indigo-300 font-medium">
+                {space.distance_km} km away
+              </span>
+            )}
+            <span>{space.sqft || 240} sqft</span>
+            <span>•</span>
+            <span>Up to {space.max_capacity || 4} ppl</span>
+          </div>
+
+          {/* AI Match Explanation */}
+          {space.ai_match_reasoning && (
+            <div className="mt-3 p-2.5 rounded-lg bg-indigo-950/40 border border-indigo-500/20 text-xs">
+              <div className="flex items-center gap-1 text-indigo-300 font-semibold text-[11px] mb-0.5">
+                <i className="fa-solid fa-sparkles text-[10px]" />
+                <span>Match reasoning:</span>
+              </div>
+              <p className="text-[11px] text-slate-300 leading-normal line-clamp-2">
+                {space.ai_match_reasoning}
+              </p>
+            </div>
+          )}
+        </div>
+
+        {/* Footer Row */}
+        <div className="pt-3 border-t border-slate-800/80 flex items-center justify-between text-xs">
+          <span className="inline-flex items-center gap-1 text-[11px] font-medium text-emerald-400">
+            <i className="fa-solid fa-shield-halved text-[10px]" />
             <span>DigiLocker Verified</span>
-          </div>
+          </span>
 
-          <button
-            type="button"
-            onClick={() => onPress(space.id)}
-            className="inline-flex items-center gap-1 text-xs font-semibold text-indigo-400 hover:text-indigo-300 group-hover:translate-x-0.5 transition"
-          >
+          <span className="font-semibold text-indigo-400 group-hover:text-indigo-300 flex items-center gap-1 transition">
             <span>View Space</span>
-            <span>→</span>
-          </button>
+            <i className="fa-solid fa-arrow-right text-[10px] group-hover:translate-x-0.5 transition-transform" />
+          </span>
         </div>
       </div>
     </div>

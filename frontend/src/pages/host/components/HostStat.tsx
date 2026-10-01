@@ -30,8 +30,8 @@ export const HostStat: React.FC<HostStatProps> = ({
   return (
     <div
       onClick={onClick}
-      className={`bg-slate-900/60 border border-slate-800/80 rounded-2xl p-4 sm:p-5 flex flex-col justify-between transition-all duration-200 ${
-        onClick ? 'cursor-pointer hover:border-slate-700 hover:bg-slate-900/90' : ''
+      className={`bg-slate-900 border border-slate-800 rounded-xl p-4 sm:p-5 flex flex-col justify-between transition-all duration-200 ${
+        onClick ? 'cursor-pointer hover:border-slate-700 hover:bg-slate-850' : ''
       } ${className}`}
     >
       <div className="flex items-start justify-between gap-3 mb-2">

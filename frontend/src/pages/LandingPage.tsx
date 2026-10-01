@@ -1,8 +1,7 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Space, User } from '../types';
 import { getSpaces } from '../services/spaces';
-import CursorGrid from '../components/common/CursorGrid';
 import { useTheme } from '../context/ThemeContext';
 
 interface LandingPageProps {
@@ -14,56 +13,6 @@ export const LandingPage: React.FC<LandingPageProps> = ({ currentUser }) => {
   const { theme } = useTheme();
   const [featuredSpaces, setFeaturedSpaces] = useState<Space[]>([]);
   const [loading, setLoading] = useState(true);
-
-  // Parallax DOM References for 60/120fps direct transform updates
-  const glow1Ref = useRef<HTMLDivElement>(null);
-  const glow2Ref = useRef<HTMLDivElement>(null);
-  const spatialNetworkRef = useRef<HTMLDivElement>(null);
-  const orbitRef = useRef<HTMLDivElement>(null);
-
-  // Smooth lerp parallax engine (requestAnimationFrame, zero React state re-renders)
-  useEffect(() => {
-    // Respect user's accessibility preference
-    const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    if (prefersReducedMotion) return;
-
-    let targetY = window.scrollY;
-    let currentY = window.scrollY;
-    let animationFrameId: number;
-
-    const onScroll = () => {
-      targetY = window.scrollY;
-    };
-
-    window.addEventListener('scroll', onScroll, { passive: true });
-
-    const animate = () => {
-      // Linear interpolation (lerp) damping for fluid, premium inertia
-      currentY += (targetY - currentY) * 0.085;
-
-      if (glow1Ref.current) {
-        glow1Ref.current.style.transform = `translate3d(0, ${(currentY * 0.12).toFixed(2)}px, 0)`;
-      }
-      if (glow2Ref.current) {
-        glow2Ref.current.style.transform = `translate3d(0, ${(-currentY * 0.08).toFixed(2)}px, 0)`;
-      }
-      if (spatialNetworkRef.current) {
-        spatialNetworkRef.current.style.transform = `translate3d(0, ${(currentY * 0.05).toFixed(2)}px, 0)`;
-      }
-      if (orbitRef.current) {
-        orbitRef.current.style.transform = `translate3d(0, ${(-currentY * 0.14).toFixed(2)}px, 0)`;
-      }
-
-      animationFrameId = requestAnimationFrame(animate);
-    };
-
-    animationFrameId = requestAnimationFrame(animate);
-
-    return () => {
-      window.removeEventListener('scroll', onScroll);
-      cancelAnimationFrame(animationFrameId);
-    };
-  }, []);
 
   useEffect(() => {
     const fetchFeatured = async () => {
@@ -82,179 +31,82 @@ export const LandingPage: React.FC<LandingPageProps> = ({ currentUser }) => {
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col antialiased selection:bg-indigo-500 selection:text-white">
       {/* =========================================================================
-          1. HERO SECTION WITH SUBTLE PARALLAX & SPATIAL TOPOLOGY NETWORK
+          1. HERO SECTION (CLEAN FIGMA PRODUCT COMPOSITION)
           ========================================================================= */}
-      <section className="relative overflow-hidden pt-12 pb-20 md:pt-20 md:pb-28 border-b border-slate-800/80 bg-gradient-to-b from-slate-900 via-slate-950 to-slate-950">
-        
-        {/* Layer A: Interactive Cursor Grid Background */}
-        <div className="absolute inset-0 w-full h-full pointer-events-none overflow-hidden z-0">
-          <CursorGrid
-            cellSize={70}
-            color={theme === 'dark' ? '#D946EF' : '#3BA7F2'}
-            radius={140}
-            falloff="smooth"
-            holdTime={400}
-            fadeDuration={800}
-            lineWidth={1.2}
-            maxOpacity={1}
-            fillOpacity={0}
-            gridOpacity={0}
-            cellRadius={0}
-            clickPulse
-            pulseSpeed={600}
-          />
-        </div>
-
-        {/* Layer B: Parallax Glowing Background Lights (Depth 1) */}
-        <div
-          ref={glow1Ref}
-          className="absolute -top-40 left-1/2 -translate-x-1/2 w-[850px] h-[450px] bg-indigo-600/15 blur-[140px] rounded-full pointer-events-none will-change-transform z-0"
-        />
-        <div
-          ref={glow2Ref}
-          className="absolute top-36 right-4 sm:right-20 w-[420px] h-[420px] bg-violet-600/10 blur-[120px] rounded-full pointer-events-none will-change-transform z-0"
-        />
-
-        {/* Layer C: Abstract Connected Spatial Topology Grid (Parallax Depth 2) */}
-        <div
-          ref={spatialNetworkRef}
-          className="absolute inset-0 pointer-events-none overflow-hidden opacity-35 will-change-transform z-0"
-        >
-          <svg className="w-full h-full" xmlns="http://www.w3.org/2000/svg">
-            <defs>
-              <linearGradient id="spatialGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-                <stop offset="0%" stopColor="#6366f1" stopOpacity="0.6" />
-                <stop offset="50%" stopColor="#a855f7" stopOpacity="0.3" />
-                <stop offset="100%" stopColor="#3b82f6" stopOpacity="0.1" />
-              </linearGradient>
-              <pattern id="microDots" x="0" y="0" width="48" height="48" patternUnits="userSpaceOnUse">
-                <circle cx="2" cy="2" r="1.2" fill="#6366f1" fillOpacity="0.25" />
-              </pattern>
-            </defs>
-            {/* Ambient Micro-Dot Matrix */}
-            <rect width="100%" height="100%" fill="url(#microDots)" />
-
-            {/* Connecting Vector Lines Between Spatial Hubs */}
-            <g stroke="url(#spatialGrad)" strokeWidth="1" strokeDasharray="5,6" fill="none">
-              <path d="M 120 220 L 340 180 L 520 300 L 780 210 L 960 320 L 1180 190" />
-              <path d="M 280 400 L 520 300 L 720 440 L 960 320 L 1120 450" />
-              <path d="M 340 180 L 460 80 L 780 210" />
-            </g>
-
-            {/* Pulsing Node Rings */}
-            <circle cx="340" cy="180" r="4" fill="#818cf8" />
-            <circle cx="340" cy="180" r="12" stroke="#818cf8" strokeOpacity="0.3" strokeWidth="1.5" fill="none" />
-
-            <circle cx="520" cy="300" r="5" fill="#a855f7" />
-            <circle cx="520" cy="300" r="18" stroke="#a855f7" strokeOpacity="0.25" strokeWidth="1.5" fill="none" />
-
-            <circle cx="780" cy="210" r="4" fill="#38bdf8" />
-            <circle cx="780" cy="210" r="14" stroke="#38bdf8" strokeOpacity="0.3" strokeWidth="1.5" fill="none" />
-
-            <circle cx="960" cy="320" r="5" fill="#818cf8" />
-            <circle cx="960" cy="320" r="20" stroke="#818cf8" strokeOpacity="0.2" strokeWidth="1.5" fill="none" />
-          </svg>
-        </div>
-
-        {/* Layer D: Decorative Orbit Ring (Parallax Depth 3) */}
-        <div
-          ref={orbitRef}
-          className="absolute -top-12 -left-20 w-96 h-96 border border-indigo-500/10 rounded-full pointer-events-none will-change-transform z-0"
-        />
-
-        {/* Main Foreground Content (Completely Stable, High Readability, No Transform) */}
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 relative z-20 text-center">
-          
-          {/* Eyebrow Pill & Purpose Track */}
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-2 mb-6">
-            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-indigo-500/10 border border-indigo-500/25 text-indigo-300 text-xs font-semibold shadow-sm backdrop-blur-md">
-              <span className="flex h-2 w-2 rounded-full bg-indigo-400 animate-ping" />
-              <span>India’s First AI-Powered Micro-Space Network</span>
-            </div>
-            <button
-              onClick={() => navigate('/architecture')}
-              className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full bg-indigo-950/40 hover:bg-indigo-900/60 border border-indigo-500/30 hover:border-indigo-400/60 text-indigo-300 text-[11px] font-bold tracking-wide transition shadow-sm"
-              title="Meet the Team & System Architecture"
-            >
-              <i className="fa-solid fa-cubes text-indigo-400 text-[10px]" />
-              <span>Architecture & Team →</span>
-            </button>
+      <section className="relative overflow-hidden pt-12 pb-16 md:pt-20 md:pb-24 border-b border-slate-800/80 bg-slate-900/30">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 text-center">
+          {/* Eyebrow */}
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-indigo-300 text-xs font-semibold mb-6">
+            <span className="w-1.5 h-1.5 rounded-full bg-indigo-400" />
+            <span>India’s First Hourly Micro-Space Network</span>
           </div>
 
           {/* Main Headline */}
-          <h1 className="text-4xl sm:text-6xl lg:text-7xl font-black tracking-tight text-white leading-tight max-w-4xl mx-auto drop-shadow-sm">
-            Turn unused space into <br className="hidden sm:inline" />
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 via-violet-300 to-indigo-300">
-              living opportunity.
-            </span>
+          <h1 className="text-4xl sm:text-6xl font-extrabold tracking-tight text-white leading-tight">
+            Turn unused physical space into{' '}
+            <span className="text-indigo-400">living opportunity.</span>
           </h1>
 
           {/* Subtitle */}
-          <p className="mt-6 text-base sm:text-xl text-slate-300 leading-relaxed max-w-3xl mx-auto font-normal">
-            Discover and book verified spaces for remote work, client meetings, creative studios, workshops, and study — by the hour. Powered by natural-language AI matching, instant micro-leases, and zero-hardware QR access.
+          <p className="mt-5 text-base sm:text-lg text-slate-300 leading-relaxed max-w-2xl mx-auto">
+            Discover and reserve verified desks, meeting rooms, creative studios, and study pods by the hour. Protected by digital KYC, smart QR access, and ₹100 micro-escrow.
           </p>
 
-          {/* Dual Primary CTAs */}
-          <div className="mt-9 flex flex-col sm:flex-row items-center justify-center gap-4">
+          {/* Primary CTAs */}
+          <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-3">
             <button
               type="button"
               onClick={() => navigate('/explore')}
-              className="w-full sm:w-auto px-8 py-4 rounded-2xl bg-gradient-to-r from-indigo-600 via-violet-600 to-indigo-700 hover:from-indigo-500 hover:to-violet-500 text-white font-extrabold text-base shadow-xl shadow-indigo-600/30 flex items-center justify-center gap-3 transition transform hover:-translate-y-0.5 active:translate-y-0"
+              className="w-full sm:w-auto px-6 py-3.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-sm shadow-sm flex items-center justify-center gap-2 transition"
             >
               <i className="fa-solid fa-compass" />
-              <span>Find a Space</span>
+              <span>Explore Spaces</span>
               <i className="fa-solid fa-arrow-right text-xs" />
             </button>
 
             <button
               type="button"
               onClick={() => navigate('/host')}
-              className="w-full sm:w-auto px-8 py-4 rounded-2xl bg-slate-900/90 hover:bg-amber-500/10 text-amber-300 hover:text-amber-200 font-bold text-base border border-amber-500/30 hover:border-amber-400 shadow-lg flex items-center justify-center gap-3 transition transform hover:-translate-y-0.5 active:translate-y-0 cursor-pointer"
+              className="w-full sm:w-auto px-6 py-3.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-200 hover:text-white font-semibold text-sm border border-slate-700 transition flex items-center justify-center gap-2"
             >
               <i className="fa-solid fa-warehouse text-amber-400" />
-              <span>Become a Host / Host OS</span>
+              <span>Host Operating System</span>
             </button>
           </div>
 
-          {/* Trust Badges Strip Directly Below CTAs */}
-          <div className="mt-8 flex flex-wrap items-center justify-center gap-3 sm:gap-6 text-xs text-slate-400">
-            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-900/70 border border-slate-800 text-slate-300">
+          {/* Trust Highlights */}
+          <div className="mt-8 flex flex-wrap items-center justify-center gap-3 text-xs text-slate-400">
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-slate-900 border border-slate-800 text-slate-300">
               <i className="fa-solid fa-bolt text-indigo-400 text-xs" />
               <span>Instant QR / GPS Unlock</span>
             </div>
-            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-900/70 border border-slate-800 text-slate-300">
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-slate-900 border border-slate-800 text-slate-300">
               <i className="fa-solid fa-shield-check text-emerald-400 text-xs" />
               <span>₹100 UPI Micro-Escrow</span>
             </div>
-            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-900/70 border border-slate-800 text-slate-300">
-              <i className="fa-solid fa-file-contract text-violet-400 text-xs" />
-              <span>Legal Indian Easements Lease</span>
-            </div>
-            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-900/70 border border-slate-800 text-slate-300">
-              <i className="fa-solid fa-id-card text-sky-400 text-xs" />
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-slate-900 border border-slate-800 text-slate-300">
+              <i className="fa-solid fa-id-card text-indigo-400 text-xs" />
               <span>DigiLocker KYC Verified</span>
             </div>
           </div>
 
-          {/* Quick Stats Metric Ribbon */}
-          <div className="mt-14 pt-8 border-t border-slate-800/80 grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6 max-w-4xl mx-auto">
-            <div className="p-4 rounded-2xl bg-slate-900/80 border border-slate-800/80 floating-interactive text-center">
-              <div className="text-2xl sm:text-3xl font-black text-white">
-                ₹35<span className="text-indigo-400 text-lg">/hr</span>
-              </div>
-              <div className="text-xs text-slate-400 mt-1 font-medium">Starting Hourly Rates</div>
+          {/* Quick Metrics Ribbon */}
+          <div className="mt-12 pt-8 border-t border-slate-800/80 grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 max-w-3xl mx-auto">
+            <div className="p-3.5 rounded-xl bg-slate-900 border border-slate-800 text-center">
+              <div className="text-xl sm:text-2xl font-bold text-white">₹35<span className="text-indigo-400 text-sm">/hr</span></div>
+              <div className="text-[11px] text-slate-400 mt-0.5">Starting Hourly Rate</div>
             </div>
-            <div className="p-4 rounded-2xl bg-slate-900/80 border border-slate-800/80 floating-interactive text-center">
-              <div className="text-2xl sm:text-3xl font-black text-white">100%</div>
-              <div className="text-xs text-slate-400 mt-1 font-medium">Discom Meter Verified</div>
+            <div className="p-3.5 rounded-xl bg-slate-900 border border-slate-800 text-center">
+              <div className="text-xl sm:text-2xl font-bold text-emerald-400">100%</div>
+              <div className="text-[11px] text-slate-400 mt-0.5">Discom Verified</div>
             </div>
-            <div className="p-4 rounded-2xl bg-slate-900/80 border border-slate-800/80 floating-interactive text-center">
-              <div className="text-2xl sm:text-3xl font-black text-white">30s</div>
-              <div className="text-xs text-slate-400 mt-1 font-medium">Instant AI Micro-Lease</div>
+            <div className="p-3.5 rounded-xl bg-slate-900 border border-slate-800 text-center">
+              <div className="text-xl sm:text-2xl font-bold text-white">30s</div>
+              <div className="text-[11px] text-slate-400 mt-0.5">Instant AI Micro-Lease</div>
             </div>
-            <div className="p-4 rounded-2xl bg-slate-900/80 border border-slate-800/80 floating-interactive text-center">
-              <div className="text-2xl sm:text-3xl font-black text-white">₹100</div>
-              <div className="text-xs text-slate-400 mt-1 font-medium">UPI Escrow Auto-Release</div>
+            <div className="p-3.5 rounded-xl bg-slate-900 border border-slate-800 text-center">
+              <div className="text-xl sm:text-2xl font-bold text-indigo-300">₹100</div>
+              <div className="text-[11px] text-slate-400 mt-0.5">UPI Escrow Release</div>
             </div>
           </div>
         </div>
