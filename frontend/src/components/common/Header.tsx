@@ -140,17 +140,6 @@ export const Header: React.FC<HeaderProps> = ({
                 <span>My Spaces</span>
               </button>
               <button
-                onClick={() => navigate('/host/bookings')}
-                className={`px-3 py-1.5 rounded-lg transition flex items-center gap-1.5 ${
-                  location.pathname.startsWith('/host/bookings')
-                    ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
-                    : 'text-slate-300 hover:text-white hover:bg-slate-800/60'
-                }`}
-              >
-                <i className="fa-solid fa-calendar-check text-amber-400" />
-                <span>Bookings</span>
-              </button>
-              <button
                 onClick={() => navigate('/host/live-sessions')}
                 className={`px-3 py-1.5 rounded-lg transition flex items-center gap-1.5 ${
                   location.pathname.startsWith('/host/live-sessions')
