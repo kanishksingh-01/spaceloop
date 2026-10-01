@@ -311,14 +311,6 @@ export const HostAuthModal: React.FC<HostAuthModalProps> = ({
               <div className="flex items-center gap-2 pt-1 flex-wrap">
                 <button
                   type="button"
-                  disabled={verifyingInstant}
-                  onClick={() => handleInstantVerify(unverifiedEmail, verificationToken)}
-                  className="px-3 py-1 rounded-lg bg-emerald-500/25 hover:bg-emerald-500/35 border border-emerald-500/40 text-emerald-300 text-[11px] font-bold transition flex items-center gap-1 disabled:opacity-50"
-                >
-                  <span>{verifyingInstant ? 'Verifying...' : '⚡ Instant Verify & Sign In'}</span>
-                </button>
-                <button
-                  type="button"
                   disabled={resending}
                   onClick={() => handleResendEmail(unverifiedEmail)}
                   className="px-3 py-1 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 text-[11px] font-bold transition disabled:opacity-50"
@@ -370,14 +362,6 @@ export const HostAuthModal: React.FC<HostAuthModalProps> = ({
               </div>
 
               <div className="space-y-2 pt-2">
-                <button
-                  type="button"
-                  disabled={verifyingInstant}
-                  onClick={() => handleInstantVerify(registeredEmail, verificationToken)}
-                  className="w-full py-2.5 rounded-xl bg-emerald-500/25 hover:bg-emerald-500/35 border border-emerald-500/40 text-emerald-300 font-bold text-xs transition flex items-center justify-center gap-1.5"
-                >
-                  <span>{verifyingInstant ? 'Verifying...' : '⚡ Instant Verify & Enter Host Portal'}</span>
-                </button>
                 <button
                   type="button"
                   disabled={resending}
