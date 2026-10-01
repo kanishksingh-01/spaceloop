@@ -7,6 +7,7 @@ from backend.modules.email.adapter import (
     ResendEmailAdapter,
     DevelopmentEmailAdapter,
     SMTPEmailAdapter,
+    BrevoEmailAdapter,
 )
 from backend.modules.email.service import EmailService
 
@@ -16,4 +17,6 @@ __all__ = [
     "ResendEmailAdapter",
     "DevelopmentEmailAdapter",
     "SMTPEmailAdapter",
+    "BrevoEmailAdapter",
 ]
+

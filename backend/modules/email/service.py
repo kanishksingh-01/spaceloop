@@ -13,6 +13,7 @@ from backend.modules.email.adapter import (
     ResendEmailAdapter,
     DevelopmentEmailAdapter,
     SMTPEmailAdapter,
+    BrevoEmailAdapter,
 )
 from backend.modules.email.templates import (
     render_welcome_email,
@@ -38,6 +39,7 @@ class EmailService:
     @classmethod
     def get_adapter(cls) -> BaseEmailAdapter:
         provider = (os.environ.get("EMAIL_PROVIDER") or getattr(Config, "EMAIL_PROVIDER", "")).strip().lower()
+        brevo_key = (os.environ.get("BREVO_API_KEY") or getattr(Config, "BREVO_API_KEY", "")).strip()
         resend_key = (os.environ.get("RESEND_API_KEY") or getattr(Config, "RESEND_API_KEY", "")).strip()
         smtp_host = (os.environ.get("SMTP_HOST") or getattr(Config, "SMTP_HOST", "")).strip()
         smtp_port = int(os.environ.get("SMTP_PORT") or getattr(Config, "SMTP_PORT", 587))
@@ -46,16 +48,22 @@ class EmailService:
         from_email = (os.environ.get("EMAIL_FROM") or os.environ.get("RESEND_FROM_EMAIL") or getattr(Config, "EMAIL_FROM", "")).strip()
 
         # Determine desired adapter type
-        if provider == "smtp" or (smtp_host and smtp_user and provider != "resend"):
+        if provider == "brevo" or (brevo_key and provider != "smtp" and provider != "resend"):
+            target_class = BrevoEmailAdapter
+        elif provider == "smtp" or (smtp_host and smtp_user and provider != "resend" and provider != "brevo"):
             target_class = SMTPEmailAdapter
-        elif resend_key and provider != "smtp":
+        elif resend_key and provider != "smtp" and provider != "brevo":
             target_class = ResendEmailAdapter
         else:
             target_class = DevelopmentEmailAdapter
 
         # Reinitialize if not initialized or if adapter type has changed
         if cls._adapter is None or not isinstance(cls._adapter, target_class):
-            if target_class is SMTPEmailAdapter:
+            if target_class is BrevoEmailAdapter:
+                effective_from = from_email or "SpaceLoop <notifications@spaceloop.in>"
+                logger.info("[EMAIL_SERVICE] Initializing BrevoEmailAdapter with configured API key")
+                cls._adapter = BrevoEmailAdapter(api_key=brevo_key, from_email=effective_from)
+            elif target_class is SMTPEmailAdapter:
                 effective_from = from_email or (f"SpaceLoop <{smtp_user}>" if smtp_user else "SpaceLoop <noreply@spaceloop.in>")
                 logger.info(f"[EMAIL_SERVICE] Initializing SMTPEmailAdapter (host: {smtp_host}:{smtp_port}, user: {smtp_user})")
                 cls._adapter = SMTPEmailAdapter(

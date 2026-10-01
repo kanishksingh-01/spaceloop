@@ -20,8 +20,10 @@ services:
         sync: false
       - key: RESEND_API_KEY
         sync: false
+      - key: BREVO_API_KEY
+        sync: false
       - key: EMAIL_PROVIDER
-        value: smtp
+        sync: false
       - key: SMTP_HOST
         value: smtp.gmail.com
       - key: SMTP_PORT

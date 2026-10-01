@@ -290,3 +290,95 @@ class SMTPEmailAdapter(BaseEmailAdapter):
             logger.error(f"[SMTP_ADAPTER] {err}")
             return False, None, err
 
+
+class BrevoEmailAdapter(BaseEmailAdapter):
+    """
+    Production transactional email adapter using Brevo (Sendinblue) REST API.
+    - Uses HTTPS POST https://api.brevo.com/v3/smtp/email (Port 443, never blocked by cloud firewalls).
+    - Sends to any recipient without mandatory domain DNS records.
+    - Free tier: 300 emails/day.
+    """
+    BREVO_API_URL = "https://api.brevo.com/v3/smtp/email"
+
+    def __init__(
+        self,
+        api_key: str,
+        from_email: str = "SpaceLoop <noreply@spaceloop.in>",
+        timeout: float = 10.0,
+        max_retries: int = 2
+    ):
+        self.api_key = (api_key or "").strip()
+        self.from_email = (from_email or "").strip()
+        self.timeout = timeout
+        self.max_retries = max_retries
+
+    def _parse_sender(self) -> dict:
+        """Parses 'Name <email@domain.com>' into {'name': 'Name', 'email': 'email@domain.com'}"""
+        match = re.match(r"^([^<]+)<([^>]+)>$", self.from_email)
+        if match:
+            return {"name": match.group(1).strip(), "email": match.group(2).strip()}
+        return {"name": "SpaceLoop", "email": self.from_email or "noreply@spaceloop.in"}
+
+    def send_email(
+        self,
+        to_email: str,
+        subject: str,
+        html_body: str,
+        text_body: str = "",
+        idempotency_key: str = None
+    ) -> tuple[bool, str | None, str | None]:
+        import requests
+
+        if not self.api_key:
+            err = "Brevo API key is not configured."
+            logger.error(f"[BREVO_ADAPTER] {err}")
+            return False, None, err
+
+        sender = self._parse_sender()
+        payload = {
+            "sender": sender,
+            "to": [{"email": to_email}],
+            "subject": subject,
+            "htmlContent": html_body
+        }
+        if text_body:
+            payload["textContent"] = text_body
+
+        headers = {
+            "accept": "application/json",
+            "api-key": self.api_key,
+            "content-type": "application/json"
+        }
+
+        last_error = None
+        for attempt in range(self.max_retries + 1):
+            try:
+                resp = requests.post(
+                    self.BREVO_API_URL,
+                    json=payload,
+                    headers=headers,
+                    timeout=self.timeout
+                )
+                if resp.status_code in (200, 201):
+                    data = resp.json() or {}
+                    msg_id = data.get("messageId") or f"brevo_{uuid.uuid4().hex[:12]}"
+                    logger.info(f"[BREVO_ADAPTER] Successfully dispatched email to {to_email} via Brevo (id: {msg_id})")
+                    return True, msg_id, None
+
+                error_detail = resp.text
+                last_error = f"Brevo API HTTP {resp.status_code}: {error_detail}"
+                logger.warning(f"[BREVO_ADAPTER] Attempt {attempt + 1} failed for {to_email}: {last_error}")
+
+                if resp.status_code < 500:
+                    break
+            except Exception as req_err:
+                last_error = f"Network error connecting to Brevo: {str(req_err)}"
+                logger.warning(f"[BREVO_ADAPTER] Attempt {attempt + 1} network error: {last_error}")
+
+            if attempt < self.max_retries:
+                time.sleep(1.0 * (2 ** attempt))
+
+        logger.error(f"[BREVO_ADAPTER] All attempts exhausted for {to_email}. Error: {last_error}")
+        return False, None, last_error
+
+
