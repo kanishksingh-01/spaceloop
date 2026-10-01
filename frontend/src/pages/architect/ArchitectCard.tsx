@@ -112,10 +112,6 @@ export const ArchitectCard: React.FC<ArchitectCardProps> = ({
           <span className="text-[10px] font-mono font-bold tracking-wider px-2 py-0.5 rounded-md bg-[#0B3D91]/10 dark:bg-white/10 text-[#0B3D91] dark:text-slate-200 border border-[#0B3D91]/20 dark:border-white/10">
             SLOT // {member.badgeNumber}
           </span>
-          <div className="flex items-center gap-1.5 text-[10px] font-mono text-emerald-600 dark:text-emerald-400 font-semibold">
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-            <span>ONLINE</span>
-          </div>
         </div>
 
         <button

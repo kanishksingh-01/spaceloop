@@ -3,7 +3,6 @@ import { useNavigate } from 'react-router-dom';
 import {
   ArrowLeft,
   Compass,
-  Sparkles,
   Activity,
   X,
   Check,
@@ -12,7 +11,6 @@ import {
   ExternalLink,
 } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
-import { ThemeToggle } from '../components/common/ThemeToggle';
 import { TEAM_MEMBERS, ACCENT_TOKENS } from './architect/teamData';
 import { TeamMember } from './architect/types';
 import { ArchitectLoader } from './architect/ArchitectLoader';
@@ -164,17 +162,9 @@ export const ArchitecturePage: React.FC = () => {
               <ArrowLeft className="w-3.5 h-3.5 text-[#0B3D91] dark:text-indigo-400" />
               <span>Return to SpaceLoop</span>
             </button>
-            <span className="text-[#D0E6F7] dark:text-slate-700">|</span>
-            <div className="inline-flex items-center gap-2 text-xs font-bold text-slate-900 dark:text-white">
-              <span className="w-2 h-2 rounded-full bg-[#0B3D91] dark:bg-cyan-400 animate-pulse" />
-              <span className="font-mono tracking-wider uppercase text-[11px]">ARCH // SYSTEM DIRECTORY</span>
-            </div>
           </div>
 
           <div className="flex items-center gap-3">
-            {/* Seamless Theme Toggle Button */}
-            <ThemeToggle variant="pill" />
-
             <button
               type="button"
               onClick={() => navigate('/explore')}
@@ -216,12 +206,6 @@ export const ArchitecturePage: React.FC = () => {
 
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
           <div className="flex flex-col items-center text-center max-w-4xl mx-auto">
-            {/* Technical Subtitle Badge */}
-            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white/80 dark:bg-slate-900/80 border border-[#D0E6F7] dark:border-white/10 text-[#0B3D91] dark:text-cyan-300 text-xs font-mono font-bold mb-6 shadow-2xs backdrop-blur-md">
-              <Sparkles className="w-3.5 h-3.5 text-[#3BA7F2] dark:text-cyan-400" />
-              <span className="tracking-widest uppercase">SPACE-TECH ARCHITECTURE // VOL. 2026</span>
-            </div>
-
             {/* Letter-by-Letter Hero Heading with Colourful Dual-Layer Reveal Scanner Bar */}
             <div className="mb-4">
               <RevealHeading
@@ -230,7 +214,7 @@ export const ArchitecturePage: React.FC = () => {
                 className="text-4xl sm:text-6xl lg:text-7xl font-extrabold tracking-tight text-slate-900 dark:text-white leading-[1.1] font-display"
                 delay={loaderComplete ? 50 : 1900}
                 duration={900}
-                gradientFromIndex={20} // Starts gradient at "Behind SpaceLoop"
+                gradientFromIndex={27} // Starts gradient at "SpaceLoop", keeping "Behind" black/dark
                 gradientClassName="text-transparent bg-clip-text bg-gradient-to-r from-[#0B3D91] via-[#1E40AF] to-[#3BA7F2] dark:from-cyan-400 dark:via-indigo-300 dark:to-violet-400"
                 prefersReducedMotion={prefersReducedMotion}
               />
@@ -277,25 +261,16 @@ export const ArchitecturePage: React.FC = () => {
       <main className="relative z-10 w-full pt-14 pb-20 sm:pt-20 sm:pb-28 lg:pt-24 lg:pb-32 border-b border-[#D0E6F7] dark:border-white/[0.08]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           {/* Section Header with Reusable RevealHeading (Section 10 & 16) */}
-          <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-12 sm:mb-16">
-            <div>
-              <div className="flex items-center gap-2 text-xs font-mono font-bold uppercase tracking-widest text-[#0B3D91] dark:text-cyan-400 mb-2">
-                <Activity className="w-3.5 h-3.5" />
-                <span>CORE LEADERSHIP DIRECTORY // 4 PROFILES</span>
-              </div>
-              <RevealHeading
-                text="Core System Architects"
-                as="h2"
-                className="text-2xl sm:text-4xl font-extrabold text-slate-900 dark:text-white tracking-tight font-display"
-                triggerOnScroll={true}
-                duration={750}
-                gradientFromIndex={12}
-                prefersReducedMotion={prefersReducedMotion}
-              />
-            </div>
-            <p className="text-xs font-mono text-slate-500 dark:text-slate-400 max-w-sm">
-              Hover cards for localized spotlight & 3D tilt. Click <span className="text-[#0B3D91] dark:text-cyan-300 font-bold">Inspect Specs</span> for deep-dive architecture specs.
-            </p>
+          <div className="mb-12 sm:mb-16">
+            <RevealHeading
+              text="Core System Architects"
+              as="h2"
+              className="text-2xl sm:text-4xl font-extrabold text-slate-900 dark:text-white tracking-tight font-display"
+              triggerOnScroll={true}
+              duration={750}
+              gradientFromIndex={12}
+              prefersReducedMotion={prefersReducedMotion}
+            />
           </div>
 
           {/* Exactly 4 Team Member Profiles Rendered in a Single Horizontal Row on Desktop */}
@@ -487,8 +462,7 @@ export const ArchitecturePage: React.FC = () => {
               className="text-3xl sm:text-4xl font-extrabold text-slate-900 dark:text-white tracking-tight font-display"
               triggerOnScroll={true}
               duration={800}
-              gradientFromIndex={24}
-              gradientClassName="text-transparent bg-clip-text bg-gradient-to-r from-[#0B3D91] via-[#1E40AF] to-[#3BA7F2] dark:from-cyan-400 dark:via-indigo-300 dark:to-violet-400"
+              gradientFromIndex={-1}
               prefersReducedMotion={prefersReducedMotion}
             />
           </div>
