@@ -29,39 +29,45 @@ export const LandingPage: React.FC<LandingPageProps> = ({ currentUser }) => {
 
     let targetY = window.scrollY;
     let currentY = window.scrollY;
-    let animationFrameId: number;
+    let animationFrameId: number | null = null;
+
+    const animate = () => {
+      const diff = targetY - currentY;
+      if (Math.abs(diff) > 0.05) {
+        currentY += diff * 0.085;
+        if (glow1Ref.current) {
+          glow1Ref.current.style.transform = `translate3d(0, ${(currentY * 0.12).toFixed(2)}px, 0)`;
+        }
+        if (glow2Ref.current) {
+          glow2Ref.current.style.transform = `translate3d(0, ${(-currentY * 0.08).toFixed(2)}px, 0)`;
+        }
+        if (spatialNetworkRef.current) {
+          spatialNetworkRef.current.style.transform = `translate3d(0, ${(currentY * 0.05).toFixed(2)}px, 0)`;
+        }
+        if (orbitRef.current) {
+          orbitRef.current.style.transform = `translate3d(0, ${(-currentY * 0.14).toFixed(2)}px, 0)`;
+        }
+        animationFrameId = requestAnimationFrame(animate);
+      } else {
+        currentY = targetY;
+        animationFrameId = null;
+      }
+    };
 
     const onScroll = () => {
       targetY = window.scrollY;
+      if (animationFrameId === null) {
+        animationFrameId = requestAnimationFrame(animate);
+      }
     };
 
     window.addEventListener('scroll', onScroll, { passive: true });
 
-    const animate = () => {
-      // Linear interpolation (lerp) damping for fluid, premium inertia
-      currentY += (targetY - currentY) * 0.085;
-
-      if (glow1Ref.current) {
-        glow1Ref.current.style.transform = `translate3d(0, ${(currentY * 0.12).toFixed(2)}px, 0)`;
-      }
-      if (glow2Ref.current) {
-        glow2Ref.current.style.transform = `translate3d(0, ${(-currentY * 0.08).toFixed(2)}px, 0)`;
-      }
-      if (spatialNetworkRef.current) {
-        spatialNetworkRef.current.style.transform = `translate3d(0, ${(currentY * 0.05).toFixed(2)}px, 0)`;
-      }
-      if (orbitRef.current) {
-        orbitRef.current.style.transform = `translate3d(0, ${(-currentY * 0.14).toFixed(2)}px, 0)`;
-      }
-
-      animationFrameId = requestAnimationFrame(animate);
-    };
-
-    animationFrameId = requestAnimationFrame(animate);
-
     return () => {
       window.removeEventListener('scroll', onScroll);
-      cancelAnimationFrame(animationFrameId);
+      if (animationFrameId !== null) {
+        cancelAnimationFrame(animationFrameId);
+      }
     };
   }, []);
 

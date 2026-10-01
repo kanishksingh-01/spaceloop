@@ -200,17 +200,14 @@ export const ExplorePage: React.FC = () => {
   const handleSelectCategory = (catVal: string) => {
     setActiveCategory(catVal);
     setAiMatchActive(false);
-    fetchSpaces({ category: catVal });
   };
 
   const handleRadiusChange = (rad: string) => {
     setSelectedRadius(rad);
-    fetchSpaces({ radius: rad });
   };
 
   const handleMaxPriceChange = (price: string) => {
     setSelectedMaxPrice(price);
-    fetchSpaces({ maxPrice: price });
   };
 
   // AI Match handler
