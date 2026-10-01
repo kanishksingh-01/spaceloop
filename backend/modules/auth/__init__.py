@@ -1,6 +1,7 @@
 from backend.modules.auth.permissions import (
     Permission,
     authorize,
+    AuthError,
     UnauthorizedError,
     ForbiddenError
 )
@@ -13,6 +14,7 @@ from backend.modules.auth.email_service import EmailService
 __all__ = [
     "Permission",
     "authorize",
+    "AuthError",
     "UnauthorizedError",
     "ForbiddenError",
     "permission_required",

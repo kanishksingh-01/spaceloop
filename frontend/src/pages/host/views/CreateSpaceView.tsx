@@ -71,6 +71,7 @@ export const CreateSpaceView: React.FC = () => {
   const [keyboxCode, setKeyboxCode] = useState('');
   const [discomCaNumber, setDiscomCaNumber] = useState('');
   const [discomConsumerName, setDiscomConsumerName] = useState('');
+  const [termsAccepted, setTermsAccepted] = useState(false);
 
   const handleNext = () => {
     if (currentStep === 1 && !title.trim()) {
@@ -164,6 +165,10 @@ export const CreateSpaceView: React.FC = () => {
 
   const handlePublish = async (asDraft = false) => {
     try {
+      if (!asDraft && !termsAccepted) {
+        setError('You must review and agree to the SpaceLoop Terms & Conditions and Section 52 Easements Act compliance before publishing your listing.');
+        return;
+      }
       setSubmitting(true);
       setError(null);
 
@@ -190,6 +195,7 @@ export const CreateSpaceView: React.FC = () => {
         discom_ca_number: discomCaNumber,
         discom_consumer_name: discomConsumerName,
         is_active: !asDraft,
+        terms_accepted: asDraft ? false : termsAccepted,
       };
 
       const res = await createSpace(payload);
@@ -251,8 +257,9 @@ export const CreateSpaceView: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => handlePublish(false)}
-                  disabled={submitting}
-                  className="px-5 py-2 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-bold text-xs shadow-lg shadow-amber-500/25 transition flex items-center gap-1.5 disabled:opacity-50"
+                  disabled={submitting || !termsAccepted}
+                  title={!termsAccepted ? 'Please accept the Host Terms & Conditions below' : undefined}
+                  className="px-5 py-2 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-bold text-xs shadow-lg shadow-amber-500/25 transition flex items-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <i className={`fa-solid ${submitting ? 'fa-spinner animate-spin' : 'fa-check'} text-xs`} />
                   <span>{submitting ? 'Publishing...' : 'Publish Space'}</span>
@@ -724,6 +731,28 @@ export const CreateSpaceView: React.FC = () => {
               <span>
                 By publishing, your space will appear in search results. Renters will submit automated ₹100 micro-escrow deposits on booking, released upon checkout condition match.
               </span>
+            </div>
+
+            {/* Terms and Conditions Acceptance */}
+            <div className={`p-4 rounded-xl border transition ${termsAccepted ? 'bg-slate-900/90 border-amber-500/40' : 'bg-slate-950/80 border-slate-800'}`}>
+              <label className="flex items-start gap-3 cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  id="create_space_terms_checkbox"
+                  checked={termsAccepted}
+                  onChange={e => setTermsAccepted(e.target.checked)}
+                  className="mt-1 w-4 h-4 rounded border-slate-700 text-amber-500 focus:ring-amber-400 bg-slate-900 cursor-pointer"
+                />
+                <span className="text-xs text-slate-300 leading-relaxed">
+                  I agree to the <strong className="text-amber-400 font-semibold">SpaceLoop Host Terms &amp; Conditions</strong>, including Section 52 Indian Easements Act micro-lease compliance, premises electrical safety standards, and automated ₹100 refundable escrow resolution.
+                </span>
+              </label>
+              {!termsAccepted && (
+                <p className="text-[11px] text-amber-400/90 pl-7 mt-1.5 flex items-center gap-1.5">
+                  <i className="fa-solid fa-circle-exclamation text-[10px]" />
+                  <span>Mandatory: You must accept these terms before publishing your listing.</span>
+                </p>
+              )}
             </div>
           </div>
         )}

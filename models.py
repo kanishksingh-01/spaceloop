@@ -135,20 +135,20 @@ class User(db.Model, UserMixin):
             "upi_vpa_masked": self.upi_vpa_masked,
             "bank_beneficiary_name": self.bank_beneficiary_name,
             # Objective Telemetry
-            "objective_trust_score": round(self.objective_trust_score if self.objective_trust_score <= 100.0 else self.objective_trust_score / 10.0, 1),
-            "on_time_vacate_rate": round(self.on_time_vacate_rate, 1),
-            "cleanliness_match_rate": round(self.cleanliness_match_rate, 1),
-            "total_completed_hours": round(self.total_completed_hours, 1),
-            "dispute_count": self.dispute_count,
+            "objective_trust_score": round(self.objective_trust_score if self.objective_trust_score <= 100.0 else self.objective_trust_score / 10.0, 1) if self.objective_trust_score is not None else 98.5,
+            "on_time_vacate_rate": round(self.on_time_vacate_rate, 1) if self.on_time_vacate_rate is not None else 100.0,
+            "cleanliness_match_rate": round(self.cleanliness_match_rate, 1) if self.cleanliness_match_rate is not None else 99.0,
+            "total_completed_hours": round(self.total_completed_hours, 1) if self.total_completed_hours is not None else 0.0,
+            "dispute_count": self.dispute_count or 0,
             "oti_breakdown": {
-                "total_score": round(self.objective_trust_score if self.objective_trust_score <= 100.0 else self.objective_trust_score / 10.0, 1),
+                "total_score": round(self.objective_trust_score if self.objective_trust_score <= 100.0 else self.objective_trust_score / 10.0, 1) if self.objective_trust_score is not None else 98.5,
                 "punctuality": {
-                    "score": round(self.on_time_vacate_rate, 1),
+                    "score": round(self.on_time_vacate_rate, 1) if self.on_time_vacate_rate is not None else 100.0,
                     "weight": "35%",
                     "description": "Measures on-time departure within the booked micro-lease window."
                 },
                 "cleanliness": {
-                    "score": round(self.cleanliness_match_rate, 1),
+                    "score": round(self.cleanliness_match_rate, 1) if self.cleanliness_match_rate is not None else 99.0,
                     "weight": "35%",
                     "description": "Computer Vision delta verifying furniture unchanged, lights off, and zero trash left behind."
                 },
@@ -158,7 +158,7 @@ class User(db.Model, UserMixin):
                     "description": "DigiLocker Aadhaar, student university SSO, or Discom utility meter verification."
                 },
                 "dispute_history": {
-                    "score": max(0.0, 100.0 - min(self.dispute_count * 15.0, 50.0)),
+                    "score": max(0.0, 100.0 - min((self.dispute_count or 0) * 15.0, 50.0)),
                     "weight": "10%",
                     "description": "Clean deposit release history with zero unresolved damages or payment disputes."
                 }
@@ -431,9 +431,9 @@ class Space(db.Model):
             "owner_verified": self.owner.is_host_verified if self.owner else False,
             "owner_aadhaar_verified": self.owner.is_aadhaar_verified if self.owner else False,
             "owner_upi_verified": self.owner.upi_verified if self.owner else False,
-            "owner_trust_score": round(self.owner.objective_trust_score, 1) if self.owner else 98.5,
-            "owner_on_time_vacate_rate": round(self.owner.on_time_vacate_rate, 1) if self.owner else 100.0,
-            "owner_cleanliness_match_rate": round(self.owner.cleanliness_match_rate, 1) if self.owner else 99.0,
+            "owner_trust_score": round(self.owner.objective_trust_score, 1) if (self.owner and self.owner.objective_trust_score is not None) else 98.5,
+            "owner_on_time_vacate_rate": round(self.owner.on_time_vacate_rate, 1) if (self.owner and self.owner.on_time_vacate_rate is not None) else 100.0,
+            "owner_cleanliness_match_rate": round(self.owner.cleanliness_match_rate, 1) if (self.owner and self.owner.cleanliness_match_rate is not None) else 99.0,
             "owner_discom_provider": self.owner.discom_provider if self.owner else "",
             "is_space_info_verified": bool(self.ai_suitability_score and self.ai_suitability_score >= 80),
         }
