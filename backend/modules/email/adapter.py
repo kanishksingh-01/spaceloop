@@ -241,21 +241,46 @@ class SMTPEmailAdapter(BaseEmailAdapter):
             if html_body:
                 msg.attach(MIMEText(html_body, "html", "utf-8"))
 
-            if self.port == 465:
-                # SSL direct connection
-                context = ssl.create_default_context()
-                with smtplib.SMTP_SSL(self.host, self.port, timeout=self.timeout, context=context) as server:
-                    server.login(self.user, self.password)
-                    server.send_message(msg)
-            else:
-                # Standard STARTTLS connection (typically port 587)
-                with smtplib.SMTP(self.host, self.port, timeout=self.timeout) as server:
-                    server.ehlo()
-                    context = ssl.create_default_context()
-                    server.starttls(context=context)
-                    server.ehlo()
-                    server.login(self.user, self.password)
-                    server.send_message(msg)
+            # Smart connection: force IPv4 resolution and auto-fallback between 587 and 465
+            server = None
+            last_conn_err = None
+            ports_to_try = [self.port] if self.port not in (587, 465) else [self.port, 465 if self.port == 587 else 587]
+
+            import socket
+            for p in ports_to_try:
+                try:
+                    # Resolve to IPv4 to prevent [Errno 101] Network is unreachable on IPv6-unroutable cloud containers
+                    target_host = self.host
+                    try:
+                        gai = socket.getaddrinfo(self.host, p, socket.AF_INET, socket.SOCK_STREAM)
+                        if gai:
+                            target_host = gai[0][4][0]
+                    except Exception:
+                        target_host = self.host
+
+                    if p == 465:
+                        context = ssl.create_default_context()
+                        s = smtplib.SMTP_SSL(target_host, p, timeout=self.timeout, context=context)
+                    else:
+                        s = smtplib.SMTP(target_host, p, timeout=self.timeout)
+                        s.ehlo(self.host)
+                        context = ssl.create_default_context()
+                        s.starttls(context=context)
+                        s.ehlo(self.host)
+
+                    s.login(self.user, self.password)
+                    server = s
+                    break
+                except Exception as conn_e:
+                    last_conn_err = conn_e
+                    logger.warning(f"[SMTP_ADAPTER] Attempt on port {p} ({target_host}) failed: {conn_e}")
+                    server = None
+
+            if not server:
+                raise last_conn_err or Exception("Failed to establish SMTP connection")
+
+            with server:
+                server.send_message(msg)
 
             smtp_id = f"smtp_{uuid.uuid4().hex[:12]}"
             logger.info(f"[SMTP_ADAPTER] Successfully dispatched email to {to_email} via SMTP (id: {smtp_id})")
