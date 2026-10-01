@@ -293,29 +293,27 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => 
   };
 
   return (
-    <div className="min-h-screen bg-slate-950 pb-20 text-slate-100">
+    <View className="min-h-screen bg-slate-950 pb-20">
       {/* SpaceLoop Host Operating System Callout Banner */}
-      <div className="bg-slate-900/90 border-b border-slate-800/80 px-4 py-3">
+      <div className="bg-gradient-to-r from-amber-500/15 via-indigo-600/15 to-violet-600/15 border-b border-amber-500/30 px-4 py-3">
         <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-3">
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-lg bg-amber-500/10 text-amber-400 flex items-center justify-center font-bold text-sm border border-amber-500/20 shrink-0">
+            <span className="w-8 h-8 rounded-lg bg-amber-500/20 text-amber-300 flex items-center justify-center font-bold text-base border border-amber-500/40">
               🏡
-            </div>
+            </span>
             <div>
-              <div className="text-xs font-semibold text-white flex items-center gap-2">
+              <div className="text-xs font-bold text-white flex items-center gap-2">
                 SpaceLoop Host Operating System
-                <span className="px-1.5 py-0.5 rounded bg-amber-400/10 text-amber-300 text-[10px] font-mono font-medium border border-amber-400/20">
-                  Dedicated Portal
-                </span>
+                <span className="px-1.5 py-0.5 rounded bg-amber-400/20 text-amber-300 text-[10px] font-mono font-bold uppercase">Dedicated Portal</span>
               </div>
-              <p className="text-[11px] text-slate-400 mt-0.5">
+              <p className="text-[11px] text-slate-400">
                 Manage your spaces, check-in codes, live IoT telemetry, escrows, and instant UPI payouts in the Host OS.
               </p>
             </div>
           </div>
           <button
             onClick={() => navigate('/host')}
-            className="w-full sm:w-auto px-3.5 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-400 text-slate-950 font-semibold text-xs transition flex items-center justify-center gap-1.5 whitespace-nowrap cursor-pointer shrink-0 shadow-sm"
+            className="w-full sm:w-auto px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs shadow-lg shadow-amber-500/20 transition flex items-center justify-center gap-1.5 whitespace-nowrap cursor-pointer"
           >
             Launch Host Portal →
           </button>
@@ -323,238 +321,231 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => 
       </div>
 
       {/* Header Profile Summary */}
-      <div className="bg-slate-900/60 border-b border-slate-800/80 px-4 py-8">
-        <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
-          {/* User Identity Column */}
-          <div className="flex items-start sm:items-center gap-4">
+      <View className="bg-slate-900 border-b border-slate-800 px-4 py-8">
+        <View className="max-w-7xl mx-auto flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <View className="flex-row items-center gap-4">
             {currentUser?.avatar_url ? (
-              <img
-                src={currentUser.avatar_url}
-                alt={currentUser.name || 'User'}
-                className="w-14 h-14 rounded-xl object-cover border border-slate-700/80 shrink-0"
+              <Image
+                source={{ uri: currentUser.avatar_url }}
+                className="w-16 h-16 rounded-2xl object-cover border-2 border-indigo-500/40"
               />
             ) : (
-              <div className="w-14 h-14 rounded-xl bg-slate-800 border border-slate-700/80 flex items-center justify-center text-indigo-400 font-bold text-xl uppercase shrink-0">
+              <div className="w-16 h-16 rounded-2xl bg-indigo-950/80 border-2 border-indigo-500/40 flex items-center justify-center text-indigo-300 font-bold text-2xl uppercase shadow-inner">
                 {(currentUser?.name || currentUser?.email || 'U').charAt(0)}
               </div>
             )}
-            <div>
-              <div className="flex items-center gap-2.5">
-                <h1 className="text-xl font-bold text-white tracking-tight">
+            <View>
+              <View className="flex-row items-center gap-2">
+                <Text className="text-xl font-bold text-white">
                   {currentUser?.name || currentUser?.email?.split('@')[0] || 'Member'}
-                </h1>
-                <span className="px-2 py-0.5 rounded-md bg-indigo-500/10 border border-indigo-500/20 text-[10px] font-semibold text-indigo-300 uppercase tracking-wide">
-                  {currentUser?.role || (currentUser?.is_host ? 'Host' : 'Seeker')}
-                </span>
-              </div>
-              <p className="text-xs text-slate-400 mt-0.5">
+                </Text>
+                <View className="px-2 py-0.5 rounded-md bg-indigo-500/20 border border-indigo-500/30">
+                  <Text className="text-[10px] font-bold text-indigo-300 uppercase">
+                    {currentUser?.role || (currentUser?.is_host ? 'Host' : 'Seeker')}
+                  </Text>
+                </View>
+              </View>
+              <Text className="text-xs text-slate-400 mt-0.5">
                 {currentUser?.email || 'No email registered'}
-              </p>
-              
-              {/* Trust Badges & Verification Row */}
-              <div className="flex items-center gap-2 mt-2.5 flex-wrap">
-                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-emerald-500/10 border border-emerald-500/20 text-[11px] font-medium text-emerald-400">
-                  <span>✓</span> DigiLocker Verified
-                </span>
-                
-                <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-medium border ${
-                  userState?.is_email_verified 
-                    ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400' 
-                    : 'bg-amber-500/10 border-amber-500/20 text-amber-400'
-                }`}>
-                  <span>{userState?.is_email_verified ? '✓' : '⚠️'}</span>
-                  {userState?.is_email_verified ? 'Email Verified' : 'Email Unverified'}
-                </span>
-
-                <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-medium border ${
-                  userState?.mfa_enabled 
-                    ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400' 
-                    : 'bg-slate-800 border-slate-700/60 text-slate-400'
-                }`}>
-                  <span>{userState?.mfa_enabled ? '🔐' : '🔓'}</span>
-                  {userState?.mfa_enabled ? '2FA Active' : '2FA Off'}
-                </span>
-
-                <button
-                  type="button"
-                  onClick={() => setShowOtiBreakdown(!showOtiBreakdown)}
-                  className="inline-flex items-center gap-1.5 bg-indigo-500/10 hover:bg-indigo-500/20 border border-indigo-500/30 px-2.5 py-0.5 rounded-md transition text-xs cursor-pointer"
+              </Text>
+              <View className="flex-row items-center gap-2 mt-1 flex-wrap">
+                <Text className="text-[11px] text-emerald-400 font-medium">
+                  ✓ DigiLocker Verified
+                </Text>
+                <Text className="text-[11px] text-slate-500">•</Text>
+                <Text className={`text-[11px] font-medium ${userState?.is_email_verified ? 'text-emerald-400' : 'text-amber-400'}`}>
+                  {userState?.is_email_verified ? '✓ Email Verified' : '⚠️ Email Unverified'}
+                </Text>
+                <Text className="text-[11px] text-slate-500">•</Text>
+                <Text className={`text-[11px] font-medium ${userState?.mfa_enabled ? 'text-emerald-400' : 'text-slate-400'}`}>
+                  {userState?.mfa_enabled ? '🔐 2FA Active' : '🔓 2FA Off'}
+                </Text>
+                <Text className="text-[11px] text-slate-500">•</Text>
+                <Pressable
+                  onPress={() => setShowOtiBreakdown(!showOtiBreakdown)}
+                  className="flex-row items-center gap-1.5 bg-indigo-500/10 hover:bg-indigo-500/20 border border-indigo-500/30 px-2 py-0.5 rounded-md transition cursor-pointer"
                 >
-                  <span className="text-[11px] text-indigo-300 font-semibold">
+                  <Text className="text-[11px] text-indigo-300 font-bold">
                     OTI: {(currentUser as any)?.objective_trust_score ?? 98.5}/100
-                  </span>
-                  <span className="text-[10px] text-indigo-400 font-mono">
+                  </Text>
+                  <Text className="text-[10px] text-indigo-400 font-mono">
                     {showOtiBreakdown ? '▲ Hide' : '▼ 4 Pillars'}
-                  </span>
-                </button>
-              </div>
-            </div>
-          </div>
+                  </Text>
+                </Pressable>
+              </View>
+            </View>
+          </View>
 
-          {/* Quick Metrics Stat Cards */}
-          <div className="flex items-center gap-3 w-full md:w-auto">
+          {/* Quick Metrics */}
+          <View className="flex-row items-center gap-3">
             {activeTab === 'seeker' ? (
               <>
-                <div className="flex-1 md:flex-initial p-4 bg-slate-900 border border-slate-800 rounded-xl min-w-[130px]">
-                  <div className="text-[11px] font-medium text-slate-400 uppercase tracking-wider">Active Passes</div>
-                  <div className="text-2xl font-bold text-emerald-400 mt-1">
-                    {bookings.filter(b => b.status === 'confirmed').length}
-                  </div>
-                  <div className="text-[10px] text-slate-500 mt-0.5">Confirmed spaces</div>
-                </div>
-                <div className="flex-1 md:flex-initial p-4 bg-slate-900 border border-slate-800 rounded-xl min-w-[130px]">
-                  <div className="text-[11px] font-medium text-slate-400 uppercase tracking-wider">Micro-Escrow</div>
-                  <div className="text-2xl font-bold text-indigo-300 mt-1">
-                    ₹{bookings.filter(b => b.status === 'confirmed').reduce((acc, b) => acc + (b.deposit_held || 100), 0)}
-                  </div>
-                  <div className="text-[10px] text-slate-500 mt-0.5">Held in UPI escrow</div>
-                </div>
+                <View className="p-3.5 bg-slate-950 rounded-xl border border-slate-800 items-center min-w-[95px] floating-interactive">
+                  <Text className="text-[10px] text-slate-400 font-semibold">Active Passes</Text>
+                  <Text className="text-base font-black text-emerald-400">
+                    {bookings.filter(b => b.status === 'confirmed').length} Active
+                  </Text>
+                </View>
+                <View className="p-3.5 bg-slate-950 rounded-xl border border-slate-800 items-center min-w-[95px] floating-interactive">
+                  <Text className="text-[10px] text-slate-400 font-semibold">Micro-Escrow</Text>
+                  <Text className="text-base font-black text-indigo-400">
+                    ₹{bookings.filter(b => b.status === 'confirmed').reduce((acc, b) => acc + (b.deposit_held || 100), 0)} Held
+                  </Text>
+                </View>
               </>
             ) : (
               <>
-                <div className="flex-1 md:flex-initial p-4 bg-slate-900 border border-slate-800 rounded-xl min-w-[130px]">
-                  <div className="text-[11px] font-medium text-slate-400 uppercase tracking-wider">Net Earnings</div>
-                  <div className="text-2xl font-bold text-emerald-400 mt-1">
+                <View className="p-3.5 bg-slate-950 rounded-xl border border-slate-800 items-center min-w-[95px] floating-interactive">
+                  <Text className="text-[10px] text-slate-400 font-semibold">Net Earnings</Text>
+                  <Text className="text-base font-black text-emerald-400">
                     ₹{metrics?.net_earnings ?? 0}
-                  </div>
-                  <div className="text-[10px] text-slate-500 mt-0.5">Paid via UPI instant</div>
-                </div>
-                <div className="flex-1 md:flex-initial p-4 bg-slate-900 border border-slate-800 rounded-xl min-w-[130px]">
-                  <div className="text-[11px] font-medium text-slate-400 uppercase tracking-wider">Active Spaces</div>
-                  <div className="text-2xl font-bold text-indigo-300 mt-1">
-                    {hostSpaces.filter(s => s.is_active).length}
-                  </div>
-                  <div className="text-[10px] text-slate-500 mt-0.5">Listed & online</div>
-                </div>
+                  </Text>
+                </View>
+                <View className="p-3.5 bg-slate-950 rounded-xl border border-slate-800 items-center min-w-[95px] floating-interactive">
+                  <Text className="text-[10px] text-slate-400 font-semibold">Active Spaces</Text>
+                  <Text className="text-base font-black text-indigo-400">
+                    {hostSpaces.filter(s => s.is_active).length} Listed
+                  </Text>
+                </View>
               </>
             )}
-          </div>
-        </div>
+          </View>
+        </View>
 
         {/* Objective Trust Index 4-Pillar Breakdown Drawer */}
         {showOtiBreakdown && (
-          <div className="max-w-7xl mx-auto mt-6 pt-6 border-t border-slate-800 animate-fadeIn">
-            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-4 gap-2">
-              <div className="flex items-center gap-2.5">
-                <h3 className="text-sm font-semibold text-white">Objective Trust Index (OTI) Multi-Pillar Audit</h3>
-                <span className="px-2 py-0.5 rounded bg-emerald-500/10 border border-emerald-500/20 text-[10px] font-medium text-emerald-300">
-                  Grade AAA • Verified
-                </span>
-              </div>
-              <div className="text-[11px] font-mono text-slate-400">
+          <View className="max-w-7xl mx-auto mt-6 pt-6 border-t border-slate-800 animate-fadeIn">
+            <View className="flex-col sm:flex-row items-start sm:items-center justify-between mb-3 gap-2">
+              <View className="flex-row items-center gap-2">
+                <Text className="text-sm font-bold text-white">Objective Trust Index (OTI) Multi-Pillar Audit</Text>
+                <View className="px-2 py-0.5 rounded bg-emerald-500/20 border border-emerald-500/30">
+                  <Text className="text-[10px] font-bold text-emerald-300">Grade AAA • Verified</Text>
+                </View>
+              </View>
+              <Text className="text-[11px] font-mono text-slate-400">
                 Formula: 0.35·Punctual + 0.35·Condition + 0.20·Identity + 0.10·Dispute
-              </div>
-            </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-              <div className="p-3.5 bg-slate-900/90 border border-slate-800 rounded-xl">
-                <div className="flex items-center justify-between mb-1">
-                  <span className="text-xs font-medium text-slate-300">⏱️ Punctuality</span>
-                  <span className="text-xs font-mono font-semibold text-indigo-400">35% Weight</span>
-                </div>
-                <div className="text-xl font-bold text-white mb-1">100%</div>
-                <p className="text-[11px] text-slate-400 leading-tight">
+              </Text>
+            </View>
+            <View className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+              <View className="p-3.5 bg-slate-950/80 border border-slate-800 rounded-xl">
+                <View className="flex-row items-center justify-between mb-1">
+                  <Text className="text-xs font-semibold text-slate-300">⏱️ Punctuality</Text>
+                  <Text className="text-xs font-mono font-bold text-indigo-400">35% Weight</Text>
+                </View>
+                <Text className="text-xl font-black text-white mb-1">100%</Text>
+                <Text className="text-[10px] text-slate-400 leading-tight">
                   On-time checkout & zero overrun history verified via live session telemetry.
-                </p>
-              </div>
-              <div className="p-3.5 bg-slate-900/90 border border-slate-800 rounded-xl">
-                <div className="flex items-center justify-between mb-1">
-                  <span className="text-xs font-medium text-slate-300">🧹 Condition Match</span>
-                  <span className="text-xs font-mono font-semibold text-indigo-400">35% Weight</span>
-                </div>
-                <div className="text-xl font-bold text-emerald-400 mb-1">98%</div>
-                <p className="text-[11px] text-slate-400 leading-tight">
+                </Text>
+              </View>
+              <View className="p-3.5 bg-slate-950/80 border border-slate-800 rounded-xl">
+                <View className="flex-row items-center justify-between mb-1">
+                  <Text className="text-xs font-semibold text-slate-300">🧹 Condition Match</Text>
+                  <Text className="text-xs font-mono font-bold text-indigo-400">35% Weight</Text>
+                </View>
+                <Text className="text-xl font-black text-emerald-400 mb-1">98%</Text>
+                <Text className="text-[10px] text-slate-400 leading-tight">
                   Pre/post check-in vision scan delta confirms zero property damage or debris.
-                </p>
-              </div>
-              <div className="p-3.5 bg-slate-900/90 border border-slate-800 rounded-xl">
-                <div className="flex items-center justify-between mb-1">
-                  <span className="text-xs font-medium text-slate-300">🪪 Identity KYC</span>
-                  <span className="text-xs font-mono font-semibold text-indigo-400">20% Weight</span>
-                </div>
-                <div className="text-xl font-bold text-indigo-300 mb-1">100%</div>
-                <p className="text-[11px] text-slate-400 leading-tight">
+                </Text>
+              </View>
+              <View className="p-3.5 bg-slate-950/80 border border-slate-800 rounded-xl">
+                <View className="flex-row items-center justify-between mb-1">
+                  <Text className="text-xs font-semibold text-slate-300">🪪 Identity KYC</Text>
+                  <Text className="text-xs font-mono font-bold text-indigo-400">20% Weight</Text>
+                </View>
+                <Text className="text-xl font-black text-indigo-300 mb-1">100%</Text>
+                <Text className="text-[10px] text-slate-400 leading-tight">
                   DigiLocker verified Aadhaar/PAN + University institutional SSO active.
-                </p>
-              </div>
-              <div className="p-3.5 bg-slate-900/90 border border-slate-800 rounded-xl">
-                <div className="flex items-center justify-between mb-1">
-                  <span className="text-xs font-medium text-slate-300">🛡️ Dispute Free</span>
-                  <span className="text-xs font-mono font-semibold text-indigo-400">10% Weight</span>
-                </div>
-                <div className="text-xl font-bold text-emerald-400 mb-1">100%</div>
-                <p className="text-[11px] text-slate-400 leading-tight">
+                </Text>
+              </View>
+              <View className="p-3.5 bg-slate-950/80 border border-slate-800 rounded-xl">
+                <View className="flex-row items-center justify-between mb-1">
+                  <Text className="text-xs font-semibold text-slate-300">🛡️ Dispute Free</Text>
+                  <Text className="text-xs font-mono font-bold text-indigo-400">10% Weight</Text>
+                </View>
+                <Text className="text-xl font-black text-emerald-400 mb-1">100%</Text>
+                <Text className="text-[10px] text-slate-400 leading-tight">
                   0 micro-escrow claims or payment disputes across all bookings.
-                </p>
-              </div>
-            </div>
-          </div>
+                </Text>
+              </View>
+            </View>
+          </View>
         )}
-      </div>
+      </View>
 
       {/* Tabs */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-6">
-        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-800 pb-4 mb-6">
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => setActiveTab('seeker')}
-              className={`px-3.5 py-2 rounded-lg text-xs font-semibold transition cursor-pointer ${
-                activeTab === 'seeker'
-                  ? 'bg-slate-800 text-white shadow-sm border border-slate-700/80'
-                  : 'text-slate-400 hover:text-white hover:bg-slate-900'
+      <View className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-6">
+        <View className="flex-row items-center gap-3 border-b border-slate-800 pb-4 mb-6">
+          <Pressable
+            onPress={() => setActiveTab('seeker')}
+            className={`px-4 py-2 rounded-xl border text-xs font-bold transition ${
+              activeTab === 'seeker'
+                ? 'bg-indigo-600 border-indigo-400 text-white'
+                : 'bg-slate-900 border-slate-800 text-slate-400 hover:text-white'
+            }`}
+          >
+            <Text
+              className={`text-xs font-bold ${
+                activeTab === 'seeker' ? 'text-white' : 'text-slate-400'
               }`}
             >
               🎟️ My Bookings (Seeker)
-            </button>
+            </Text>
+          </Pressable>
 
-            <button
-              onClick={() => setActiveTab('security')}
-              className={`px-3.5 py-2 rounded-lg text-xs font-semibold transition cursor-pointer ${
-                activeTab === 'security'
-                  ? 'bg-slate-800 text-white shadow-sm border border-slate-700/80'
-                  : 'text-slate-400 hover:text-white hover:bg-slate-900'
+          <Pressable
+            onPress={() => setActiveTab('security')}
+            className={`px-4 py-2 rounded-xl border text-xs font-bold transition ${
+              activeTab === 'security'
+                ? 'bg-indigo-600 border-indigo-400 text-white'
+                : 'bg-slate-900 border-slate-800 text-slate-400 hover:text-white'
+            }`}
+          >
+            <Text
+              className={`text-xs font-bold ${
+                activeTab === 'security' ? 'text-white' : 'text-slate-400'
               }`}
             >
               🛡️ Security & Two-Factor Authentication
-            </button>
-          </div>
+            </Text>
+          </Pressable>
 
-          <button
-            onClick={() => navigate('/host')}
-            className="px-3.5 py-2 rounded-lg border border-amber-500/30 bg-amber-500/10 text-amber-300 hover:bg-amber-500/20 text-xs font-semibold transition flex items-center gap-1.5 cursor-pointer ml-auto"
+          <Pressable
+            onPress={() => navigate('/host')}
+            className="px-4 py-2 rounded-xl border border-amber-500/30 bg-amber-500/10 text-amber-300 hover:bg-amber-500/20 transition flex-row items-center gap-1.5 ml-auto cursor-pointer"
           >
-            <span>🏡 Switch to Host Operating System →</span>
-          </button>
-        </div>
+            <Text className="text-xs font-bold text-amber-300">
+              🏡 Switch to Host Operating System →
+            </Text>
+          </Pressable>
+        </View>
 
         {/* Tab 1: Seeker Bookings */}
         {activeTab === 'seeker' && (
-          <div className="space-y-4">
-            <div className="flex items-center justify-between mb-3">
-              <h2 className="text-base font-semibold text-white">Your Reserved Spaces</h2>
-              <button
-                onClick={() => navigate('/')}
-                className="text-xs text-indigo-400 hover:text-indigo-300 font-medium transition cursor-pointer"
+          <View className="space-y-4">
+            <View className="flex-row items-center justify-between mb-2">
+              <Text className="text-base font-bold text-white">Your Reserved Spaces</Text>
+              <Pressable
+                onPress={() => navigate('/')}
+                className="text-xs text-indigo-400 hover:underline"
               >
-                + Find New Space
-              </button>
-            </div>
+                <Text className="text-xs font-medium text-indigo-400">+ Find New Space</Text>
+              </Pressable>
+            </View>
 
             {bookings.length === 0 ? (
-              <div className="p-10 bg-slate-900 border border-slate-800 rounded-xl text-center flex flex-col items-center justify-center">
-                <div className="w-12 h-12 rounded-xl bg-slate-800/80 border border-slate-700/60 flex items-center justify-center text-xl mb-3">
-                  🎟️
-                </div>
-                <h3 className="text-sm font-bold text-white mb-1">No Active Bookings</h3>
-                <p className="text-xs text-slate-400 mb-5 max-w-sm">
-                  You haven't reserved any temporary spaces yet. Explore available study pods, desks, and meeting rooms nearby.
-                </p>
-                <button
-                  onClick={() => navigate('/')}
-                  className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-xs font-semibold transition shadow-sm cursor-pointer"
+              <View className="p-8 bg-slate-900 rounded-2xl border border-slate-800 text-center items-center floating-container">
+                <Text className="text-3xl mb-2">🎟️</Text>
+                <Text className="text-sm font-bold text-white mb-1">No active bookings</Text>
+                <Text className="text-xs text-slate-400 mb-4">
+                  You haven't reserved any temporary spaces yet.
+                </Text>
+                <Pressable
+                  onPress={() => navigate('/')}
+                  className="px-4 py-2 bg-indigo-600 rounded-xl"
                 >
-                  Explore Spaces
-                </button>
-              </div>
+                  <Text className="text-xs font-semibold text-white">Explore Spaces</Text>
+                </Pressable>
+              </View>
             ) : (
               bookings.map((b) => (
                 <View
@@ -660,7 +651,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => 
                 </View>
               )}
             </View>
-          </div>
+          </View>
         )}
 
         {/* Tab 2: Host Workspace & Listings */}
@@ -986,7 +977,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => 
             </View>
           </View>
         )}
-      </div>
+      </View>
 
       {/* MFA ENROLLMENT MODAL */}
       {showMfaEnrollModal && (
@@ -1297,7 +1288,6 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => 
           </div>
         </div>
       )}
-    </div>
+    </View>
   );
 };
-

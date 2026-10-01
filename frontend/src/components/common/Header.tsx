@@ -189,6 +189,14 @@ export const Header: React.FC<HeaderProps> = ({
                 <span>{t('nav.explore')}</span>
               </button>
               <button
+                onClick={() => navigate('/host')}
+                className="px-3 py-1.5 rounded-lg transition flex items-center gap-1.5 text-amber-300 hover:text-white hover:bg-amber-500/10 border border-amber-500/20 font-bold"
+                title="Launch SpaceLoop Host Operating System"
+              >
+                <i className="fa-solid fa-house-chimney-user text-amber-400" />
+                <span>Host Portal</span>
+              </button>
+              <button
                 onClick={() => navigate('/architecture')}
                 className={`px-3 py-1.5 rounded-lg transition flex items-center gap-1.5 ${
                   location.pathname === '/architecture'
@@ -220,7 +228,7 @@ export const Header: React.FC<HeaderProps> = ({
           <button
             type="button"
             onClick={toggleTheme}
-            className="inline-flex items-center justify-center gap-1.5 w-9 h-9 sm:w-auto sm:px-3 sm:py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-slate-300 hover:text-white border border-slate-800 text-xs font-medium transition shadow-sm shrink-0"
+            className="inline-flex items-center justify-center gap-1.5 w-9 h-9 sm:w-auto sm:px-3 sm:py-1.5 rounded-xl bg-slate-800/80 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700/60 text-xs font-bold transition shadow-sm shrink-0"
             title={theme === 'dark' ? 'Switch to Light Theme (Ocean Breeze)' : 'Switch to Dark Theme (Midnight Neon)'}
             aria-label="Toggle Theme"
           >
@@ -242,7 +250,7 @@ export const Header: React.FC<HeaderProps> = ({
             <button
               type="button"
               onClick={() => navigate('/explore')}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-slate-200 border border-slate-800 text-xs font-medium transition shrink-0"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-indigo-600/10 hover:bg-indigo-600/20 text-indigo-300 border border-indigo-500/30 text-xs font-bold transition shrink-0"
               title="Switch to Seeker Portal"
             >
               <span>🎓 <span className="hidden sm:inline">{t('nav.switchToSeeker')}</span><span className="sm:hidden">Seeker</span></span>
@@ -251,10 +259,10 @@ export const Header: React.FC<HeaderProps> = ({
             <button
               type="button"
               onClick={() => navigate('/host')}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-amber-300 hover:text-amber-200 border border-amber-500/30 text-xs font-semibold transition shrink-0"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-bold text-xs shadow-md shadow-amber-500/20 transition shrink-0"
               title="Launch SpaceLoop Host Operating System"
             >
-              <i className="fa-solid fa-house-chimney-user text-amber-400 text-xs" />
+              <i className="fa-solid fa-gauge-high text-[10px]" />
               <span>Host Portal</span>
             </button>
           )}
