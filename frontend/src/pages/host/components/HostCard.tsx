@@ -31,11 +31,11 @@ export const HostCard: React.FC<HostCardProps> = ({
 
   return (
     <div
-      className={`bg-slate-900 border border-slate-800 rounded-xl shadow-sm transition-all duration-200 overflow-hidden ${className}`}
+      className={`bg-slate-900/70 border border-slate-800/80 rounded-2xl shadow-sm transition-all duration-200 overflow-hidden ${className}`}
     >
       {hasHeader && (
         <div
-          className={`px-5 sm:px-6 py-3.5 border-b border-slate-800/80 flex items-center justify-between gap-4 flex-wrap ${headerClassName}`}
+          className={`px-5 sm:px-6 py-4 border-b border-slate-800/70 flex items-center justify-between gap-4 flex-wrap ${headerClassName}`}
         >
           <div className="flex items-center gap-3 min-w-0">
             {icon && (

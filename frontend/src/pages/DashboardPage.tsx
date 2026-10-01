@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { View, Text, Pressable, Image, ScrollView } from 'react-native';
 import { useNavigate } from 'react-router-dom';
 import { User, Booking, Space } from '../types';
 import { request } from '../services/api';
@@ -13,7 +14,7 @@ interface DashboardPageProps {
 export const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
   const navigate = useNavigate();
   const [userState, setUserState] = useState<User | null>(currentUser);
-  const [activeTab, setActiveTab] = useState<'seeker' | 'inquiries' | 'security'>('seeker');
+  const [activeTab, setActiveTab] = useState<'seeker' | 'host' | 'security'>('seeker');
 
   useEffect(() => {
     setUserState(currentUser);
@@ -54,11 +55,31 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => 
   const [inquiries, setInquiries] = useState<any[]>([]);
   const [showOtiBreakdown, setShowOtiBreakdown] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [seedingSpace, setSeedingSpace] = useState(false);
   const [cancelingId, setCancelingId] = useState<number | null>(null);
+  const [metrics, setMetrics] = useState<{
+    gross_revenue: number;
+    platform_fee: number;
+    net_earnings: number;
+    total_hours: number;
+    total_bookings: number;
+    active_spaces_count: number;
+    total_spaces_count: number;
+    upcoming_count: number;
+    completed_count: number;
+    payout_vpa: string;
+  } | null>(null);
+
+  useEffect(() => {
+    if (currentUser?.role === 'host') {
+      setActiveTab('host');
+    }
+  }, [currentUser]);
 
   const loadDashboardData = async () => {
     setLoading(true);
     try {
+      // Load real seeker bookings, incoming host reservations, and host properties from backend
       const dashData = await request<{
         success: boolean;
         bookings?: Booking[];
@@ -81,6 +102,14 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => 
 
       if (dashData?.host_spaces && dashData.host_spaces.length > 0) {
         setHostSpaces(dashData.host_spaces);
+      } else {
+        const spacesData = await request<{ spaces?: Space[] } | Space[]>('/api/spaces');
+        const allSpaces = Array.isArray(spacesData) ? spacesData : spacesData.spaces || [];
+        setHostSpaces(allSpaces.filter(s => currentUser ? s.owner_id === currentUser.id : true));
+      }
+
+      if (dashData?.host_metrics) {
+        setMetrics(dashData.host_metrics);
       }
 
       try {
@@ -92,8 +121,16 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => 
         console.warn('Failed to load inquiries:', e);
       }
     } catch (err) {
-      console.warn('Dashboard API call failed:', err);
+      console.warn('Dashboard API call failed or user unauthenticated:', err);
+      try {
+        const spacesData = await request<{ spaces?: Space[] } | Space[]>('/api/spaces');
+        const allSpaces = Array.isArray(spacesData) ? spacesData : spacesData.spaces || [];
+        setHostSpaces(allSpaces);
+      } catch (e) {
+        // ignore
+      }
       setBookings([]);
+      setHostBookings([]);
     } finally {
       setLoading(false);
     }
@@ -112,6 +149,33 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => 
       console.error('Cancellation failed:', err);
     } finally {
       setCancelingId(null);
+    }
+  };
+
+  const handleToggleStatus = async (spaceId: number) => {
+    try {
+      const res = await toggleSpaceStatus(spaceId);
+      setHostSpaces(
+        hostSpaces.map((s) => (s.id === spaceId ? { ...s, is_active: res.is_active } : s))
+      );
+    } catch (err) {
+      console.error('Failed to toggle status:', err);
+    }
+  };
+
+  const handleSeedSampleSpace = async () => {
+    setSeedingSpace(true);
+    try {
+      const res = await request<{ success: boolean; space: Space }>('/api/host/seed-sample-space', {
+        method: 'POST',
+      });
+      if (res.success && res.space) {
+        setHostSpaces(prev => [res.space, ...prev]);
+      }
+    } catch (err) {
+      console.error('Failed to seed sample space:', err);
+    } finally {
+      setSeedingSpace(false);
     }
   };
 
@@ -134,6 +198,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => 
     setMfaEnrollRecoveryCodes([]);
     setMfaEnrollStep('scan');
 
+    // Email verification gate check
     if (!userState?.is_email_verified) {
       setMfaEnrollError('Email verification is required before enrolling in Multi-Factor Authentication. Please verify your email first.');
       setShowMfaEnrollModal(true);
@@ -227,470 +292,643 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => 
     }
   };
 
-  const activeBookingsCount = bookings.filter(b => b.status === 'confirmed' || b.status === 'active').length;
-  const escrowHeldTotal = bookings.filter(b => b.status === 'confirmed' || b.status === 'active').reduce((acc, b) => acc + (b.deposit_held || 100), 0);
-
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col antialiased">
-      {/* 1. PROFILE HEADER SECTION */}
-      <section className="border-b border-slate-800/80 bg-slate-900/50 pt-8 pb-8">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
-            {/* User Identity Details */}
-            <div className="flex items-start sm:items-center gap-4">
-              {currentUser?.avatar_url ? (
-                <img
-                  src={currentUser.avatar_url}
-                  alt={currentUser.name || 'User Avatar'}
-                  className="w-16 h-16 rounded-xl object-cover border border-slate-700 shrink-0"
-                />
-              ) : (
-                <div className="w-16 h-16 rounded-xl bg-indigo-600/20 border border-indigo-500/30 flex items-center justify-center text-indigo-300 font-bold text-xl uppercase shrink-0">
-                  {(currentUser?.name || currentUser?.email || 'U').charAt(0)}
-                </div>
-              )}
-
-              <div className="space-y-1.5">
-                <div className="flex items-center gap-2.5 flex-wrap">
-                  <h1 className="text-xl sm:text-2xl font-bold text-white tracking-tight">
-                    {currentUser?.name || currentUser?.email?.split('@')[0] || 'Space Seeker'}
-                  </h1>
-                  <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">
-                    {currentUser?.role ? currentUser.role.toUpperCase() : 'SEEKER'}
-                  </span>
-                </div>
-
-                <p className="text-xs font-mono text-slate-400">
-                  {currentUser?.email || 'No email registered'}
-                </p>
-
-                {/* Trust and Verification Signals */}
-                <div className="flex items-center gap-2 pt-0.5 flex-wrap text-xs">
-                  <span className="inline-flex items-center gap-1 text-emerald-400 font-medium">
-                    <i className="fa-solid fa-circle-check text-[11px]" />
-                    <span>DigiLocker Verified</span>
-                  </span>
-                  <span className="text-slate-600">•</span>
-                  <span className={`inline-flex items-center gap-1 font-medium ${userState?.is_email_verified ? 'text-emerald-400' : 'text-amber-400'}`}>
-                    <i className={`fa-solid ${userState?.is_email_verified ? 'fa-envelope-circle-check' : 'fa-triangle-exclamation'} text-[11px]`} />
-                    <span>{userState?.is_email_verified ? 'Email Verified' : 'Email Unverified'}</span>
-                  </span>
-                  <span className="text-slate-600">•</span>
-                  <span className={`inline-flex items-center gap-1 font-medium ${userState?.mfa_enabled ? 'text-emerald-400' : 'text-slate-400'}`}>
-                    <i className={`fa-solid ${userState?.mfa_enabled ? 'fa-shield-halved text-emerald-400' : 'fa-lock-open'} text-[11px]`} />
-                    <span>{userState?.mfa_enabled ? '2FA Active' : '2FA Off'}</span>
-                  </span>
-                  <span className="text-slate-600">•</span>
-                  <button
-                    type="button"
-                    onClick={() => setShowOtiBreakdown(!showOtiBreakdown)}
-                    className="inline-flex items-center gap-1 text-xs font-semibold text-indigo-400 hover:text-indigo-300 transition"
-                  >
-                    <span>OTI Score: {(currentUser as any)?.objective_trust_score ?? 98.5}/100</span>
-                    <i className={`fa-solid ${showOtiBreakdown ? 'fa-chevron-up' : 'fa-chevron-down'} text-[10px]`} />
-                  </button>
-                </div>
+    <View className="min-h-screen bg-slate-950 pb-20">
+      {/* SpaceLoop Host Operating System Callout Banner */}
+      <div className="bg-gradient-to-r from-amber-500/15 via-indigo-600/15 to-violet-600/15 border-b border-amber-500/30 px-4 py-3">
+        <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <span className="w-8 h-8 rounded-lg bg-amber-500/20 text-amber-300 flex items-center justify-center font-bold text-base border border-amber-500/40">
+              🏡
+            </span>
+            <div>
+              <div className="text-xs font-bold text-white flex items-center gap-2">
+                SpaceLoop Host Operating System
+                <span className="px-1.5 py-0.5 rounded bg-amber-400/20 text-amber-300 text-[10px] font-mono font-bold uppercase">Dedicated Portal</span>
               </div>
-            </div>
-
-            {/* Quick Overview Metric Cards */}
-            <div className="grid grid-cols-2 gap-3 sm:w-auto">
-              <div className="p-4 rounded-xl bg-slate-900 border border-slate-800 text-left min-w-[130px]">
-                <div className="text-xs text-slate-400 font-medium flex items-center gap-1.5 mb-1">
-                  <span>🎟️</span>
-                  <span>Active Passes</span>
-                </div>
-                <div className="text-xl font-bold text-white">
-                  {activeBookingsCount}
-                </div>
-                <div className="text-[11px] text-emerald-400 font-medium mt-0.5">
-                  {activeBookingsCount === 1 ? '1 Pass Ready' : `${activeBookingsCount} Active`}
-                </div>
-              </div>
-
-              <div className="p-4 rounded-xl bg-slate-900 border border-slate-800 text-left min-w-[130px]">
-                <div className="text-xs text-slate-400 font-medium flex items-center gap-1.5 mb-1">
-                  <span>🛡️</span>
-                  <span>Micro-Escrow</span>
-                </div>
-                <div className="text-xl font-bold text-white">
-                  ₹{escrowHeldTotal}
-                </div>
-                <div className="text-[11px] text-indigo-400 font-medium mt-0.5">
-                  Refundable Held
-                </div>
-              </div>
+              <p className="text-[11px] text-slate-400">
+                Manage your spaces, check-in codes, live IoT telemetry, escrows, and instant UPI payouts in the Host OS.
+              </p>
             </div>
           </div>
-
-          {/* OTI Multi-Pillar Breakdown Accordion */}
-          {showOtiBreakdown && (
-            <div className="mt-6 pt-6 border-t border-slate-800/80 animate-fadeIn">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4">
-                <div className="flex items-center gap-2">
-                  <h3 className="text-sm font-bold text-white">Objective Trust Index (OTI) Multi-Pillar Audit</h3>
-                  <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
-                    Grade AAA • High Reliability
-                  </span>
-                </div>
-                <span className="text-[11px] font-mono text-slate-400">
-                  Weighted: 0.35·Punctual + 0.35·Condition + 0.20·Identity + 0.10·Dispute
-                </span>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-                <div className="p-3.5 bg-slate-900/80 border border-slate-800 rounded-xl">
-                  <div className="flex items-center justify-between mb-1">
-                    <span className="text-xs font-semibold text-slate-300">⏱️ Punctuality</span>
-                    <span className="text-[11px] font-mono text-indigo-400">35% Weight</span>
-                  </div>
-                  <div className="text-lg font-bold text-white mb-0.5">100%</div>
-                  <p className="text-[11px] text-slate-400 leading-normal">
-                    On-time checkout & zero overrun history verified via session telemetry.
-                  </p>
-                </div>
-
-                <div className="p-3.5 bg-slate-900/80 border border-slate-800 rounded-xl">
-                  <div className="flex items-center justify-between mb-1">
-                    <span className="text-xs font-semibold text-slate-300">🧹 Condition Match</span>
-                    <span className="text-[11px] font-mono text-indigo-400">35% Weight</span>
-                  </div>
-                  <div className="text-lg font-bold text-emerald-400 mb-0.5">98%</div>
-                  <p className="text-[11px] text-slate-400 leading-normal">
-                    Pre/post check-in vision scan delta confirms zero property damage.
-                  </p>
-                </div>
-
-                <div className="p-3.5 bg-slate-900/80 border border-slate-800 rounded-xl">
-                  <div className="flex items-center justify-between mb-1">
-                    <span className="text-xs font-semibold text-slate-300">🪪 Identity KYC</span>
-                    <span className="text-[11px] font-mono text-indigo-400">20% Weight</span>
-                  </div>
-                  <div className="text-lg font-bold text-indigo-300 mb-0.5">100%</div>
-                  <p className="text-[11px] text-slate-400 leading-normal">
-                    DigiLocker verified Aadhaar/PAN and institutional SSO active.
-                  </p>
-                </div>
-
-                <div className="p-3.5 bg-slate-900/80 border border-slate-800 rounded-xl">
-                  <div className="flex items-center justify-between mb-1">
-                    <span className="text-xs font-semibold text-slate-300">🛡️ Dispute Free</span>
-                    <span className="text-[11px] font-mono text-indigo-400">10% Weight</span>
-                  </div>
-                  <div className="text-lg font-bold text-emerald-400 mb-0.5">100%</div>
-                  <p className="text-[11px] text-slate-400 leading-normal">
-                    0 micro-escrow claims or payment disputes across all bookings.
-                  </p>
-                </div>
-              </div>
-            </div>
-          )}
-        </div>
-      </section>
-
-      {/* 2. NAVIGATION TABS & BODY */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex-1 w-full">
-        {/* Clean Segmented Tab Control */}
-        <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 border-b border-slate-800 pb-4 mb-6">
-          <div className="flex items-center gap-2 overflow-x-auto pb-1 sm:pb-0 scrollbar-none">
-            <button
-              type="button"
-              onClick={() => setActiveTab('seeker')}
-              className={`px-3.5 py-2 rounded-lg text-xs font-semibold transition whitespace-nowrap flex items-center gap-2 ${
-                activeTab === 'seeker'
-                  ? 'bg-indigo-600 text-white shadow-sm'
-                  : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
-              }`}
-            >
-              <i className="fa-solid fa-ticket text-xs" />
-              <span>My Bookings ({bookings.length})</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => setActiveTab('inquiries')}
-              className={`px-3.5 py-2 rounded-lg text-xs font-semibold transition whitespace-nowrap flex items-center gap-2 ${
-                activeTab === 'inquiries'
-                  ? 'bg-indigo-600 text-white shadow-sm'
-                  : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
-              }`}
-            >
-              <i className="fa-solid fa-comments text-xs" />
-              <span>Direct Inquiries ({inquiries.length})</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => setActiveTab('security')}
-              className={`px-3.5 py-2 rounded-lg text-xs font-semibold transition whitespace-nowrap flex items-center gap-2 ${
-                activeTab === 'security'
-                  ? 'bg-indigo-600 text-white shadow-sm'
-                  : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
-              }`}
-            >
-              <i className="fa-solid fa-shield-halved text-xs" />
-              <span>Security & 2FA</span>
-            </button>
-          </div>
-
-          {/* Quick Switch to Host Workspace */}
           <button
-            type="button"
             onClick={() => navigate('/host')}
-            className="inline-flex items-center justify-center gap-1.5 px-3.5 py-2 rounded-lg bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border border-amber-500/25 text-xs font-semibold transition self-start sm:self-auto"
+            className="w-full sm:w-auto px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs shadow-lg shadow-amber-500/20 transition flex items-center justify-center gap-1.5 whitespace-nowrap cursor-pointer"
           >
-            <span>🏡 Launch Host Operating System</span>
-            <i className="fa-solid fa-arrow-right text-[10px]" />
+            Launch Host Portal →
           </button>
         </div>
+      </div>
 
-        {/* TAB 1: RESERVED SPACES & BOOKINGS */}
+      {/* Header Profile Summary */}
+      <View className="bg-slate-900 border-b border-slate-800 px-4 py-8">
+        <View className="max-w-7xl mx-auto flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <View className="flex-row items-center gap-4">
+            {currentUser?.avatar_url ? (
+              <Image
+                source={{ uri: currentUser.avatar_url }}
+                className="w-16 h-16 rounded-2xl object-cover border-2 border-indigo-500/40"
+              />
+            ) : (
+              <div className="w-16 h-16 rounded-2xl bg-indigo-950/80 border-2 border-indigo-500/40 flex items-center justify-center text-indigo-300 font-bold text-2xl uppercase shadow-inner">
+                {(currentUser?.name || currentUser?.email || 'U').charAt(0)}
+              </div>
+            )}
+            <View>
+              <View className="flex-row items-center gap-2">
+                <Text className="text-xl font-bold text-white">
+                  {currentUser?.name || currentUser?.email?.split('@')[0] || 'Member'}
+                </Text>
+                <View className="px-2 py-0.5 rounded-md bg-indigo-500/20 border border-indigo-500/30">
+                  <Text className="text-[10px] font-bold text-indigo-300 uppercase">
+                    {currentUser?.role || (currentUser?.is_host ? 'Host' : 'Seeker')}
+                  </Text>
+                </View>
+              </View>
+              <Text className="text-xs text-slate-400 mt-0.5">
+                {currentUser?.email || 'No email registered'}
+              </Text>
+              <View className="flex-row items-center gap-2 mt-1 flex-wrap">
+                <Text className="text-[11px] text-emerald-400 font-medium">
+                  ✓ DigiLocker Verified
+                </Text>
+                <Text className="text-[11px] text-slate-500">•</Text>
+                <Text className={`text-[11px] font-medium ${userState?.is_email_verified ? 'text-emerald-400' : 'text-amber-400'}`}>
+                  {userState?.is_email_verified ? '✓ Email Verified' : '⚠️ Email Unverified'}
+                </Text>
+                <Text className="text-[11px] text-slate-500">•</Text>
+                <Text className={`text-[11px] font-medium ${userState?.mfa_enabled ? 'text-emerald-400' : 'text-slate-400'}`}>
+                  {userState?.mfa_enabled ? '🔐 2FA Active' : '🔓 2FA Off'}
+                </Text>
+                <Text className="text-[11px] text-slate-500">•</Text>
+                <Pressable
+                  onPress={() => setShowOtiBreakdown(!showOtiBreakdown)}
+                  className="flex-row items-center gap-1.5 bg-indigo-500/10 hover:bg-indigo-500/20 border border-indigo-500/30 px-2 py-0.5 rounded-md transition cursor-pointer"
+                >
+                  <Text className="text-[11px] text-indigo-300 font-bold">
+                    OTI: {(currentUser as any)?.objective_trust_score ?? 98.5}/100
+                  </Text>
+                  <Text className="text-[10px] text-indigo-400 font-mono">
+                    {showOtiBreakdown ? '▲ Hide' : '▼ 4 Pillars'}
+                  </Text>
+                </Pressable>
+              </View>
+            </View>
+          </View>
+
+          {/* Quick Metrics */}
+          <View className="flex-row items-center gap-3">
+            {activeTab === 'seeker' ? (
+              <>
+                <View className="p-3.5 bg-slate-950 rounded-xl border border-slate-800 items-center min-w-[95px] floating-interactive">
+                  <Text className="text-[10px] text-slate-400 font-semibold">Active Passes</Text>
+                  <Text className="text-base font-black text-emerald-400">
+                    {bookings.filter(b => b.status === 'confirmed').length} Active
+                  </Text>
+                </View>
+                <View className="p-3.5 bg-slate-950 rounded-xl border border-slate-800 items-center min-w-[95px] floating-interactive">
+                  <Text className="text-[10px] text-slate-400 font-semibold">Micro-Escrow</Text>
+                  <Text className="text-base font-black text-indigo-400">
+                    ₹{bookings.filter(b => b.status === 'confirmed').reduce((acc, b) => acc + (b.deposit_held || 100), 0)} Held
+                  </Text>
+                </View>
+              </>
+            ) : (
+              <>
+                <View className="p-3.5 bg-slate-950 rounded-xl border border-slate-800 items-center min-w-[95px] floating-interactive">
+                  <Text className="text-[10px] text-slate-400 font-semibold">Net Earnings</Text>
+                  <Text className="text-base font-black text-emerald-400">
+                    ₹{metrics?.net_earnings ?? 0}
+                  </Text>
+                </View>
+                <View className="p-3.5 bg-slate-950 rounded-xl border border-slate-800 items-center min-w-[95px] floating-interactive">
+                  <Text className="text-[10px] text-slate-400 font-semibold">Active Spaces</Text>
+                  <Text className="text-base font-black text-indigo-400">
+                    {hostSpaces.filter(s => s.is_active).length} Listed
+                  </Text>
+                </View>
+              </>
+            )}
+          </View>
+        </View>
+
+        {/* Objective Trust Index 4-Pillar Breakdown Drawer */}
+        {showOtiBreakdown && (
+          <View className="max-w-7xl mx-auto mt-6 pt-6 border-t border-slate-800 animate-fadeIn">
+            <View className="flex-col sm:flex-row items-start sm:items-center justify-between mb-3 gap-2">
+              <View className="flex-row items-center gap-2">
+                <Text className="text-sm font-bold text-white">Objective Trust Index (OTI) Multi-Pillar Audit</Text>
+                <View className="px-2 py-0.5 rounded bg-emerald-500/20 border border-emerald-500/30">
+                  <Text className="text-[10px] font-bold text-emerald-300">Grade AAA • Verified</Text>
+                </View>
+              </View>
+              <Text className="text-[11px] font-mono text-slate-400">
+                Formula: 0.35·Punctual + 0.35·Condition + 0.20·Identity + 0.10·Dispute
+              </Text>
+            </View>
+            <View className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+              <View className="p-3.5 bg-slate-950/80 border border-slate-800 rounded-xl">
+                <View className="flex-row items-center justify-between mb-1">
+                  <Text className="text-xs font-semibold text-slate-300">⏱️ Punctuality</Text>
+                  <Text className="text-xs font-mono font-bold text-indigo-400">35% Weight</Text>
+                </View>
+                <Text className="text-xl font-black text-white mb-1">100%</Text>
+                <Text className="text-[10px] text-slate-400 leading-tight">
+                  On-time checkout & zero overrun history verified via live session telemetry.
+                </Text>
+              </View>
+              <View className="p-3.5 bg-slate-950/80 border border-slate-800 rounded-xl">
+                <View className="flex-row items-center justify-between mb-1">
+                  <Text className="text-xs font-semibold text-slate-300">🧹 Condition Match</Text>
+                  <Text className="text-xs font-mono font-bold text-indigo-400">35% Weight</Text>
+                </View>
+                <Text className="text-xl font-black text-emerald-400 mb-1">98%</Text>
+                <Text className="text-[10px] text-slate-400 leading-tight">
+                  Pre/post check-in vision scan delta confirms zero property damage or debris.
+                </Text>
+              </View>
+              <View className="p-3.5 bg-slate-950/80 border border-slate-800 rounded-xl">
+                <View className="flex-row items-center justify-between mb-1">
+                  <Text className="text-xs font-semibold text-slate-300">🪪 Identity KYC</Text>
+                  <Text className="text-xs font-mono font-bold text-indigo-400">20% Weight</Text>
+                </View>
+                <Text className="text-xl font-black text-indigo-300 mb-1">100%</Text>
+                <Text className="text-[10px] text-slate-400 leading-tight">
+                  DigiLocker verified Aadhaar/PAN + University institutional SSO active.
+                </Text>
+              </View>
+              <View className="p-3.5 bg-slate-950/80 border border-slate-800 rounded-xl">
+                <View className="flex-row items-center justify-between mb-1">
+                  <Text className="text-xs font-semibold text-slate-300">🛡️ Dispute Free</Text>
+                  <Text className="text-xs font-mono font-bold text-indigo-400">10% Weight</Text>
+                </View>
+                <Text className="text-xl font-black text-emerald-400 mb-1">100%</Text>
+                <Text className="text-[10px] text-slate-400 leading-tight">
+                  0 micro-escrow claims or payment disputes across all bookings.
+                </Text>
+              </View>
+            </View>
+          </View>
+        )}
+      </View>
+
+      {/* Tabs */}
+      <View className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-6">
+        <View className="flex-row items-center gap-3 border-b border-slate-800 pb-4 mb-6">
+          <Pressable
+            onPress={() => setActiveTab('seeker')}
+            className={`px-4 py-2 rounded-xl border text-xs font-bold transition ${
+              activeTab === 'seeker'
+                ? 'bg-indigo-600 border-indigo-400 text-white'
+                : 'bg-slate-900 border-slate-800 text-slate-400 hover:text-white'
+            }`}
+          >
+            <Text
+              className={`text-xs font-bold ${
+                activeTab === 'seeker' ? 'text-white' : 'text-slate-400'
+              }`}
+            >
+              🎟️ My Bookings (Seeker)
+            </Text>
+          </Pressable>
+
+          <Pressable
+            onPress={() => setActiveTab('security')}
+            className={`px-4 py-2 rounded-xl border text-xs font-bold transition ${
+              activeTab === 'security'
+                ? 'bg-indigo-600 border-indigo-400 text-white'
+                : 'bg-slate-900 border-slate-800 text-slate-400 hover:text-white'
+            }`}
+          >
+            <Text
+              className={`text-xs font-bold ${
+                activeTab === 'security' ? 'text-white' : 'text-slate-400'
+              }`}
+            >
+              🛡️ Security & Two-Factor Authentication
+            </Text>
+          </Pressable>
+
+          <Pressable
+            onPress={() => navigate('/host')}
+            className="px-4 py-2 rounded-xl border border-amber-500/30 bg-amber-500/10 text-amber-300 hover:bg-amber-500/20 transition flex-row items-center gap-1.5 ml-auto cursor-pointer"
+          >
+            <Text className="text-xs font-bold text-amber-300">
+              🏡 Switch to Host Operating System →
+            </Text>
+          </Pressable>
+        </View>
+
+        {/* Tab 1: Seeker Bookings */}
         {activeTab === 'seeker' && (
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <h2 className="text-base font-bold text-white">Your Reserved Spaces</h2>
-                <p className="text-xs text-slate-400">Manage active hourly sessions, door passes, and booking history.</p>
-              </div>
-              <button
-                type="button"
-                onClick={() => navigate('/explore')}
-                className="text-xs font-semibold text-indigo-400 hover:text-indigo-300 transition flex items-center gap-1"
+          <View className="space-y-4">
+            <View className="flex-row items-center justify-between mb-2">
+              <Text className="text-base font-bold text-white">Your Reserved Spaces</Text>
+              <Pressable
+                onPress={() => navigate('/')}
+                className="text-xs text-indigo-400 hover:underline"
               >
-                <span>+ Find New Space</span>
-              </button>
-            </div>
+                <Text className="text-xs font-medium text-indigo-400">+ Find New Space</Text>
+              </Pressable>
+            </View>
 
-            {loading ? (
-              <div className="py-16 flex flex-col items-center justify-center">
-                <div className="w-8 h-8 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin mb-3" />
-                <p className="text-xs text-slate-400">Loading your reservations...</p>
-              </div>
-            ) : bookings.length === 0 ? (
-              <div className="p-10 rounded-2xl bg-slate-900/60 border border-slate-800 text-center flex flex-col items-center max-w-lg mx-auto my-6">
-                <div className="w-12 h-12 rounded-xl bg-slate-800 flex items-center justify-center text-xl mb-3 text-slate-300">
-                  🎟️
-                </div>
-                <h3 className="text-base font-bold text-white mb-1">No Active Bookings</h3>
-                <p className="text-xs text-slate-400 mb-5 leading-relaxed">
-                  You haven't reserved any temporary spaces yet. Discover quiet study desks, meeting rooms, maker bays, and creative studios nearby.
-                </p>
-                <button
-                  type="button"
-                  onClick={() => navigate('/explore')}
-                  className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold rounded-lg shadow-sm transition"
+            {bookings.length === 0 ? (
+              <View className="p-8 bg-slate-900 rounded-2xl border border-slate-800 text-center items-center floating-container">
+                <Text className="text-3xl mb-2">🎟️</Text>
+                <Text className="text-sm font-bold text-white mb-1">No active bookings</Text>
+                <Text className="text-xs text-slate-400 mb-4">
+                  You haven't reserved any temporary spaces yet.
+                </Text>
+                <Pressable
+                  onPress={() => navigate('/')}
+                  className="px-4 py-2 bg-indigo-600 rounded-xl"
                 >
-                  Explore Spaces
-                </button>
-              </div>
+                  <Text className="text-xs font-semibold text-white">Explore Spaces</Text>
+                </Pressable>
+              </View>
             ) : (
-              <div className="space-y-3">
-                {bookings.map((b) => (
-                  <div
-                    key={b.id}
-                    className="p-4 rounded-xl bg-slate-900 border border-slate-800 hover:border-slate-700 transition flex flex-col md:flex-row md:items-center justify-between gap-4"
-                  >
-                    <div className="flex items-center gap-4 flex-1">
-                      <img
-                        src={
+              bookings.map((b) => (
+                <View
+                  key={b.id}
+                  className="p-5 bg-slate-900 border border-slate-800 rounded-2xl flex-col md:flex-row items-start md:items-center justify-between gap-4 floating-interactive"
+                >
+                  <View className="flex-row items-center gap-4 flex-1">
+                    <Image
+                      source={{
+                        uri:
                           b.space_photo ||
-                          'https://images.unsplash.com/photo-1598488035139-bdbb2231ce04?auto=format&fit=crop&w=400&q=80'
-                        }
-                        alt={b.space_title}
-                        className="w-16 h-16 rounded-lg object-cover shrink-0 border border-slate-800"
-                      />
-                      <div className="space-y-1">
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <h4 className="text-sm font-bold text-white">{b.space_title}</h4>
-                          <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider ${
-                            b.status === 'confirmed' || b.status === 'active'
-                              ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30'
-                              : 'bg-slate-800 text-slate-400 border border-slate-700'
-                          }`}>
+                          'https://images.unsplash.com/photo-1598488035139-bdbb2231ce04?auto=format&fit=crop&w=400&q=80',
+                      }}
+                      className="w-20 h-20 rounded-xl object-cover"
+                    />
+                    <View>
+                      <View className="flex-row items-center gap-2 mb-1">
+                        <Text className="text-base font-bold text-white">{b.space_title}</Text>
+                        <View className="px-2 py-0.5 rounded bg-emerald-500/20 border border-emerald-500/40">
+                          <Text className="text-[10px] font-bold text-emerald-300 uppercase">
                             {b.status}
-                          </span>
-                        </div>
-                        <p className="text-xs text-slate-400">{b.space_address}</p>
-                        <p className="text-xs font-medium text-slate-300">
-                          Total: <strong className="text-white">₹{b.total_price}</strong> • Deposit: ₹{b.deposit_held || 100} Held
-                        </p>
-                      </div>
-                    </div>
+                          </Text>
+                        </View>
+                      </View>
+                      <Text className="text-xs text-slate-400 mb-1">{b.space_address}</Text>
+                      <Text className="text-xs font-semibold text-indigo-300">
+                        Total: ₹{b.total_price} (₹{b.deposit_held} Deposit Escrow Held)
+                      </Text>
+                    </View>
+                  </View>
 
-                    <div className="flex items-center gap-2 self-stretch md:self-auto justify-end">
-                      <button
-                        type="button"
-                        onClick={() => navigate(`/session/${b.id}`)}
-                        className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-xs font-semibold transition flex items-center gap-1.5 shadow-sm"
+                  <View className="flex-row items-center gap-2 self-stretch md:self-auto justify-end">
+                    <Pressable
+                      onPress={() => navigate(`/session/${b.id}`)}
+                      className="px-4 py-2.5 bg-indigo-600 hover:bg-indigo-500 rounded-xl transition"
+                    >
+                      <Text className="text-xs font-bold text-white">📱 Digital Door Pass →</Text>
+                    </Pressable>
+
+                    {b.status !== 'cancelled' && b.status !== 'completed' && (
+                      <Pressable
+                        onPress={() => handleCancelBooking(b.id)}
+                        disabled={cancelingId === b.id}
+                        className="px-3 py-2.5 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-xl transition"
                       >
-                        <i className="fa-solid fa-mobile-screen text-xs" />
-                        <span>Digital Door Pass</span>
-                      </button>
-
-                      {b.status !== 'cancelled' && b.status !== 'completed' && (
-                        <button
-                          type="button"
-                          onClick={() => handleCancelBooking(b.id)}
-                          disabled={cancelingId === b.id}
-                          className="px-3 py-2 bg-slate-800 hover:bg-slate-700 border border-slate-700 text-rose-300 rounded-lg text-xs font-medium transition"
-                        >
+                        <Text className="text-xs font-medium text-rose-300">
                           {cancelingId === b.id ? 'Canceling...' : 'Cancel'}
-                        </button>
+                        </Text>
+                      </Pressable>
+                    )}
+                  </View>
+                </View>
+              ))
+            )}
+
+            {/* Direct Inquiries Sent to Hosts */}
+            <View className="mt-8 pt-6 border-t border-slate-800/80">
+              <View className="flex-row items-center justify-between mb-3">
+                <View>
+                  <Text className="text-base font-bold text-white">Direct Host Inquiries</Text>
+                  <Text className="text-xs text-slate-400">Questions you asked hosts with instant AI-grounded answers</Text>
+                </View>
+                {inquiries.length > 0 && (
+                  <View className="px-2.5 py-1 rounded-lg bg-indigo-500/20 border border-indigo-500/30">
+                    <Text className="text-xs font-bold text-indigo-300">
+                      {inquiries.length} {inquiries.length === 1 ? 'Inquiry' : 'Inquiries'}
+                    </Text>
+                  </View>
+                )}
+              </View>
+
+              {inquiries.length === 0 ? (
+                <View className="p-6 bg-slate-900 border border-slate-800 rounded-2xl items-center text-center">
+                  <Text className="text-2xl mb-1">💬</Text>
+                  <Text className="text-sm font-bold text-white mb-0.5">No Inquiries Sent Yet</Text>
+                  <Text className="text-xs text-slate-400 max-w-md">
+                    Have questions about noise levels, dual monitors, or WiFi speeds? Ask directly on any space detail page to get an instant AI grounded reply.
+                  </Text>
+                </View>
+              ) : (
+                <View className="space-y-3">
+                  {inquiries.map((inq: any) => (
+                    <View key={inq.id} className="p-4 bg-slate-900 border border-slate-800 rounded-2xl floating-interactive">
+                      <View className="flex-row items-center justify-between mb-2">
+                        <Text className="text-xs font-bold text-indigo-400">Space #{inq.space_id} Inquiry</Text>
+                        <Text className="text-[10px] text-slate-500">{new Date(inq.created_at).toLocaleDateString()}</Text>
+                      </View>
+                      <Text className="text-xs font-semibold text-white mb-2">Q: {inq.question}</Text>
+                      {inq.ai_response && (
+                        <View className="p-3 bg-slate-950 border border-slate-800/80 rounded-xl mb-2">
+                          <Text className="text-[10px] font-bold text-indigo-300 mb-0.5">🤖 AI Instant Answer:</Text>
+                          <Text className="text-xs text-slate-300 leading-relaxed">{inq.ai_response}</Text>
+                        </View>
                       )}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
+                      {inq.response && (
+                        <View className="p-3 bg-emerald-950/30 border border-emerald-500/20 rounded-xl">
+                          <Text className="text-[10px] font-bold text-emerald-400 mb-0.5">👤 Host Response:</Text>
+                          <Text className="text-xs text-slate-300 leading-relaxed">{inq.response}</Text>
+                        </View>
+                      )}
+                    </View>
+                  ))}
+                </View>
+              )}
+            </View>
+          </View>
         )}
 
-        {/* TAB 2: DIRECT HOST INQUIRIES */}
-        {activeTab === 'inquiries' && (
-          <div className="space-y-4">
-            <div>
-              <h2 className="text-base font-bold text-white">Direct Host Inquiries</h2>
-              <p className="text-xs text-slate-400">Questions you asked hosts with instant AI answers and host responses.</p>
-            </div>
+        {/* Tab 2: Host Workspace & Listings */}
+        {activeTab === 'host' && (
+          <View className="space-y-6">
+            {/* Host IoT Mesh & Connectivity Telemetry Banner */}
+            <View className="p-4 bg-emerald-950/40 border border-emerald-500/30 rounded-2xl flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+              <View className="flex-row items-center gap-3">
+                <View className="w-3 h-3 rounded-full bg-emerald-400" />
+                <View>
+                  <Text className="text-xs font-bold text-emerald-300">
+                    Host Access & IoT Connectivity Mesh: ONLINE (14ms Latency)
+                  </Text>
+                  <Text className="text-[11px] text-slate-400">
+                    ESP32 Bluetooth Mesh Synced • Door Relay Online • Geofence armed (25m) • Micro-Escrow UPI Active
+                  </Text>
+                </View>
+              </View>
+              <View className="flex-row items-center gap-2">
+                <View className="px-2 py-0.5 rounded bg-emerald-500/20 border border-emerald-500/30">
+                  <Text className="text-[10px] font-bold text-emerald-300 uppercase">Hardware 99.9%</Text>
+                </View>
+              </View>
+            </View>
 
-            {inquiries.length === 0 ? (
-              <div className="p-10 rounded-2xl bg-slate-900/60 border border-slate-800 text-center flex flex-col items-center max-w-lg mx-auto my-6">
-                <div className="w-12 h-12 rounded-xl bg-slate-800 flex items-center justify-center text-xl mb-3 text-slate-300">
-                  💬
-                </div>
-                <h3 className="text-base font-bold text-white mb-1">No Inquiries Sent Yet</h3>
-                <p className="text-xs text-slate-400 max-w-sm mb-4 leading-relaxed">
-                  Have questions about WiFi speeds, noise levels, or equipment? Ask directly on any space detail page to get an instant AI-grounded reply.
-                </p>
-                <button
-                  type="button"
-                  onClick={() => navigate('/explore')}
-                  className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold rounded-lg transition"
-                >
-                  Browse Spaces
-                </button>
-              </div>
-            ) : (
-              <div className="space-y-3">
-                {inquiries.map((inq: any) => (
-                  <div key={inq.id} className="p-4 rounded-xl bg-slate-900 border border-slate-800 space-y-3">
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs font-bold text-indigo-400">Space #{inq.space_id} Inquiry</span>
-                      <span className="text-[11px] text-slate-500">{new Date(inq.created_at).toLocaleDateString()}</span>
-                    </div>
+            {/* Section A: Incoming Guest Reservations */}
+            <View>
+              <View className="flex-row items-center justify-between mb-3">
+                <View>
+                  <Text className="text-base font-bold text-white">Incoming Guest Reservations</Text>
+                  <Text className="text-xs text-slate-400">Bookings placed on your spaces with held escrow deposits</Text>
+                </View>
+                <View className="px-2.5 py-1 rounded-lg bg-indigo-500/20 border border-indigo-500/30">
+                  <Text className="text-xs font-bold text-indigo-300">
+                    {hostBookings.length} {hostBookings.length === 1 ? 'Booking' : 'Bookings'}
+                  </Text>
+                </View>
+              </View>
 
-                    <p className="text-xs font-semibold text-white">Q: {inq.question}</p>
+              {hostBookings.length === 0 ? (
+                <View className="p-6 bg-slate-900 border border-slate-800 rounded-2xl items-center text-center">
+                  <Text className="text-2xl mb-1">📅</Text>
+                  <Text className="text-sm font-bold text-white mb-0.5">No Guest Reservations Yet</Text>
+                  <Text className="text-xs text-slate-400 max-w-md">
+                    When seekers book your active spaces, their reservation details, access codes, and automated payout escrow will appear here.
+                  </Text>
+                </View>
+              ) : (
+                <View className="space-y-3">
+                  {hostBookings.map((hb) => (
+                    <View
+                      key={hb.id}
+                      className="p-4 bg-slate-900 border border-slate-800 rounded-2xl flex-col sm:flex-row items-start sm:items-center justify-between gap-3 floating-interactive"
+                    >
+                      <View className="flex-row items-center gap-3">
+                        <View className="w-10 h-10 rounded-xl bg-indigo-600/20 border border-indigo-500/30 items-center justify-center">
+                          <Text className="text-base">🎟️</Text>
+                        </View>
+                        <View>
+                          <View className="flex-row items-center gap-2">
+                            <Text className="text-sm font-bold text-white">
+                              {hb.seeker_name || 'Verified Seeker'}
+                            </Text>
+                            <View className="px-2 py-0.5 rounded bg-emerald-500/20 border border-emerald-500/30">
+                              <Text className="text-[10px] font-bold text-emerald-300 uppercase">
+                                {hb.status}
+                              </Text>
+                            </View>
+                          </View>
+                          <Text className="text-xs text-slate-400">
+                            {hb.space_title || 'Space Listing'} • {hb.hours_booked || 1} hrs
+                          </Text>
+                        </View>
+                      </View>
 
-                    {inq.ai_response && (
-                      <div className="p-3 bg-slate-950 border border-slate-800/80 rounded-lg">
-                        <div className="text-[10px] font-bold text-indigo-300 mb-1 flex items-center gap-1">
-                          <i className="fa-solid fa-robot" />
-                          <span>AI Instant Answer:</span>
-                        </div>
-                        <p className="text-xs text-slate-300 leading-relaxed">{inq.ai_response}</p>
-                      </div>
-                    )}
+                      <View className="flex-row items-center gap-4 self-stretch sm:self-auto justify-between sm:justify-end">
+                        <View className="text-right">
+                          <Text className="text-sm font-bold text-emerald-400">₹{hb.total_price}</Text>
+                          <Text className="text-[10px] text-slate-400">
+                            Deposit: ₹{hb.deposit_held || 100} Held
+                          </Text>
+                        </View>
+                        <Pressable
+                          onPress={() => navigate(`/session/${hb.id}`)}
+                          className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-xl transition"
+                        >
+                          <Text className="text-xs font-semibold text-indigo-300">View Pass →</Text>
+                        </Pressable>
+                      </View>
+                    </View>
+                  ))}
+                </View>
+              )}
+            </View>
 
-                    {inq.response && (
-                      <div className="p-3 bg-emerald-950/30 border border-emerald-500/20 rounded-lg">
-                        <div className="text-[10px] font-bold text-emerald-400 mb-1 flex items-center gap-1">
-                          <i className="fa-solid fa-user-tie" />
-                          <span>Host Response:</span>
-                        </div>
-                        <p className="text-xs text-slate-300 leading-relaxed">{inq.response}</p>
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
+            {/* Section B: Listed Spaces Portfolio */}
+            <View>
+              <View className="flex-row items-center justify-between mb-3">
+                <View>
+                  <Text className="text-base font-bold text-white">Your Listed Properties</Text>
+                  <Text className="text-xs text-slate-400">Manage active spaces, pricing, and availability</Text>
+                </View>
+                <View className="flex-row items-center gap-2">
+                  <Pressable
+                    onPress={() => navigate('/list-space')}
+                    className="px-3.5 py-1.5 bg-indigo-600 hover:bg-indigo-500 rounded-xl shadow-md transition"
+                  >
+                    <Text className="text-xs font-bold text-white">+ List New Space</Text>
+                  </Pressable>
+                </View>
+              </View>
+
+              {hostSpaces.length === 0 ? (
+                <View className="p-8 bg-slate-900 border border-slate-800 rounded-2xl items-center text-center floating-container">
+                  <Text className="text-3xl mb-2">🏠</Text>
+                  <Text className="text-sm font-bold text-white mb-1">No Listed Spaces Found</Text>
+                  <Text className="text-xs text-slate-400 mb-4 max-w-sm">
+                    Monetize your unused square footage. List a room, study desk, or studio in under 2 minutes.
+                  </Text>
+                  <View className="flex-row items-center gap-3">
+                    <Pressable
+                      onPress={handleSeedSampleSpace}
+                      disabled={seedingSpace}
+                      className="px-4 py-2 bg-slate-800 border border-slate-700 rounded-xl"
+                    >
+                      <Text className="text-xs font-bold text-indigo-300">
+                        {seedingSpace ? 'Generating Pod...' : '⚡ Seed Turnkey Pod'}
+                      </Text>
+                    </Pressable>
+                    <Pressable
+                      onPress={() => navigate('/list-space')}
+                      className="px-4 py-2 bg-indigo-600 rounded-xl"
+                    >
+                      <Text className="text-xs font-bold text-white">List Your First Space</Text>
+                    </Pressable>
+                  </View>
+                </View>
+              ) : (
+                <View className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {hostSpaces.map((space) => (
+                    <View
+                      key={space.id}
+                      className="p-4 bg-slate-900 border border-slate-800 rounded-2xl flex-row items-center justify-between gap-4 floating-interactive"
+                    >
+                      <View className="flex-row items-center gap-3 flex-1">
+                        <Image
+                          source={{
+                            uri:
+                              space.photos && space.photos.length > 0
+                                ? space.photos[0]
+                                : 'https://images.unsplash.com/photo-1513694203232-719a280e022f?auto=format&fit=crop&w=400&q=80',
+                          }}
+                          className="w-16 h-16 rounded-xl object-cover"
+                        />
+                        <View className="flex-1">
+                          <Text className="text-sm font-bold text-white" numberOfLines={1}>
+                            {space.title}
+                          </Text>
+                          <Text className="text-xs text-slate-400 mb-1">
+                            ₹{space.hourly_rate || space.price_hourly}/hr • {space.location || space.city}
+                          </Text>
+                          <View className="flex-row items-center gap-1.5">
+                            <View
+                              className={`w-2 h-2 rounded-full ${
+                                space.is_active ? 'bg-emerald-400' : 'bg-slate-600'
+                              }`}
+                            />
+                            <Text className="text-[10px] text-slate-400">
+                              {space.is_active ? 'Active & Accepting Bookings' : 'Paused / Offline'}
+                            </Text>
+                          </View>
+                        </View>
+                      </View>
+
+                      <Pressable
+                        onPress={() => handleToggleStatus(space.id)}
+                        className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-xl"
+                      >
+                        <Text className="text-xs font-medium text-slate-300">
+                          {space.is_active ? 'Pause' : 'Activate'}
+                        </Text>
+                      </Pressable>
+                    </View>
+                  ))}
+                </View>
+              )}
+            </View>
+          </View>
         )}
 
-        {/* TAB 3: SECURITY & MFA SETTINGS */}
+        {/* Tab 3: Security & Multi-Factor Authentication Settings */}
         {activeTab === 'security' && (
-          <div className="space-y-6">
-            <div>
-              <h2 className="text-base font-bold text-white">Account Security & Authentication</h2>
-              <p className="text-xs text-slate-400">Manage your Multi-Factor Authentication (MFA), email verification gate, and password credentials.</p>
-            </div>
+          <View className="space-y-6">
+            {/* Header info */}
+            <View className="flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+              <View>
+                <Text className="text-xl font-bold text-white">Account Security & Authentication</Text>
+                <Text className="text-xs text-slate-400 mt-0.5">
+                  Manage your Multi-Factor Authentication (MFA), email verification gate, and security credentials.
+                </Text>
+              </View>
+              <View className="flex-row items-center gap-2">
+                <View className={`px-3 py-1 rounded-full border ${userState?.mfa_enabled ? 'bg-emerald-500/20 border-emerald-500/40' : 'bg-slate-800 border-slate-700'}`}>
+                  <Text className={`text-xs font-bold ${userState?.mfa_enabled ? 'text-emerald-300' : 'text-slate-400'}`}>
+                    {userState?.mfa_enabled ? '🔐 MFA Protected' : '🔓 Single-Factor Only'}
+                  </Text>
+                </View>
+              </View>
+            </View>
 
-            {/* Email Verification Box */}
-            <div className="p-5 rounded-xl bg-slate-900 border border-slate-800 space-y-4">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                <div className="flex items-center gap-3.5">
-                  <div className={`w-10 h-10 rounded-lg flex items-center justify-center text-lg shrink-0 ${
-                    userState?.is_email_verified
-                      ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/30'
-                      : 'bg-amber-500/10 text-amber-400 border border-amber-500/30'
-                  }`}>
+            {/* Email Verification Card */}
+            <View className="p-6 bg-slate-900 border border-slate-800 rounded-3xl space-y-4">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                <div className="flex items-center gap-4">
+                  <div className={`w-12 h-12 rounded-2xl flex items-center justify-center text-xl shrink-0 ${userState?.is_email_verified ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/30' : 'bg-amber-500/10 text-amber-400 border border-amber-500/30'}`}>
                     {userState?.is_email_verified ? '✓' : '✉️'}
                   </div>
                   <div>
                     <div className="flex items-center gap-2">
-                      <span className="text-sm font-bold text-white">Email Address Verification</span>
-                      <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
-                        userState?.is_email_verified
-                          ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30'
-                          : 'bg-amber-500/15 text-amber-400 border border-amber-500/30'
-                      }`}>
+                      <span className="text-base font-bold text-white">Email Address Verification</span>
+                      <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${userState?.is_email_verified ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30' : 'bg-amber-500/20 text-amber-300 border border-amber-500/30'}`}>
                         {userState?.is_email_verified ? 'Verified' : 'Unverified'}
                       </span>
                     </div>
-                    <p className="text-xs font-mono text-slate-400 mt-0.5">{userState?.email || 'No email registered'}</p>
+                    <div className="text-xs text-slate-400 mt-0.5 font-mono">{userState?.email || 'No email registered'}</div>
                   </div>
                 </div>
 
                 {!userState?.is_email_verified && (
                   <button
-                    type="button"
                     onClick={handleResendEmail}
                     disabled={resendingEmail}
-                    className="px-4 py-2 rounded-lg bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs transition shrink-0"
+                    className="px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs transition shrink-0"
                   >
-                    {resendingEmail ? 'Sending Link...' : 'Send Verification Email'}
+                    {resendingEmail ? 'Sending Link...' : 'Send Verification Email →'}
                   </button>
                 )}
               </div>
 
               {emailNotice && (
-                <div className="p-3 bg-slate-950 border border-indigo-500/30 rounded-lg text-xs text-indigo-300">
+                <div className="p-3.5 bg-slate-950 border border-indigo-500/30 rounded-xl text-xs text-indigo-300">
                   {emailNotice}
                 </div>
               )}
-            </div>
 
-            {/* TOTP 2FA Box */}
-            <div className="p-5 rounded-xl bg-slate-900 border border-slate-800 space-y-4">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                <div className="flex items-center gap-3.5">
-                  <div className={`w-10 h-10 rounded-lg flex items-center justify-center text-lg shrink-0 ${
-                    userState?.mfa_enabled
-                      ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/30'
-                      : 'bg-indigo-500/10 text-indigo-400 border border-indigo-500/30'
-                  }`}>
+              {!userState?.is_email_verified && (
+                <div className="p-3.5 bg-amber-500/10 border border-amber-500/30 rounded-2xl flex items-start gap-2.5">
+                  <span className="text-amber-400 text-sm mt-0.5">⚠️</span>
+                  <div className="text-xs text-amber-300">
+                    <strong>Email Verification Gate:</strong> Multi-Factor Authentication requires a verified email address to prevent account lockouts and protect recovery paths. Please verify your email before enrolling in TOTP MFA.
+                  </div>
+                </div>
+              )}
+            </View>
+
+            {/* TOTP Multi-Factor Authentication Card */}
+            <View className="p-6 bg-slate-900 border border-slate-800 rounded-3xl space-y-5">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                <div className="flex items-center gap-4">
+                  <div className={`w-12 h-12 rounded-2xl flex items-center justify-center text-xl shrink-0 ${userState?.mfa_enabled ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/30' : 'bg-indigo-500/10 text-indigo-400 border border-indigo-500/30'}`}>
                     🔐
                   </div>
                   <div>
                     <div className="flex items-center gap-2">
-                      <span className="text-sm font-bold text-white">Two-Factor Authentication (TOTP)</span>
-                      <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
-                        userState?.mfa_enabled
-                          ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30'
-                          : 'bg-slate-800 text-slate-400 border border-slate-700'
-                      }`}>
+                      <span className="text-base font-bold text-white">Two-Factor Authentication (TOTP)</span>
+                      <span className={`px-2.5 py-0.5 rounded text-[10px] font-bold ${userState?.mfa_enabled ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30' : 'bg-slate-800 text-slate-400 border border-slate-700'}`}>
                         {userState?.mfa_enabled ? 'Active (RFC 6238)' : 'Disabled'}
                       </span>
                     </div>
-                    <p className="text-xs text-slate-400 mt-0.5">
+                    <div className="text-xs text-slate-400 mt-0.5">
                       Standard Time-based One-Time Passwords compatible with Google Authenticator, Microsoft Authenticator, and 1Password.
-                    </p>
+                    </div>
                   </div>
                 </div>
 
                 {userState?.mfa_enabled ? (
                   <button
-                    type="button"
                     onClick={() => {
                       setShowDisableMfaModal(true);
                       setDisableError(null);
@@ -699,110 +937,105 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => 
                       setDisableCode('');
                       setDisableRecoveryCode('');
                     }}
-                    className="px-3.5 py-2 rounded-lg bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/30 text-rose-300 font-semibold text-xs transition shrink-0"
+                    className="px-4 py-2 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/30 text-rose-300 font-bold text-xs transition shrink-0"
                   >
-                    Disable 2FA
+                    Disable Two-Factor Authentication
                   </button>
                 ) : (
                   <button
-                    type="button"
                     onClick={handleStartMfaEnrollment}
-                    className="px-4 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-xs transition shrink-0 shadow-sm"
+                    className="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs transition shadow-lg shadow-indigo-600/25 shrink-0"
                   >
-                    Enable 2FA →
+                    Enable Two-Factor Authentication →
                   </button>
                 )}
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2">
-                <div className="p-3.5 bg-slate-950 border border-slate-800 rounded-lg">
-                  <div className="text-sm mb-1">📱</div>
-                  <div className="text-xs font-semibold text-white mb-1">Authenticator Apps</div>
-                  <p className="text-[11px] text-slate-400 leading-relaxed">
+                <div className="p-4 bg-slate-950/80 border border-slate-800 rounded-2xl">
+                  <div className="text-base mb-1">📱</div>
+                  <div className="text-xs font-bold text-white mb-1">Authenticator App Support</div>
+                  <div className="text-[11px] text-slate-400 leading-relaxed">
                     Uses standard RFC 6238 TOTP protocols. Works offline with Google Authenticator, Microsoft Authenticator, and Bitwarden.
-                  </p>
+                  </div>
                 </div>
-
-                <div className="p-3.5 bg-slate-950 border border-slate-800 rounded-lg">
-                  <div className="text-sm mb-1">🛡️</div>
-                  <div className="text-xs font-semibold text-white mb-1">Encrypted At Rest</div>
-                  <p className="text-[11px] text-slate-400 leading-relaxed">
-                    TOTP secrets are encrypted with Fernet symmetric cryptography and are never returned in public APIs.
-                  </p>
+                <div className="p-4 bg-slate-950/80 border border-slate-800 rounded-2xl">
+                  <div className="text-base mb-1">🛡️</div>
+                  <div className="text-xs font-bold text-white mb-1">Encrypted At Rest</div>
+                  <div className="text-[11px] text-slate-400 leading-relaxed">
+                    TOTP secrets are encrypted with Fernet symmetric cryptography and are never returned in public user profiles or APIs.
+                  </div>
                 </div>
-
-                <div className="p-3.5 bg-slate-950 border border-slate-800 rounded-lg">
-                  <div className="text-sm mb-1">🔑</div>
-                  <div className="text-xs font-semibold text-white mb-1">10 Backup Codes</div>
-                  <p className="text-[11px] text-slate-400 leading-relaxed">
-                    10 single-use recovery codes are issued upon enrollment to recover your account if your mobile device is lost.
-                  </p>
+                <div className="p-4 bg-slate-950/80 border border-slate-800 rounded-2xl">
+                  <div className="text-base mb-1">🔑</div>
+                  <div className="text-xs font-bold text-white mb-1">Single-Use Backup Codes</div>
+                  <div className="text-[11px] text-slate-400 leading-relaxed">
+                    10 single-use recovery codes are issued upon enrollment so you never lose access if your mobile device is unavailable.
+                  </div>
                 </div>
               </div>
-            </div>
-          </div>
+            </View>
+          </View>
         )}
-      </main>
+      </View>
 
       {/* MFA ENROLLMENT MODAL */}
       {showMfaEnrollModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm overflow-y-auto">
-          <div className="bg-slate-900 border border-slate-800 text-white w-full max-w-lg rounded-2xl overflow-hidden my-6 shadow-2xl">
-            <div className="p-5 border-b border-slate-800 flex items-center justify-between">
+          <div className="bg-slate-900 border border-indigo-500/30 text-white w-full max-w-lg rounded-3xl floating-panel overflow-hidden my-6 transition-all">
+            <div className="p-6 border-b border-slate-800 flex items-center justify-between">
               <div>
-                <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-indigo-500/15 text-indigo-300 border border-indigo-500/30">
+                <span className="px-2 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
                   🔐 Security Enrollment
                 </span>
-                <h3 className="text-base font-bold text-white mt-1">
+                <h3 className="text-lg font-bold text-white mt-1">
                   {mfaEnrollStep === 'recovery' ? 'Backup Recovery Codes' : 'Two-Factor Authentication Setup'}
                 </h3>
               </div>
               <button
-                type="button"
                 onClick={() => {
                   setShowMfaEnrollModal(false);
                   setMfaEnrollError(null);
                   setMfaCopyStatus(null);
                 }}
-                className="w-7 h-7 rounded-lg flex items-center justify-center text-slate-400 hover:text-white hover:bg-slate-800 transition"
+                className="w-8 h-8 rounded-full flex items-center justify-center text-slate-400 hover:text-white hover:bg-slate-800 transition"
               >
                 ✕
               </button>
             </div>
 
-            <div className="p-5 space-y-4">
+            <div className="p-6 space-y-4">
               {mfaEnrollError && (
-                <div className="p-3 bg-rose-500/10 border border-rose-500/30 rounded-lg flex items-start gap-2">
-                  <span className="text-rose-400 text-xs">⚠️</span>
+                <div className="p-3.5 bg-rose-500/10 border border-rose-500/30 rounded-2xl flex items-start gap-2.5">
+                  <span className="text-rose-400 text-sm">⚠️</span>
                   <p className="text-xs text-rose-300 font-medium">{mfaEnrollError}</p>
                 </div>
               )}
 
+              {/* Email Verification Gate Notice */}
               {!userState?.is_email_verified ? (
-                <div className="space-y-4 py-2 text-center">
-                  <div className="w-12 h-12 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400 text-xl mx-auto">
+                <div className="space-y-4 py-2">
+                  <div className="w-14 h-14 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400 text-2xl mx-auto shadow-inner">
                     ✉️
                   </div>
-                  <div>
-                    <h4 className="text-sm font-bold text-white mb-1">Email Verification Required</h4>
-                    <p className="text-xs text-slate-400 max-w-sm mx-auto leading-relaxed">
-                      MFA enrollment is gated until your email address (<strong className="text-white font-mono">{userState?.email}</strong>) is verified.
+                  <div className="text-center">
+                    <h4 className="text-base font-bold text-white mb-1">Email Verification Required</h4>
+                    <p className="text-xs text-slate-400 max-w-sm mx-auto">
+                      In accordance with SpaceLoop security standards, MFA enrollment is blocked until your email address (<span className="text-white font-mono">{userState?.email}</span>) is verified.
                     </p>
                   </div>
 
                   <div className="pt-2 flex flex-col gap-2">
                     <button
-                      type="button"
                       onClick={handleResendEmail}
                       disabled={resendingEmail}
-                      className="w-full py-2.5 rounded-lg bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs transition"
+                      className="w-full py-3 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs transition"
                     >
-                      {resendingEmail ? 'Sending Link...' : 'Send Verification Link'}
+                      {resendingEmail ? 'Sending Link...' : 'Send Verification Email Link →'}
                     </button>
                     <button
-                      type="button"
                       onClick={() => setShowMfaEnrollModal(false)}
-                      className="w-full py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold transition"
+                      className="w-full py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold transition"
                     >
                       Close
                     </button>
@@ -811,29 +1044,31 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => 
               ) : mfaEnrollStep === 'scan' ? (
                 <div className="space-y-4">
                   {mfaEnrollLoading && !mfaSetupData ? (
-                    <div className="py-10 flex flex-col items-center justify-center">
-                      <div className="w-7 h-7 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin mb-2" />
+                    <div className="py-12 flex flex-col items-center justify-center">
+                      <div className="w-8 h-8 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin mb-3" />
                       <p className="text-xs text-slate-400">Generating cryptographic TOTP key...</p>
                     </div>
                   ) : mfaSetupData ? (
                     <>
-                      <p className="text-xs text-slate-400 text-center">
-                        Scan the QR code with your authenticator app (Google Authenticator, Microsoft Authenticator, or 1Password):
-                      </p>
+                      <div className="text-center">
+                        <p className="text-xs text-slate-400">
+                          Scan the QR code below with your authenticator app (Google Authenticator, Microsoft Authenticator, 1Password, or Authy):
+                        </p>
+                      </div>
 
                       <div className="flex justify-center py-2">
                         <img
                           src={mfaSetupData.qr_code}
                           alt="SpaceLoop MFA QR Code"
-                          className="w-44 h-44 rounded-xl p-2 bg-white"
+                          className="w-48 h-48 rounded-2xl p-2 bg-white shadow-xl"
                         />
                       </div>
 
                       <div>
-                        <label className="block text-[11px] font-semibold text-slate-400 mb-1 text-center">
-                          Or enter this key manually into your app:
+                        <label className="block text-[11px] font-bold text-slate-400 mb-1 text-center">
+                          Or enter this secret key manually into your app:
                         </label>
-                        <div className="flex items-center gap-2 p-2 bg-slate-950 border border-slate-800 rounded-lg">
+                        <div className="flex items-center gap-2 p-2.5 bg-slate-950 border border-slate-800 rounded-xl">
                           <code className="text-xs font-mono text-indigo-300 flex-1 text-center tracking-wider select-all break-all">
                             {mfaSetupData.secret}
                           </code>
@@ -844,7 +1079,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => 
                               setMfaCopyStatus('Copied!');
                               setTimeout(() => setMfaCopyStatus(null), 2000);
                             }}
-                            className="px-2 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 text-[10px] font-semibold transition shrink-0"
+                            className="px-2.5 py-1 rounded-lg bg-indigo-600/30 hover:bg-indigo-600/50 text-indigo-300 text-[10px] font-bold shrink-0 transition"
                           >
                             {mfaCopyStatus || 'Copy'}
                           </button>
@@ -852,8 +1087,8 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => 
                       </div>
 
                       <div>
-                        <label className="block text-xs font-semibold text-white mb-1.5 text-center">
-                          Enter the 6-digit code to verify setup:
+                        <label className="block text-xs font-bold text-white mb-1.5 text-center">
+                          Enter the 6-digit code from your app to verify setup:
                         </label>
                         <input
                           type="text"
@@ -862,7 +1097,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => 
                           value={mfaEnrollCode}
                           onChange={(e) => setMfaEnrollCode(e.target.value.replace(/\D/g, ''))}
                           placeholder="000000"
-                          className="w-full text-center tracking-[0.4em] text-xl font-mono px-4 py-2.5 rounded-lg border border-slate-700 bg-slate-950 text-white focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                          className="w-full text-center tracking-[0.4em] text-2xl font-mono px-4 py-3 rounded-xl border border-slate-700 bg-slate-950 text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
                         />
                       </div>
 
@@ -870,7 +1105,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => 
                         <button
                           type="button"
                           onClick={() => setShowMfaEnrollModal(false)}
-                          className="flex-1 py-2.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold text-xs transition"
+                          className="flex-1 py-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-xs transition"
                         >
                           Cancel
                         </button>
@@ -878,25 +1113,25 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => 
                           type="button"
                           onClick={handleConfirmMfaEnrollment}
                           disabled={mfaEnrollLoading || mfaEnrollCode.length !== 6}
-                          className="flex-1 py-2.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white font-semibold text-xs transition shadow-sm"
+                          className="flex-1 py-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white font-bold text-xs transition shadow-lg shadow-indigo-600/25"
                         >
-                          {mfaEnrollLoading ? 'Activating...' : 'Verify & Enable MFA'}
+                          {mfaEnrollLoading ? 'Activating...' : 'Verify & Enable MFA →'}
                         </button>
                       </div>
                     </>
                   ) : null}
                 </div>
               ) : (
-                /* Recovery Codes */
+                /* Recovery Codes Display Step */
                 <div className="space-y-4">
-                  <div className="p-3 bg-amber-500/10 border border-amber-500/30 rounded-lg flex items-start gap-2">
-                    <span className="text-amber-400 text-xs">⚠️</span>
-                    <p className="text-xs text-amber-300 leading-relaxed">
-                      <strong>Save your backup codes now:</strong> If you lose access to your device, each single-use code allows one account recovery.
-                    </p>
+                  <div className="p-3.5 bg-amber-500/10 border border-amber-500/30 rounded-2xl flex items-start gap-2.5">
+                    <span className="text-amber-400 text-base">⚠️</span>
+                    <div className="text-xs text-amber-300">
+                      <strong>Save your backup codes now:</strong> If you lose access to your authenticator app, these single-use recovery codes are the only way to recover your account. Each code can be used at most once. They will not be displayed again.
+                    </div>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-2 p-3.5 bg-slate-950 border border-slate-800 rounded-lg">
+                  <div className="grid grid-cols-2 gap-2.5 p-4 bg-slate-950 border border-slate-800 rounded-2xl">
                     {mfaEnrollRecoveryCodes.map((rc, idx) => (
                       <div key={idx} className="flex items-center gap-2 font-mono text-xs text-indigo-300 py-1 px-2 rounded bg-slate-900 border border-slate-800/80">
                         <span className="text-slate-500 text-[10px] w-4">{idx + 1}.</span>
@@ -905,7 +1140,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => 
                     ))}
                   </div>
 
-                  <div className="pt-2 flex flex-col sm:flex-row items-center gap-2">
+                  <div className="pt-2 flex flex-col sm:flex-row items-center gap-3">
                     <button
                       type="button"
                       onClick={() => {
@@ -913,14 +1148,16 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => 
                         setMfaCopyStatus('All 10 codes copied to clipboard!');
                         setTimeout(() => setMfaCopyStatus(null), 3000);
                       }}
-                      className="w-full sm:flex-1 py-2.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-white font-semibold text-xs transition"
+                      className="w-full sm:flex-1 py-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs transition"
                     >
                       {mfaCopyStatus || '📋 Copy All 10 Codes'}
                     </button>
                     <button
                       type="button"
-                      onClick={() => setShowMfaEnrollModal(false)}
-                      className="w-full sm:flex-1 py-2.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-xs transition shadow-sm"
+                      onClick={() => {
+                        setShowMfaEnrollModal(false);
+                      }}
+                      className="w-full sm:flex-1 py-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs transition shadow-lg shadow-indigo-600/25"
                     >
                       I Have Saved My Codes ✓
                     </button>
@@ -935,63 +1172,62 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => 
       {/* MFA DISABLE MODAL */}
       {showDisableMfaModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm overflow-y-auto">
-          <div className="bg-slate-900 border border-slate-800 text-white w-full max-w-md rounded-2xl overflow-hidden my-6 shadow-2xl">
-            <div className="p-5 border-b border-slate-800 flex items-center justify-between">
+          <div className="bg-slate-900 border border-rose-500/30 text-white w-full max-w-md rounded-3xl floating-panel overflow-hidden my-6 transition-all">
+            <div className="p-6 border-b border-slate-800 flex items-center justify-between">
               <div>
-                <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-rose-500/15 text-rose-300 border border-rose-500/30">
+                <span className="px-2 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider bg-rose-500/20 text-rose-300 border border-rose-500/30">
                   ⚠️ Security Deactivation
                 </span>
-                <h3 className="text-base font-bold text-white mt-1">
+                <h3 className="text-lg font-bold text-white mt-1">
                   Disable Two-Factor Authentication
                 </h3>
               </div>
               <button
-                type="button"
                 onClick={() => {
                   setShowDisableMfaModal(false);
                   setDisableError(null);
                   setDisableSuccess(null);
                 }}
-                className="w-7 h-7 rounded-lg flex items-center justify-center text-slate-400 hover:text-white hover:bg-slate-800 transition"
+                className="w-8 h-8 rounded-full flex items-center justify-center text-slate-400 hover:text-white hover:bg-slate-800 transition"
               >
                 ✕
               </button>
             </div>
 
-            <div className="p-5 space-y-4">
+            <div className="p-6 space-y-4">
               {disableError && (
-                <div className="p-3 bg-rose-500/10 border border-rose-500/30 rounded-lg flex items-start gap-2">
-                  <span className="text-rose-400 text-xs">⚠️</span>
+                <div className="p-3.5 bg-rose-500/10 border border-rose-500/30 rounded-2xl flex items-start gap-2.5">
+                  <span className="text-rose-400 text-sm">⚠️</span>
                   <p className="text-xs text-rose-300 font-medium">{disableError}</p>
                 </div>
               )}
 
               {disableSuccess && (
-                <div className="p-3 bg-emerald-500/10 border border-emerald-500/30 rounded-lg flex items-start gap-2">
-                  <span className="text-emerald-400 text-xs">✓</span>
+                <div className="p-3.5 bg-emerald-500/10 border border-emerald-500/30 rounded-2xl flex items-start gap-2.5">
+                  <span className="text-emerald-400 text-sm">✓</span>
                   <p className="text-xs text-emerald-300 font-medium">{disableSuccess}</p>
                 </div>
               )}
 
-              <p className="text-xs text-slate-400 leading-relaxed">
-                Verify your account password and either your 6-digit TOTP code or backup recovery code to deactivate 2FA.
+              <p className="text-xs text-slate-400">
+                To disable two-factor authentication, verify your account password and either your current 6-digit TOTP code or a single-use backup recovery code.
               </p>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-300 mb-1">Account Password</label>
+                <label className="block text-xs font-bold text-slate-300 mb-1">Account Password</label>
                 <input
                   type="password"
                   value={disablePassword}
                   onChange={(e) => setDisablePassword(e.target.value)}
                   placeholder="••••••••"
-                  className="w-full px-3 py-2 rounded-lg bg-slate-950 border border-slate-800 text-white text-xs focus:outline-none focus:border-rose-500 transition"
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-white text-xs focus:outline-none focus:border-rose-500 transition"
                   required
                 />
               </div>
 
               {!disableUseRecovery ? (
                 <div>
-                  <label className="block text-xs font-semibold text-slate-300 mb-1">
+                  <label className="block text-xs font-bold text-slate-300 mb-1">
                     6-Digit Authenticator Code
                   </label>
                   <input
@@ -1000,42 +1236,42 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => 
                     value={disableCode}
                     onChange={(e) => setDisableCode(e.target.value.replace(/\D/g, ''))}
                     placeholder="000000"
-                    className="w-full text-center tracking-[0.3em] font-mono text-base px-3 py-2 rounded-lg bg-slate-950 border border-slate-800 text-white focus:outline-none focus:border-rose-500 transition"
+                    className="w-full text-center tracking-[0.3em] font-mono text-lg px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-white focus:outline-none focus:border-rose-500 transition"
                   />
                 </div>
               ) : (
                 <div>
-                  <label className="block text-xs font-semibold text-slate-300 mb-1">
-                    Single-Use Recovery Code
+                  <label className="block text-xs font-bold text-slate-300 mb-1">
+                    Single-Use Backup Recovery Code
                   </label>
                   <input
                     type="text"
                     value={disableRecoveryCode}
                     onChange={(e) => setDisableRecoveryCode(e.target.value.toUpperCase())}
                     placeholder="XXXX-XXXX"
-                    className="w-full text-center font-mono text-xs px-3 py-2 rounded-lg bg-slate-950 border border-slate-800 text-white focus:outline-none focus:border-rose-500 transition uppercase"
+                    className="w-full text-center font-mono text-sm px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-white focus:outline-none focus:border-rose-500 transition uppercase"
                   />
                 </div>
               )}
 
-              <div className="flex items-center justify-between text-xs pt-0.5">
+              <div className="flex items-center justify-between text-xs pt-1">
                 <button
                   type="button"
                   onClick={() => {
                     setDisableUseRecovery(!disableUseRecovery);
                     setDisableError(null);
                   }}
-                  className="text-indigo-400 hover:underline font-medium text-[11px]"
+                  className="text-indigo-400 hover:underline font-medium"
                 >
-                  {disableUseRecovery ? '← Use 6-digit code' : '🔑 Use a backup recovery code'}
+                  {disableUseRecovery ? '← Use 6-digit TOTP code' : '🔑 Use a backup recovery code instead'}
                 </button>
               </div>
 
-              <div className="pt-2 flex items-center gap-2">
+              <div className="pt-2 flex items-center gap-3">
                 <button
                   type="button"
                   onClick={() => setShowDisableMfaModal(false)}
-                  className="flex-1 py-2.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold text-xs transition"
+                  className="flex-1 py-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-xs transition"
                 >
                   Cancel
                 </button>
@@ -1043,7 +1279,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => 
                   type="button"
                   onClick={handleConfirmDisableMfa}
                   disabled={disableLoading || !disablePassword || (!disableUseRecovery ? disableCode.length !== 6 : !disableRecoveryCode.trim())}
-                  className="flex-1 py-2.5 rounded-lg bg-rose-600 hover:bg-rose-500 disabled:opacity-50 text-white font-semibold text-xs transition shadow-sm"
+                  className="flex-1 py-3 rounded-xl bg-rose-600 hover:bg-rose-500 disabled:opacity-50 text-white font-bold text-xs transition shadow-lg shadow-rose-600/25"
                 >
                   {disableLoading ? 'Verifying...' : 'Confirm Deactivation'}
                 </button>
@@ -1052,6 +1288,6 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => 
           </div>
         </div>
       )}
-    </div>
+    </View>
   );
 };

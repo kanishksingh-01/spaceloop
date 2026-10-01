@@ -5,58 +5,61 @@
 
 :root {
   /* =========================================================================
-     SPACELOOP DESIGN SYSTEM TOKENS (FIGMA-INSPIRED SAAS PALETTE)
+     SL-SYS-COLOR-2026-V1 DESIGN SYSTEM TOKENS
      ========================================================================= */
 
-  /* Canvas & Surface Layers (Dark Theme Default) */
-  --canvas: #090d16;              /* Deep Slate Canvas */
-  --surface: #111827;             /* Elevated Surface / Card */
-  --surface-nested: #1e293b;      /* Nested Controls, Inputs, Sub-cards */
-  --surface-hover: #1f293d;       /* Card / Surface hover state */
+  /* Canvas & Surface Layers */
+  --canvas: #020617;              /* Deep Midnight Root Canvas */
+  --surface: #0f172a;             /* Elevated Surface Card/Modal */
+  --surface-nested: #1e293b;      /* Nested Controls & Form Inputs */
   --border-subtle: rgba(255, 255, 255, 0.08); /* 8% White Border */
-  --border-card: rgba(255, 255, 255, 0.12);
-  --border-hover: rgba(99, 102, 241, 0.40);
+  --border-card: rgba(255, 255, 255, 0.10);
+  --border-hover: rgba(99, 102, 241, 0.35);
 
-  /* Clean Directional Shadows (Restrained, Crisp) */
-  --shadow-subtle: 0 1px 2px 0 rgba(0, 0, 0, 0.25);
-  --shadow-card: 0 4px 12px -2px rgba(0, 0, 0, 0.35), 0 2px 4px -2px rgba(0, 0, 0, 0.2);
-  --shadow-card-hover: 0 10px 24px -4px rgba(0, 0, 0, 0.45), 0 4px 8px -2px rgba(0, 0, 0, 0.25);
-  --shadow-card-hover-host: 0 10px 24px -4px rgba(0, 0, 0, 0.45), 0 4px 8px -2px rgba(245, 158, 11, 0.15);
-  --shadow-container: 0 4px 16px -2px rgba(0, 0, 0, 0.3);
-  --shadow-panel: 0 8px 24px -4px rgba(0, 0, 0, 0.4);
-  --shadow-panel-hover: 0 12px 32px -4px rgba(0, 0, 0, 0.5);
-  --shadow-modal: 0 20px 48px -8px rgba(0, 0, 0, 0.65), 0 8px 16px -4px rgba(0, 0, 0, 0.35);
-  --shadow-dropdown: 0 10px 25px -3px rgba(0, 0, 0, 0.5), 0 4px 10px -2px rgba(0, 0, 0, 0.3);
+  /* Unified One-Directional Shadow Tokens (Downward & Slightly Right) */
+  --shadow-subtle: 1.5px 3px 8px -1px rgba(0, 0, 0, 0.38);
+  --shadow-card: 2.5px 5px 16px -2px rgba(0, 0, 0, 0.44), 1px 2px 5px -1px rgba(0, 0, 0, 0.28);
+  --shadow-card-hover: 4px 14px 30px -4px rgba(0, 0, 0, 0.58), 2px 5px 12px -2px rgba(0, 0, 0, 0.34), 2px 4px 18px -4px rgba(99, 102, 241, 0.15);
+  --shadow-card-hover-host: 4px 14px 30px -4px rgba(0, 0, 0, 0.58), 2px 5px 12px -2px rgba(0, 0, 0, 0.34), 2px 4px 18px -4px rgba(245, 158, 11, 0.15);
+  --shadow-container: 3px 6px 20px -2px rgba(0, 0, 0, 0.46), 1.5px 3px 7px -1px rgba(0, 0, 0, 0.28);
+  --shadow-panel: 5px 12px 32px -4px rgba(0, 0, 0, 0.54), 2px 5px 12px -2px rgba(0, 0, 0, 0.35);
+  --shadow-panel-hover: 6px 18px 40px -4px rgba(0, 0, 0, 0.62), 3px 6px 15px -2px rgba(0, 0, 0, 0.38);
+  --shadow-modal: 8px 24px 54px -6px rgba(0, 0, 0, 0.76), 3px 9px 20px -3px rgba(0, 0, 0, 0.48), 1px 3px 8px -1px rgba(0, 0, 0, 0.32);
+  --shadow-dropdown: 4px 12px 28px -3px rgba(0, 0, 0, 0.68), 2px 4px 10px -2px rgba(0, 0, 0, 0.40);
 
-  /* Glassmorphism (Restrained) */
-  --glass-bg: rgba(17, 24, 39, 0.85);
-  --glass-blur: 12px;
+  /* Glassmorphism */
+  --glass-bg: rgba(15, 23, 42, 0.75);
+  --glass-blur: 16px;
 
   /* Typography / Text Contrast Hierarchy */
   --text-h1: #ffffff;             /* Primary Headings */
   --text-h2: #ffffff;
   --text-h3: #f8fafc;             /* Subheadings / Section Titles */
-  --text-body: #cbd5e1;           /* Body Text - Slate 300 */
-  --text-meta: #94a3b8;           /* Metadata, Badges, Labels */
+  --text-body: #cbd5e1;           /* Body Text - Slate 300 (Never dark gray) */
+  --text-meta: #94a3b8;           /* Metadata, Badges, Labels, Placeholders */
   --text-muted: #64748b;          /* Subtle / Tertiary */
 
-  /* Role-Based Brand Colors */
+  /* Role-Based Primary CTAs */
   --seeker-primary: #4f46e5;      /* Indigo-600 */
-  --seeker-primary-hover: #4338ca;/* Indigo-700 */
   --seeker-text: #ffffff;         /* Crisp White */
-  --seeker-glow: rgba(99, 102, 241, 0.25);
+  --seeker-glow: #6366f1;         /* Indigo-500 */
   --seeker-pill: #818cf8;         /* Indigo-400 */
+  --seeker-gradient-from: #4f46e5;
+  --seeker-gradient-to: #8b5cf6;
 
   --host-primary: #f59e0b;        /* Amber-500 */
-  --host-primary-hover: #d97706;  /* Amber-600 */
-  --host-text: #0f172a;           /* High contrast Slate-900 */
+  --host-text: #0f172a;           /* Slate-900 (High-contrast dark on solar gold) */
   --host-gold: #fbbf24;           /* Solar Gold */
+  --host-gradient-from: #d97706;  /* Amber-600 */
+  --host-gradient-to: #ea580c;    /* Orange-600 */
 
   /* Status Colors */
-  --status-success: #10b981;      /* Emerald-500 */
-  --status-warning: #f59e0b;      /* Amber-500 */
-  --status-danger: #ef4444;       /* Red-500 */
-  --status-ai: #6366f1;           /* Indigo-500 */
+  --status-success: #10b981;      /* Emerald-500 (Verified / Ready) */
+  --status-active-from: #059669;
+  --status-active-to: #0d9488;
+  --status-warning: #f59e0b;      /* Amber-500 (Caution / Review) */
+  --status-danger: #f43f5e;       /* Rose-500 (Alert / Revoked) */
+  --status-ai: #7c3aed;           /* Violet-600 (AI Concierge / Matchmaker) */
 }
 
 html, body, #root {
@@ -66,7 +69,7 @@ html, body, #root {
   background-color: var(--canvas);
   color: var(--text-h3);
   font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-  transition: background-color 0.2s ease, color 0.2s ease;
+  transition: background-color 0.25s ease, color 0.25s ease;
 }
 
 .font-display {
@@ -84,24 +87,14 @@ select {
   background-color: var(--surface-nested);
   color: #f8fafc;
   border: 1px solid var(--border-subtle);
-  border-radius: 0.5rem;
-  transition: border-color 0.15s ease, box-shadow 0.15s ease;
-}
-
-input:focus,
-textarea:focus,
-select:focus {
-  border-color: rgba(99, 102, 241, 0.6);
-  outline: none;
-  box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.15);
 }
 
 input::placeholder,
 textarea::placeholder {
-  color: var(--text-muted);
+  color: var(--text-meta);
 }
 
-/* Glassmorphism utility */
+/* Glassmorphism utility helpers */
 .glass-panel {
   background: var(--glass-bg);
   backdrop-filter: blur(var(--glass-blur));
@@ -110,20 +103,22 @@ textarea::placeholder {
 }
 
 /* =========================================================================
-   CLEAN BUTTON & INTERACTION SYSTEM
+   PREMIUM BUTTON GLOW & TACTILE INTERACTION SYSTEM
+   SaaS-grade clean, soft, controlled glows using SpaceLoop brand accents
    ========================================================================= */
 
+/* Base transition and focus-visible styling for interactive buttons & links */
 button,
 a.btn,
 .btn-interactive,
 [role="button"] {
   position: relative;
-  transition: transform 150ms ease,
-              box-shadow 150ms ease,
-              background-color 150ms ease,
-              border-color 150ms ease,
-              color 150ms ease,
-              opacity 150ms ease;
+  transition: transform 220ms cubic-bezier(0.16, 1, 0.3, 1),
+              box-shadow 220ms cubic-bezier(0.16, 1, 0.3, 1),
+              background-color 220ms ease,
+              border-color 220ms ease,
+              color 180ms ease,
+              opacity 180ms ease;
   outline: none;
   -webkit-tap-highlight-color: transparent;
 }
@@ -134,50 +129,44 @@ a.btn:focus-visible,
 .btn-interactive:focus-visible,
 [role="button"]:focus-visible {
   outline: none;
-  box-shadow: 0 0 0 2px var(--canvas), 0 0 0 4px rgba(99, 102, 241, 0.6);
+  box-shadow: 0 0 0 2px var(--canvas), 0 0 0 4px rgba(99, 102, 241, 0.75), 0 0 16px rgba(99, 102, 241, 0.35);
 }
 
-/* 1. Primary Indigo Button */
+/* 1. Primary Purple/Indigo Gradient CTA Glow */
 .btn-glow-primary,
+button.bg-gradient-to-r,
 .btn-seeker-primary {
   background-color: var(--seeker-primary);
   color: var(--seeker-text);
-  font-weight: 600;
-  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.2);
+  box-shadow: 1.5px 3px 12px 0 rgba(79, 70, 229, 0.28);
 }
 
 @media (hover: hover) and (pointer: fine) {
   .btn-glow-primary:hover,
+  button.bg-gradient-to-r:hover,
   .btn-seeker-primary:hover {
-    background-color: var(--seeker-primary-hover);
-    box-shadow: 0 4px 12px 0 rgba(79, 70, 229, 0.3);
+    transform: translateY(-1.5px);
+    box-shadow: 2.5px 6px 18px -2px rgba(99, 102, 241, 0.42),
+                1px 2px 20px -2px rgba(139, 92, 246, 0.28);
   }
 }
 
-/* 2. Solar Gold / Host Amber Button */
-.btn-glow-amber,
-.btn-host-primary {
-  background-color: var(--host-primary);
-  color: var(--host-text);
-  font-weight: 700;
-  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.2);
+/* Dedicated Subtle Purple Button Glow */
+.btn-purple-glow {
+  transition: transform 220ms cubic-bezier(0.16, 1, 0.3, 1),
+              box-shadow 220ms cubic-bezier(0.16, 1, 0.3, 1),
+              border-color 220ms ease,
+              color 180ms ease,
+              background-color 220ms ease;
 }
 
 @media (hover: hover) and (pointer: fine) {
-  .btn-glow-amber:hover,
-  .btn-host-primary:hover {
-    background-color: var(--host-primary-hover);
-    box-shadow: 0 4px 12px 0 rgba(245, 158, 11, 0.3);
+  .btn-purple-glow:hover {
+    transform: translateY(-1.5px);
+    box-shadow: 0 0 18px -1px rgba(168, 85, 247, 0.45),
+                0 0 8px 0 rgba(99, 102, 241, 0.30);
+    border-color: rgba(168, 85, 247, 0.55) !important;
   }
-}
-
-/* Tactile Active Press States */
-button:not(:disabled):active,
-a.btn:not(:disabled):active,
-.btn-interactive:not(:disabled):active,
-[role="button"]:not(:disabled):active {
-  transform: scale(0.985);
-  transition-duration: 75ms;
 }
 
 @keyframes architectureFadeInUp {
@@ -195,40 +184,87 @@ a.btn:not(:disabled):active,
   animation: architectureFadeInUp 450ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
-/* 3. Secondary & Outlined Interactive Buttons */
+/* 2. Solar Gold / Host Amber Button Glow */
+.btn-glow-amber,
+.btn-host-primary {
+  background-color: var(--host-primary);
+  color: var(--host-text);
+  font-weight: 700;
+  box-shadow: 1.5px 3px 12px 0 rgba(245, 158, 11, 0.22);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .btn-glow-amber:hover,
+  .btn-host-primary:hover {
+    transform: translateY(-1.5px);
+    box-shadow: 2.5px 6px 18px -2px rgba(245, 158, 11, 0.40),
+                1px 2px 18px -2px rgba(251, 191, 36, 0.25);
+  }
+}
+
+/* 3. Cyan / Blue Accent Glow (Explore, Filter, Action pills) */
+.btn-glow-cyan,
+.btn-cyan {
+  box-shadow: 1.5px 3px 12px 0 rgba(14, 165, 233, 0.22);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .btn-glow-cyan:hover,
+  .btn-cyan:hover {
+    transform: translateY(-1.5px);
+    box-shadow: 2.5px 6px 16px -2px rgba(56, 189, 248, 0.38),
+                1px 2px 18px -2px rgba(6, 182, 212, 0.25);
+  }
+}
+
+/* 4. Secondary & Outlined Interactive Buttons */
 @media (hover: hover) and (pointer: fine) {
   button.bg-slate-800:hover,
   button.bg-slate-900:hover,
   button.bg-slate-950:hover,
   .btn-secondary:hover {
-    background-color: var(--surface-hover);
-    border-color: rgba(255, 255, 255, 0.15);
+    transform: translateY(-1px);
+    box-shadow: 2px 4px 14px -2px rgba(0, 0, 0, 0.45),
+                1px 2px 10px -2px rgba(99, 102, 241, 0.20);
+    border-color: rgba(99, 102, 241, 0.35);
   }
 }
 
-/* =========================================================================
-   CLEAN CARDS & INTERACTIVE CONTAINERS (FIGMA SYSTEM)
-   ========================================================================= */
-
-/* 1. Base Container */
-.floating-container {
-  background-color: var(--surface);
-  border: 1px solid var(--border-subtle);
-  border-radius: 0.75rem;
+/* Tactile Active Press States (Immediate micro-depth on click) */
+button:not(:disabled):active,
+a.btn:not(:disabled):active,
+.btn-interactive:not(:disabled):active,
+[role="button"]:not(:disabled):active {
+  transform: translateY(0.5px) scale(0.99) !important;
+  box-shadow: 1px 2px 6px -1px rgba(0, 0, 0, 0.45) !important;
+  transition-duration: 75ms !important;
 }
 
-/* 2. Interactive Card & Space Listing Boxes */
+/* =========================================================================
+   PREMIUM FLOATING CARDS & INTERACTIVE CONTAINERS
+   Subtle 3-4px float, refined downward-right shadow depth expansion, and return damping
+   ========================================================================= */
+
+/* 1. Base Floating Container (gentle depth above background) */
+.floating-container {
+  box-shadow: var(--shadow-container);
+  transition: transform 260ms cubic-bezier(0.16, 1, 0.3, 1),
+              box-shadow 260ms cubic-bezier(0.16, 1, 0.3, 1),
+              border-color 260ms ease;
+  will-change: transform, box-shadow;
+}
+
+/* 2. Interactive Floating Card & Space Listing Boxes */
 .floating-card,
 .floating-interactive,
 .space-card {
-  background-color: var(--surface);
-  border: 1px solid var(--border-subtle);
-  border-radius: 0.75rem;
   box-shadow: var(--shadow-card);
-  transition: border-color 180ms ease,
-              box-shadow 180ms ease,
-              background-color 180ms ease,
-              transform 180ms ease;
+  transform: translateY(0);
+  transition: transform 260ms cubic-bezier(0.16, 1, 0.3, 1),
+              box-shadow 260ms cubic-bezier(0.16, 1, 0.3, 1),
+              border-color 260ms ease,
+              background-color 260ms ease;
+  will-change: transform, box-shadow;
   outline: none;
 }
 
@@ -236,15 +272,16 @@ a.btn:not(:disabled):active,
   .floating-card:hover,
   .floating-interactive:hover,
   .space-card:hover {
-    border-color: var(--border-hover);
+    transform: translateY(-4px);
     box-shadow: var(--shadow-card-hover);
-    transform: translateY(-2px);
+    border-color: rgba(99, 102, 241, 0.45) !important;
   }
 
+  /* Host card amber elevation */
   .floating-interactive-host:hover {
-    border-color: rgba(245, 158, 11, 0.4);
+    transform: translateY(-4px);
     box-shadow: var(--shadow-card-hover-host);
-    transform: translateY(-2px);
+    border-color: rgba(245, 158, 11, 0.45) !important;
   }
 }
 
@@ -253,16 +290,18 @@ a.btn:not(:disabled):active,
 .floating-card:focus-visible,
 .floating-interactive:focus-visible {
   outline: none;
-  box-shadow: 0 0 0 2px var(--canvas), 0 0 0 4px rgba(99, 102, 241, 0.6);
-  border-color: rgba(99, 102, 241, 0.6);
+  box-shadow: 0 0 0 2px var(--canvas), 0 0 0 4px rgba(99, 102, 241, 0.8), var(--shadow-card-hover);
+  border-color: rgba(99, 102, 241, 0.8);
 }
 
-/* 3. Deep Panel */
+/* 3. Deep Floating Panel (for high-focus cards, booking checkout, modals) */
 .floating-panel {
-  background-color: var(--surface);
-  border: 1px solid var(--border-card);
-  border-radius: 1rem;
   box-shadow: var(--shadow-panel);
+  transform: translateY(0);
+  transition: transform 260ms cubic-bezier(0.16, 1, 0.3, 1),
+              box-shadow 260ms cubic-bezier(0.16, 1, 0.3, 1),
+              border-color 260ms ease;
+  will-change: transform, box-shadow;
 }
 
 @media (hover: hover) and (pointer: fine) {

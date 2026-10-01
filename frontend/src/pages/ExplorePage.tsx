@@ -300,103 +300,153 @@ export const ExplorePage: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col antialiased">
-      {/* 1. DISCOVERY HEADER & SEARCH */}
-      <section className="border-b border-slate-800/80 bg-slate-900/40 pt-10 pb-8">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center max-w-2xl mx-auto mb-6">
-            <h1 className="text-2xl sm:text-4xl font-extrabold tracking-tight text-white">
-              Find Verified Spaces Near You
+      {/* 1. FOCUSED DISCOVERY HEADER & NATURAL LANGUAGE AI SEARCH */}
+      <section className="relative overflow-hidden pt-8 pb-8 md:pt-12 md:pb-12 border-b border-slate-800/60 bg-gradient-to-b from-slate-900 via-slate-950 to-slate-950">
+        {/* Glowing Background Ambience */}
+        <div className="absolute -top-40 left-1/2 -translate-x-1/2 w-[600px] h-[300px] bg-indigo-600/15 blur-[120px] rounded-full pointer-events-none" />
+        <div className="absolute top-10 right-10 w-[240px] h-[240px] bg-violet-600/10 blur-[100px] rounded-full pointer-events-none" />
+
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+          <div className="text-center max-w-3xl mx-auto mb-6">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-indigo-300 text-xs font-medium mb-3 shadow-sm">
+              <span className="flex h-2 w-2 rounded-full bg-indigo-400 animate-ping" />
+              <span className="font-semibold">AI Matchmaker</span> • Real-time Instant Availability
+            </div>
+
+            <h1 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold tracking-tight text-white leading-tight">
+              Find Flexible Space Near You
             </h1>
-            <p className="mt-2 text-sm text-slate-400">
-              Discover and reserve desks, meeting rooms, maker bays, and creative studios by the hour.
+
+            <p className="mt-3 text-sm sm:text-base text-slate-300 leading-relaxed max-w-2xl mx-auto">
+              Instantly discover and reserve workspaces, client meeting rooms, creative studios, maker bays, and study pods by the hour.
             </p>
           </div>
 
-          {/* Search Input Bar */}
-          <div className="max-w-2xl mx-auto">
-            <form
-              onSubmit={(e) => {
-                e.preventDefault();
-                handleAiSearch();
-              }}
-              className="flex items-center gap-2 p-1.5 bg-slate-900 border border-slate-700/80 rounded-xl shadow-md"
-            >
-              <div className="flex-1 flex items-center pl-3 pr-2 gap-2">
-                <i className="fa-solid fa-magnifying-glass text-slate-400 text-sm" />
-                <input
-                  type="text"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="Describe your ideal space (e.g. 'podcast studio' or 'meeting room in Pune')..."
-                  className="w-full bg-transparent border-none text-xs sm:text-sm text-white placeholder-slate-400 focus:outline-none"
-                />
+          {/* AI Intent-Based Search Engine Bar */}
+          <div className="max-w-3xl mx-auto">
+            <div className="bg-slate-900/90 backdrop-blur-xl border border-indigo-500/30 rounded-2xl p-3 sm:p-3.5 floating-panel transition-all hover:border-indigo-500/50 shadow-xl">
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  handleAiSearch();
+                }}
+                className="flex flex-col sm:flex-row gap-2.5"
+              >
+                <div className="relative flex-grow flex items-center">
+                  <div className="absolute left-4 text-indigo-400 text-base">
+                    <i className="fa-solid fa-wand-magic-sparkles" />
+                  </div>
+                  <input
+                    type="text"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    placeholder="Describe your ideal space (e.g. 'podcast studio for 2' or 'client meeting room near Koramangala')..."
+                    className="w-full bg-slate-800 border border-slate-700/80 rounded-xl pl-11 pr-4 py-3 text-sm text-slate-100 placeholder-slate-400 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition"
+                  />
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={isAiSearching}
+                  className="bg-gradient-to-r from-indigo-600 via-violet-600 to-indigo-700 hover:from-indigo-500 hover:to-violet-500 text-white font-semibold text-sm px-5 py-3 rounded-xl shadow-lg shadow-indigo-600/30 flex items-center justify-center gap-2 transition shrink-0 group disabled:opacity-60"
+                >
+                  {isAiSearching ? (
+                    <>
+                      <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                      <span>Matching...</span>
+                    </>
+                  ) : (
+                    <>
+                      <span>Match with AI</span>
+                      <i className="fa-solid fa-arrow-right text-xs group-hover:translate-x-0.5 transition" />
+                    </>
+                  )}
+                </button>
+              </form>
+
+              {/* Prompt Suggestion Chips */}
+              <div className="mt-3 pt-2.5 border-t border-slate-800/70 flex items-center gap-2 text-xs overflow-x-auto whitespace-nowrap pb-1 scrollbar-none">
+                <span className="text-slate-400 font-medium shrink-0 flex items-center gap-1 text-[11px]">
+                  <i className="fa-regular fa-compass text-indigo-400" /> Try prompts:
+                </span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const p = 'quiet place for 6 people near Kharadi for a 4-hour team meeting';
+                    setSearchQuery(p);
+                    handleAiSearch(p);
+                  }}
+                  className="px-2.5 py-1 rounded-lg bg-indigo-950/70 hover:bg-indigo-900/80 text-indigo-200 hover:text-white border border-indigo-500/40 text-[11px] font-medium transition flex items-center gap-1.5"
+                >
+                  <span>✨</span> Kharadi Team Meeting
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const p = 'quiet room for 4 people';
+                    setSearchQuery(p);
+                    handleAiSearch(p);
+                  }}
+                  className="px-2.5 py-1 rounded-lg bg-slate-800/80 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700/60 text-[11px] transition flex items-center gap-1.5"
+                >
+                  <span>📚</span> Quiet Room (4 ppl)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const p = 'workspace near Kharadi';
+                    setSearchQuery(p);
+                    handleAiSearch(p);
+                  }}
+                  className="px-2.5 py-1 rounded-lg bg-slate-800/80 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700/60 text-[11px] transition flex items-center gap-1.5"
+                >
+                  <span>💼</span> Workspace in Kharadi
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const p = 'place for a small team meeting';
+                    setSearchQuery(p);
+                    handleAiSearch(p);
+                  }}
+                  className="px-2.5 py-1 rounded-lg bg-slate-800/80 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700/60 text-[11px] transition flex items-center gap-1.5"
+                >
+                  <span>👥</span> Small Team Meeting
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const p = 'studio for a photography session';
+                    setSearchQuery(p);
+                    handleAiSearch(p);
+                  }}
+                  className="px-2.5 py-1 rounded-lg bg-slate-800/80 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700/60 text-[11px] transition flex items-center gap-1.5"
+                >
+                  <span>📸</span> Photography Studio
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const p = 'office space under ₹1000 per hour';
+                    setSearchQuery(p);
+                    handleAiSearch(p);
+                  }}
+                  className="px-2.5 py-1 rounded-lg bg-slate-800/80 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700/60 text-[11px] transition flex items-center gap-1.5"
+                >
+                  <span>💰</span> Under ₹1000/hr
+                </button>
               </div>
-
-              <button
-                type="submit"
-                disabled={isAiSearching}
-                className="px-4 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-xs rounded-lg transition shrink-0 flex items-center gap-1.5 disabled:opacity-60"
-              >
-                {isAiSearching ? (
-                  <>
-                    <span className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                    <span>Searching...</span>
-                  </>
-                ) : (
-                  <>
-                    <span>Match with AI</span>
-                    <i className="fa-solid fa-arrow-right text-[10px]" />
-                  </>
-                )}
-              </button>
-            </form>
-
-            {/* Prompt Quick Chips */}
-            <div className="mt-3 flex items-center gap-1.5 text-xs overflow-x-auto whitespace-nowrap pb-1 scrollbar-none justify-center">
-              <span className="text-slate-500 text-[11px] font-medium shrink-0">Try:</span>
-              <button
-                type="button"
-                onClick={() => {
-                  const p = 'quiet room for 4 people near Kharadi';
-                  setSearchQuery(p);
-                  handleAiSearch(p);
-                }}
-                className="px-2.5 py-0.5 rounded-full bg-slate-800 hover:bg-slate-750 text-slate-300 hover:text-white border border-slate-700 text-[11px] transition"
-              >
-                Team Meeting in Kharadi
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  const p = 'studio for photography session';
-                  setSearchQuery(p);
-                  handleAiSearch(p);
-                }}
-                className="px-2.5 py-0.5 rounded-full bg-slate-800 hover:bg-slate-750 text-slate-300 hover:text-white border border-slate-700 text-[11px] transition"
-              >
-                Photography Studio
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  const p = 'desk under ₹100 per hour';
-                  setSearchQuery(p);
-                  handleAiSearch(p);
-                }}
-                className="px-2.5 py-0.5 rounded-full bg-slate-800 hover:bg-slate-750 text-slate-300 hover:text-white border border-slate-700 text-[11px] transition"
-              >
-                Under ₹100/hr
-              </button>
             </div>
           </div>
         </div>
       </section>
 
       {/* 2. SPACE EXPLORER & CONTROLS */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex-1 w-full">
-        {/* Category Filter Pills */}
-        <div className="flex items-center justify-between gap-4 mb-6">
-          <div className="flex items-center gap-1.5 overflow-x-auto pb-2 md:pb-0 scrollbar-none">
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 flex-1 w-full">
+        {/* Controls Bar: Category Pills & Stats */}
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
+          {/* Category Pills */}
+          <div className="flex items-center gap-2 overflow-x-auto pb-2 md:pb-0 scrollbar-none">
             {categories.map((cat) => {
               const isSelected = activeCategory === cat.value;
               return (
@@ -404,26 +454,34 @@ export const ExplorePage: React.FC = () => {
                   key={cat.value}
                   type="button"
                   onClick={() => handleSelectCategory(cat.value)}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition whitespace-nowrap ${
+                  className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-medium transition whitespace-nowrap floating-interactive ${
                     isSelected
-                      ? 'bg-indigo-600 text-white shadow-sm'
+                      ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30'
                       : 'bg-slate-900 text-slate-400 hover:text-white hover:bg-slate-800 border border-slate-800'
                   }`}
                 >
-                  <i className={`fa-solid ${cat.icon} mr-1.5`} />
+                  <i className={`fa-solid ${cat.icon} mr-1.5 ${cat.color || ''}`} />
                   <span>{cat.label}</span>
                 </button>
               );
             })}
           </div>
 
-          <div className="hidden lg:flex items-center gap-2 text-xs text-slate-400 shrink-0">
-            <span>{displaySpaces.length} {displaySpaces.length === 1 ? 'space' : 'spaces'} available</span>
+          {/* Active Indicator */}
+          <div className="flex items-center gap-3 text-xs text-slate-400">
+            <span>
+              {displaySpaces.length} {displaySpaces.length === 1 ? 'space' : 'spaces'} available
+              {selectedRadius ? ` within ${selectedRadius} km` : ''}
+            </span>
+            <span className="w-1 h-1 rounded-full bg-slate-700" />
+            <span className="flex items-center gap-1 text-emerald-400">
+              <i className="fa-solid fa-shield-check" /> 100% Host Verified
+            </span>
           </div>
         </div>
 
-        {/* Secondary Filter Bar */}
-        <div className="bg-slate-900 border border-slate-800 rounded-xl p-3.5 mb-6">
+        {/* Location & Radius Dynamic Discovery Filter Bar */}
+        <div className="bg-slate-900/80 border border-slate-800/90 rounded-2xl p-4 mb-8 floating-container">
           <form
             onSubmit={(e) => {
               e.preventDefault();
@@ -431,32 +489,36 @@ export const ExplorePage: React.FC = () => {
             }}
             className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-3"
           >
-            {/* Location Input */}
-            <div className="flex-1 flex items-center gap-2 bg-slate-950 border border-slate-800 rounded-lg px-3 py-1.5">
-              <i className="fa-solid fa-location-dot text-slate-400 text-xs shrink-0" />
+            {/* Location Input with Geolocation Action */}
+            <div className="flex-grow flex items-center gap-2 bg-slate-800 border border-slate-700/80 rounded-xl px-3 py-2">
+              <i className="fa-solid fa-location-dot text-indigo-400 shrink-0" />
               <input
                 type="text"
                 value={locationInput}
                 onChange={(e) => setLocationInput(e.target.value)}
-                placeholder="Enter city or neighborhood (e.g. Wagholi, Koramangala)..."
-                className="bg-transparent border-none text-xs text-white placeholder-slate-400 focus:outline-none w-full"
+                placeholder="Enter location or college (e.g. Wagholi, Hauz Khas, Koramangala)..."
+                className="bg-transparent border-none text-xs sm:text-sm text-slate-100 placeholder-slate-400 focus:outline-none w-full"
               />
               <button
                 type="button"
                 onClick={detectCurrentLocation}
-                className="text-[11px] font-semibold text-indigo-400 hover:text-indigo-300 bg-indigo-950/60 border border-indigo-500/30 px-2 py-0.5 rounded transition shrink-0"
+                className="shrink-0 text-[11px] font-semibold text-indigo-300 hover:text-white bg-indigo-950/80 hover:bg-indigo-900/80 border border-indigo-500/30 px-2.5 py-1 rounded-lg flex items-center gap-1 transition"
+                title="Use my current GPS coordinates"
               >
-                GPS
+                <i className="fa-solid fa-crosshairs text-indigo-400" />
+                <span className="hidden sm:inline">Use GPS</span>
               </button>
             </div>
 
             {/* Radius Selector */}
-            <div className="flex items-center gap-1.5 shrink-0">
-              <span className="text-xs text-slate-400">Distance:</span>
+            <div className="flex items-center gap-2 shrink-0">
+              <label className="text-xs text-slate-400 font-medium shrink-0 flex items-center gap-1">
+                <i className="fa-solid fa-ruler-combined text-slate-500" /> Radius:
+              </label>
               <select
                 value={selectedRadius}
                 onChange={(e) => handleRadiusChange(e.target.value)}
-                className="bg-slate-950 border border-slate-800 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none"
+                className="bg-slate-800 border border-slate-700/80 rounded-xl px-3 py-2 text-xs sm:text-sm text-slate-100 focus:outline-none focus:border-indigo-500 transition"
               >
                 <option value="">Any Distance</option>
                 <option value="1">Within 1 km</option>
@@ -467,12 +529,14 @@ export const ExplorePage: React.FC = () => {
             </div>
 
             {/* Max Budget Filter */}
-            <div className="flex items-center gap-1.5 shrink-0">
-              <span className="text-xs text-slate-400">Max Rate:</span>
+            <div className="flex items-center gap-2 shrink-0">
+              <label className="text-xs text-slate-400 font-medium shrink-0 flex items-center gap-1">
+                <i className="fa-solid fa-indian-rupee-sign text-slate-500" /> Max Price:
+              </label>
               <select
                 value={selectedMaxPrice}
                 onChange={(e) => handleMaxPriceChange(e.target.value)}
-                className="bg-slate-950 border border-slate-800 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none"
+                className="bg-slate-800 border border-slate-700/80 rounded-xl px-3 py-2 text-xs sm:text-sm text-slate-100 focus:outline-none focus:border-indigo-500 transition"
               >
                 <option value="">Any Budget</option>
                 <option value="60">Under ₹60/hr</option>
@@ -483,33 +547,39 @@ export const ExplorePage: React.FC = () => {
               </select>
             </div>
 
-            {/* Filter Actions */}
+            {/* Submit & Reset Actions */}
             <div className="flex items-center gap-2 shrink-0">
               <button
                 type="submit"
-                className="px-3.5 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold transition"
+                className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs sm:text-sm font-semibold transition flex items-center justify-center gap-1.5 shadow-md shadow-indigo-600/20"
               >
-                Apply
+                <i className="fa-solid fa-filter text-xs" /> Apply Filter
               </button>
               <button
                 type="button"
                 onClick={resetAllFilters}
-                className="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold transition"
+                className={`px-3.5 py-2 rounded-xl text-xs sm:text-sm font-semibold transition flex items-center justify-center gap-1.5 border ${
+                  locationInput || selectedRadius || selectedMaxPrice || activeCategory !== 'All' || searchQuery || aiMatchActive
+                    ? 'bg-slate-800 hover:bg-slate-700 text-slate-200 border-slate-700 shadow-sm'
+                    : 'bg-slate-950/60 hover:bg-slate-850 text-slate-400 hover:text-slate-200 border-slate-800'
+                }`}
+                title="Reset all filters to default"
               >
-                Reset
+                <i className="fa-solid fa-rotate-left text-xs" />
+                <span>Reset</span>
               </button>
             </div>
           </form>
 
-          {/* Quick Hubs */}
-          <div className="mt-2.5 pt-2 border-t border-slate-800/60 flex items-center gap-1.5 text-xs overflow-x-auto whitespace-nowrap scrollbar-none">
+          {/* Quick Hub Chips */}
+          <div className="mt-3 pt-2.5 border-t border-slate-800/60 flex items-center gap-2 text-xs overflow-x-auto whitespace-nowrap scrollbar-none">
             <span className="text-slate-500 text-[11px] font-medium shrink-0">Quick Hubs:</span>
             {quickHubs.map((hub, idx) => (
               <button
                 key={idx}
                 type="button"
                 onClick={() => handleSelectQuickHub(hub)}
-                className="px-2 py-0.5 rounded bg-slate-950 hover:bg-slate-800 text-slate-400 hover:text-slate-200 border border-slate-800 text-[11px] transition"
+                className="px-2 py-0.5 rounded-lg bg-slate-950/70 hover:bg-slate-800 text-slate-400 hover:text-white border border-slate-800 text-[11px] transition"
               >
                 {hub.label}
               </button>
@@ -519,10 +589,10 @@ export const ExplorePage: React.FC = () => {
 
         {/* AI Matching Banner */}
         {aiMatchActive && (
-          <div className="mb-6 p-4 rounded-xl bg-slate-900 border border-slate-800 flex flex-col gap-3">
+          <div className="mb-6 p-4 rounded-xl bg-gradient-to-r from-indigo-950/60 via-slate-900 to-indigo-950/60 border border-indigo-500/30 flex flex-col gap-3">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-lg bg-indigo-600/20 text-indigo-400 flex items-center justify-center shrink-0">
+                <div className="w-8 h-8 rounded-lg bg-indigo-600/30 text-indigo-300 flex items-center justify-center shrink-0">
                   <i className="fa-solid fa-sparkles text-sm" />
                 </div>
                 <div>
@@ -540,7 +610,7 @@ export const ExplorePage: React.FC = () => {
                   setSearchSummary('');
                   fetchSpaces();
                 }}
-                className="text-xs text-slate-400 hover:text-white font-medium px-3 py-1.5 rounded-lg bg-slate-800 border border-slate-700 shrink-0 transition"
+                className="text-xs text-indigo-400 hover:text-indigo-300 font-medium px-3 py-1.5 rounded-lg bg-indigo-950 border border-indigo-800/60 shrink-0"
               >
                 Clear AI Filter
               </button>
