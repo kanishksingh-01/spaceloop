@@ -141,8 +141,29 @@ def get_spaces():
                 continue
         spaces_data.append(s_dict)
 
+    raw_page = request.args.get("page")
+    raw_limit = request.args.get("limit")
+    page = int(raw_page) if raw_page and raw_page.isdigit() and int(raw_page) > 0 else None
+    limit = int(raw_limit) if raw_limit and raw_limit.isdigit() and int(raw_limit) > 0 else None
+
     if lat is not None and lng is not None:
         spaces_data.sort(key=lambda x: x.get("distance_km", 999999))
+
+    if page or limit:
+        page_num = page or 1
+        page_limit = min(limit or 12, 100)
+        total_items = len(spaces_data)
+        start_idx = (page_num - 1) * page_limit
+        end_idx = start_idx + page_limit
+        paginated = spaces_data[start_idx:end_idx]
+        response_payload = {
+            "spaces": paginated,
+            "total": total_items,
+            "page": page_num,
+            "limit": page_limit,
+            "has_more": end_idx < total_items
+        }
+        return space_cache.cache_and_respond(cache_key, etag, response_payload)
 
     return space_cache.cache_and_respond(cache_key, etag, spaces_data)
 

@@ -5,12 +5,15 @@ import { Space } from '../types';
 import { getSpaces, searchSpacesHybrid, aiMatchSpaces } from '../services/spaces';
 import { SpaceCard } from '../components/common/SpaceCard';
 
+const PAGE_SIZE = 12;
+
 export const ExplorePage: React.FC = () => {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
 
   // State
   const [spaces, setSpaces] = useState<Space[]>([]);
+  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState(searchParams.get('q') || '');
   const [locationInput, setLocationInput] = useState(searchParams.get('loc') || '');
@@ -190,24 +193,32 @@ export const ExplorePage: React.FC = () => {
     return result;
   }, [spaces, userLat, userLng, locationInput, selectedRadius, selectedMaxPrice, activeCategory]);
 
+  const visibleSpaces = useMemo(() => {
+    return displaySpaces.slice(0, visibleCount);
+  }, [displaySpaces, visibleCount]);
+
   const handleSelectQuickHub = (hub: (typeof quickHubs)[0]) => {
     setLocationInput(hub.loc);
     setUserLat(hub.lat);
     setUserLng(hub.lng);
+    setVisibleCount(PAGE_SIZE);
     fetchSpaces({ loc: hub.loc, lat: hub.lat, lng: hub.lng });
   };
 
   const handleSelectCategory = (catVal: string) => {
     setActiveCategory(catVal);
     setAiMatchActive(false);
+    setVisibleCount(PAGE_SIZE);
   };
 
   const handleRadiusChange = (rad: string) => {
     setSelectedRadius(rad);
+    setVisibleCount(PAGE_SIZE);
   };
 
   const handleMaxPriceChange = (price: string) => {
     setSelectedMaxPrice(price);
+    setVisibleCount(PAGE_SIZE);
   };
 
   // AI Match handler
@@ -291,6 +302,7 @@ export const ExplorePage: React.FC = () => {
     setSearchSummary('');
     setUserLat(null);
     setUserLng(null);
+    setVisibleCount(PAGE_SIZE);
     setSearchParams({});
     fetchSpaces();
   };
@@ -675,14 +687,44 @@ export const ExplorePage: React.FC = () => {
             </button>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {displaySpaces.map((space) => (
-              <SpaceCard
-                key={space.id}
-                space={space}
-                onPress={(id) => navigate(`/space/${id}`)}
-              />
-            ))}
+          <div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {visibleSpaces.map((space) => (
+                <SpaceCard
+                  key={space.id}
+                  space={space}
+                  onPress={(id) => navigate(`/space/${id}`)}
+                />
+              ))}
+            </div>
+
+            {/* Incremental Loading / Pagination Control */}
+            {displaySpaces.length > visibleSpaces.length && (
+              <div className="mt-10 pt-6 border-t border-slate-800/80 flex flex-col items-center justify-center gap-3">
+                <div className="text-xs text-slate-400 font-medium">
+                  Showing <span className="text-white font-semibold">{visibleSpaces.length}</span> of <span className="text-white font-semibold">{displaySpaces.length}</span> spaces
+                </div>
+                <div className="flex items-center gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setVisibleCount((prev) => prev + PAGE_SIZE)}
+                    className="px-6 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-100 hover:text-white text-xs sm:text-sm font-semibold border border-slate-700 hover:border-slate-600 transition shadow-sm flex items-center gap-2"
+                  >
+                    <i className="fa-solid fa-chevron-down text-xs text-indigo-400" />
+                    <span>Load More Spaces</span>
+                  </button>
+                  {displaySpaces.length > visibleCount + PAGE_SIZE && (
+                    <button
+                      type="button"
+                      onClick={() => setVisibleCount(displaySpaces.length)}
+                      className="px-4 py-2.5 rounded-xl bg-slate-900/80 hover:bg-slate-800 text-slate-400 hover:text-slate-200 text-xs sm:text-sm font-medium border border-slate-800 transition"
+                    >
+                      <span>Show All ({displaySpaces.length})</span>
+                    </button>
+                  )}
+                </div>
+              </div>
+            )}
           </div>
         )}
       </section>

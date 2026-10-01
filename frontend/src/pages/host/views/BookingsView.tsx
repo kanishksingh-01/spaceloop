@@ -9,6 +9,8 @@ import {
   StatusBadge,
 } from '../components';
 
+const PAGE_SIZE = 10;
+
 export const BookingsView: React.FC = () => {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -19,6 +21,7 @@ export const BookingsView: React.FC = () => {
   const [spaces, setSpaces] = useState<Space[]>([]);
   const [selectedSpaceId, setSelectedSpaceId] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState('');
+  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
   const [loading, setLoading] = useState(true);
   const [actionLoadingId, setActionLoadingId] = useState<number | null>(null);
 
@@ -64,6 +67,7 @@ export const BookingsView: React.FC = () => {
   };
 
   const handleStatusFilterChange = (status: string) => {
+    setVisibleCount(PAGE_SIZE);
     if (status === 'all') {
       searchParams.delete('status');
       setSearchParams(searchParams);
@@ -110,6 +114,8 @@ export const BookingsView: React.FC = () => {
     const matchSpace = (b.space?.title || '').toLowerCase().includes(q);
     return matchId || matchUser || matchSpace;
   });
+
+  const visibleBookings = filteredBookings.slice(0, visibleCount);
 
   return (
     <div className="px-4 sm:px-6 lg:px-8 py-6 max-w-7xl mx-auto w-full space-y-6">
@@ -218,7 +224,7 @@ export const BookingsView: React.FC = () => {
         />
       ) : (
         <div className="space-y-3">
-          {filteredBookings.map(b => {
+          {visibleBookings.map(b => {
             const isLive = b.status === 'active';
             const isPending = b.status === 'pending';
 
@@ -341,6 +347,23 @@ export const BookingsView: React.FC = () => {
               </div>
             );
           })}
+
+          {/* Load More Bookings Control */}
+          {filteredBookings.length > visibleBookings.length && (
+            <div className="pt-4 flex flex-col items-center justify-center gap-2">
+              <div className="text-xs text-slate-400 font-medium">
+                Showing <span className="text-white font-semibold">{visibleBookings.length}</span> of <span className="text-white font-semibold">{filteredBookings.length}</span> bookings
+              </div>
+              <button
+                type="button"
+                onClick={() => setVisibleCount(prev => prev + PAGE_SIZE)}
+                className="px-5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white text-xs font-semibold border border-slate-700 transition flex items-center gap-2 shadow-sm"
+              >
+                <i className="fa-solid fa-chevron-down text-xs text-amber-400" />
+                <span>Load More Bookings</span>
+              </button>
+            </div>
+          )}
         </div>
       )}
     </div>
