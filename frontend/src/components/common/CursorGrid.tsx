@@ -68,12 +68,19 @@ export const CursorGrid: React.FC<CursorGridProps> = ({
   const rgb = hexToRgb(color);
 
   // State refs to keep animation loop decoupled from React renders
-  const mouseRef = useRef<{ x: number; y: number; active: boolean }>({
+  const mouseRef = useRef<{
+    x: number;
+    y: number;
+    lastMovedTime: number;
+    active: boolean;
+  }>({
     x: -9999,
     y: -9999,
+    lastMovedTime: 0,
     active: false,
   });
 
+  const isIntersectingRef = useRef<boolean>(true);
   const cellStatesRef = useRef<
     Map<string, { lastLitTime: number; peakAlpha: number; currentAlpha: number }>
   >(new Map());
@@ -122,18 +129,14 @@ export const CursorGrid: React.FC<CursorGridProps> = ({
 
       ctx.resetTransform?.();
       ctx.scale(dpr, dpr);
+      requestRender();
     };
 
-    resizeCanvas();
-    const resizeObserver = new ResizeObserver(() => {
-      resizeCanvas();
-    });
-    resizeObserver.observe(container);
-
-    // Render loop
+    // Intelligent render loop
     const render = (now: number) => {
-      if (width === 0 || height === 0) {
-        animFrameIdRef.current = requestAnimationFrame(render);
+      // If offscreen or tab hidden, pause execution immediately
+      if (!isIntersectingRef.current || document.hidden || width === 0 || height === 0) {
+        animFrameIdRef.current = null;
         return;
       }
 
@@ -144,6 +147,7 @@ export const CursorGrid: React.FC<CursorGridProps> = ({
       const cellStates = cellStatesRef.current;
       const mouse = mouseRef.current;
       const pulses = pulsesRef.current;
+      let hasActiveAnimation = false;
 
       // 1. Draw static background grid lines if gridOpacity > 0
       if (gridOpacity > 0) {
@@ -166,7 +170,6 @@ export const CursorGrid: React.FC<CursorGridProps> = ({
 
       // 2. Calculate interaction from cursor
       if (mouse.active) {
-        // Calculate bounding box of cells affected by cursor radius
         const minCol = Math.max(0, Math.floor((mouse.x - radius) / cellSize));
         const maxCol = Math.min(cols - 1, Math.floor((mouse.x + radius) / cellSize));
         const minRow = Math.max(0, Math.floor((mouse.y - radius) / cellSize));
@@ -190,16 +193,24 @@ export const CursorGrid: React.FC<CursorGridProps> = ({
                   peakAlpha: targetAlpha,
                   currentAlpha: targetAlpha,
                 });
+                hasActiveAnimation = true;
               } else {
                 state.lastLitTime = now;
+                state.currentAlpha = targetAlpha;
               }
             }
           }
+        }
+
+        // If mouse moved recently within fade window, continue animation
+        if (now - mouse.lastMovedTime < holdTime + fadeDuration) {
+          hasActiveAnimation = true;
         }
       }
 
       // 3. Process click pulses
       if (pulses.length > 0) {
+        hasActiveAnimation = true;
         const ringThickness = cellSize * 1.6;
         for (let i = pulses.length - 1; i >= 0; i--) {
           const pulse = pulses[i];
@@ -260,6 +271,11 @@ export const CursorGrid: React.FC<CursorGridProps> = ({
           const fadeProgress = Math.min(1, fadeElapsed / Math.max(1, fadeDuration));
           alpha = state.peakAlpha * (1 - fadeProgress);
           state.currentAlpha = alpha;
+          if (fadeProgress < 1) {
+            hasActiveAnimation = true;
+          }
+        } else if (timeSinceLit > 0 && !mouse.active) {
+          hasActiveAnimation = true;
         }
 
         if (alpha <= 0.005) {
@@ -291,20 +307,53 @@ export const CursorGrid: React.FC<CursorGridProps> = ({
         }
       });
 
-      if (cellStates.size > 0 || pulsesRef.current.length > 0 || mouseRef.current.active) {
+      // 5. Intelligent scheduling: only request next frame if dynamic changes are active
+      if (hasActiveAnimation || pulses.length > 0) {
         animFrameIdRef.current = requestAnimationFrame(render);
       } else {
         animFrameIdRef.current = null;
       }
     };
 
-    const ensureAnimationLoop = () => {
-      if (animFrameIdRef.current === null) {
+    const requestRender = () => {
+      if (animFrameIdRef.current === null && isIntersectingRef.current && !document.hidden) {
         animFrameIdRef.current = requestAnimationFrame(render);
       }
     };
 
-    animFrameIdRef.current = requestAnimationFrame(render);
+    resizeCanvas();
+    const resizeObserver = new ResizeObserver(() => {
+      resizeCanvas();
+    });
+    resizeObserver.observe(container);
+
+    // Viewport visibility observer: suspends render loop when scrolled offscreen
+    const intersectionObserver = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) {
+          isIntersectingRef.current = entry.isIntersecting;
+          if (entry.isIntersecting) {
+            requestRender();
+          } else if (animFrameIdRef.current !== null) {
+            cancelAnimationFrame(animFrameIdRef.current);
+            animFrameIdRef.current = null;
+          }
+        }
+      },
+      { threshold: 0.01 }
+    );
+    intersectionObserver.observe(container);
+
+    // Page visibility listener: suspends render loop when tab is switched/minimized
+    const handleVisibilityChange = () => {
+      if (!document.hidden && isIntersectingRef.current) {
+        requestRender();
+      } else if (animFrameIdRef.current !== null) {
+        cancelAnimationFrame(animFrameIdRef.current);
+        animFrameIdRef.current = null;
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibilityChange);
 
     // Mouse & Touch interaction handlers with container bounds check
     const handleWindowMouseMove = (e: MouseEvent) => {
@@ -317,10 +366,12 @@ export const CursorGrid: React.FC<CursorGridProps> = ({
       ) {
         mouseRef.current.x = e.clientX - rect.left;
         mouseRef.current.y = e.clientY - rect.top;
+        mouseRef.current.lastMovedTime = performance.now();
         mouseRef.current.active = true;
-        ensureAnimationLoop();
-      } else {
+        requestRender();
+      } else if (mouseRef.current.active) {
         mouseRef.current.active = false;
+        requestRender();
       }
     };
 
@@ -346,7 +397,7 @@ export const CursorGrid: React.FC<CursorGridProps> = ({
           startTime: performance.now(),
           maxRadius,
         });
-        ensureAnimationLoop();
+        requestRender();
       }
     };
 
@@ -362,10 +413,12 @@ export const CursorGrid: React.FC<CursorGridProps> = ({
         ) {
           mouseRef.current.x = touch.clientX - rect.left;
           mouseRef.current.y = touch.clientY - rect.top;
+          mouseRef.current.lastMovedTime = performance.now();
           mouseRef.current.active = true;
-          ensureAnimationLoop();
-        } else {
+          requestRender();
+        } else if (mouseRef.current.active) {
           mouseRef.current.active = false;
+          requestRender();
         }
       }
     };
@@ -387,11 +440,22 @@ export const CursorGrid: React.FC<CursorGridProps> = ({
           startTime: performance.now(),
           maxRadius,
         });
+        requestRender();
       }
     };
 
     const handleTouchEnd = () => {
-      mouseRef.current.active = false;
+      if (mouseRef.current.active) {
+        mouseRef.current.active = false;
+        requestRender();
+      }
+    };
+
+    const handleMouseLeave = () => {
+      if (mouseRef.current.active) {
+        mouseRef.current.active = false;
+        requestRender();
+      }
     };
 
     window.addEventListener('mousemove', handleWindowMouseMove);
@@ -399,12 +463,16 @@ export const CursorGrid: React.FC<CursorGridProps> = ({
     window.addEventListener('touchmove', handleTouchMove, { passive: true });
     window.addEventListener('touchstart', handleTouchStart, { passive: true });
     window.addEventListener('touchend', handleTouchEnd, { passive: true });
+    document.addEventListener('mouseleave', handleMouseLeave);
 
     return () => {
-      if (animFrameIdRef.current) {
+      if (animFrameIdRef.current !== null) {
         cancelAnimationFrame(animFrameIdRef.current);
       }
       resizeObserver.disconnect();
+      intersectionObserver.disconnect();
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      document.removeEventListener('mouseleave', handleMouseLeave);
       window.removeEventListener('mousemove', handleWindowMouseMove);
       window.removeEventListener('click', handleWindowClick);
       window.removeEventListener('touchmove', handleTouchMove);
