@@ -4,6 +4,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Space } from '../types';
 import { getSpaces, searchSpacesHybrid, aiMatchSpaces } from '../services/spaces';
 import { SpaceCard } from '../components/common/SpaceCard';
+import { SpaceCardGridSkeleton } from '../components/common/Skeletons';
 
 const PAGE_SIZE = 12;
 
@@ -666,10 +667,7 @@ export const ExplorePage: React.FC = () => {
 
         {/* Spaces Grid */}
         {loading ? (
-          <div className="py-20 flex flex-col items-center justify-center">
-            <div className="w-8 h-8 border-3 border-indigo-500 border-t-transparent rounded-full animate-spin mb-3" />
-            <span className="text-xs text-slate-400">Searching verified spaces...</span>
-          </div>
+          <SpaceCardGridSkeleton count={6} />
         ) : displaySpaces.length === 0 ? (
           <div className="py-20 text-center bg-slate-900/50 rounded-2xl border border-slate-800 p-8">
             <div className="w-16 h-16 rounded-full bg-slate-800 flex items-center justify-center mx-auto mb-4 text-2xl">

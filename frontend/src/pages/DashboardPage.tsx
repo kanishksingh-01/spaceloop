@@ -6,6 +6,7 @@ import { request } from '../services/api';
 import { cancelBooking } from '../services/bookings';
 import { toggleSpaceStatus, getInquiries } from '../services/spaces';
 import { setupMfa, verifyMfaSetup, disableMfa, resendEmailVerification } from '../services/auth';
+import { DashboardBookingSkeleton } from '../components/common/Skeletons';
 
 interface DashboardPageProps {
   currentUser: User | null;
@@ -532,7 +533,9 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => 
               </Pressable>
             </View>
 
-            {bookings.length === 0 ? (
+            {loading ? (
+              <DashboardBookingSkeleton count={2} />
+            ) : bookings.length === 0 ? (
               <View className="p-8 bg-slate-900 rounded-2xl border border-slate-800 text-center items-center floating-container">
                 <Text className="text-3xl mb-2">🎟️</Text>
                 <Text className="text-sm font-bold text-white mb-1">No active bookings</Text>

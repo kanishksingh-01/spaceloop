@@ -4,6 +4,7 @@ import { checkInBooking, checkOutBooking } from '../services/bookings';
 import { request } from '../services/api';
 import { Booking } from '../types';
 import { formatTimeWindow, safeParseDate } from '../services/pricing';
+import { SessionPageSkeleton } from '../components/common/Skeletons';
 
 interface TimerState {
   hours: number;
@@ -289,12 +290,7 @@ export const SessionPage: React.FC = () => {
 
   // Loading Screen
   if (loading) {
-    return (
-      <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center p-4">
-        <div className="w-12 h-12 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin mb-4" />
-        <p className="text-sm font-semibold text-slate-400">Loading digital door pass session...</p>
-      </div>
-    );
+    return <SessionPageSkeleton />;
   }
 
   // Not Found Screen

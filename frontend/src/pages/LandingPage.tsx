@@ -4,6 +4,7 @@ import { Space, User } from '../types';
 import { getSpaces } from '../services/spaces';
 import CursorGrid from '../components/common/CursorGrid';
 import { useTheme } from '../context/ThemeContext';
+import { LandingFeaturedSpacesSkeleton } from '../components/common/Skeletons';
 
 interface LandingPageProps {
   currentUser?: User | null;
@@ -513,9 +514,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ currentUser }) => {
           </div>
 
           {loading ? (
-            <div className="py-12 flex justify-center">
-              <div className="w-8 h-8 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin" />
-            </div>
+            <LandingFeaturedSpacesSkeleton count={3} />
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
               {featuredSpaces.map((space) => (

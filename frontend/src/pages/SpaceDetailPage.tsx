@@ -6,6 +6,7 @@ import { getSpaceById, submitInquiry } from '../services/spaces';
 import { createBooking, precheckBooking } from '../services/bookings';
 import { AuthModal } from '../components/common/AuthModal';
 import { calculateRentalPricing, formatTimeWindow, MIN_BOOKING_HOURS, MAX_BOOKING_HOURS } from '../services/pricing';
+import { SpaceDetailSkeleton } from '../components/common/Skeletons';
 
 interface SpaceDetailPageProps {
   currentUser: User | null;
@@ -170,12 +171,7 @@ export const SpaceDetailPage: React.FC<SpaceDetailPageProps> = ({ currentUser })
   };
 
   if (loading) {
-    return (
-      <View className="min-h-screen bg-slate-950 items-center justify-center">
-        <View className="w-10 h-10 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin mb-4" />
-        <Text className="text-sm text-slate-400">Loading space details...</Text>
-      </View>
-    );
+    return <SpaceDetailSkeleton />;
   }
 
   if (!space) {
