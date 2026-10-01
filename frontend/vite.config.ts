@@ -10,6 +10,17 @@ export default defineConfig({
       'react-native-web': path.resolve(__dirname, './src/lib/react-native.tsx'),
     },
   },
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          'vendor-react': ['react', 'react-dom', 'react-router-dom'],
+          'vendor-icons': ['lucide-react'],
+        },
+      },
+    },
+    chunkSizeWarningLimit: 600,
+  },
   server: {
     port: 3000,
     proxy: {
@@ -28,3 +39,4 @@ export default defineConfig({
     },
   },
 });
+

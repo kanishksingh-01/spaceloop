@@ -233,8 +233,10 @@ class Space(db.Model):
 
     __table_args__ = (
         db.Index("idx_space_active_cat", "is_active", "category"),
+        db.Index("idx_space_owner_active", "owner_id", "is_active"),
         db.Index("idx_space_coords", "latitude", "longitude"),
         db.Index("idx_space_city", "city"),
+        db.Index("idx_space_price", "price_hourly"),
     )
 
     @property
@@ -489,6 +491,7 @@ class Booking(db.Model):
     __table_args__ = (
         db.Index("idx_booking_space_time", "space_id", "start_time", "end_time"),
         db.Index("idx_booking_renter_status", "renter_id", "status"),
+        db.Index("idx_booking_space_status", "space_id", "status"),
         db.Index("idx_booking_session_state", "session_state"),
     )
 

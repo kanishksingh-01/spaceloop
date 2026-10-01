@@ -291,7 +291,17 @@ export const CursorGrid: React.FC<CursorGridProps> = ({
         }
       });
 
-      animFrameIdRef.current = requestAnimationFrame(render);
+      if (cellStates.size > 0 || pulsesRef.current.length > 0 || mouseRef.current.active) {
+        animFrameIdRef.current = requestAnimationFrame(render);
+      } else {
+        animFrameIdRef.current = null;
+      }
+    };
+
+    const ensureAnimationLoop = () => {
+      if (animFrameIdRef.current === null) {
+        animFrameIdRef.current = requestAnimationFrame(render);
+      }
     };
 
     animFrameIdRef.current = requestAnimationFrame(render);
@@ -308,6 +318,7 @@ export const CursorGrid: React.FC<CursorGridProps> = ({
         mouseRef.current.x = e.clientX - rect.left;
         mouseRef.current.y = e.clientY - rect.top;
         mouseRef.current.active = true;
+        ensureAnimationLoop();
       } else {
         mouseRef.current.active = false;
       }
@@ -335,6 +346,7 @@ export const CursorGrid: React.FC<CursorGridProps> = ({
           startTime: performance.now(),
           maxRadius,
         });
+        ensureAnimationLoop();
       }
     };
 
@@ -351,6 +363,7 @@ export const CursorGrid: React.FC<CursorGridProps> = ({
           mouseRef.current.x = touch.clientX - rect.left;
           mouseRef.current.y = touch.clientY - rect.top;
           mouseRef.current.active = true;
+          ensureAnimationLoop();
         } else {
           mouseRef.current.active = false;
         }

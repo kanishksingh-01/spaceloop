@@ -113,10 +113,33 @@ def create_app():
             return jsonify({"error": "Authentication required", "success": False}), 401
         return redirect(url_for("auth_login", next=request.url))
 
-    # 6. Global Security Headers Middleware
+    # 6. Global Security Headers & HTTP Compression Middleware
+    import gzip
+
     @app.after_request
-    def add_security_headers(response):
-        return apply_security_headers(response)
+    def process_response(response):
+        # Apply security headers
+        response = apply_security_headers(response)
+
+        # Apply Gzip compression on text/JSON/JS assets over 500 bytes (zero-dependency standard library)
+        accept_encoding = request.headers.get("Accept-Encoding", "")
+        if (
+            "gzip" in accept_encoding
+            and response.status_code < 300
+            and not response.direct_passthrough
+            and response.headers.get("Content-Encoding") is None
+        ):
+            content_type = response.headers.get("Content-Type", "").lower()
+            if any(t in content_type for t in ("text/", "application/json", "application/javascript", "image/svg+xml", "application/xml")):
+                response_data = response.get_data()
+                if len(response_data) >= 500:
+                    compressed_data = gzip.compress(response_data, compresslevel=6)
+                    response.set_data(compressed_data)
+                    response.headers["Content-Encoding"] = "gzip"
+                    response.headers["Content-Length"] = str(len(compressed_data))
+                    response.headers["Vary"] = "Accept-Encoding"
+
+        return response
 
     # 7. Jinja Template Context Processor
     @app.context_processor
@@ -212,13 +235,18 @@ def create_app():
     def serve_frontend_assets(filename):
         assets_dir = os.path.join(dist_dir, "assets")
         if os.path.exists(os.path.join(assets_dir, filename)):
-            return send_from_directory(assets_dir, filename)
+            response = send_from_directory(assets_dir, filename)
+            # Long-term immutable caching for versioned Vite assets
+            response.headers["Cache-Control"] = "public, max-age=31536000, immutable"
+            return response
         abort(404)
 
     def _serve_spa_index():
         index_file = os.path.join(dist_dir, "index.html")
         if os.path.exists(index_file):
-            return send_from_directory(dist_dir, "index.html")
+            response = send_from_directory(dist_dir, "index.html")
+            response.headers["Cache-Control"] = "no-cache, must-revalidate"
+            return response
         # Fallback to landing template if frontend has not been compiled yet
         featured = Space.query.filter_by(is_active=True).limit(6).all()
         return render_template("landing.html", spaces=[s.to_dict() for s in featured])

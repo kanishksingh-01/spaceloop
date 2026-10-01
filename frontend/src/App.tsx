@@ -9,40 +9,48 @@ import { LoopBot } from './components/common/LoopBot';
 import { AuthModal } from './components/common/AuthModal';
 import { HostAuthModal } from './components/common/HostAuthModal';
 
-import { LandingPage } from './pages/LandingPage';
-import { ExplorePage } from './pages/ExplorePage';
-import { SpaceDetailPage } from './pages/SpaceDetailPage';
-import { ListSpacePage } from './pages/ListSpacePage';
-import { DashboardPage } from './pages/DashboardPage';
-import { HostDashboardPage } from './pages/HostDashboardPage';
-import { HostPortalShell } from './pages/host/HostPortalShell';
-import {
-  OverviewView,
-  MySpacesView,
-  SpaceDetailView,
-  CreateSpaceView,
-  BookingsView,
-  BookingDetailView,
-  CalendarView,
-  LiveSessionsView,
-  SpaceVerificationView,
-  AccessSecurityView,
-  ConditionEscrowView,
-  AnalyticsView,
-  ActivityAuditView,
-  HostSettingsView,
-  NotificationsView,
-} from './pages/host/views';
-import { SessionPage } from './pages/SessionPage';
-import { CalculatorPage } from './pages/CalculatorPage';
-import { VerifyPage } from './pages/VerifyPage';
-import { HowItWorksPage } from './pages/HowItWorksPage';
-import { TrustSafetyPage } from './pages/TrustSafetyPage';
-import { ArchitecturePage } from './pages/ArchitecturePage';
-import { ErrorBoundary } from './components/common/ErrorBoundary';
+// Lazy-Loaded Page Components for optimized bundle chunking
+const LandingPage = React.lazy(() => import('./pages/LandingPage').then(m => ({ default: m.LandingPage })));
+const ExplorePage = React.lazy(() => import('./pages/ExplorePage').then(m => ({ default: m.ExplorePage })));
+const SpaceDetailPage = React.lazy(() => import('./pages/SpaceDetailPage').then(m => ({ default: m.SpaceDetailPage })));
+const DashboardPage = React.lazy(() => import('./pages/DashboardPage').then(m => ({ default: m.DashboardPage })));
+const HostPortalShell = React.lazy(() => import('./pages/host/HostPortalShell').then(m => ({ default: m.HostPortalShell })));
+const SessionPage = React.lazy(() => import('./pages/SessionPage').then(m => ({ default: m.SessionPage })));
+const CalculatorPage = React.lazy(() => import('./pages/CalculatorPage').then(m => ({ default: m.CalculatorPage })));
+const VerifyPage = React.lazy(() => import('./pages/VerifyPage').then(m => ({ default: m.VerifyPage })));
+const HowItWorksPage = React.lazy(() => import('./pages/HowItWorksPage').then(m => ({ default: m.HowItWorksPage })));
+const TrustSafetyPage = React.lazy(() => import('./pages/TrustSafetyPage').then(m => ({ default: m.TrustSafetyPage })));
+const ArchitecturePage = React.lazy(() => import('./pages/ArchitecturePage').then(m => ({ default: m.ArchitecturePage })));
+const VerifyEmailPage = React.lazy(() => import('./pages/VerifyEmailPage').then(m => ({ default: m.VerifyEmailPage })));
 
-import { VerifyEmailPage } from './pages/VerifyEmailPage';
+// Lazy-Loaded Host Portal Views
+const OverviewView = React.lazy(() => import('./pages/host/views').then(m => ({ default: m.OverviewView })));
+const MySpacesView = React.lazy(() => import('./pages/host/views').then(m => ({ default: m.MySpacesView })));
+const SpaceDetailView = React.lazy(() => import('./pages/host/views').then(m => ({ default: m.SpaceDetailView })));
+const CreateSpaceView = React.lazy(() => import('./pages/host/views').then(m => ({ default: m.CreateSpaceView })));
+const BookingsView = React.lazy(() => import('./pages/host/views').then(m => ({ default: m.BookingsView })));
+const BookingDetailView = React.lazy(() => import('./pages/host/views').then(m => ({ default: m.BookingDetailView })));
+const CalendarView = React.lazy(() => import('./pages/host/views').then(m => ({ default: m.CalendarView })));
+const LiveSessionsView = React.lazy(() => import('./pages/host/views').then(m => ({ default: m.LiveSessionsView })));
+const SpaceVerificationView = React.lazy(() => import('./pages/host/views').then(m => ({ default: m.SpaceVerificationView })));
+const AccessSecurityView = React.lazy(() => import('./pages/host/views').then(m => ({ default: m.AccessSecurityView })));
+const ConditionEscrowView = React.lazy(() => import('./pages/host/views').then(m => ({ default: m.ConditionEscrowView })));
+const AnalyticsView = React.lazy(() => import('./pages/host/views').then(m => ({ default: m.AnalyticsView })));
+const ActivityAuditView = React.lazy(() => import('./pages/host/views').then(m => ({ default: m.ActivityAuditView })));
+const HostSettingsView = React.lazy(() => import('./pages/host/views').then(m => ({ default: m.HostSettingsView })));
+const NotificationsView = React.lazy(() => import('./pages/host/views').then(m => ({ default: m.NotificationsView })));
+
+import { ErrorBoundary } from './components/common/ErrorBoundary';
 import { logoutUser, resendEmailVerification } from './services/auth';
+
+const PageLoadingFallback: React.FC = () => (
+  <div className="flex-1 flex items-center justify-center min-h-[50vh] p-8">
+    <div className="flex flex-col items-center gap-3">
+      <div className="w-8 h-8 rounded-full border-2 border-indigo-500 border-t-transparent animate-spin" />
+      <span className="text-xs font-medium text-slate-400">Loading SpaceLoop...</span>
+    </div>
+  </div>
+);
 
 interface ProtectedRouteProps {
   currentUser: User | null;
@@ -212,109 +220,111 @@ export const App: React.FC = () => {
         {/* Application Routes */}
         <main className="flex-1 flex flex-col">
           <ErrorBoundary>
-            <Routes>
-              {/* Seeker Routes */}
-              <Route path="/" element={<LandingPage currentUser={currentUser} />} />
-              <Route path="/explore" element={<ExplorePage />} />
-              <Route path="/curated" element={<ExplorePage />} />
-              <Route path="/explore-view" element={<ExplorePage />} />
-              <Route path="/boutique" element={<ExplorePage />} />
-              <Route path="/space/:id" element={<SpaceDetailPage currentUser={currentUser} />} />
-              <Route path="/session/:id" element={<SessionPage />} />
-              <Route
-                path="/dashboard"
-                element={
-                  <ProtectedRoute
-                    currentUser={currentUser}
-                    initializing={initializing}
-                    onRequireAuth={() => setAuthModalOpen(true)}
-                  >
-                    <DashboardPage currentUser={currentUser} />
-                  </ProtectedRoute>
-                }
-              />
-              <Route path="/how-it-works" element={<HowItWorksPage />} />
+            <React.Suspense fallback={<PageLoadingFallback />}>
+              <Routes>
+                {/* Seeker Routes */}
+                <Route path="/" element={<LandingPage currentUser={currentUser} />} />
+                <Route path="/explore" element={<ExplorePage />} />
+                <Route path="/curated" element={<ExplorePage />} />
+                <Route path="/explore-view" element={<ExplorePage />} />
+                <Route path="/boutique" element={<ExplorePage />} />
+                <Route path="/space/:id" element={<SpaceDetailPage currentUser={currentUser} />} />
+                <Route path="/session/:id" element={<SessionPage />} />
+                <Route
+                  path="/dashboard"
+                  element={
+                    <ProtectedRoute
+                      currentUser={currentUser}
+                      initializing={initializing}
+                      onRequireAuth={() => setAuthModalOpen(true)}
+                    >
+                      <DashboardPage currentUser={currentUser} />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route path="/how-it-works" element={<HowItWorksPage />} />
 
-              {/* Host Dedicated Portal Routes */}
-              <Route
-                path="/host"
-                element={
-                  <HostPortalShell
-                    currentUser={currentUser || MASTER_DEMO_USER}
-                    onOpenHostAuthModal={() => setHostAuthModalOpen(true)}
-                  />
-                }
-              >
-                <Route index element={<OverviewView currentUser={currentUser || MASTER_DEMO_USER} />} />
-                <Route path="overview" element={<OverviewView currentUser={currentUser || MASTER_DEMO_USER} />} />
-                <Route path="dashboard" element={<OverviewView currentUser={currentUser || MASTER_DEMO_USER} />} />
-                <Route path="spaces" element={<MySpacesView />} />
-                <Route path="spaces/create" element={<CreateSpaceView />} />
-                <Route path="spaces/:id" element={<SpaceDetailView />} />
-                <Route path="bookings" element={<BookingsView />} />
-                <Route path="bookings/:id" element={<BookingDetailView />} />
-                <Route path="calendar" element={<CalendarView />} />
-                <Route path="live-sessions" element={<LiveSessionsView />} />
-                <Route path="live-sessions/:id" element={<LiveSessionsView />} />
-                <Route path="verification" element={<SpaceVerificationView />} />
-                <Route path="access" element={<AccessSecurityView />} />
-                <Route path="condition-reports" element={<ConditionEscrowView />} />
-                <Route path="escrow" element={<ConditionEscrowView />} />
-                <Route path="analytics" element={<AnalyticsView />} />
-                <Route path="activity" element={<ActivityAuditView />} />
-                <Route path="notifications" element={<NotificationsView />} />
-                <Route path="settings" element={<HostSettingsView />} />
-                <Route path="help" element={<HostSettingsView />} />
-              </Route>
+                {/* Host Dedicated Portal Routes */}
+                <Route
+                  path="/host"
+                  element={
+                    <HostPortalShell
+                      currentUser={currentUser || MASTER_DEMO_USER}
+                      onOpenHostAuthModal={() => setHostAuthModalOpen(true)}
+                    />
+                  }
+                >
+                  <Route index element={<OverviewView currentUser={currentUser || MASTER_DEMO_USER} />} />
+                  <Route path="overview" element={<OverviewView currentUser={currentUser || MASTER_DEMO_USER} />} />
+                  <Route path="dashboard" element={<OverviewView currentUser={currentUser || MASTER_DEMO_USER} />} />
+                  <Route path="spaces" element={<MySpacesView />} />
+                  <Route path="spaces/create" element={<CreateSpaceView />} />
+                  <Route path="spaces/:id" element={<SpaceDetailView />} />
+                  <Route path="bookings" element={<BookingsView />} />
+                  <Route path="bookings/:id" element={<BookingDetailView />} />
+                  <Route path="calendar" element={<CalendarView />} />
+                  <Route path="live-sessions" element={<LiveSessionsView />} />
+                  <Route path="live-sessions/:id" element={<LiveSessionsView />} />
+                  <Route path="verification" element={<SpaceVerificationView />} />
+                  <Route path="access" element={<AccessSecurityView />} />
+                  <Route path="condition-reports" element={<ConditionEscrowView />} />
+                  <Route path="escrow" element={<ConditionEscrowView />} />
+                  <Route path="analytics" element={<AnalyticsView />} />
+                  <Route path="activity" element={<ActivityAuditView />} />
+                  <Route path="notifications" element={<NotificationsView />} />
+                  <Route path="settings" element={<HostSettingsView />} />
+                  <Route path="help" element={<HostSettingsView />} />
+                </Route>
 
-              {/* Email Verification Routes (Resend Link Handlers) */}
-              <Route
-                path="/auth/verify-email/:token"
-                element={<VerifyEmailPage onUserVerified={(u) => setCurrentUser(u)} />}
-              />
-              <Route
-                path="/verify-email/:token"
-                element={<VerifyEmailPage onUserVerified={(u) => setCurrentUser(u)} />}
-              />
-              <Route
-                path="/verify-email"
-                element={<VerifyEmailPage onUserVerified={(u) => setCurrentUser(u)} />}
-              />
-              <Route
-                path="/list-space"
-                element={<Navigate to="/host/spaces/create" replace />}
-              />
-              <Route path="/calculator" element={<CalculatorPage />} />
-              <Route path="/verify" element={<VerifyPage />} />
-              <Route
-                path="/admin/trust-safety"
-                element={
-                  <ProtectedRoute
-                    currentUser={currentUser}
-                    initializing={initializing}
-                    onRequireAuth={() => setAuthModalOpen(true)}
-                  >
-                    <TrustSafetyPage />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/trust-safety"
-                element={
-                  <ProtectedRoute
-                    currentUser={currentUser}
-                    initializing={initializing}
-                    onRequireAuth={() => setAuthModalOpen(true)}
-                  >
-                    <TrustSafetyPage />
-                  </ProtectedRoute>
-                }
-              />
-              <Route path="/architecture" element={<ArchitecturePage />} />
+                {/* Email Verification Routes (Resend Link Handlers) */}
+                <Route
+                  path="/auth/verify-email/:token"
+                  element={<VerifyEmailPage onUserVerified={(u) => setCurrentUser(u)} />}
+                />
+                <Route
+                  path="/verify-email/:token"
+                  element={<VerifyEmailPage onUserVerified={(u) => setCurrentUser(u)} />}
+                />
+                <Route
+                  path="/verify-email"
+                  element={<VerifyEmailPage onUserVerified={(u) => setCurrentUser(u)} />}
+                />
+                <Route
+                  path="/list-space"
+                  element={<Navigate to="/host/spaces/create" replace />}
+                />
+                <Route path="/calculator" element={<CalculatorPage />} />
+                <Route path="/verify" element={<VerifyPage />} />
+                <Route
+                  path="/admin/trust-safety"
+                  element={
+                    <ProtectedRoute
+                      currentUser={currentUser}
+                      initializing={initializing}
+                      onRequireAuth={() => setAuthModalOpen(true)}
+                    >
+                      <TrustSafetyPage />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/trust-safety"
+                  element={
+                    <ProtectedRoute
+                      currentUser={currentUser}
+                      initializing={initializing}
+                      onRequireAuth={() => setAuthModalOpen(true)}
+                    >
+                      <TrustSafetyPage />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route path="/architecture" element={<ArchitecturePage />} />
 
-              {/* Fallback */}
-              <Route path="*" element={<LandingPage currentUser={currentUser} />} />
-            </Routes>
+                {/* Fallback */}
+                <Route path="*" element={<LandingPage currentUser={currentUser} />} />
+              </Routes>
+            </React.Suspense>
           </ErrorBoundary>
         </main>
 
