@@ -864,6 +864,78 @@ html.light .fixed.inset-0.bg-black\/60 {
   backdrop-filter: blur(8px) !important;
 }
 
+/* =========================================================================
+   SPACELOOP PREMIUM INITIAL LOADING SCREEN
+   ========================================================================= */
+.spaceloop-loading-screen {
+  background-color: #020617 !important;
+  color: #f8fafc !important;
+}
+
+.spaceloop-loading-grid {
+  background-image: 
+    linear-gradient(to right, rgba(99, 102, 241, 0.05) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(99, 102, 241, 0.05) 1px, transparent 1px);
+  background-size: 44px 44px;
+  animation: spaceloop-grid-drift 32s linear infinite;
+  -webkit-mask-image: radial-gradient(circle at center, rgba(0, 0, 0, 1) 30%, rgba(0, 0, 0, 0.35) 75%, transparent 100%);
+  mask-image: radial-gradient(circle at center, rgba(0, 0, 0, 1) 30%, rgba(0, 0, 0, 0.35) 75%, transparent 100%);
+}
+
+@keyframes spaceloop-grid-drift {
+  0% {
+    background-position: 0 0;
+  }
+  100% {
+    background-position: 44px 44px;
+  }
+}
+
+@keyframes spaceloop-splash-entrance {
+  0% {
+    opacity: 0;
+    transform: translateY(10px) scale(0.97);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes spaceloop-text-glow {
+  0%, 100% {
+    filter: drop-shadow(0 0 20px rgba(99, 102, 241, 0.35));
+  }
+  50% {
+    filter: drop-shadow(0 0 35px rgba(139, 92, 246, 0.6));
+  }
+}
+
+@keyframes spaceloop-line-pulse {
+  0% {
+    transform: translateX(-100%);
+  }
+  50% {
+    transform: translateX(0%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+.animate-spaceloop-entrance {
+  animation: spaceloop-splash-entrance 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.animate-spaceloop-glow {
+  animation: spaceloop-text-glow 3.5s ease-in-out infinite alternate;
+}
+
+.animate-spaceloop-scan {
+  animation: spaceloop-line-pulse 2.2s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+
+
 
 
 

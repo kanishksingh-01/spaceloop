@@ -8,6 +8,7 @@ import { MobileNav } from './components/common/MobileNav';
 import { LoopBot } from './components/common/LoopBot';
 import { AuthModal } from './components/common/AuthModal';
 import { HostAuthModal } from './components/common/HostAuthModal';
+import { InitialLoadingScreen } from './components/common/InitialLoadingScreen';
 
 // Lazy-Loaded Page Components for optimized bundle chunking
 const LandingPage = React.lazy(() => import('./pages/LandingPage').then(m => ({ default: m.LandingPage })));
@@ -183,8 +184,11 @@ export const App: React.FC = () => {
   const [authModalOpen, setAuthModalOpen] = useState(false);
   const [hostAuthModalOpen, setHostAuthModalOpen] = useState(false);
   const [initializing, setInitializing] = useState(true);
+  const [showLoadingScreen, setShowLoadingScreen] = useState(true);
+  const [loadingScreenFading, setLoadingScreenFading] = useState(false);
 
   useEffect(() => {
+    const startTime = Date.now();
     const initAuth = async () => {
       try {
         const user = await getCurrentUser();
@@ -198,6 +202,17 @@ export const App: React.FC = () => {
         setCurrentUser(null);
       } finally {
         setInitializing(false);
+        // Ensure entrance animation completes gracefully before initiating smooth fade-out
+        const elapsed = Date.now() - startTime;
+        const minDisplayTime = 600;
+        const remainingTime = Math.max(0, minDisplayTime - elapsed);
+
+        setTimeout(() => {
+          setLoadingScreenFading(true);
+          setTimeout(() => {
+            setShowLoadingScreen(false);
+          }, 700);
+        }, remainingTime);
       }
     };
     initAuth();
@@ -211,8 +226,12 @@ export const App: React.FC = () => {
     : '/';
 
   return (
-    <BrowserRouter basename={basename}>
-      <div className="flex flex-col min-h-screen bg-slate-950 text-slate-100 selection:bg-indigo-500 selection:text-white pb-16 md:pb-0">
+    <>
+      {showLoadingScreen && (
+        <InitialLoadingScreen isFading={loadingScreenFading} />
+      )}
+      <BrowserRouter basename={basename}>
+        <div className="flex flex-col min-h-screen bg-slate-950 text-slate-100 selection:bg-indigo-500 selection:text-white pb-16 md:pb-0">
         {/* Clean Startup Navigation Header with Portal Switcher */}
         <Header
           currentUser={currentUser}
@@ -373,5 +392,6 @@ export const App: React.FC = () => {
         />
       </div>
     </BrowserRouter>
+    </>
   );
 };
