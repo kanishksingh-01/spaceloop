@@ -316,8 +316,18 @@ class BrevoEmailAdapter(BaseEmailAdapter):
         """Parses 'Name <email@domain.com>' into {'name': 'Name', 'email': 'email@domain.com'}"""
         match = re.match(r"^([^<]+)<([^>]+)>$", self.from_email)
         if match:
-            return {"name": match.group(1).strip(), "email": match.group(2).strip()}
-        return {"name": "SpaceLoop", "email": self.from_email or "noreply@spaceloop.in"}
+            name = match.group(1).strip()
+            email = match.group(2).strip()
+            # If from_email is still pointing to resend.dev default, fallback to real user email
+            if "resend.dev" in email:
+                fallback_email = os.environ.get("SMTP_USER") or os.environ.get("BREVO_SENDER_EMAIL")
+                if fallback_email:
+                    email = fallback_email
+            return {"name": name, "email": email}
+        raw_email = self.from_email or "noreply@spaceloop.in"
+        if "resend.dev" in raw_email:
+            raw_email = os.environ.get("SMTP_USER") or os.environ.get("BREVO_SENDER_EMAIL") or raw_email
+        return {"name": "SpaceLoop", "email": raw_email}
 
     def send_email(
         self,

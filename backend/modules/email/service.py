@@ -47,13 +47,13 @@ class EmailService:
         smtp_password = (os.environ.get("SMTP_PASSWORD") or getattr(Config, "SMTP_PASSWORD", "")).strip()
         from_email = (os.environ.get("EMAIL_FROM") or os.environ.get("RESEND_FROM_EMAIL") or getattr(Config, "EMAIL_FROM", "")).strip()
 
-        # Determine desired adapter type
-        if provider == "brevo" or (brevo_key and provider != "smtp" and provider != "resend"):
+        # Determine desired adapter type: Brevo takes top priority because it works over HTTPS port 443
+        if provider == "brevo" or brevo_key:
             target_class = BrevoEmailAdapter
-        elif provider == "smtp" or (smtp_host and smtp_user and provider != "resend" and provider != "brevo"):
-            target_class = SMTPEmailAdapter
-        elif resend_key and provider != "smtp" and provider != "brevo":
+        elif provider == "resend" or (resend_key and provider != "smtp"):
             target_class = ResendEmailAdapter
+        elif provider == "smtp" or (smtp_host and smtp_user):
+            target_class = SMTPEmailAdapter
         else:
             target_class = DevelopmentEmailAdapter
 
