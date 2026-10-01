@@ -60,7 +60,10 @@ def get_spaces():
 
     lat, lng, resolved_loc_name = resolve_location_coordinates(loc, raw_lat, raw_lng)
 
-    query = Space.query.filter_by(is_active=True)
+    query = Space.query.options(
+        db.joinedload(Space.owner),
+        db.selectinload(Space.reviews)
+    ).filter_by(is_active=True)
 
     # Exclude host's own properties when logged in as a host/seeker
     if current_user.is_authenticated:
@@ -553,13 +556,17 @@ def get_host_spaces():
     if not current_user.is_host:
         return jsonify({"success": False, "error": "Host authorization required."}), 403
 
-    spaces = Space.query.filter_by(owner_id=current_user.id).order_by(Space.created_at.desc()).all()
+    spaces = Space.query.options(
+        db.joinedload(Space.owner),
+        db.selectinload(Space.reviews),
+        db.selectinload(Space.bookings)
+    ).filter_by(owner_id=current_user.id).order_by(Space.created_at.desc()).all()
     results = []
     now = datetime.utcnow()
 
     for s in spaces:
         s_dict = s.to_dict()
-        bookings = Booking.query.filter_by(space_id=s.id).all()
+        bookings = s.bookings
         confirmed_bookings = [b for b in bookings if b.status in ("confirmed", "active")]
         completed_bookings = [b for b in bookings if b.status == "completed"]
         upcoming_bookings = [b for b in confirmed_bookings if b.start_time and b.start_time > now]

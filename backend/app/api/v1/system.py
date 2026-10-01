@@ -32,9 +32,20 @@ api_v1_system = Blueprint("api_v1_system", __name__)
 def api_dashboard():
     active_user_id = current_user.id
 
-    seeker_bookings = Booking.query.filter_by(renter_id=active_user_id).order_by(Booking.created_at.desc()).all()
-    host_spaces = Space.query.filter_by(owner_id=active_user_id).order_by(Space.created_at.desc()).all()
-    host_bookings = Booking.query.join(Space).filter(Space.owner_id == active_user_id).order_by(Booking.created_at.desc()).all()
+    seeker_bookings = Booking.query.options(
+        db.joinedload(Booking.space),
+        db.joinedload(Booking.renter)
+    ).filter_by(renter_id=active_user_id).order_by(Booking.created_at.desc()).all()
+
+    host_spaces = Space.query.options(
+        db.joinedload(Space.owner),
+        db.selectinload(Space.reviews)
+    ).filter_by(owner_id=active_user_id).order_by(Space.created_at.desc()).all()
+
+    host_bookings = Booking.query.options(
+        db.joinedload(Booking.space),
+        db.joinedload(Booking.renter)
+    ).join(Space).filter(Space.owner_id == active_user_id).order_by(Booking.created_at.desc()).all()
 
     gross_revenue = sum(b.total_price for b in host_bookings if b.status in ['confirmed', 'completed'])
     platform_fee = round(gross_revenue * 0.05)
@@ -76,7 +87,10 @@ def get_host_activity():
     host_spaces = Space.query.filter_by(owner_id=current_user.id).all()
     space_ids = [s.id for s in host_spaces]
 
-    host_bookings = Booking.query.join(Space).filter(Space.owner_id == current_user.id).order_by(Booking.created_at.desc()).limit(35).all()
+    host_bookings = Booking.query.options(
+        db.joinedload(Booking.space),
+        db.joinedload(Booking.renter)
+    ).join(Space).filter(Space.owner_id == current_user.id).order_by(Booking.created_at.desc()).limit(35).all()
 
     events = []
     for b in host_bookings:

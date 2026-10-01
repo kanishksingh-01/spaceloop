@@ -860,7 +860,10 @@ def get_host_bookings():
     space_id_filter = request.args.get("space_id")
     q = request.args.get("q")
 
-    query = Booking.query.join(Space).filter(Space.owner_id == current_user.id)
+    query = Booking.query.options(
+        db.joinedload(Booking.space),
+        db.joinedload(Booking.renter)
+    ).join(Space).filter(Space.owner_id == current_user.id)
 
     if space_id_filter:
         try:
