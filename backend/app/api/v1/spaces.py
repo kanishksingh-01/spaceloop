@@ -13,12 +13,28 @@ from backend.modules.auth import authorize, Permission, ForbiddenError, set_acti
 from backend.core.geo import haversine_distance, resolve_location_coordinates
 from space_ai import analyze_space_features, match_spaces_with_ai
 from security import rate_limit_ai, sanitize_string, validate_numeric, validate_image_url
+from backend.core.cache import space_cache
 
 api_v1_spaces = Blueprint("api_v1_spaces", __name__)
 
 
 @api_v1_spaces.route("/api/spaces", methods=["GET"])
 def get_spaces():
+    user_id = current_user.id if current_user.is_authenticated else None
+    qs = request.query_string.decode("utf-8")
+    etag = space_cache.generate_etag("spaces_list", user_id=user_id, extra=qs)
+
+    # 1. HTTP 304 conditional cache
+    conditional_resp = space_cache.check_etag_and_respond(etag)
+    if conditional_resp:
+        return conditional_resp
+
+    # 2. Server-side in-memory cache lookup
+    cache_key = f"spaces_list:{user_id or 'anon'}:{qs}"
+    cached_resp = space_cache.get_cached_response(cache_key, etag)
+    if cached_resp:
+        return cached_resp
+
     category = sanitize_string(request.args.get("category"), max_length=50)
     city = sanitize_string(request.args.get("city", ""), max_length=100)
     loc = sanitize_string(request.args.get("loc", ""), max_length=100) or city
@@ -125,13 +141,23 @@ def get_spaces():
     if lat is not None and lng is not None:
         spaces_data.sort(key=lambda x: x.get("distance_km", 999999))
 
-    return jsonify(spaces_data)
+    return space_cache.cache_and_respond(cache_key, etag, spaces_data)
 
 
 @api_v1_spaces.route("/api/spaces/<int:space_id>", methods=["GET"])
 def get_space(space_id):
+    etag = space_cache.generate_etag(f"space_{space_id}")
+    conditional_resp = space_cache.check_etag_and_respond(etag)
+    if conditional_resp:
+        return conditional_resp
+
+    cache_key = f"space_detail:{space_id}"
+    cached_resp = space_cache.get_cached_response(cache_key, etag)
+    if cached_resp:
+        return cached_resp
+
     space = Space.query.get_or_404(space_id)
-    return jsonify(space.to_dict())
+    return space_cache.cache_and_respond(cache_key, etag, space.to_dict())
 
 
 @api_v1_spaces.route("/api/spaces/ai-scan", methods=["POST"])
@@ -347,6 +373,7 @@ def create_space():
 
     db.session.add(new_space)
     db.session.commit()
+    space_cache.bump_catalog_version(new_space.id)
 
     # Trust & Safety Listing Evaluation
     from backend.modules.trust_safety import TrustSafetyEngine
@@ -478,6 +505,7 @@ def api_edit_space(space_id):
         pass
 
     db.session.commit()
+    space_cache.bump_catalog_version(space.id)
 
     # Record Audit Event
     try:
@@ -585,6 +613,7 @@ def toggle_space_status(space_id):
 
     space.is_active = not space.is_active
     db.session.commit()
+    space_cache.bump_catalog_version(space.id)
     if request.is_json:
         return jsonify({"success": True, "is_active": space.is_active, "space_id": space.id})
     flash(f"Space '{space.title}' is now {'Active & Discoverable' if space.is_active else 'Paused'}.", "success")
@@ -599,10 +628,12 @@ def check_space_availability(space_id):
     raw_et = request.args.get("end_time") or request.args.get("end")
 
     if not raw_st or not raw_et:
-        return jsonify({
+        resp = jsonify({
             "available": False,
             "error": "Both start_time and end_time query parameters are required."
-        }), 400
+        })
+        resp.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
+        return resp, 400
 
     try:
         st = datetime.fromisoformat(str(raw_st).replace("Z", "+00:00"))
@@ -612,10 +643,14 @@ def check_space_availability(space_id):
         if et.tzinfo:
             et = et.astimezone(timezone.utc).replace(tzinfo=None)
     except Exception:
-        return jsonify({"available": False, "error": "Invalid ISO format for start_time or end_time."}), 400
+        resp = jsonify({"available": False, "error": "Invalid ISO format for start_time or end_time."})
+        resp.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
+        return resp, 400
 
     if st >= et:
-        return jsonify({"available": False, "error": "start_time must be strictly before end_time."}), 400
+        resp = jsonify({"available": False, "error": "start_time must be strictly before end_time."})
+        resp.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
+        return resp, 400
 
     # Check for overlapping confirmed or active bookings
     conflict = Booking.query.filter(
@@ -626,7 +661,7 @@ def check_space_availability(space_id):
     ).order_by(Booking.start_time.asc()).first()
 
     if conflict:
-        return jsonify({
+        resp = jsonify({
             "available": False,
             "status": "CONFLICT",
             "space_id": space.id,
@@ -635,15 +670,19 @@ def check_space_availability(space_id):
                 "start_time": conflict.start_time.isoformat() if conflict.start_time else None,
                 "end_time": conflict.end_time.isoformat() if conflict.end_time else None
             }
-        }), 409
+        })
+        resp.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
+        return resp, 409
 
-    return jsonify({
+    resp = jsonify({
         "available": True,
         "status": "AVAILABLE",
         "space_id": space.id,
         "start_time": st.isoformat(),
         "end_time": et.isoformat()
-    }), 200
+    })
+    resp.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
+    return resp, 200
 
 
 @api_v1_spaces.route("/api/host/spaces/<int:space_id>/publish", methods=["POST"])
@@ -971,15 +1010,26 @@ def ai_match_spaces():
 @api_v1_spaces.route("/api/spaces/<int:space_id>/reviews", methods=["GET"])
 def get_space_reviews(space_id):
     """Returns verified reviews for a specific physical space."""
+    etag = space_cache.generate_etag(f"reviews_{space_id}")
+    conditional_resp = space_cache.check_etag_and_respond(etag)
+    if conditional_resp:
+        return conditional_resp
+
+    cache_key = f"space_reviews:{space_id}"
+    cached_resp = space_cache.get_cached_response(cache_key, etag)
+    if cached_resp:
+        return cached_resp
+
     space = Space.query.get_or_404(space_id)
     reviews = Review.query.filter_by(space_id=space.id).order_by(Review.created_at.desc()).all()
-    return jsonify({
+    payload = {
         "success": True,
         "space_id": space.id,
         "reviews": [r.to_dict() for r in reviews],
         "count": len(reviews),
         "average_rating": space.average_rating()
-    }), 200
+    }
+    return space_cache.cache_and_respond(cache_key, etag, payload)
 
 
 @api_v1_spaces.route("/api/spaces/<int:space_id>/reviews", methods=["POST"])
@@ -1039,6 +1089,7 @@ def create_space_review(space_id):
     )
     db.session.add(new_review)
     db.session.commit()
+    space_cache.bump_catalog_version(space.id)
 
     return jsonify({
         "success": True,
