@@ -43,29 +43,11 @@ export async function getCurrentUser(): Promise<User | null> {
       return user;
     }
   } catch (err: any) {
-    const cached = localStorage.getItem('spaceloop_user');
-    if (cached) {
-      try {
-        const u = JSON.parse(cached);
-        if (u?.email?.toLowerCase() === 'demo@spaceloop.in' || u?.email?.toLowerCase() === 'admin@spaceloop.in') {
-          return u;
-        }
-      } catch {}
-    }
-    if (err.status === 401 || err.status === 403) {
-      localStorage.removeItem('spaceloop_user');
-      return null;
-    }
+    localStorage.removeItem('spaceloop_user');
+    return null;
   }
 
-  const cached = localStorage.getItem('spaceloop_user');
-  if (cached) {
-    try {
-      return JSON.parse(cached);
-    } catch {
-      return null;
-    }
-  }
+  localStorage.removeItem('spaceloop_user');
   return null;
 }
 
@@ -80,53 +62,25 @@ export interface LoginResponse {
 }
 
 export async function loginUser(email: string, password: string): Promise<LoginResponse> {
-  const isDemo = email.trim().toLowerCase() === 'demo@spaceloop.in' && password === 'password123';
-  try {
-    const res = await request<LoginResponse>('/api/v1/auth/login', {
-      method: 'POST',
-      body: JSON.stringify({ email, password }),
-    });
-    if (res?.user && !res?.mfa_required) {
-      localStorage.setItem('spaceloop_user', JSON.stringify(res.user));
-    }
-    return res;
-  } catch (err: any) {
-    if (isDemo) {
-      localStorage.setItem('spaceloop_user', JSON.stringify(MASTER_DEMO_USER));
-      return {
-        success: true,
-        message: 'Login successful',
-        portal: 'both',
-        user: MASTER_DEMO_USER
-      };
-    }
-    throw err;
+  const res = await request<LoginResponse>('/api/v1/auth/login', {
+    method: 'POST',
+    body: JSON.stringify({ email, password }),
+  });
+  if (res?.user && !res?.mfa_required) {
+    localStorage.setItem('spaceloop_user', JSON.stringify(res.user));
   }
+  return res;
 }
 
 export async function seekerLogin(email: string, password: string): Promise<LoginResponse> {
-  const isDemo = email.trim().toLowerCase() === 'demo@spaceloop.in' && password === 'password123';
-  try {
-    const res = await request<LoginResponse>('/api/v1/auth/seeker/login', {
-      method: 'POST',
-      body: JSON.stringify({ email, password }),
-    });
-    if (res?.user && !res?.mfa_required) {
-      localStorage.setItem('spaceloop_user', JSON.stringify(res.user));
-    }
-    return res;
-  } catch (err: any) {
-    if (isDemo) {
-      localStorage.setItem('spaceloop_user', JSON.stringify(MASTER_DEMO_USER));
-      return {
-        success: true,
-        message: 'Seeker authenticated successfully',
-        portal: 'seeker',
-        user: MASTER_DEMO_USER
-      };
-    }
-    throw err;
+  const res = await request<LoginResponse>('/api/v1/auth/seeker/login', {
+    method: 'POST',
+    body: JSON.stringify({ email, password }),
+  });
+  if (res?.user && !res?.mfa_required) {
+    localStorage.setItem('spaceloop_user', JSON.stringify(res.user));
   }
+  return res;
 }
 
 export async function seekerRegister(payload: {

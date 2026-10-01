@@ -190,9 +190,12 @@ export const App: React.FC = () => {
         const user = await getCurrentUser();
         if (user) {
           setCurrentUser(user);
+        } else {
+          setCurrentUser(null);
         }
       } catch (err) {
         console.error('Failed to restore session:', err);
+        setCurrentUser(null);
       } finally {
         setInitializing(false);
       }
@@ -228,7 +231,7 @@ export const App: React.FC = () => {
                 <Route path="/curated" element={<ExplorePage />} />
                 <Route path="/explore-view" element={<ExplorePage />} />
                 <Route path="/boutique" element={<ExplorePage />} />
-                <Route path="/space/:id" element={<SpaceDetailPage currentUser={currentUser} />} />
+                <Route path="/space/:id" element={<SpaceDetailPage currentUser={currentUser} onUserChange={setCurrentUser} />} />
                 <Route path="/session/:id" element={<SessionPage />} />
                 <Route
                   path="/dashboard"

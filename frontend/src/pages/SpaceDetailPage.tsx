@@ -10,11 +10,21 @@ import { SpaceDetailSkeleton } from '../components/common/Skeletons';
 
 interface SpaceDetailPageProps {
   currentUser: User | null;
+  onUserChange?: (user: User | null) => void;
 }
 
-export const SpaceDetailPage: React.FC<SpaceDetailPageProps> = ({ currentUser }) => {
+export const SpaceDetailPage: React.FC<SpaceDetailPageProps> = ({ currentUser: propUser, onUserChange }) => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+
+  const [localUser, setLocalUser] = useState<User | null>(propUser);
+  const [pendingAction, setPendingAction] = useState<'booking' | 'inquiry' | null>(null);
+
+  useEffect(() => {
+    setLocalUser(propUser);
+  }, [propUser]);
+
+  const effectiveUser = propUser || localUser;
 
   const [space, setSpace] = useState<Space | null>(null);
   const [loading, setLoading] = useState(true);
@@ -189,10 +199,12 @@ export const SpaceDetailPage: React.FC<SpaceDetailPageProps> = ({ currentUser })
     ? space.photos
     : ['https://images.unsplash.com/photo-1513694203232-719a280e022f?auto=format&fit=crop&w=1200&q=80'];
 
-  const handleSendInquiry = async () => {
+  const handleSendInquiry = async (activeUser?: User | null) => {
+    const userToVerify = activeUser !== undefined ? activeUser : effectiveUser;
     const q = inquiryQuestion.trim();
     if (!q || inquiryLoading) return;
-    if (!currentUser) {
+    if (!userToVerify) {
+      setPendingAction('inquiry');
       setShowAuthModal(true);
       return;
     }
@@ -203,6 +215,7 @@ export const SpaceDetailPage: React.FC<SpaceDetailPageProps> = ({ currentUser })
       const answer = res.inquiry?.ai_response || res.inquiry?.ai_answer || res.message || 'Inquiry sent directly to host.';
       setInquiryResponse(answer);
       setInquiryQuestion('');
+      setPendingAction(null);
     } catch (err: any) {
       setInquiryError(err.message || 'Failed to submit inquiry. Please try again.');
     } finally {
@@ -210,8 +223,10 @@ export const SpaceDetailPage: React.FC<SpaceDetailPageProps> = ({ currentUser })
     }
   };
 
-  const handleBookNow = async () => {
-    if (!currentUser) {
+  const handleBookNow = async (activeUser?: User | null) => {
+    const userToVerify = activeUser !== undefined ? activeUser : effectiveUser;
+    if (!userToVerify) {
+      setPendingAction('booking');
       setShowAuthModal(true);
       return;
     }
@@ -820,7 +835,7 @@ export const SpaceDetailPage: React.FC<SpaceDetailPageProps> = ({ currentUser })
                       ? '⚠️ Time Slot Unavailable'
                       : availabilityStatus === 'checking'
                       ? 'Checking Availability...'
-                      : currentUser
+                      : effectiveUser
                       ? `⚡ Instant Book & Lock Slot (₹${pricing.grandTotal})`
                       : `⚡ Sign in to Book (₹${pricing.grandTotal})`}
                   </Text>
@@ -836,8 +851,26 @@ export const SpaceDetailPage: React.FC<SpaceDetailPageProps> = ({ currentUser })
 
       <AuthModal
         isOpen={showAuthModal}
-        onClose={() => setShowAuthModal(false)}
-        onSuccess={() => handleBookNow()}
+        onClose={() => {
+          setShowAuthModal(false);
+          setPendingAction(null);
+        }}
+        onSuccess={(authedUser) => {
+          setShowAuthModal(false);
+          if (authedUser) {
+            setLocalUser(authedUser);
+            if (onUserChange) {
+              onUserChange(authedUser);
+            }
+          }
+          const actionToResume = pendingAction;
+          setPendingAction(null);
+          if (actionToResume === 'inquiry') {
+            handleSendInquiry(authedUser);
+          } else {
+            handleBookNow(authedUser);
+          }
+        }}
       />
     </View>
   );

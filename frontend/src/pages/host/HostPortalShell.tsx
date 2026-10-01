@@ -169,9 +169,9 @@ export const HostPortalShell: React.FC<HostPortalShellProps> = ({
           </button>
         </div>
 
-        {/* Center: Active Session Live Beacon or Network Status */}
-        <div className="hidden md:flex items-center">
-          {activeSession ? (
+        {/* Center: Active Session Live Beacon */}
+        {activeSession && (
+          <div className="hidden md:flex items-center">
             <button
               type="button"
               onClick={() => navigate(`/host/live-sessions/${activeSession.id}`)}
@@ -181,13 +181,8 @@ export const HostPortalShell: React.FC<HostPortalShellProps> = ({
               <span>Session #{activeSession.id} Active</span>
               <span className="text-[10px] text-emerald-400/80 font-mono">View Cockpit →</span>
             </button>
-          ) : (
-            <div className="flex items-center gap-2 text-xs text-slate-400 bg-slate-900/60 border border-slate-800/60 px-3 py-1 rounded-full">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
-              <span className="text-[11px] font-medium text-slate-300">Discom & DigiLocker Verified Network</span>
-            </div>
-          )}
-        </div>
+          </div>
+        )}
 
         {/* Right Action Controls */}
         <div className="flex items-center gap-2.5">
