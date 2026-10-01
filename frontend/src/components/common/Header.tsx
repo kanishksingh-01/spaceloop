@@ -245,8 +245,8 @@ export const Header: React.FC<HeaderProps> = ({
             )}
           </button>
 
-          {/* Portal Switcher Button (Visible across all form factors) */}
-          {isHostPortal ? (
+          {/* Switch to Seeker button (Only when in Host Portal) */}
+          {isHostPortal && (
             <button
               type="button"
               onClick={() => navigate('/explore')}
@@ -254,16 +254,6 @@ export const Header: React.FC<HeaderProps> = ({
               title="Switch to Seeker Portal"
             >
               <span>🎓 <span className="hidden sm:inline">{t('nav.switchToSeeker')}</span><span className="sm:hidden">Seeker</span></span>
-            </button>
-          ) : (
-            <button
-              type="button"
-              onClick={() => navigate('/host')}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-bold text-xs shadow-md shadow-amber-500/20 transition shrink-0"
-              title="Launch SpaceLoop Host Operating System"
-            >
-              <i className="fa-solid fa-gauge-high text-[10px]" />
-              <span>Host Portal</span>
             </button>
           )}
 
