@@ -30,24 +30,24 @@ export const ExplorePage: React.FC = () => {
   const [userLng, setUserLng] = useState<number | null>(null);
 
   const categories = [
-    { label: t('explore.filterAll'), icon: 'fa-border-all', value: 'All' },
-    { label: t('explore.filterDesk'), icon: 'fa-laptop-code', value: 'Workspace', color: 'text-indigo-400' },
-    { label: t('explore.filterMeeting'), icon: 'fa-handshake', value: 'Meeting', color: 'text-blue-400' },
-    { label: t('explore.filterStudio'), icon: 'fa-microphone-lines', value: 'Studio', color: 'text-purple-400' },
-    { label: t('landing.studyCategory'), icon: 'fa-screwdriver-wrench', value: 'Workshop', color: 'text-amber-400' },
-    { label: t('landing.spacesTitle'), icon: 'fa-store', value: 'Retail', color: 'text-pink-400' },
-    { label: t('explore.filterStorage'), icon: 'fa-boxes-stacked', value: 'Storage', color: 'text-yellow-400' },
-    { label: t('explore.filterStudy'), icon: 'fa-book-open', value: 'Study', color: 'text-emerald-400' },
-    { label: t('explore.filterEvent'), icon: 'fa-users', value: 'Event', color: 'text-cyan-400' },
+    { label: t('explore.filterAll') || 'All Spaces', icon: 'fa-border-all', value: 'All' },
+    { label: t('explore.filterDesk') || 'Desks & Workstations', icon: 'fa-laptop-code', value: 'Workspace', color: 'text-indigo-500 dark:text-indigo-400' },
+    { label: t('explore.filterMeeting') || 'Meeting Rooms', icon: 'fa-handshake', value: 'Meeting', color: 'text-blue-500 dark:text-blue-400' },
+    { label: t('explore.filterStudio') || 'Podcast & Photo Studios', icon: 'fa-microphone-lines', value: 'Studio', color: 'text-purple-500 dark:text-purple-400' },
+    { label: t('landing.studyCategory') || 'Workshops', icon: 'fa-screwdriver-wrench', value: 'Workshop', color: 'text-amber-500 dark:text-amber-400' },
+    { label: t('landing.spacesTitle') || 'Retail', icon: 'fa-store', value: 'Retail', color: 'text-pink-500 dark:text-pink-400' },
+    { label: t('explore.filterStorage') || 'Storage', icon: 'fa-boxes-stacked', value: 'Storage', color: 'text-yellow-500 dark:text-yellow-400' },
+    { label: t('explore.filterStudy') || 'Quiet Study Pods', icon: 'fa-book-open', value: 'Study', color: 'text-emerald-500 dark:text-emerald-400' },
+    { label: t('explore.filterEvent') || 'Event Spaces', icon: 'fa-users', value: 'Event', color: 'text-cyan-500 dark:text-cyan-400' },
   ];
 
   const quickHubs = [
-    { label: '📍 Wagholi, Pune', loc: 'Wagholi, Pune', lat: 18.5793, lng: 73.9822 },
-    { label: '📍 IIT Delhi / Hauz Khas', loc: 'Hauz Khas, New Delhi', lat: 28.5450, lng: 77.1926 },
-    { label: '📍 Koramangala, Bangalore', loc: 'Koramangala, Bangalore', lat: 12.9352, lng: 77.6245 },
-    { label: '📍 Shivajinagar / FC Road', loc: 'Shivajinagar, Pune', lat: 18.5204, lng: 73.8567 },
-    { label: '📍 DU North Campus', loc: 'North Campus, New Delhi', lat: 28.6900, lng: 77.2100 },
-    { label: '📍 Sector 62, Noida', loc: 'Sector 62, Noida', lat: 28.6270, lng: 77.3725 },
+    { label: 'Wagholi, Pune', loc: 'Wagholi, Pune', lat: 18.5793, lng: 73.9822 },
+    { label: 'IIT Delhi / Hauz Khas', loc: 'Hauz Khas, New Delhi', lat: 28.5450, lng: 77.1926 },
+    { label: 'Koramangala, Bangalore', loc: 'Koramangala, Bangalore', lat: 12.9352, lng: 77.6245 },
+    { label: 'Shivajinagar / FC Road', loc: 'Shivajinagar, Pune', lat: 18.5204, lng: 73.8567 },
+    { label: 'DU North Campus', loc: 'North Campus, New Delhi', lat: 28.6900, lng: 77.2100 },
+    { label: 'Sector 62, Noida', loc: 'Sector 62, Noida', lat: 28.6270, lng: 77.3725 },
   ];
 
   const resolveCoordinates = (name: string): { lat: number; lng: number } | null => {
@@ -224,7 +224,7 @@ export const ExplorePage: React.FC = () => {
   // Hybrid AI Search
   const handleAiSearch = async (overridePrompt?: string) => {
     const q = overridePrompt || searchQuery;
-    if (!q.trim()) {
+    if (!q.trim() && !locationInput.trim()) {
       fetchSpaces();
       return;
     }
@@ -245,7 +245,7 @@ export const ExplorePage: React.FC = () => {
       }
 
       const result = await searchSpacesHybrid({
-        query: q,
+        query: q || 'any space',
         location: locationInput.trim() || undefined,
         category: activeCategory !== 'All' ? activeCategory : undefined,
         radius: selectedRadius && selectedRadius !== 'All' ? selectedRadius : undefined,
@@ -260,10 +260,10 @@ export const ExplorePage: React.FC = () => {
       setAiMatchActive(true);
     } catch (err) {
       console.warn('Hybrid AI search fallback to standard search:', err);
-      const fallback = await getSpaces({ q });
+      const fallback = await getSpaces({ q, city: locationInput.trim() || undefined });
       setSpaces(fallback);
       setExtractedConstraints({});
-      setSearchSummary(`Showing results for "${q}"`);
+      setSearchSummary(`Showing results for "${q || locationInput}"`);
       setAiMatchActive(true);
     } finally {
       setIsAiSearching(false);
@@ -281,8 +281,8 @@ export const ExplorePage: React.FC = () => {
       (pos) => {
         setUserLat(pos.coords.latitude);
         setUserLng(pos.coords.longitude);
-        setLocationInput(`GPS: ${pos.coords.latitude.toFixed(4)}, ${pos.coords.longitude.toFixed(4)}`);
-        fetchSpaces();
+        setLocationInput(`${pos.coords.latitude.toFixed(3)}, ${pos.coords.longitude.toFixed(3)}`);
+        fetchSpaces({ lat: pos.coords.latitude, lng: pos.coords.longitude, loc: `${pos.coords.latitude.toFixed(3)}, ${pos.coords.longitude.toFixed(3)}` });
       },
       (err) => {
         alert('Could not retrieve GPS location: ' + err.message);
@@ -303,84 +303,132 @@ export const ExplorePage: React.FC = () => {
     setUserLng(null);
     setVisibleCount(PAGE_SIZE);
     setSearchParams({});
-    fetchSpaces();
+    fetchSpaces({ category: 'All', loc: '', q: '', radius: '', maxPrice: '', lat: null, lng: null });
   };
 
-  return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col antialiased">
-      {/* 1. FOCUSED DISCOVERY HEADER & NATURAL LANGUAGE AI SEARCH */}
-      <section className="relative overflow-hidden pt-8 pb-8 md:pt-12 md:pb-12 border-b border-slate-800/60 bg-gradient-to-b from-slate-900 via-slate-950 to-slate-950">
-        <div className="absolute -top-40 left-1/2 -translate-x-1/2 w-[600px] h-[300px] bg-indigo-600/15 blur-[120px] rounded-full pointer-events-none" />
-        <div className="absolute top-10 right-10 w-[240px] h-[240px] bg-violet-600/10 blur-[100px] rounded-full pointer-events-none" />
+  const hasActiveFilters = Boolean(
+    searchQuery ||
+    locationInput ||
+    (selectedRadius && selectedRadius !== 'All') ||
+    selectedMaxPrice ||
+    activeCategory !== 'All' ||
+    aiMatchActive
+  );
 
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-          <div className="text-center max-w-3xl mx-auto mb-6">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-indigo-300 text-xs font-medium mb-3 shadow-sm">
-              <span className="flex h-2 w-2 rounded-full bg-indigo-400 animate-ping" />
-              <span className="font-semibold">{t('explore.aiMatchLabel')}</span> • {t('common.availableNow')}
+  return (
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 flex flex-col antialiased">
+      {/* 1. HERO & PRIMARY DISCOVERY SEARCH ENGINE */}
+      <section className="bg-white dark:bg-slate-900/60 border-b border-slate-200 dark:border-slate-800/80 pt-10 pb-8 sm:pt-14 sm:pb-10">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+          {/* Headline & Subtitle */}
+          <div className="text-center max-w-2xl mx-auto mb-8">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-50 dark:bg-indigo-950/60 border border-indigo-200 dark:border-indigo-800/60 text-indigo-700 dark:text-indigo-300 text-xs font-medium mb-3.5">
+              <span className="w-1.5 h-1.5 rounded-full bg-indigo-600 dark:bg-indigo-400" />
+              <span>{t('explore.aiMatchLabel')}</span>
+              <span className="text-slate-300 dark:text-slate-700">•</span>
+              <span className="text-slate-600 dark:text-slate-400">{t('common.availableNow')}</span>
             </div>
 
-            <h1 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold tracking-tight text-white leading-tight">
+            <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold tracking-tight text-slate-900 dark:text-white leading-tight">
               {t('explore.title')}
             </h1>
 
-            <p className="mt-3 text-sm sm:text-base text-slate-300 leading-relaxed max-w-2xl mx-auto">
+            <p className="mt-3 text-sm sm:text-base text-slate-600 dark:text-slate-300 leading-relaxed max-w-xl mx-auto">
               {t('explore.subtitle')}
             </p>
           </div>
 
-          {/* AI Intent-Based Search Engine Bar */}
-          <div className="max-w-3xl mx-auto">
-            <div className="bg-slate-900/90 backdrop-blur-xl border border-indigo-500/30 rounded-2xl p-3 sm:p-3.5 floating-panel transition-all hover:border-indigo-500/50 shadow-xl">
-              <form
-                onSubmit={(e) => {
-                  e.preventDefault();
-                  handleAiSearch();
-                }}
-                className="flex flex-col sm:flex-row gap-2.5"
-              >
-                <div className="relative flex-grow flex items-center">
-                  <div className="absolute left-4 text-indigo-400 text-base">
-                    <i className="fa-solid fa-wand-magic-sparkles" />
-                  </div>
-                  <input
-                    type="text"
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    placeholder={t('explore.searchPlaceholder')}
-                    className="w-full bg-slate-800 border border-slate-700/80 rounded-xl pl-11 pr-4 py-3 text-sm text-slate-100 placeholder-slate-400 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition"
-                  />
-                </div>
+          {/* Unified Discovery Search Component */}
+          <div className="max-w-4xl mx-auto">
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                handleAiSearch();
+              }}
+              className="bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700/80 rounded-2xl shadow-sm hover:border-indigo-400 dark:hover:border-indigo-500/60 transition-all p-2 flex flex-col md:flex-row items-stretch md:items-center gap-2"
+            >
+              {/* Keyword / Vibe Input Segment */}
+              <div className="flex-1 flex items-center gap-3 px-3 py-2">
+                <i className="fa-solid fa-wand-magic-sparkles text-indigo-500 dark:text-indigo-400 text-sm shrink-0" />
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder={t('explore.searchPlaceholder')}
+                  className="w-full bg-transparent border-none text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-0"
+                />
+              </div>
 
+              {/* Subtle Hairline Vertical Divider */}
+              <div className="hidden md:block w-px h-8 bg-slate-200 dark:bg-slate-800 shrink-0" />
+
+              {/* Location Input Segment with GPS */}
+              <div className="flex-1 flex items-center gap-2 px-3 py-2">
+                <i className="fa-solid fa-location-dot text-slate-400 dark:text-slate-500 text-sm shrink-0" />
+                <input
+                  type="text"
+                  value={locationInput}
+                  onChange={(e) => setLocationInput(e.target.value)}
+                  placeholder={t('explore.filterLocation') + ' (e.g. Pune, Hauz Khas)'}
+                  className="w-full bg-transparent border-none text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-0"
+                />
                 <button
-                  type="submit"
-                  disabled={isAiSearching}
-                  className="bg-gradient-to-r from-indigo-600 via-violet-600 to-indigo-700 hover:from-indigo-500 hover:to-violet-500 text-white font-semibold text-sm px-5 py-3 rounded-xl shadow-lg shadow-indigo-600/30 flex items-center justify-center gap-2 transition shrink-0 group disabled:opacity-60"
+                  type="button"
+                  onClick={detectCurrentLocation}
+                  className="shrink-0 text-xs font-medium text-slate-600 dark:text-slate-300 hover:text-indigo-600 dark:hover:text-white bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-750 px-2.5 py-1.5 rounded-lg flex items-center gap-1.5 transition"
+                  title="Detect my current location"
                 >
-                  {isAiSearching ? (
-                    <>
-                      <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                      <span>{t('common.loading')}</span>
-                    </>
-                  ) : (
-                    <>
-                      <span>{t('common.search')}</span>
-                      <i className="fa-solid fa-arrow-right text-xs group-hover:translate-x-0.5 transition" />
-                    </>
-                  )}
+                  <i className="fa-solid fa-crosshairs text-indigo-500 text-xs" />
+                  <span className="hidden sm:inline">GPS</span>
                 </button>
-              </form>
+              </div>
+
+              {/* Search Submit CTA Button */}
+              <button
+                type="submit"
+                disabled={isAiSearching}
+                className="bg-indigo-600 hover:bg-indigo-700 dark:bg-indigo-600 dark:hover:bg-indigo-500 text-white font-medium text-sm px-6 py-3 rounded-xl transition flex items-center justify-center gap-2 shrink-0 disabled:opacity-60 shadow-sm"
+              >
+                {isAiSearching ? (
+                  <>
+                    <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    <span>{t('common.loading')}</span>
+                  </>
+                ) : (
+                  <>
+                    <span>{t('common.search')}</span>
+                    <i className="fa-solid fa-arrow-right text-xs" />
+                  </>
+                )}
+              </button>
+            </form>
+
+            {/* Popular Location Suggestions */}
+            <div className="mt-3.5 px-2 flex items-center gap-2 text-xs flex-wrap">
+              <span className="text-slate-500 dark:text-slate-400 font-medium shrink-0">
+                Popular:
+              </span>
+              {quickHubs.map((hub, idx) => (
+                <button
+                  key={idx}
+                  type="button"
+                  onClick={() => handleSelectQuickHub(hub)}
+                  className="text-slate-600 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-300 font-medium transition py-0.5 px-1.5 rounded hover:bg-slate-100 dark:hover:bg-slate-800/80"
+                >
+                  {hub.label}
+                </button>
+              ))}
             </div>
           </div>
         </div>
       </section>
 
-      {/* 2. SPACE EXPLORER & CONTROLS */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 flex-1 w-full">
-        {/* Controls Bar: Category Pills & Stats */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
-          {/* Category Pills */}
-          <div className="flex items-center gap-2 overflow-x-auto pb-2 md:pb-0 scrollbar-none">
+      {/* 2. MAIN EXPLORER: CATEGORIES, FILTERS & LISTINGS */}
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex-1 w-full">
+        {/* Category Navigation Bar & Space Counter Header */}
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 mb-6 border-b border-slate-200 dark:border-slate-800">
+          {/* Category Tabs */}
+          <div className="flex items-center gap-1.5 overflow-x-auto pb-1 md:pb-0 scrollbar-none">
             {categories.map((cat) => {
               const isSelected = activeCategory === cat.value;
               return (
@@ -388,166 +436,109 @@ export const ExplorePage: React.FC = () => {
                   key={cat.value}
                   type="button"
                   onClick={() => handleSelectCategory(cat.value)}
-                  className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-medium transition whitespace-nowrap floating-interactive ${
+                  className={`px-3.5 py-2 rounded-lg text-xs sm:text-sm font-medium transition whitespace-nowrap flex items-center gap-2 ${
                     isSelected
-                      ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30'
-                      : 'bg-slate-900 text-slate-400 hover:text-white hover:bg-slate-800 border border-slate-800'
+                      ? 'bg-slate-900 text-white dark:bg-white dark:text-slate-900 shadow-sm'
+                      : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800/70'
                   }`}
                 >
-                  <i className={`fa-solid ${cat.icon} mr-1.5 ${cat.color || ''}`} />
+                  <i className={`fa-solid ${cat.icon} text-xs ${isSelected ? '' : cat.color || ''}`} />
                   <span>{cat.label}</span>
                 </button>
               );
             })}
           </div>
 
-          {/* Active Indicator */}
-          <div className="flex items-center gap-3 text-xs text-slate-400">
-            <span>
+          {/* Results Count & Verified Telemetry Badge */}
+          <div className="flex items-center gap-3 text-xs text-slate-500 dark:text-slate-400 shrink-0 self-end md:self-auto">
+            <span className="font-medium text-slate-700 dark:text-slate-300">
               {displaySpaces.length} {t('explore.foundSpaces')}
             </span>
-            <span className="w-1 h-1 rounded-full bg-slate-700" />
-            <span className="flex items-center gap-1 text-emerald-400">
+            <span className="w-1 h-1 rounded-full bg-slate-300 dark:bg-slate-700" />
+            <span className="flex items-center gap-1 font-semibold text-emerald-600 dark:text-emerald-400">
               <i className="fa-solid fa-shield-check" /> {t('common.verified')}
             </span>
           </div>
         </div>
 
-        {/* Location & Radius Dynamic Discovery Filter Bar */}
-        <div className="bg-slate-900/80 border border-slate-800/90 rounded-2xl p-4 mb-8 floating-container">
-          <form
-            onSubmit={(e) => {
-              e.preventDefault();
-              fetchSpaces();
-            }}
-            className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-3"
-          >
-            {/* Location Input with Geolocation Action */}
-            <div className="flex-grow flex items-center gap-2 bg-slate-800 border border-slate-700/80 rounded-xl px-3 py-2">
-              <i className="fa-solid fa-location-dot text-indigo-400 shrink-0" />
-              <input
-                type="text"
-                value={locationInput}
-                onChange={(e) => setLocationInput(e.target.value)}
-                placeholder={t('explore.filterLocation')}
-                className="bg-transparent border-none text-xs sm:text-sm text-slate-100 placeholder-slate-400 focus:outline-none w-full"
-              />
-              <button
-                type="button"
-                onClick={detectCurrentLocation}
-                className="shrink-0 text-[11px] font-semibold text-indigo-300 hover:text-white bg-indigo-950/80 hover:bg-indigo-900/80 border border-indigo-500/30 px-2.5 py-1 rounded-lg flex items-center gap-1 transition"
-                title="Use my current GPS coordinates"
-              >
-                <i className="fa-solid fa-crosshairs text-indigo-400" />
-                <span className="hidden sm:inline">GPS</span>
-              </button>
-            </div>
-
-            {/* Radius Selector */}
-            <div className="flex items-center gap-2 shrink-0">
-              <label className="text-xs text-slate-400 font-medium shrink-0 flex items-center gap-1">
-                <i className="fa-solid fa-ruler-combined text-slate-500" /> {t('explore.filterAvailability')}:
-              </label>
+        {/* Secondary Filter Toolbar */}
+        <div className="flex flex-wrap items-center justify-between gap-3 mb-8">
+          <div className="flex flex-wrap items-center gap-2.5">
+            {/* Distance / Radius Select */}
+            <div className="flex items-center gap-1.5 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-800 rounded-lg px-3 py-1.5 text-xs shadow-xs">
+              <i className="fa-solid fa-ruler-combined text-slate-400 text-xs" />
+              <span className="text-slate-500 dark:text-slate-400 font-medium">Distance:</span>
               <select
                 value={selectedRadius}
                 onChange={(e) => handleRadiusChange(e.target.value)}
-                className="bg-slate-800 border border-slate-700/80 rounded-xl px-3 py-2 text-xs sm:text-sm text-slate-100 focus:outline-none focus:border-indigo-500 transition"
+                className="bg-transparent border-none text-xs font-semibold text-slate-800 dark:text-slate-200 focus:outline-none cursor-pointer pl-1 pr-2 py-0.5"
               >
-                <option value="">{t('common.all')}</option>
-                <option value="1">1 km</option>
-                <option value="3">3 km</option>
-                <option value="5">5 km</option>
-                <option value="10">10 km</option>
+                <option value="" className="bg-white dark:bg-slate-900 text-slate-900 dark:text-white">{t('common.all')}</option>
+                <option value="1" className="bg-white dark:bg-slate-900 text-slate-900 dark:text-white">Within 1 km</option>
+                <option value="3" className="bg-white dark:bg-slate-900 text-slate-900 dark:text-white">Within 3 km</option>
+                <option value="5" className="bg-white dark:bg-slate-900 text-slate-900 dark:text-white">Within 5 km</option>
+                <option value="10" className="bg-white dark:bg-slate-900 text-slate-900 dark:text-white">Within 10 km</option>
               </select>
             </div>
 
-            {/* Max Budget Filter */}
-            <div className="flex items-center gap-2 shrink-0">
-              <label className="text-xs text-slate-400 font-medium shrink-0 flex items-center gap-1">
-                <i className="fa-solid fa-indian-rupee-sign text-slate-500" /> {t('explore.priceRange')}:
-              </label>
+            {/* Price Filter Select */}
+            <div className="flex items-center gap-1.5 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-800 rounded-lg px-3 py-1.5 text-xs shadow-xs">
+              <i className="fa-solid fa-indian-rupee-sign text-slate-400 text-xs" />
+              <span className="text-slate-500 dark:text-slate-400 font-medium">Max Rate:</span>
               <select
                 value={selectedMaxPrice}
                 onChange={(e) => handleMaxPriceChange(e.target.value)}
-                className="bg-slate-800 border border-slate-700/80 rounded-xl px-3 py-2 text-xs sm:text-sm text-slate-100 focus:outline-none focus:border-indigo-500 transition"
+                className="bg-transparent border-none text-xs font-semibold text-slate-800 dark:text-slate-200 focus:outline-none cursor-pointer pl-1 pr-2 py-0.5"
               >
-                <option value="">{t('common.all')}</option>
-                <option value="60">{formatCurrency(60)}</option>
-                <option value="80">{formatCurrency(80)}</option>
-                <option value="100">{formatCurrency(100)}</option>
-                <option value="150">{formatCurrency(150)}</option>
-                <option value="200">{formatCurrency(200)}</option>
+                <option value="" className="bg-white dark:bg-slate-900 text-slate-900 dark:text-white">{t('common.all')}</option>
+                <option value="60" className="bg-white dark:bg-slate-900 text-slate-900 dark:text-white">{formatCurrency(60)}/hr</option>
+                <option value="80" className="bg-white dark:bg-slate-900 text-slate-900 dark:text-white">{formatCurrency(80)}/hr</option>
+                <option value="100" className="bg-white dark:bg-slate-900 text-slate-900 dark:text-white">{formatCurrency(100)}/hr</option>
+                <option value="150" className="bg-white dark:bg-slate-900 text-slate-900 dark:text-white">{formatCurrency(150)}/hr</option>
+                <option value="200" className="bg-white dark:bg-slate-900 text-slate-900 dark:text-white">{formatCurrency(200)}/hr</option>
               </select>
             </div>
-
-            {/* Submit & Reset Actions */}
-            <div className="flex items-center gap-2 shrink-0">
-              <button
-                type="submit"
-                className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs sm:text-sm font-semibold transition flex items-center justify-center gap-1.5 shadow-md shadow-indigo-600/20"
-              >
-                <i className="fa-solid fa-filter text-xs" /> {t('common.filter')}
-              </button>
-              <button
-                type="button"
-                onClick={resetAllFilters}
-                className={`px-3.5 py-2 rounded-xl text-xs sm:text-sm font-semibold transition flex items-center justify-center gap-1.5 border ${
-                  locationInput || selectedRadius || selectedMaxPrice || activeCategory !== 'All' || searchQuery || aiMatchActive
-                    ? 'bg-slate-800 hover:bg-slate-700 text-slate-200 border-slate-700 shadow-sm'
-                    : 'bg-slate-950/60 hover:bg-slate-850 text-slate-400 hover:text-slate-200 border-slate-800'
-                }`}
-                title={t('common.clearFilters')}
-              >
-                <i className="fa-solid fa-rotate-left text-xs" />
-                <span>{t('common.reset')}</span>
-              </button>
-            </div>
-          </form>
-
-          {/* Quick Hub Chips */}
-          <div className="mt-3 pt-2.5 border-t border-slate-800/60 flex items-center gap-2 text-xs overflow-x-auto whitespace-nowrap scrollbar-none">
-            <span className="text-slate-500 text-[11px] font-medium shrink-0">{t('explore.filterLocation')}:</span>
-            {quickHubs.map((hub, idx) => (
-              <button
-                key={idx}
-                type="button"
-                onClick={() => handleSelectQuickHub(hub)}
-                className="px-2 py-0.5 rounded-lg bg-slate-950/70 hover:bg-slate-800 text-slate-400 hover:text-white border border-slate-800 text-[11px] transition"
-              >
-                {hub.label}
-              </button>
-            ))}
           </div>
+
+          {/* Reset Filters CTA */}
+          {hasActiveFilters && (
+            <button
+              type="button"
+              onClick={resetAllFilters}
+              className="text-xs font-medium text-slate-600 dark:text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 flex items-center gap-1.5 py-1 px-2.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800/80 transition"
+            >
+              <i className="fa-solid fa-rotate-left text-[11px]" />
+              <span>{t('common.reset') || 'Reset filters'}</span>
+            </button>
+          )}
         </div>
 
         {/* AI Matching Banner */}
         {aiMatchActive && (
-          <div className="mb-6 p-4 rounded-xl bg-gradient-to-r from-indigo-950/60 via-slate-900 to-indigo-950/60 border border-indigo-500/30 flex flex-col gap-3">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-lg bg-indigo-600/30 text-indigo-300 flex items-center justify-center shrink-0">
-                  <i className="fa-solid fa-sparkles text-sm" />
-                </div>
-                <div>
-                  <h3 className="text-sm font-semibold text-white">{t('explore.aiMatchLabel')}</h3>
-                  <p className="text-xs text-slate-400">
-                    {searchSummary || t('explore.aiMatchSubtitle')}
-                  </p>
-                </div>
+          <div className="mb-6 p-4 rounded-xl bg-indigo-50/80 dark:bg-indigo-950/40 border border-indigo-200 dark:border-indigo-800/60 flex items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 rounded-lg bg-indigo-600/10 dark:bg-indigo-600/30 text-indigo-600 dark:text-indigo-400 flex items-center justify-center shrink-0">
+                <i className="fa-solid fa-wand-magic-sparkles text-sm" />
               </div>
-              <button
-                onClick={() => {
-                  setAiMatchActive(false);
-                  setSearchQuery('');
-                  setExtractedConstraints({});
-                  setSearchSummary('');
-                  fetchSpaces();
-                }}
-                className="text-xs text-indigo-400 hover:text-indigo-300 font-medium px-3 py-1.5 rounded-lg bg-indigo-950 border border-indigo-800/60 shrink-0"
-              >
-                {t('explore.clearAllFilters')}
-              </button>
+              <div>
+                <h3 className="text-sm font-semibold text-slate-900 dark:text-white">{t('explore.aiMatchLabel')}</h3>
+                <p className="text-xs text-slate-600 dark:text-slate-400">
+                  {searchSummary || t('explore.aiMatchSubtitle')}
+                </p>
+              </div>
             </div>
+            <button
+              onClick={() => {
+                setAiMatchActive(false);
+                setSearchQuery('');
+                setExtractedConstraints({});
+                setSearchSummary('');
+                fetchSpaces();
+              }}
+              className="text-xs text-indigo-700 dark:text-indigo-300 hover:text-indigo-900 dark:hover:text-white font-medium px-3 py-1.5 rounded-lg bg-white dark:bg-slate-900 border border-indigo-200 dark:border-indigo-800/80 shrink-0 shadow-xs"
+            >
+              {t('explore.clearAllFilters')}
+            </button>
           </div>
         )}
 
@@ -555,17 +546,17 @@ export const ExplorePage: React.FC = () => {
         {loading ? (
           <SpaceCardGridSkeleton count={6} />
         ) : displaySpaces.length === 0 ? (
-          <div className="py-20 text-center bg-slate-900/50 rounded-2xl border border-slate-800 p-8">
-            <div className="w-16 h-16 rounded-full bg-slate-800 flex items-center justify-center mx-auto mb-4 text-2xl">
-              📍
+          <div className="py-20 text-center bg-white dark:bg-slate-900/50 rounded-2xl border border-slate-200 dark:border-slate-800 p-8 max-w-lg mx-auto">
+            <div className="w-14 h-14 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center mx-auto mb-4 text-2xl text-slate-400">
+              <i className="fa-solid fa-magnifying-glass text-xl" />
             </div>
-            <h3 className="text-lg font-bold text-white mb-2">{t('explore.noSpacesFoundTitle')}</h3>
-            <p className="text-xs text-slate-400 mb-6 max-w-sm mx-auto">
+            <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-2">{t('explore.noSpacesFoundTitle')}</h3>
+            <p className="text-xs text-slate-600 dark:text-slate-400 mb-6 max-w-sm mx-auto">
               {t('explore.noSpacesFoundDesc')}
             </p>
             <button
               onClick={resetAllFilters}
-              className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold rounded-xl transition"
+              className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold rounded-lg transition shadow-xs"
             >
               {t('explore.filterAll')}
             </button>
@@ -584,25 +575,23 @@ export const ExplorePage: React.FC = () => {
 
             {/* Incremental Loading / Pagination Control */}
             {displaySpaces.length > visibleSpaces.length && (
-              <div className="mt-10 pt-6 border-t border-slate-800/80 flex flex-col items-center justify-center gap-3">
-                <div className="text-xs text-slate-400 font-medium">
+              <div className="mt-12 pt-6 border-t border-slate-200 dark:border-slate-800 flex flex-col items-center justify-center gap-3">
+                <div className="text-xs text-slate-500 dark:text-slate-400 font-medium">
                   {t('explore.showingSpaces', { count: visibleSpaces.length })}
                 </div>
-                <div className="flex items-center gap-3">
-                  <button
-                    type="button"
-                    onClick={() => setVisibleCount((prev) => prev + PAGE_SIZE)}
-                    className="px-6 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-100 hover:text-white text-xs sm:text-sm font-semibold border border-slate-700 hover:border-slate-600 transition shadow-sm flex items-center gap-2"
-                  >
-                    <i className="fa-solid fa-chevron-down text-xs text-indigo-400" />
-                    <span>{t('common.viewMore')}</span>
-                  </button>
-                </div>
+                <button
+                  type="button"
+                  onClick={() => setVisibleCount((prev) => prev + PAGE_SIZE)}
+                  className="px-6 py-2.5 rounded-lg bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-800 dark:text-slate-200 text-xs sm:text-sm font-semibold border border-slate-300 dark:border-slate-700 transition shadow-xs flex items-center gap-2"
+                >
+                  <i className="fa-solid fa-chevron-down text-xs text-indigo-500" />
+                  <span>{t('common.viewMore')}</span>
+                </button>
               </div>
             )}
           </div>
         )}
-      </section>
+      </main>
     </div>
   );
 };

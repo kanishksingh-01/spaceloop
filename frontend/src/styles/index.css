@@ -946,6 +946,16 @@ html.light .fixed.inset-0.bg-black\/60 {
   animation: spaceloop-line-pulse 2.2s cubic-bezier(0.4, 0, 0.2, 1) infinite;
 }
 
+/* Utilities */
+.scrollbar-none::-webkit-scrollbar {
+  display: none;
+}
+.scrollbar-none {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+
 
 
 
