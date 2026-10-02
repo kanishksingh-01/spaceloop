@@ -96,13 +96,13 @@ export const Header: React.FC<HeaderProps> = ({
   return (
     <>
       <header className="sticky top-0 z-50 backdrop-blur-md bg-slate-950/95 border-b border-slate-800/80">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-3">
+        <div className={`${isHostPortal ? 'w-full px-2.5 sm:px-3 lg:px-4' : 'max-w-7xl mx-auto px-4 sm:px-6 lg:px-8'} h-16 flex items-center justify-between gap-3`}>
           {/* Brand Logo & Active Portal Indicator with Far-Left Hamburger */}
-          <div className="flex items-center gap-2.5 sm:gap-3 shrink-0">
+          <div className={`flex items-center ${isHostPortal ? 'gap-2 shrink-0' : 'gap-2.5 sm:gap-3 shrink-0'}`}>
             <HamburgerButton
               isOpen={mobileDrawerOpen}
               onToggle={() => setMobileDrawerOpen((prev) => !prev)}
-              className="mr-0.5"
+              className={isHostPortal ? '' : 'mr-0.5'}
             />
             <button
               type="button"
@@ -135,7 +135,7 @@ export const Header: React.FC<HeaderProps> = ({
             </button>
 
             {/* Compact Native Portal Mode Indicator */}
-            <div className="hidden sm:flex items-center ml-1">
+            <div className={`hidden ${isHostPortal ? 'xl:flex' : 'sm:flex'} items-center ml-1`}>
               <span
                 className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-semibold tracking-tight border select-none transition-all duration-200 ${
                   isHostPortal
@@ -155,13 +155,10 @@ export const Header: React.FC<HeaderProps> = ({
                 </span>
               </span>
             </div>
-          </div>
 
-          {/* Center Role-Aware Nav Links (Desktop & Tablet) */}
-          <nav className="hidden lg:flex items-center gap-1.5 text-xs font-semibold">
-            {isHostPortal ? (
-              /* HOST PORTAL NAVIGATION: Preserved Overview and Architecture */
-              <>
+            {/* Host Portal Navigation: Left-aligned group beside Logo with clean spacing */}
+            {isHostPortal && (
+              <nav className="hidden lg:flex items-center gap-2 text-xs font-semibold ml-4 sm:ml-5 lg:ml-6 shrink-0">
                 <button
                   onClick={() => handleNav('/host')}
                   className={`px-3 py-1.5 rounded-lg transition flex items-center gap-1.5 ${
@@ -185,50 +182,52 @@ export const Header: React.FC<HeaderProps> = ({
                   <i className="fa-solid fa-cubes text-amber-400" />
                   <span>{t('nav.architecture') || 'Architecture'}</span>
                 </button>
-              </>
-            ) : (
-              /* SEEKER PORTAL NAVIGATION */
-              <>
-                <button
-                  onClick={() => handleNav('/explore')}
-                  className={`px-3 py-1.5 rounded-lg transition flex items-center gap-1.5 ${
-                    location.pathname === '/explore'
-                      ? 'bg-indigo-600/20 text-indigo-300 border border-indigo-500/30'
-                      : 'text-slate-300 hover:text-white hover:bg-slate-800/60'
-                  }`}
-                >
-                  <i className="fa-solid fa-compass text-indigo-400" />
-                  <span>{t('nav.explore') || 'Explore'}</span>
-                </button>
-                <button
-                  onClick={() => handleNav('/host')}
-                  className="px-3 py-1.5 rounded-lg transition flex items-center gap-1.5 text-amber-300 hover:text-white hover:bg-amber-500/10 border border-amber-500/20 font-bold"
-                  title="Launch Host Operating System"
-                >
-                  <i className="fa-solid fa-house-chimney-user text-amber-400" />
-                  <span>{t('nav.hostPortal') || 'Host Portal'}</span>
-                </button>
-                <button
-                  onClick={() => handleNav('/architecture')}
-                  className={`px-3 py-1.5 rounded-lg transition flex items-center gap-1.5 ${
-                    location.pathname === '/architecture'
-                      ? 'bg-indigo-600/30 text-indigo-200 border border-indigo-500/50 shadow-sm shadow-indigo-500/20'
-                      : 'text-slate-300 hover:text-white hover:bg-slate-800/80 border border-transparent hover:border-slate-700/60'
-                  }`}
-                  title="System Architecture & Engineering Team"
-                >
-                  <i className="fa-solid fa-cubes text-indigo-400" />
-                  <span>{t('nav.architecture') || 'Architecture'}</span>
-                  <span className="px-1.5 py-0.5 rounded text-[9px] font-mono font-bold bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
-                    Team
-                  </span>
-                </button>
-              </>
+              </nav>
             )}
-          </nav>
+          </div>
+
+          {/* Center Role-Aware Nav Links for Seeker Portal */}
+          {!isHostPortal && (
+            <nav className="hidden lg:flex items-center gap-1.5 text-xs font-semibold">
+              <button
+                onClick={() => handleNav('/explore')}
+                className={`px-3 py-1.5 rounded-lg transition flex items-center gap-1.5 ${
+                  location.pathname === '/explore'
+                    ? 'bg-indigo-600/20 text-indigo-300 border border-indigo-500/30'
+                    : 'text-slate-300 hover:text-white hover:bg-slate-800/60'
+                }`}
+              >
+                <i className="fa-solid fa-compass text-indigo-400" />
+                <span>{t('nav.explore') || 'Explore'}</span>
+              </button>
+              <button
+                onClick={() => handleNav('/host')}
+                className="px-3 py-1.5 rounded-lg transition flex items-center gap-1.5 text-amber-300 hover:text-white hover:bg-amber-500/10 border border-amber-500/20 font-bold"
+                title="Launch Host Operating System"
+              >
+                <i className="fa-solid fa-house-chimney-user text-amber-400" />
+                <span>{t('nav.hostPortal') || 'Host Portal'}</span>
+              </button>
+              <button
+                onClick={() => handleNav('/architecture')}
+                className={`px-3 py-1.5 rounded-lg transition flex items-center gap-1.5 ${
+                  location.pathname === '/architecture'
+                    ? 'bg-indigo-600/30 text-indigo-200 border border-indigo-500/50 shadow-sm shadow-indigo-500/20'
+                    : 'text-slate-300 hover:text-white hover:bg-slate-800/80 border border-transparent hover:border-slate-700/60'
+                }`}
+                title="System Architecture & Engineering Team"
+              >
+                <i className="fa-solid fa-cubes text-indigo-400" />
+                <span>{t('nav.architecture') || 'Architecture'}</span>
+                <span className="px-1.5 py-0.5 rounded text-[9px] font-mono font-bold bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
+                  Team
+                </span>
+              </button>
+            </nav>
+          )}
 
           {/* Right Controls & Portal Switcher */}
-          <div className="flex items-center gap-1.5 sm:gap-2.5 md:gap-3 shrink-0">
+          <div className={`flex items-center gap-1.5 sm:gap-2.5 md:gap-3 shrink-0 ${isHostPortal ? 'ml-auto' : ''}`}>
             {/* Theme Switcher Button */}
             <button
               type="button"
@@ -351,7 +350,6 @@ export const Header: React.FC<HeaderProps> = ({
                 </div>
               )
             )}
-
           </div>
         </div>
       </header>
@@ -368,4 +366,3 @@ export const Header: React.FC<HeaderProps> = ({
     </>
   );
 };
-
