@@ -16,10 +16,104 @@ from backend.modules.nlp.schemas import (
 )
 
 
+from typing import Dict, Any, List, Optional
+import re
+from backend.modules.nlp.schemas import (
+    ExtractedEntities,
+    LocationConstraint,
+    CapacityConstraint,
+    PriceConstraint,
+    TimeWindow
+)
+
+
 class ConversationalContextManager:
     """
-    Manages stateful constraint merging across conversational dialogue turns.
+    Manages stateful constraint merging and entity reference resolution across conversational dialogue turns.
     """
+
+    @classmethod
+    def extract_recent_candidate_spaces(cls, history: List[Dict[str, Any]]) -> List[int]:
+        """
+        Extracts space IDs referenced in recent conversation messages (user or assistant).
+        Returns unique IDs in chronological order of appearance in recent turns.
+        """
+        found_ids: List[int] = []
+        for turn in reversed(history or []):
+            if not isinstance(turn, dict):
+                continue
+            content = turn.get("content", "")
+            # Look for /space/{id} or Space #{id} or #(\d+)
+            space_links = re.findall(r"/space/(\d+)", content)
+            space_hashes = re.findall(r"(?:space|listing|#)\s*#?(\d+)", content, flags=re.IGNORECASE)
+            for sid_str in space_links + space_hashes:
+                try:
+                    sid = int(sid_str)
+                    if sid not in found_ids and 0 < sid < 100000:
+                        found_ids.append(sid)
+                except (ValueError, TypeError):
+                    pass
+            if len(found_ids) >= 5:
+                break
+        return found_ids
+
+    @classmethod
+    def resolve_referenced_space_id(
+        cls,
+        text: str,
+        history: List[Dict[str, Any]],
+        context_data: Optional[Dict[str, Any]] = None
+    ) -> Optional[int]:
+        """
+        Resolves anaphoric and ordinal space references (e.g. "first one", "space #2", "second", "that space")
+        to a concrete space ID from conversation history.
+        """
+        clean = (text or "").lower().strip()
+        
+        # 1. Direct explicit ID match (e.g. "space 4", "#4", "listing 2")
+        explicit = re.search(r"(?:space|listing|#)\s*#?(\d+)", clean)
+        if explicit:
+            try:
+                return int(explicit.group(1))
+            except (ValueError, TypeError):
+                pass
+
+        # 2. Check candidate spaces from recent history
+        candidate_ids = cls.extract_recent_candidate_spaces(history)
+
+        # Ordinal mapping
+        first_patterns = [r"\bfirst\b", r"\b1st\b", r"\bpehla\b", r"\bpehle\b", r"पहला", r"पहिली", r"पहिले"]
+        second_patterns = [r"\bsecond\b", r"\b2nd\b", r"\bdoosra\b", r"\bdoosre\b", r"दूसरा", r"दुसरी", r"दुसरे"]
+        third_patterns = [r"\bthird\b", r"\b3rd\b", r"\bteesra\b", r"\bteesre\b", r"तीसरा", r"तिसरी"]
+
+        if any(re.search(p, clean) for p in first_patterns):
+            if candidate_ids:
+                return candidate_ids[0]
+
+        if any(re.search(p, clean) for p in second_patterns):
+            if len(candidate_ids) >= 2:
+                return candidate_ids[1]
+            elif candidate_ids:
+                return candidate_ids[-1]
+
+        if any(re.search(p, clean) for p in third_patterns):
+            if len(candidate_ids) >= 3:
+                return candidate_ids[2]
+            elif candidate_ids:
+                return candidate_ids[-1]
+
+        # Anaphoric references ("that one", "that space", "there", "usme", "tethe")
+        anaphoric = [r"\bthat\s+(?:one|space|room|desk|place)\b", r"\bthis\s+(?:one|space|room|desk)\b", r"\bthere\b", r"\busme\b", r"\btethe\b", r"उसमें", r"त्यामध्ये"]
+        if any(re.search(p, clean) for p in anaphoric):
+            if candidate_ids:
+                return candidate_ids[0]
+            if context_data and context_data.get("space_id"):
+                try:
+                    return int(context_data["space_id"])
+                except (ValueError, TypeError):
+                    pass
+
+        return None
 
     @classmethod
     def merge_with_history(
@@ -122,7 +216,6 @@ class ConversationalContextManager:
         if session_state and isinstance(session_state, dict):
             state.update(session_state)
 
-        # Parse prior user turns in reverse or forward
         from backend.modules.nlp.entity_extraction import EntityExtractionService
         from backend.modules.nlp.text_normalization import TextNormalizationService
 
@@ -149,5 +242,8 @@ class ConversationalContextManager:
                         state["soft_preferences"] = ent.soft_preferences
                     if ent.purpose_activities:
                         state["purpose_activities"] = ent.purpose_activities
+                    if ent.listing_id:
+                        state["listing_id"] = ent.listing_id
 
         return state
+

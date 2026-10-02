@@ -31,32 +31,32 @@ class LanguageCode(str, Enum):
 
 class IntentType(str, Enum):
     # Canonical SpaceLoop Marketplace Intents
-    SEARCH_SPACE = "SEARCH_SPACE"                 # Search for space/room/desk/studio
+    SEARCH_PROPERTY = "SEARCH_PROPERTY"           # Search for space/room/desk/studio
+    SEARCH_SPACE = "SEARCH_PROPERTY"              # Alias
     CHECK_AVAILABILITY = "CHECK_AVAILABILITY"     # Availability/slots for date/time
-    BOOK_SPACE = "BOOK_SPACE"                     # Reserve, booking link, checkout
+    BOOK_PROPERTY = "BOOK_PROPERTY"               # Reserve, booking link, checkout
+    BOOK_SPACE = "BOOK_PROPERTY"                  # Alias
     ASK_PRICE = "ASK_PRICE"                       # Cost, rate calculations, pricing
+    GET_PRICING = "ASK_PRICE"                     # Alias
     ASK_LOCATION = "ASK_LOCATION"                 # Address, neighborhood, map, directions
     ASK_AMENITIES = "ASK_AMENITIES"               # Wi-Fi, AC, screen, parking, etc.
+    INQUIRE_AMENITIES = "ASK_AMENITIES"           # Alias
     ASK_RULES = "ASK_RULES"                       # House rules, food, pets, cancellation
+    INQUIRE_RULES = "ASK_RULES"                   # Alias
     CREATE_LISTING = "CREATE_LISTING"             # Host earnings, listing spaces
+    HOST_MONETIZE = "CREATE_LISTING"             # Alias
     EDIT_LISTING = "EDIT_LISTING"                 # Update existing listing, pricing, photos
     ASK_BOOKING_STATUS = "ASK_BOOKING_STATUS"     # Active booking, PIN, check-in status
     ASK_PAYMENT_STATUS = "ASK_PAYMENT_STATUS"     # UPI escrow deposit, refund status
     REPORT_FRAUD = "REPORT_FRAUD"                 # Suspicious behavior, dispute report
-    LEGAL_SAFETY = "LEGAL_SAFETY"                 # Section 52, platform help, guidelines
+    LEGAL_SAFETY = "ASK_HELP"                     # Section 52, platform help, guidelines
     ASK_HELP = "ASK_HELP"                         # Help, platform overview, how it works
     COMPARE_SPACES = "COMPARE_SPACES"             # Compare spaces
-    GENERAL_GREETING = "GENERAL_GREETING"         # Hello, hi, namaste, general chat
+    GENERAL_CONVERSATION = "GENERAL_CONVERSATION" # General chat / questions / greetings
+    GENERAL_GREETING = "GENERAL_CONVERSATION"     # Alias
     CLARIFICATION_NEEDED = "CLARIFICATION_NEEDED" # Low confidence / ambiguous query
 
-    # Backward compatibility aliases
-    SEARCH_PROPERTY = "SEARCH_SPACE"
-    BOOK_PROPERTY = "BOOK_SPACE"
-    GET_PRICING = "ASK_PRICE"
-    INQUIRE_AMENITIES = "ASK_AMENITIES"
-    INQUIRE_RULES = "ASK_RULES"
-    HOST_MONETIZE = "CREATE_LISTING"
-    GENERAL_CONVERSATION = "GENERAL_GREETING"
+
 
 
 @dataclass

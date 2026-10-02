@@ -49,7 +49,7 @@ COMPARE_PATTERNS = [
 
 PRICING_PATTERNS = [
     # English
-    r"\b(?:how\s+much\s+(?:for|does\s+it\s+cost|will\s+it\s+cost)|calculate\s+cost|what\s+is\s+the\s+price|pricing\s+for|hourly\s+rate|fee\s+for|cost\s+breakdown)\b",
+    r"\b(?:how\s+much\s+(?:(?:does|do|will|is|would)\s+)?.*?(?:cost|price|rate|hourly)|how\s+much\s+for|calculate\s+cost|what\s+is\s+the\s+price|pricing\s+for|hourly\s+rate|fee\s+for|cost\s+breakdown)\b",
     # Hindi / Hinglish
     r"\b(?:kitna\s+(?:lagega|kharcha|hoga|padega)|price\s+kitni\s+hai|kitne\s+rupaye\s+lagenge|kiraya\s+kitna\s+hai|rates\s+kya\s+hain|rate\s+batao)\b",
     r"\bkitna\s+(?:lagega|hoga|hai)\b",
@@ -177,16 +177,47 @@ SEARCH_SPACE_PATTERNS = [
     r"\b(?:near\s+the\s+metro|around\s+me|near\s+[a-zA-Z]+)\b",
     # Hindi / Hinglish (Latin & Devanagari)
     r"\b(?:kamra|kamre|desk|meeting\s+room|office|jagah|studio|hall|workspace)\s+(?:chahiye|khojo|dhoondo|dedo|milega|dikhao|dakhva)\b",
-    r"(?:कमरा|कमरे|खोली|खोल्या|जागा|कक्ष|कक्षा|दफ्तर|कार्यालय|वर्कस्पेस|स्टूडियो).*?(?:चाहिए|पाहिजे|हवी|हवा|खोजो|ढूंढो|बथों|दिखाओ|दाखवा|मिलेगा)",
+    r"(?:कमरा|कमरे|कमरो|खोली|खोल्या|जागा|कक्ष|कक्षा|दफ्तर|कार्यालय|वर्कस्पेस|स्टूडियो|स्पेस).*?(?:चाहिए|पाहिजे|हवी|हवा|खोजो|ढूंढो|बथौ|बथो|बताओ|दिखाओ|दाखवा|मिलेगा|शोध|आहे)",
+    r"(?:चाहिए|पाहिजे|हवी|हवा).*?(?:कमरा|कमरे|कमरो|खोली|खोल्या|जागा|कक्ष|वर्कस्पेस|स्टूडियो|स्पेस)",
+    r"(?:मला|आम्हाला|पुण्यात|मुंबईत|दिल्लीत).*?(?:खोली|जागा|ऑफिस|रूम).*?(?:पाहिजे|हवी|हवा)",
+    r"(?:मला|आम्हाला).*?(?:पाहिजे|हवी|हवा)",
     r"\b(?:kamra|kamre|jagah|desk|workspace)\s+(?:dhoond|khoj|chahiye)\b",
     r"\b(?:mujhe|humein|mere\s+ko)\s+.*?(?:chahiye|milega)\b",
     # Marathi
     r"\b(?:kholi|kholya|desk|jaga|office|workspace)\s+(?:pahije|shodha|dakhva|havay|havi|hava)\b",
     r"\b(?:mala|amhala)\s+.*?(?:pahije|hava|havi)\b",
-    # Pahari
+    # Pahari (Garhwali / Kumaoni / Jaunsari)
+    r"(?:कमरो|कमरा|बसा|जागा).*?(?:बथौ|बथो|दिखावा|छन|छो|चाहिए)",
     r"\b(?:kamro|basa|jaga)\s+(?:chyan|chho|chha)\b",
     r"\b(?:kakh|ketha)\s+(?:jaga|kamro|basa)\s+milal\b",
     r"\bpadhai\s+khatir\s+jaga\s+chyan\b"
+]
+
+
+LOCATION_PATTERNS = [
+    r"\b(?:exact\s+location|where\s+is\s+(?:the|this|space)|address\s+of|coordinates|how\s+to\s+reach|directions\s+to|kahan\s+hai|kuthe\s+aahe)\b",
+    r"\b(?:location\s+of\s+(?:space|listing|#\d+|\d+))\b",
+    r"(?:स्थान\s+क्या\s+है|पत्ता\s+काय\s+आहे|कहाँ\s+स्थित\s+है|कुठे\s+आहे)"
+]
+
+EDIT_LISTING_PATTERNS = [
+    r"\b(?:how\s+(?:do\s+i|to)\s+edit(?:\s+my)?\s+listing|edit\s+(?:my\s+)?listing|update\s+(?:listing|pricing|photos)|change\s+(?:photos|pricing|rules)|modify\s+listing)\b",
+    r"(?:लिस्टिंग\s+एडिट|बदलना|अपडेट)"
+]
+
+BOOKING_STATUS_PATTERNS = [
+    r"\b(?:what\s+is\s+my\s+booking\s+status|booking\s+status|arrival\s+pin|my\s+booking|reservation\s+status|check\s+my\s+reservation)\b",
+    r"(?:बुकिंग\s+स्थिति|आरक्षण\s+स्थिती|पिन)"
+]
+
+PAYMENT_STATUS_PATTERNS = [
+    r"\b(?:when\s+will.*refund|deposit\s+refund|refund\s+returned|100\s*(?:rs|rupees)?\s*deposit|escrow\s+refund|payment\s+status|deposit\s+status)\b",
+    r"(?:डिपॉजिट\s+रिफंड|एस्क्रो\s+वापस|परतावा)"
+]
+
+REPORT_FRAUD_PATTERNS = [
+    r"\b(?:report\s+fraud|suspicious\s+(?:host|space|listing)|report\s+(?:an\s+)?issue|fraudulent\s+listing|scam\s+report|fake\s+listing)\b",
+    r"(?:धोखाधड़ी\s+रिपोर्ट|तक्रार|गैरव्यवहार)"
 ]
 
 
@@ -199,96 +230,166 @@ class IntentService:
     def extract_intent(cls, text: str, context_data: Optional[Dict[str, Any]] = None) -> Tuple[str, float]:
         """
         Determines the primary user intent and returns (intent_name, confidence).
-        Returns CLARIFICATION_NEEDED when confidence is below threshold.
+        Supports multi-turn context, follow-up resolution, and general conversational assistance.
         """
         if not text or not text.strip():
             return IntentType.CLARIFICATION_NEEDED.value, 0.0
 
         clean = text.lower().strip()
+        context_data = context_data or {}
+        history = context_data.get("history", [])
 
-        # Check for explicit out-of-scope queries (strictly non-SpaceLoop topics)
+        # Strict Out-of-Scope non-marketplace query filter (weather, crypto, sports, recipes, politics, medicine)
         out_of_scope = any(re.search(rf"\b{w}\b", clean) for w in [
             "weather", "forecast", "rain", "climate",
-            "bitcoin", "crypto", "cryptocurrency", "ethereum", "stock", "stocks",
+            "bitcoin", "crypto", "cryptocurrency", "ethereum", "eth", "solana", "stock", "stocks",
             "cooking", "recipe", "cricket", "ipl", "football",
             "election", "medicine", "disease"
         ])
         if out_of_scope:
-            return IntentType.CLARIFICATION_NEEDED.value, 0.20
+            return IntentType.CLARIFICATION_NEEDED.value, 0.40
 
-        # 0. Help / Platform Guide (High Priority)
+        # 0. Multi-Turn Follow-Up Resolution (if conversation history exists)
+        if history:
+            # Comparative follow-up queries (e.g. "which one is cheapest?", "which is cheaper?", "sasta kaun sa hai?")
+            if any(re.search(p, clean) for p in [
+                r"\bwhich\s+(?:one\s+is\s+)?(?:cheapest|cheaper|lowest\s+price|best|closest|nearest|quieter|biggest|largest)\b",
+                r"\b(?:sasta|kam\s+rate|behtar|chota|bada)\s+kaun\s+sa\s+hai\b",
+                r"\b(?:sasta|swast)\s+konti\s+aahe\b",
+                r"\b(?:first|second|1st|2nd)\s+or\s+(?:first|second|1st|2nd|3rd)\b"
+            ]):
+                return IntentType.COMPARE_SPACES.value, 0.94
+
+            # Referential Booking follow-up (e.g. "book the first one", "book space #1", "pehla book karo")
+            if any(re.search(p, clean) for p in [
+                r"\bbook\s+(?:the\s+)?(?:first|second|third|1st|2nd|3rd|that|this)\s*(?:one|space|room|desk)?\b",
+                r"\b(?:pehla|doosra|teesra|ye|woh)\s*(?:space|room)?\s*book\s+karo\b",
+                r"\b(?:pahili|dusri)\s*jaga\s*book\s*kara\b"
+            ]):
+                return IntentType.BOOK_PROPERTY.value, 0.95
+
+            # Referential Pricing follow-up (e.g. "how much for the first one for 3 hours?", "rate of that space")
+            if any(re.search(p, clean) for p in [
+                r"\b(?:how\s+much|cost|price|rate)\s+(?:for|of)\s+(?:the\s+)?(?:first|second|third|1st|2nd|3rd|that|this)\b",
+                r"\b(?:pehle|doosre|us)\s*(?:space)?\s*ka\s*(?:rate|kharcha|kitna)\b"
+            ]):
+                return IntentType.ASK_PRICE.value, 0.94
+
+            # Temporal follow-up (e.g. "what about tomorrow?", "kal milega kya?", "what about 4pm?")
+            if any(re.search(p, clean) for p in [
+                r"\bwhat\s+about\s+(?:tomorrow|today|weekend|monday|tuesday|wednesday|thursday|friday|saturday|sunday|\d+\s*(?:am|pm)?)\b",
+                r"\b(?:kal|aaj|parson)\s+(?:ka\s+batao|kya|milega)\b",
+                r"\b(?:udya|aaj)\s+(?:kasa|chalel)\b"
+            ]):
+                return IntentType.CHECK_AVAILABILITY.value, 0.91
+
+            # Referential Amenities follow-up (e.g. "does that one have wifi?", "is wifi available there?")
+            if any(re.search(p, clean) for p in [
+                r"\b(?:does|is|are)\s+(?:there|that\s+one|the\s+first|the\s+second)\s+(?:have|has|with)\b",
+                r"\b(?:wifi|ac|parking|power)\s+available\s+(?:there|in\s+that\s+one|in\s+the\s+first)\b",
+                r"\b(?:usme|tethe)\s+(?:wifi|ac|parking)\s+(?:hai|aahe)\s+kya\b"
+            ]):
+                return IntentType.ASK_AMENITIES.value, 0.93
+
+        # 1. Location Details Intent
+        for pat in LOCATION_PATTERNS:
+            if re.search(pat, clean):
+                return IntentType.ASK_LOCATION.value, 0.95
+
+        # 2. Edit Listing Intent
+        for pat in EDIT_LISTING_PATTERNS:
+            if re.search(pat, clean):
+                return IntentType.EDIT_LISTING.value, 0.95
+
+        # 3. Booking Status Intent
+        for pat in BOOKING_STATUS_PATTERNS:
+            if re.search(pat, clean):
+                return IntentType.ASK_BOOKING_STATUS.value, 0.95
+
+        # 4. Payment & Refund Status Intent
+        for pat in PAYMENT_STATUS_PATTERNS:
+            if re.search(pat, clean):
+                return IntentType.ASK_PAYMENT_STATUS.value, 0.95
+
+        # 5. Report Fraud Intent
+        for pat in REPORT_FRAUD_PATTERNS:
+            if re.search(pat, clean):
+                return IntentType.REPORT_FRAUD.value, 0.95
+
+        # 6. Help / Platform Guide (High Priority)
         for pat in HELP_PATTERNS:
             if re.search(pat, clean):
                 return IntentType.ASK_HELP.value, 0.96
 
-        # 1. System Design & Architectural Inquiries
+        # 7. System Design & Architectural Inquiries
         for pat in SYSTEM_DESIGN_PATTERNS:
             if re.search(pat, clean):
                 if any(k in clean for k in ["section 52", "legal", "easements", "tenancy", "escrow", "refund"]):
                     return IntentType.LEGAL_SAFETY.value, 0.95
                 return IntentType.ASK_HELP.value, 0.95
 
-        # 2. Host Monetization / Create Listing Intent
+        # 8. Host Monetization / Create Listing Intent
         for pat in HOST_MONETIZE_PATTERNS:
             if re.search(pat, clean):
                 return IntentType.CREATE_LISTING.value, 0.95
 
-        # 3. Rules & Policies Query Intent
+        # 9. Rules & Policies Query Intent
         for pat in RULES_PATTERNS:
             if re.search(pat, clean):
                 return IntentType.ASK_RULES.value, 0.94
 
-        # 4. Amenities Query Intent (only if not an active marketplace search with pricing/room constraints)
+        # 10. Amenities Query Intent
         for pat in AMENITIES_PATTERNS:
             if re.search(pat, clean):
                 if any(p in clean for p in ["under", "below", "max", "₹", "/hr", "per hour", "need", "find", "show me", "khojo"]):
-                    return IntentType.SEARCH_SPACE.value, 0.90
+                    return IntentType.SEARCH_PROPERTY.value, 0.90
                 return IntentType.ASK_AMENITIES.value, 0.92
 
-        # 5. Legal & Platform Safety / Escrow
+        # 11. Legal & Platform Safety / Escrow
         for pat in LEGAL_SAFETY_PATTERNS:
             if re.search(pat, clean):
                 return IntentType.LEGAL_SAFETY.value, 0.93
 
-        # 6. Booking Action Intent
+        # 12. Booking Action Intent
         for pat in BOOKING_PATTERNS:
             if re.search(pat, clean):
-                return IntentType.BOOK_SPACE.value, 0.94
+                return IntentType.BOOK_PROPERTY.value, 0.94
 
-        # 6. Host Monetization / Create Listing Intent
-        for pat in HOST_MONETIZE_PATTERNS:
-            if re.search(pat, clean):
-                return IntentType.CREATE_LISTING.value, 0.93
-
-        # 7. Compare Spaces Intent
+        # 13. Compare Spaces Intent
         for pat in COMPARE_PATTERNS:
             if re.search(pat, clean):
                 return IntentType.COMPARE_SPACES.value, 0.91
 
-        # 8. Pricing / Cost Estimation Intent
+        # 14. Pricing / Cost Estimation Intent
         for pat in PRICING_PATTERNS:
             if re.search(pat, clean):
                 return IntentType.ASK_PRICE.value, 0.92
 
-        # 9. Availability Query Intent
+        # 15. Availability Query Intent
         for pat in AVAILABILITY_PATTERNS:
             if re.search(pat, clean):
                 return IntentType.CHECK_AVAILABILITY.value, 0.90
 
-        # 10. General Greeting
+        # 16. General Greeting & Conversation
         for pat in GREETING_PATTERNS:
             if re.search(pat, clean):
-                # If greeting contains subsequent space search words, fall through to search
-                if not any(k in clean for k in ["need", "looking", "want", "space", "room", "desk", "find", "chahiye", "pahije"]):
-                    return IntentType.GENERAL_GREETING.value, 0.95
+                search_or_action_cues = [
+                    "need", "looking", "want", "space", "room", "desk", "studio", "office", "hall", "place", "find", "search",
+                    "chahiye", "pahije", "khojo", "dhoondo", "batao", "batayo", "dikhao", "dakhva", "shodha",
+                    "kamra", "kamre", "kamro", "kholi", "kholya", "jaga", "basa", "spas",
+                    "चाहिए", "पाहिजे", "हवी", "हवा", "खोजो", "ढूंढो", "बथौ", "बथो", "बताओ", "दिखाओ", "दाखवा", "शोधा",
+                    "कमरा", "कमरे", "कमरो", "खोली", "जागा", "कक्ष", "स्पेस", "बसा"
+                ]
+                if not any(k in clean for k in search_or_action_cues):
+                    return IntentType.GENERAL_CONVERSATION.value, 0.95
 
-        # 11. Marketplace Search Intent
+        # 17. Marketplace Search Intent
         for pat in SEARCH_SPACE_PATTERNS:
             if re.search(pat, clean):
-                return IntentType.SEARCH_SPACE.value, 0.89
+                return IntentType.SEARCH_PROPERTY.value, 0.89
 
-        # 12. Question/Inquiry Semantic Fallback (Route to RAG ASK_HELP rather than CLARIFICATION_NEEDED)
-        question_markers = ["how", "what", "why", "where", "can", "is", "are", "will", "kya", "kaise", "kyun", "kasa", "kay", "kiti", "kuthe", "kakh", "kile"]
+        # 18. Question/Inquiry Semantic Fallback (Platform RAG or General Knowledge)
+        question_markers = ["how", "what", "why", "where", "can", "is", "are", "will", "which", "tell", "explain", "kya", "kaise", "kyun", "kasa", "kay", "kiti", "kuthe", "kakh", "kile"]
         has_question_marker = any(re.search(rf"\b{q}\b", clean) for q in question_markers)
         domain_markers = ["space", "spaceloop", "room", "desk", "host", "guest", "pass", "door", "lock", "wifi", "deposit", "escrow", "refund", "discom", "bill", "scanner", "camera", "food", "eat", "pet", "smoke", "hours", "rate", "cost", "chahiye", "pahije", "allowed", "rules"]
         has_domain_marker = any(d in clean for d in domain_markers)
@@ -296,7 +397,7 @@ class IntentService:
         if has_question_marker and has_domain_marker:
             return IntentType.ASK_HELP.value, 0.88
 
-        # Fallback heuristic: Check if text contains space/activity keywords
+        # 19. Fallback search heuristics based on space/activity keywords
         space_signals = [
             "space", "room", "desk", "studio", "hall", "office", "workspace",
             "film", "recording", "podcast", "study", "meeting", "party", "collab",
@@ -306,11 +407,15 @@ class IntentService:
         ]
         matched_signals = sum(1 for s in space_signals if s in clean)
         if matched_signals >= 2:
-            return IntentType.SEARCH_SPACE.value, 0.78
+            return IntentType.SEARCH_PROPERTY.value, 0.78
         elif matched_signals == 1:
-            return IntentType.SEARCH_SPACE.value, 0.65
+            return IntentType.SEARCH_PROPERTY.value, 0.65
 
+        # 20. Default to CLARIFICATION_NEEDED with low confidence
         return IntentType.CLARIFICATION_NEEDED.value, 0.40
+
+
+
 
     @classmethod
     def canonicalize_intent(cls, intent_str: str) -> str:
