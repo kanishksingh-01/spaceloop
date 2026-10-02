@@ -73,7 +73,7 @@ export async function request<T>(endpoint: string, options: RequestOptions = {})
     headers['Content-Type'] = 'application/json';
   }
 
-  const timeoutMs = options.timeoutMs || 10000;
+  const timeoutMs = options.timeoutMs || 35000;
   let timeoutId: any = null;
   let signal = options.signal;
   if (!signal) {
@@ -158,6 +158,32 @@ export async function request<T>(endpoint: string, options: RequestOptions = {})
       }
 
       return data as T;
+    } catch (fetchErr: any) {
+      if (fetchErr instanceof ApiError) {
+        throw fetchErr;
+      }
+      const errName = fetchErr?.name || '';
+      const errMsg = (fetchErr?.message || '').toLowerCase();
+      if (
+        errName === 'AbortError' ||
+        errName === 'TimeoutError' ||
+        errMsg.includes('aborted') ||
+        errMsg.includes('timeout')
+      ) {
+        throw new ApiError(
+          'Backend is warming up (cold boot). Please wait a few seconds and try again.',
+          504,
+          { timeout: true, originalError: fetchErr?.message }
+        );
+      }
+      if (errMsg.includes('failed to fetch') || errMsg.includes('networkerror')) {
+        throw new ApiError(
+          'Unable to reach server. Please check your network connection.',
+          503,
+          { networkError: true, originalError: fetchErr?.message }
+        );
+      }
+      throw fetchErr;
     } finally {
       if (timeoutId) {
         clearTimeout(timeoutId);

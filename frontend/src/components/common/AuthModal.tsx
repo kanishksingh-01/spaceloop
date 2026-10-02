@@ -164,9 +164,12 @@ export const AuthModal: React.FC<AuthModalProps> = ({
         setError('Please verify your email address before logging in.');
       } else {
         const rawMsg = err?.message || err?.error || err?.data?.error || err?.data?.message;
-        const finalMsg = typeof rawMsg === 'string' && rawMsg !== '[object Object]' && rawMsg.trim()
+        let finalMsg = typeof rawMsg === 'string' && rawMsg !== '[object Object]' && rawMsg.trim()
           ? rawMsg
           : 'Authentication failed. Please ensure the backend server is running and check your credentials.';
+        if (finalMsg.toLowerCase().includes('aborted without reason') || finalMsg.toLowerCase().includes('signal is aborted')) {
+          finalMsg = 'Backend server is waking up (cold boot). Please wait a moment and try again.';
+        }
         setError(finalMsg);
       }
       setLoading(false);

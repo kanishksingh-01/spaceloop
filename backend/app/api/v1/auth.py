@@ -1035,6 +1035,9 @@ def api_verify_email():
         return jsonify({"success": False, "error": message}), 400
 
     if user:
+        portal = "host" if user.is_host and not user.is_seeker else "seeker"
+        login_user(user, remember=True)
+        set_active_context(user, portal)
         try:
             EmailService.notify_security_event(
                 user,
@@ -1047,6 +1050,7 @@ def api_verify_email():
     return jsonify({
         "success": True,
         "message": message,
+        "portal": portal if user else "seeker",
         "user": safe_user_profile(user) if user else None
     }), 200
 
