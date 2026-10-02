@@ -10,8 +10,8 @@ export const TEAM_MEMBERS: TeamMember[] = [
     domain: 'Zero-Trust Boundary, DPDP Act 2023 & Fraud Prevention',
     intro:
       'Architected SpaceLoop’s zero-trust security perimeter, DPDP Act 2023 tokenized Aadhaar identity verification, and multi-tier fraud & collusion detection engine.',
-    email: 'aaryamaurya.dev@gmail.com',
-    linkedin: 'https://www.linkedin.com/in/aarya-maurya',
+    email: 'mauryaaarya13@gmail.com',
+    linkedin: 'https://www.linkedin.com/in/aarya-maurya-49b467320?utm_source=share_via&utm_content=profile&utm_medium=member_android',
     photoUrl: '/team/aarya.jpg',
     accent: 'amber',
     subsystem: {
@@ -37,8 +37,8 @@ export const TEAM_MEMBERS: TeamMember[] = [
     domain: 'High-Concurrency WSGI Services & Section 52 Protocol',
     intro:
       'Engineered SpaceLoop’s high-performance Flask 3.0 backend, Section 52 revocable micro-leasing protocol under the Indian Easements Act (1882), automated ₹100 UPI micro-escrow holds, and hybrid semantic search engine.',
-    email: 'kanishk@spaceloop.in',
-    linkedin: 'https://www.linkedin.com/in/kanishksingh01',
+    email: 'kanishksingh0005@gmail.com',
+    linkedin: 'https://www.linkedin.com/in/kanishk-singh-a10a38315?utm_source=share_via&utm_content=profile&utm_medium=member_android',
     photoUrl: '/team/kanishk.png',
     accent: 'indigo',
     subsystem: {
@@ -64,8 +64,8 @@ export const TEAM_MEMBERS: TeamMember[] = [
     domain: 'High-Fidelity React Systems & Interactive HUDs',
     intro:
       'Crafted SpaceLoop’s responsive React 18 client architecture, Ocean Breeze light theme and Midnight Neon dark theme design systems, tactile glassmorphic controls, and mobile navigation HUD.',
-    email: 'zara.quadri@spaceloop.in',
-    linkedin: 'https://www.linkedin.com/in/zara-quadri',
+    email: 'zeequadriworks@gmail.com',
+    linkedin: 'https://www.linkedin.com/in/zara-quadri-122b54411?utm_source=share_via&utm_content=profile&utm_medium=member_android',
     photoUrl: '/team/zara.jpg',
     accent: 'violet',
     subsystem: {
@@ -91,8 +91,8 @@ export const TEAM_MEMBERS: TeamMember[] = [
     domain: 'Multimodal Room Vision & Section 52 Matching Engine',
     intro:
       'Leads SpaceLoop’s multimodal computer vision and spatial intelligence pipeline. Architected the post-occupancy room condition delta analyzer, automatic electrical appliance off-detection, and the Groq + Gemini dual-engine intent parser.',
-    email: 'indrayani@spaceloop.in',
-    linkedin: 'https://www.linkedin.com/in/indrayani-mazumder',
+    email: 'indrayanimazumder@gmail.com',
+    linkedin: 'https://www.linkedin.com/in/indrayani-mazumder-2a7204226?utm_source=share_via&utm_content=profile&utm_medium=member_android',
     photoUrl: '/team/indrayani.jpg',
     accent: 'cyan',
     subsystem: {
