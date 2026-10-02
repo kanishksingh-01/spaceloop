@@ -283,6 +283,26 @@ export const NavigationDrawer: React.FC<NavigationDrawerProps> = ({
   // Navigation Items Definition with Scaled Typography
   const seekerNavItems = [
     {
+      path: '/explore',
+      label: t('nav.explore') || 'Explore Spaces',
+      subtitle: 'Verified micro-spaces near campus',
+      icon: 'fa-solid fa-compass',
+      iconColor: 'text-[#0B3D91] dark:text-indigo-400',
+      iconBg: 'bg-[#0B3D91]/10 dark:bg-indigo-500/15',
+      badge: 'Browse',
+      badgeStyle: 'bg-indigo-500/10 text-indigo-700 dark:text-indigo-300 border-indigo-500/25',
+    },
+    {
+      path: '/host',
+      label: 'Host Operating Portal',
+      subtitle: '14-Screen Cockpit & Space Management',
+      icon: 'fa-solid fa-house-chimney-user',
+      iconColor: 'text-amber-500 dark:text-amber-400',
+      iconBg: 'bg-amber-500/10 dark:bg-amber-500/15',
+      badge: 'Host OS',
+      badgeStyle: 'bg-amber-500/10 text-amber-700 dark:text-amber-300 border-amber-500/25',
+    },
+    {
       path: '/',
       label: t('nav.home') || 'Home',
       subtitle: 'SpaceLoop marketplace & discovery',
@@ -309,6 +329,16 @@ export const NavigationDrawer: React.FC<NavigationDrawerProps> = ({
       iconBg: 'bg-violet-500/10 dark:bg-violet-500/15',
     },
     {
+      path: '/architecture',
+      label: t('nav.architecture') || 'Architecture',
+      subtitle: 'System engineering & team specs',
+      icon: 'fa-solid fa-cubes',
+      iconColor: 'text-[#0B3D91] dark:text-indigo-400',
+      iconBg: 'bg-[#0B3D91]/10 dark:bg-indigo-500/15',
+      badge: 'Team',
+      badgeStyle: 'bg-indigo-500/10 text-indigo-700 dark:text-indigo-300 border-indigo-500/25',
+    },
+    {
       path: '/admin/trust-safety',
       label: t('nav.trustSafety') || 'Trust & Safety',
       subtitle: 'Verification, fraud defense & safety console',
@@ -318,19 +348,19 @@ export const NavigationDrawer: React.FC<NavigationDrawerProps> = ({
       badge: 'Defense',
       badgeStyle: 'bg-rose-500/10 text-rose-700 dark:text-rose-300 border-rose-500/25',
     },
-    {
-      path: '/host',
-      label: 'Host Operating Portal',
-      subtitle: '14-Screen Cockpit & Live Operations',
-      icon: 'fa-solid fa-gauge-high',
-      iconColor: 'text-amber-500 dark:text-amber-400',
-      iconBg: 'bg-amber-500/10 dark:bg-amber-500/15',
-      badge: 'Host Mode',
-      badgeStyle: 'bg-amber-500/10 text-amber-700 dark:text-amber-300 border-amber-500/25',
-    },
   ];
 
   const hostNavItems = [
+    {
+      path: '/explore',
+      label: 'Seeker Marketplace',
+      subtitle: 'Browse and book verified spaces',
+      icon: 'fa-solid fa-compass',
+      iconColor: 'text-indigo-500 dark:text-indigo-400',
+      iconBg: 'bg-indigo-500/10 dark:bg-indigo-500/15',
+      badge: 'Seeker',
+      badgeStyle: 'bg-indigo-500/10 text-indigo-700 dark:text-indigo-300 border-indigo-500/25',
+    },
     {
       path: '/host',
       label: 'Host Overview',
@@ -430,7 +460,7 @@ export const NavigationDrawer: React.FC<NavigationDrawerProps> = ({
   return (
     <>
       {/* =====================================================================
-          1. EDGE TRIGGER (Swipe-from-edge peek detector when closed)
+          1. EDGE TRIGGER (Swipe-from-edge peek detector below header)
           ===================================================================== */}
       {!isOpen && (
         <div
@@ -439,7 +469,7 @@ export const NavigationDrawer: React.FC<NavigationDrawerProps> = ({
               startDrag(e.clientX, true);
             }
           }}
-          className="fixed top-0 left-0 bottom-0 w-4 z-40 cursor-grab active:cursor-grabbing touch-none select-none hover:w-6 transition-all duration-200"
+          className="fixed top-16 left-0 bottom-0 w-4 z-40 cursor-grab active:cursor-grabbing touch-none select-none hover:w-6 transition-all duration-200"
           title="Drag from edge to open menu"
           aria-hidden="true"
         >
@@ -448,16 +478,17 @@ export const NavigationDrawer: React.FC<NavigationDrawerProps> = ({
       )}
 
       {/* =====================================================================
-          2. DIMMED BACKDROP OVERLAY
+          2. DIMMED BACKDROP OVERLAY (Anchored cleanly below header at top-16)
           ===================================================================== */}
       {isVisible && (
         <div
           onClick={onClose}
           style={{
             opacity: backdropOpacity,
-            pointerEvents: isOpen && !isDragging ? 'auto' : isDragging ? 'none' : 'none',
+            pointerEvents: isOpen && !isDragging ? 'auto' : 'none',
+            zIndex: 40,
           }}
-          className={`fixed inset-0 z-40 bg-black/60 backdrop-blur-xs transition-opacity ${
+          className={`fixed top-16 inset-x-0 bottom-0 z-40 bg-black/60 backdrop-blur-sm transition-opacity ${
             isDragging ? 'duration-0' : 'duration-300 ease-out'
           }`}
           aria-hidden="true"
@@ -465,7 +496,7 @@ export const NavigationDrawer: React.FC<NavigationDrawerProps> = ({
       )}
 
       {/* =====================================================================
-          3. SCALED & RESPONSIVE PHYSICAL SLIDING DRAWER
+          3. SCALED & RESPONSIVE PHYSICAL SLIDING DRAWER (z-[60], starts below header)
           ===================================================================== */}
       <aside
         ref={drawerRef}
@@ -475,8 +506,9 @@ export const NavigationDrawer: React.FC<NavigationDrawerProps> = ({
         style={{
           transform: `translate3d(${translateX}px, 0, 0)`,
           transition: isDragging ? 'none' : 'transform 0.35s cubic-bezier(0.16, 1, 0.3, 1)',
+          zIndex: 60,
         }}
-        className="fixed top-0 left-0 bottom-0 h-[100dvh] max-h-[100dvh] w-[85vw] min-w-[280px] max-w-[380px] sm:max-w-[400px] z-50 flex flex-col bg-white dark:bg-slate-950 text-slate-800 dark:text-slate-100 border-r border-[#D0E6F7] dark:border-slate-800/90 shadow-[8px_0_35px_-5px_rgba(11,61,145,0.12)] dark:shadow-[8px_0_40px_-5px_rgba(0,0,0,0.85)] sm:rounded-r-3xl overflow-hidden will-change-transform select-none"
+        className="fixed top-16 left-0 bottom-0 h-[calc(100dvh-4rem)] max-h-[calc(100dvh-4rem)] w-[85vw] min-w-[280px] max-w-[340px] sm:max-w-[360px] z-[60] flex flex-col bg-white dark:bg-slate-950 text-slate-800 dark:text-slate-100 border-r border-[#D0E6F7] dark:border-slate-800/90 shadow-[8px_0_35px_-5px_rgba(11,61,145,0.12)] dark:shadow-[8px_0_40px_-5px_rgba(0,0,0,0.85)] sm:rounded-br-2xl overflow-hidden will-change-transform select-none"
       >
         {/* DRAG HANDLE TAB (Grab handle on right edge) */}
         <div
@@ -493,36 +525,27 @@ export const NavigationDrawer: React.FC<NavigationDrawerProps> = ({
         </div>
 
         {/* =====================================================================
-            DRAWER HEADER (Compact, Responsive Header with Close Button)
+            DRAWER CONTEXT HEADER (Clean, Compact, Non-overlapping)
             ===================================================================== */}
-        <div className="h-14 sm:h-16 px-4 sm:px-5 border-b border-[#D0E6F7] dark:border-slate-800/80 flex items-center justify-between gap-3 bg-[#E8F6FF]/60 dark:bg-slate-900/60 shrink-0">
-          <div className="flex items-center gap-2.5 min-w-0">
-            <div
-              className={`w-8 h-8 sm:w-9 sm:h-9 rounded-xl flex items-center justify-center shadow-md shrink-0 ${
-                isHostPortal
-                  ? 'bg-gradient-to-tr from-amber-600 via-orange-600 to-amber-400 shadow-amber-500/20'
-                  : 'bg-gradient-to-tr from-[#0B3D91] via-[#1E40AF] to-[#3BA7F2] dark:from-indigo-600 dark:via-violet-600 dark:to-indigo-400 shadow-indigo-500/20'
+        <div className="h-12 px-4 border-b border-[#D0E6F7] dark:border-slate-800/80 flex items-center justify-between gap-3 bg-[#E8F6FF]/60 dark:bg-slate-900/60 shrink-0">
+          <div className="flex items-center gap-2 min-w-0">
+            <span
+              className={`w-2 h-2 rounded-full shrink-0 ${
+                isHostPortal ? 'bg-amber-400' : 'bg-[#0B3D91] dark:bg-indigo-400'
               }`}
-            >
-              <i className="fa-solid fa-infinity text-white text-base sm:text-lg" />
-            </div>
-            <div className="min-w-0">
-              <div className="text-base sm:text-lg font-extrabold tracking-tight text-slate-900 dark:text-white font-display flex items-center gap-1 leading-tight">
-                Space<span className="text-[#0B3D91] dark:text-indigo-400">Loop</span>
-              </div>
-              <div className="text-[10px] font-mono font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 truncate">
-                {isHostPortal ? '🏡 Host Space' : '⚡ Seeker Desk'}
-              </div>
-            </div>
+            />
+            <span className="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 truncate">
+              {isHostPortal ? 'Host Navigation' : 'Seeker Navigation'}
+            </span>
           </div>
 
           <button
             type="button"
             onClick={onClose}
             aria-label="Close navigation drawer"
-            className="w-8 h-8 rounded-xl flex items-center justify-center text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white hover:bg-slate-200/60 dark:hover:bg-slate-800/80 transition shrink-0"
+            className="w-7 h-7 rounded-lg flex items-center justify-center text-slate-400 hover:text-slate-700 dark:hover:text-white hover:bg-slate-200/60 dark:hover:bg-slate-800/80 transition shrink-0"
           >
-            <i className="fa-solid fa-xmark text-base" />
+            <i className="fa-solid fa-xmark text-sm" />
           </button>
         </div>
 
@@ -697,17 +720,19 @@ export const NavigationDrawer: React.FC<NavigationDrawerProps> = ({
             <button
               type="button"
               onClick={() => handleNavigate('/explore')}
-              className="w-full py-2 px-3 rounded-xl bg-[#0B3D91]/10 hover:bg-[#0B3D91]/20 text-[#0B3D91] dark:bg-indigo-600/20 dark:hover:bg-indigo-600/30 dark:text-indigo-300 border border-[#0B3D91]/30 dark:border-indigo-500/30 text-xs font-bold transition flex items-center justify-center gap-1.5 shadow-2xs"
+              className="w-full py-2.5 px-3 rounded-xl bg-[#0B3D91]/10 hover:bg-[#0B3D91]/20 text-[#0B3D91] dark:bg-indigo-600/20 dark:hover:bg-indigo-600/30 dark:text-indigo-300 border border-[#0B3D91]/30 dark:border-indigo-500/30 text-xs font-bold transition flex items-center justify-center gap-2 shadow-2xs"
             >
-              <span>🎓 Switch to Seeker Portal</span>
+              <i className="fa-solid fa-compass text-indigo-400" />
+              <span>Switch to Seeker Portal</span>
             </button>
           ) : (
             <button
               type="button"
-              onClick={() => handleNavigate('/host/dashboard')}
-              className="w-full py-2 px-3 rounded-xl bg-amber-500/15 hover:bg-amber-500/25 text-amber-700 dark:text-amber-300 border border-amber-500/30 text-xs font-bold transition flex items-center justify-center gap-1.5 shadow-2xs"
+              onClick={() => handleNavigate('/host')}
+              className="w-full py-2.5 px-3 rounded-xl bg-amber-500/15 hover:bg-amber-500/25 text-amber-700 dark:text-amber-300 border border-amber-500/30 text-xs font-bold transition flex items-center justify-center gap-2 shadow-2xs"
             >
-              <span>🏡 Switch to Host Portal</span>
+              <i className="fa-solid fa-house-chimney-user text-amber-500 dark:text-amber-400" />
+              <span>Launch Host Portal</span>
             </button>
           )}
 

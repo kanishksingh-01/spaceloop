@@ -50,7 +50,8 @@ export const Header: React.FC<HeaderProps> = ({
   };
 
   return (
-    <header className="sticky top-0 z-40 backdrop-blur-md bg-slate-950/95 border-b border-slate-800/80">
+    <>
+      <header className="sticky top-0 z-50 backdrop-blur-md bg-slate-950/95 border-b border-slate-800/80">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-3">
         {/* Brand Logo & Active Portal Indicator */}
         <div className="flex items-center gap-2.5">
@@ -234,15 +235,28 @@ export const Header: React.FC<HeaderProps> = ({
             )}
           </button>
 
-          {/* Switch to Seeker button (Only when in Host Portal) */}
-          {isHostPortal && (
+          {/* Switch between Seeker and Host portals */}
+          {isHostPortal ? (
             <button
               type="button"
               onClick={() => navigate('/explore')}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-indigo-600/10 hover:bg-indigo-600/20 text-indigo-300 border border-indigo-500/30 text-xs font-bold transition shrink-0"
-              title="Switch to Seeker Portal"
+              className="inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl bg-indigo-600/10 hover:bg-indigo-600/20 text-indigo-300 border border-indigo-500/30 text-xs font-bold transition shrink-0"
+              title="Switch to Seeker Marketplace"
             >
-              <span>🎓 <span className="hidden sm:inline">{t('nav.switchToSeeker')}</span><span className="sm:hidden">Seeker</span></span>
+              <i className="fa-solid fa-compass text-indigo-400" />
+              <span className="hidden sm:inline">{t('nav.switchToSeeker') || 'Seeker'}</span>
+              <span className="sm:hidden">Seeker</span>
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={() => navigate('/host')}
+              className="inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border border-amber-500/30 text-xs font-bold transition shrink-0"
+              title="Launch SpaceLoop Host Operating System"
+            >
+              <i className="fa-solid fa-house-chimney-user text-amber-400" />
+              <span className="hidden sm:inline">Host Portal</span>
+              <span className="sm:hidden">Host</span>
             </button>
           )}
 
@@ -323,16 +337,17 @@ export const Header: React.FC<HeaderProps> = ({
 
         </div>
       </div>
-
-      {/* Interactive Physical Navigation Drawer & Edge-Swipe Engine */}
-      <NavigationDrawer
-        isOpen={mobileDrawerOpen}
-        onClose={() => setMobileDrawerOpen(false)}
-        onOpen={() => setMobileDrawerOpen(true)}
-        currentUser={currentUser}
-        onOpenAuthModal={onOpenAuthModal}
-        onOpenHostAuthModal={onOpenHostAuthModal}
-      />
     </header>
-  );
+
+    {/* Interactive Physical Navigation Drawer & Edge-Swipe Engine */}
+    <NavigationDrawer
+      isOpen={mobileDrawerOpen}
+      onClose={() => setMobileDrawerOpen(false)}
+      onOpen={() => setMobileDrawerOpen(true)}
+      currentUser={currentUser}
+      onOpenAuthModal={onOpenAuthModal}
+      onOpenHostAuthModal={onOpenHostAuthModal}
+    />
+  </>
+);
 };
