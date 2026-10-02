@@ -237,7 +237,7 @@ def api_translate_listing():
     return jsonify(result), 200
 
 
-ALLOWED_EXTENSIONS = {"png", "jpg", "jpeg", "webp"}
+ALLOWED_EXTENSIONS = {"png", "jpg", "jpeg", "webp", "avif"}
 
 
 def allowed_file(filename):
@@ -324,8 +324,8 @@ def create_space():
 
     price_hourly = validate_numeric(data.get("price_hourly") or data.get("hourly_rate"), min_val=5.0, max_val=5000.0, default=None)
     price_daily = validate_numeric(data.get("price_daily") or data.get("daily_rate"), min_val=20.0, max_val=25000.0, default=None)
-    sqft = int(validate_numeric(data.get("sqft"), min_val=20, max_val=50000, default=200))
-    max_capacity = int(validate_numeric(data.get("max_capacity"), min_val=1, max_val=500, default=4))
+    sqft = int(validate_numeric(data.get("sqft") or data.get("square_feet"), min_val=20, max_val=50000, default=200))
+    max_capacity = int(validate_numeric(data.get("max_capacity") or data.get("capacity"), min_val=1, max_val=500, default=4))
     minimum_hours = int(validate_numeric(data.get("minimum_hours"), min_val=1, max_val=24, default=1))
 
     if not title or not address or price_hourly is None:

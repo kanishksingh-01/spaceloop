@@ -39,6 +39,10 @@ def validate_image_url(url: str) -> bool:
     if lower.startswith("data:image/"):
         return any(lower.startswith(prefix) for prefix in SAFE_IMAGE_DATA_PREFIXES)
 
+    # Allow local uploaded space photos under /static/uploads/
+    if lower.startswith("/static/uploads/") or lower.startswith("static/uploads/"):
+        return True
+
     # Allow http and https schemes only
     try:
         parsed = urlparse(url_clean)

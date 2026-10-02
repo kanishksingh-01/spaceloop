@@ -38,7 +38,16 @@ const PRESET_AMENITIES = [
 export const CreateSpaceView: React.FC<CreateSpaceViewProps> = (props) => {
   const navigate = useNavigate();
   const outletCtx = useOutletContext<{ currentUser?: User | null; onOpenHostAuthModal?: () => void }>() || {};
-  const currentUser = props.currentUser !== undefined ? props.currentUser : outletCtx.currentUser;
+  const effectiveUser = props.currentUser !== undefined && props.currentUser !== null
+    ? props.currentUser
+    : (outletCtx.currentUser || (() => {
+        try {
+          const cached = localStorage.getItem('spaceloop_user');
+          if (cached) return JSON.parse(cached) as User;
+        } catch {}
+        return null;
+      })());
+  const currentUser = effectiveUser;
   const onOpenHostAuthModal = props.onOpenHostAuthModal || outletCtx.onOpenHostAuthModal;
 
   const [currentStep, setCurrentStep] = useState(1);
@@ -135,13 +144,7 @@ export const CreateSpaceView: React.FC<CreateSpaceViewProps> = (props) => {
         setPhotos(prev => [...prev, res.photo_url]);
       }
     } catch (err: any) {
-      const isAuthError = err?.status === 401 ||
-        (err?.message && (
-          err.message.toLowerCase().includes('authentication required') ||
-          err.message.toLowerCase().includes('unauthorized') ||
-          err.message.toLowerCase().includes('log in') ||
-          err.message.includes('401')
-        ));
+      const isAuthError = err?.status === 401;
 
       if (isAuthError) {
         setError('Authentication required. Please sign in to your Host account to upload photos.');
@@ -149,7 +152,7 @@ export const CreateSpaceView: React.FC<CreateSpaceViewProps> = (props) => {
           onOpenHostAuthModal();
         }
       } else {
-        setError('Photo upload failed. Using fallback preview.');
+        setError(err?.message || 'Photo upload failed. Using fallback preview.');
         const localUrl = URL.createObjectURL(file);
         setPhotos(prev => [...prev, localUrl]);
       }
@@ -246,13 +249,7 @@ export const CreateSpaceView: React.FC<CreateSpaceViewProps> = (props) => {
         navigate('/host/spaces');
       }
     } catch (err: any) {
-      const isAuthError = err?.status === 401 ||
-        (err?.message && (
-          err.message.toLowerCase().includes('authentication required') ||
-          err.message.toLowerCase().includes('unauthorized') ||
-          err.message.toLowerCase().includes('log in') ||
-          err.message.includes('401')
-        ));
+      const isAuthError = err?.status === 401;
 
       if (isAuthError) {
         setError('Authentication required. Please sign in to your Host account to publish a space.');
@@ -260,7 +257,7 @@ export const CreateSpaceView: React.FC<CreateSpaceViewProps> = (props) => {
           onOpenHostAuthModal();
         }
       } else {
-        setError(err.message || 'Failed to publish space. Please check all required fields.');
+        setError(err?.message || 'Failed to publish space. Please check all required fields.');
       }
     } finally {
       setSubmitting(false);

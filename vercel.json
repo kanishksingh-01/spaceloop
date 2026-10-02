@@ -18,6 +18,10 @@
       "destination": "https://spaceloop.onrender.com/switch-$1"
     },
     {
+      "source": "/static/(.*)",
+      "destination": "https://spaceloop.onrender.com/static/$1"
+    },
+    {
       "source": "/space/:id/printable-qr",
       "destination": "https://spaceloop.onrender.com/space/:id/printable-qr"
     },
