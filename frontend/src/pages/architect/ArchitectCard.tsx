@@ -106,28 +106,8 @@ export const ArchitectCard: React.FC<ArchitectCardProps> = ({
         <div className="ag-card-spotlight" aria-hidden="true" />
       )}
 
-      {/* Top Telemetry & Status Bar */}
-      <div className="relative z-10 flex items-center justify-between gap-2 pb-3 border-b border-[#D0E6F7] dark:border-white/[0.08] mb-4">
-        <div className="flex items-center gap-2">
-          <span className="text-[10px] font-mono font-bold tracking-wider px-2 py-0.5 rounded-md bg-[#0B3D91]/10 dark:bg-white/10 text-[#0B3D91] dark:text-slate-200 border border-[#0B3D91]/20 dark:border-white/10">
-            SLOT // {member.badgeNumber}
-          </span>
-        </div>
-
-        <button
-          type="button"
-          onClick={onInspect}
-          className="inline-flex items-center gap-1 text-[10px] font-mono font-bold text-slate-600 hover:text-[#0B3D91] dark:text-slate-400 dark:hover:text-cyan-300 transition focus-visible:ring-2 focus-visible:ring-[#0B3D91] focus-visible:outline-hidden rounded-md px-1.5 py-0.5"
-          title={`Inspect ${member.name}'s architecture specifications`}
-          aria-label={`Inspect ${member.name}'s architecture specifications`}
-        >
-          <Maximize2 className="w-3 h-3" />
-          <span>Inspect Specs</span>
-        </button>
-      </div>
-
       {/* Profile Overview (Basic Information) */}
-      <div className="relative z-10 flex flex-col items-center text-center gap-3 mb-4">
+      <div className="relative z-10 flex flex-col items-center text-center gap-3 mb-4 pt-1 sm:pt-2">
         {/* Face-Safe 4:5 Portrait Frame with Shimmer & Lighting Shift (Section 8) */}
         <div className="w-24 sm:w-28 shrink-0 aspect-[4/5] ag-portrait-frame bg-slate-100 dark:bg-slate-900 border border-[#D0E6F7] dark:border-white/10 shadow-md">
           {!hasImageFailed ? (
