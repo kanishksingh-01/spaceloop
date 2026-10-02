@@ -6,6 +6,7 @@ import CursorGrid from '../components/common/CursorGrid';
 import { useTheme } from '../context/ThemeContext';
 import { useTranslation } from '../i18n';
 import { LandingFeaturedSpacesSkeleton } from '../components/common/Skeletons';
+import { TypewriterEffectSmooth, TypewriterWord } from '../components/ui/typewriter-effect';
 
 interface LandingPageProps {
   currentUser?: User | null;
@@ -186,12 +187,18 @@ export const LandingPage: React.FC<LandingPageProps> = ({ currentUser }) => {
             </button>
           </div>
 
-          {/* Main Headline */}
-          <h1 className="text-4xl sm:text-6xl lg:text-7xl font-black tracking-tight text-white leading-tight max-w-4xl mx-auto drop-shadow-sm">
-            {t('hero.headline')} <br className="hidden sm:inline" />
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 via-violet-300 to-indigo-300">
-              {t('hero.highlight')}
-            </span>
+          {/* Main Central Headline */}
+          <h1 className="text-3xl sm:text-5xl lg:text-6xl xl:text-7xl font-black tracking-tight text-white leading-tight max-w-4xl mx-auto drop-shadow-sm flex flex-col items-center justify-center">
+            <TypewriterEffectSmooth
+              words={[
+                ...t('hero.headline').split(/\s+/).filter(Boolean).map((text) => ({ text })),
+                ...t('hero.highlight').split(/\s+/).filter(Boolean).map((text) => ({
+                  text,
+                  className: 'text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 via-violet-300 to-indigo-300 drop-shadow-sm',
+                })),
+              ]}
+              cursorClassName="h-7 sm:h-10 lg:h-14 bg-gradient-to-b from-indigo-400 to-violet-400 shadow-[0_0_12px_rgba(99,102,241,0.9)]"
+            />
           </h1>
 
           {/* Subtitle */}
@@ -274,7 +281,12 @@ export const LandingPage: React.FC<LandingPageProps> = ({ currentUser }) => {
             <span className="text-xs font-extrabold uppercase tracking-wider text-indigo-400 bg-indigo-500/10 border border-indigo-500/20 px-3 py-1 rounded-full">
               {t('landing.howItWorksBadge')}
             </span>
-            <h2 className="text-3xl sm:text-4xl font-black text-white mt-4">{t('landing.howItWorksTitle')}</h2>
+            <h2 className="text-3xl sm:text-4xl font-black text-white mt-4 flex items-center justify-center">
+              <TypewriterEffectSmooth
+                words={t('landing.howItWorksTitle').split(/\s+/).filter(Boolean).map((text) => ({ text }))}
+                cursorClassName="h-6 sm:h-8 bg-indigo-400 shadow-[0_0_8px_rgba(99,102,241,0.8)]"
+              />
+            </h2>
             <p className="text-slate-300 text-sm sm:text-base mt-2">
               {t('landing.howItWorksSubtitle')}
             </p>
@@ -356,7 +368,12 @@ export const LandingPage: React.FC<LandingPageProps> = ({ currentUser }) => {
       <section className="py-20 bg-slate-900/40 border-b border-slate-800/80">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center max-w-3xl mx-auto mb-16">
-            <h2 className="text-3xl sm:text-4xl font-black text-white">{t('landing.dualAudienceTitle')}</h2>
+            <h2 className="text-3xl sm:text-4xl font-black text-white flex items-center justify-center">
+              <TypewriterEffectSmooth
+                words={t('landing.dualAudienceTitle').split(/\s+/).filter(Boolean).map((text) => ({ text }))}
+                cursorClassName="h-6 sm:h-8 bg-indigo-400 shadow-[0_0_8px_rgba(99,102,241,0.8)]"
+              />
+            </h2>
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-stretch">
@@ -366,7 +383,12 @@ export const LandingPage: React.FC<LandingPageProps> = ({ currentUser }) => {
                 <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-500/10 text-indigo-300 text-xs font-bold mb-4">
                   <i className="fa-solid fa-briefcase" /> {t('landing.seekerBadge')}
                 </div>
-                <h3 className="text-2xl sm:text-3xl font-black text-white mb-4">{t('landing.seekerTitle')}</h3>
+                <h3 className="text-2xl sm:text-3xl font-black text-white mb-4">
+                  <TypewriterEffectSmooth
+                    words={t('landing.seekerTitle').split(/\s+/).filter(Boolean).map((text) => ({ text }))}
+                    cursorClassName="h-5 sm:h-6 bg-indigo-400 shadow-[0_0_8px_rgba(99,102,241,0.8)]"
+                  />
+                </h3>
                 <p className="text-slate-300 text-xs sm:text-sm leading-relaxed mb-6">
                   {t('landing.seekerSubtitle')}
                 </p>
@@ -406,7 +428,15 @@ export const LandingPage: React.FC<LandingPageProps> = ({ currentUser }) => {
                 <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500/10 text-amber-300 text-xs font-bold mb-4">
                   <i className="fa-solid fa-house-chimney-user" /> {t('landing.hostBadge')}
                 </div>
-                <h3 className="text-2xl sm:text-3xl font-black text-white mb-4">{t('landing.hostTitle')}</h3>
+                <h3 className="text-2xl sm:text-3xl font-black text-white mb-4">
+                  <TypewriterEffectSmooth
+                    words={t('landing.hostTitle').split(/\s+/).filter(Boolean).map((text) => ({
+                      text,
+                      className: 'text-transparent bg-clip-text bg-gradient-to-r from-amber-400 to-orange-400',
+                    }))}
+                    cursorClassName="h-5 sm:h-6 bg-amber-400 shadow-[0_0_8px_rgba(245,158,11,0.8)]"
+                  />
+                </h3>
                 <p className="text-slate-300 text-xs sm:text-sm leading-relaxed mb-6">
                   {t('landing.hostSubtitle')}
                 </p>
@@ -452,7 +482,12 @@ export const LandingPage: React.FC<LandingPageProps> = ({ currentUser }) => {
             <span className="text-xs font-extrabold uppercase tracking-wider text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-3 py-1 rounded-full">
               {t('landing.trustBadge')}
             </span>
-            <h2 className="text-3xl sm:text-4xl font-black text-white mt-4">{t('landing.trustTitle')}</h2>
+            <h2 className="text-3xl sm:text-4xl font-black text-white mt-4 flex items-center justify-center">
+              <TypewriterEffectSmooth
+                words={t('landing.trustTitle').split(/\s+/).filter(Boolean).map((text) => ({ text }))}
+                cursorClassName="h-6 sm:h-8 bg-emerald-400 shadow-[0_0_8px_rgba(16,185,129,0.8)]"
+              />
+            </h2>
             <p className="text-slate-300 text-sm sm:text-base mt-2">
               {t('landing.trustSubtitle')}
             </p>
@@ -502,7 +537,12 @@ export const LandingPage: React.FC<LandingPageProps> = ({ currentUser }) => {
               <span className="text-xs font-extrabold uppercase tracking-wider text-indigo-400 bg-indigo-500/10 border border-indigo-500/20 px-3 py-1 rounded-full">
                 {t('landing.featuredBadge')}
               </span>
-              <h2 className="text-3xl font-black text-white mt-3">{t('landing.featuredTitle')}</h2>
+              <h2 className="text-3xl font-black text-white mt-3">
+                <TypewriterEffectSmooth
+                  words={t('landing.featuredTitle').split(/\s+/).filter(Boolean).map((text) => ({ text }))}
+                  cursorClassName="h-6 bg-indigo-400 shadow-[0_0_8px_rgba(99,102,241,0.8)]"
+                />
+              </h2>
               <p className="text-slate-300 text-xs sm:text-sm mt-1">
                 {t('landing.featuredSubtitle')}
               </p>
@@ -579,8 +619,11 @@ export const LandingPage: React.FC<LandingPageProps> = ({ currentUser }) => {
       <section className="py-20 bg-gradient-to-b from-slate-950 to-slate-900">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <div className="bg-gradient-to-tr from-indigo-950/80 via-slate-900/90 to-violet-950/80 border border-indigo-500/30 rounded-3xl p-10 sm:p-14 floating-container">
-            <h2 className="text-3xl sm:text-4xl font-black text-white leading-tight">
-              {t('landing.ctaTitle')}
+            <h2 className="text-3xl sm:text-4xl font-black text-white leading-tight flex items-center justify-center">
+              <TypewriterEffectSmooth
+                words={t('landing.ctaTitle').split(/\s+/).filter(Boolean).map((text) => ({ text }))}
+                cursorClassName="h-6 sm:h-8 bg-gradient-to-b from-indigo-400 to-violet-400 shadow-[0_0_8px_rgba(99,102,241,0.8)]"
+              />
             </h2>
             <p className="text-slate-300 text-sm sm:text-base mt-4 max-w-xl mx-auto leading-relaxed">
               {t('landing.ctaSubtitle')}
