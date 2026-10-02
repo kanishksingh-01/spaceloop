@@ -101,28 +101,14 @@ export async function seekerRegister(payload: {
 }
 
 export async function hostLogin(email: string, password: string): Promise<LoginResponse> {
-  const isDemo = email.trim().toLowerCase() === 'demo@spaceloop.in' && password === 'password123';
-  try {
-    const res = await request<LoginResponse>('/api/v1/auth/host/login', {
-      method: 'POST',
-      body: JSON.stringify({ email, password }),
-    });
-    if (res?.user && !res?.mfa_required) {
-      localStorage.setItem('spaceloop_user', JSON.stringify(res.user));
-    }
-    return res;
-  } catch (err: any) {
-    if (isDemo) {
-      localStorage.setItem('spaceloop_user', JSON.stringify(MASTER_DEMO_USER));
-      return {
-        success: true,
-        message: 'Host authenticated successfully',
-        portal: 'host',
-        user: MASTER_DEMO_USER
-      };
-    }
-    throw err;
+  const res = await request<LoginResponse>('/api/v1/auth/host/login', {
+    method: 'POST',
+    body: JSON.stringify({ email, password }),
+  });
+  if (res?.user && !res?.mfa_required) {
+    localStorage.setItem('spaceloop_user', JSON.stringify(res.user));
   }
+  return res;
 }
 
 export async function hostRegister(payload: {

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { User } from './types';
-import { getCurrentUser, MASTER_DEMO_USER } from './services/auth';
+import { getCurrentUser } from './services/auth';
 import { Header } from './components/common/Header';
 import { Footer } from './components/common/Footer';
 import { MobileNav } from './components/common/MobileNav';
@@ -271,16 +271,24 @@ export const App: React.FC = () => {
                   path="/host"
                   element={
                     <HostPortalShell
-                      currentUser={currentUser || MASTER_DEMO_USER}
+                      currentUser={currentUser}
                       onOpenHostAuthModal={() => setHostAuthModalOpen(true)}
                     />
                   }
                 >
-                  <Route index element={<OverviewView currentUser={currentUser || MASTER_DEMO_USER} />} />
-                  <Route path="overview" element={<OverviewView currentUser={currentUser || MASTER_DEMO_USER} />} />
-                  <Route path="dashboard" element={<OverviewView currentUser={currentUser || MASTER_DEMO_USER} />} />
+                  <Route index element={<OverviewView currentUser={currentUser} />} />
+                  <Route path="overview" element={<OverviewView currentUser={currentUser} />} />
+                  <Route path="dashboard" element={<OverviewView currentUser={currentUser} />} />
                   <Route path="spaces" element={<MySpacesView />} />
-                  <Route path="spaces/create" element={<CreateSpaceView />} />
+                  <Route
+                    path="spaces/create"
+                    element={
+                      <CreateSpaceView
+                        currentUser={currentUser}
+                        onOpenHostAuthModal={() => setHostAuthModalOpen(true)}
+                      />
+                    }
+                  />
                   <Route path="spaces/:id" element={<SpaceDetailView />} />
                   <Route path="bookings" element={<BookingsView />} />
                   <Route path="bookings/:id" element={<BookingDetailView />} />

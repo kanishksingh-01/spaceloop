@@ -226,23 +226,34 @@ export const HostPortalShell: React.FC<HostPortalShellProps> = ({
 
           {/* Host Profile & OTI Pill */}
           <div className="flex items-center gap-2 pl-2 border-l border-slate-800">
-            <button
-              type="button"
-              onClick={() => navigate('/host/settings')}
-              className="flex items-center gap-2 p-1 rounded-xl hover:bg-slate-900 transition text-left"
-            >
-              <div className="w-7 h-7 rounded-lg bg-amber-500/20 border border-amber-500/40 text-amber-400 font-bold text-xs flex items-center justify-center">
-                {effectiveUser?.name ? (effectiveUser.name.replace(/^SpaceLoop\s*/i, '').trim().charAt(0).toUpperCase() || 'H') : 'H'}
-              </div>
-              <div className="hidden xl:block">
-                <div className="text-xs font-bold text-white line-clamp-1">
-                  {effectiveUser?.name ? (effectiveUser.name.replace(/^SpaceLoop\s*/i, '').trim() || 'Host') : 'Host'}
+            {currentUser && currentUser.is_host ? (
+              <button
+                type="button"
+                onClick={() => navigate('/host/settings')}
+                className="flex items-center gap-2 p-1 rounded-xl hover:bg-slate-900 transition text-left"
+              >
+                <div className="w-7 h-7 rounded-lg bg-amber-500/20 border border-amber-500/40 text-amber-400 font-bold text-xs flex items-center justify-center">
+                  {currentUser?.name ? (currentUser.name.replace(/^SpaceLoop\s*/i, '').trim().charAt(0).toUpperCase() || 'H') : 'H'}
                 </div>
-                <div className="text-[10px] text-amber-400 font-mono font-semibold">
-                  OTI {(effectiveUser as any)?.objective_trust_score ?? 99.2}/100
+                <div className="hidden xl:block">
+                  <div className="text-xs font-bold text-white line-clamp-1">
+                    {currentUser?.name ? (currentUser.name.replace(/^SpaceLoop\s*/i, '').trim() || 'Host') : 'Host'}
+                  </div>
+                  <div className="text-[10px] text-amber-400 font-mono font-semibold">
+                    OTI {(currentUser as any)?.objective_trust_score ?? 99.2}/100
+                  </div>
                 </div>
-              </div>
-            </button>
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={onOpenHostAuthModal}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs transition"
+              >
+                <i className="fa-solid fa-right-to-bracket text-xs" />
+                <span>Host Sign In</span>
+              </button>
+            )}
           </div>
         </div>
       </header>
@@ -374,7 +385,7 @@ export const HostPortalShell: React.FC<HostPortalShellProps> = ({
 
         {/* Primary Operational Content Surface */}
         <main className="flex-1 flex flex-col overflow-y-auto bg-slate-950 min-h-0">
-          <Outlet />
+          <Outlet context={{ currentUser, onOpenHostAuthModal }} />
         </main>
       </div>
 

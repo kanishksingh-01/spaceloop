@@ -1,8 +1,14 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useOutletContext } from 'react-router-dom';
 import { createSpace, uploadSpacePhoto, aiScanSpace } from '../../../services/spaces';
 import { estimateRevenue } from '../../../services/calculator';
+import { User } from '../../../types';
 import { HostPageHeader, HostCard } from '../components';
+
+interface CreateSpaceViewProps {
+  currentUser?: User | null;
+  onOpenHostAuthModal?: () => void;
+}
 
 const STEPS = [
   { id: 1, label: 'Basic Info', icon: 'fa-solid fa-circle-info' },
@@ -29,8 +35,11 @@ const PRESET_AMENITIES = [
   'EV Charging Point',
 ];
 
-export const CreateSpaceView: React.FC = () => {
+export const CreateSpaceView: React.FC<CreateSpaceViewProps> = (props) => {
   const navigate = useNavigate();
+  const outletCtx = useOutletContext<{ currentUser?: User | null; onOpenHostAuthModal?: () => void }>() || {};
+  const currentUser = props.currentUser !== undefined ? props.currentUser : outletCtx.currentUser;
+  const onOpenHostAuthModal = props.onOpenHostAuthModal || outletCtx.onOpenHostAuthModal;
 
   const [currentStep, setCurrentStep] = useState(1);
   const [submitting, setSubmitting] = useState(false);
@@ -110,6 +119,14 @@ export const CreateSpaceView: React.FC = () => {
     const file = e.target.files?.[0];
     if (!file) return;
 
+    if (!currentUser || !currentUser.is_host) {
+      setError('Authentication required. Please sign in to your Host account to upload photos.');
+      if (onOpenHostAuthModal) {
+        onOpenHostAuthModal();
+      }
+      return;
+    }
+
     try {
       setUploadingPhoto(true);
       setError(null);
@@ -118,9 +135,24 @@ export const CreateSpaceView: React.FC = () => {
         setPhotos(prev => [...prev, res.photo_url]);
       }
     } catch (err: any) {
-      setError('Photo upload failed. Using fallback preview.');
-      const localUrl = URL.createObjectURL(file);
-      setPhotos(prev => [...prev, localUrl]);
+      const isAuthError = err?.status === 401 ||
+        (err?.message && (
+          err.message.toLowerCase().includes('authentication required') ||
+          err.message.toLowerCase().includes('unauthorized') ||
+          err.message.toLowerCase().includes('log in') ||
+          err.message.includes('401')
+        ));
+
+      if (isAuthError) {
+        setError('Authentication required. Please sign in to your Host account to upload photos.');
+        if (onOpenHostAuthModal) {
+          onOpenHostAuthModal();
+        }
+      } else {
+        setError('Photo upload failed. Using fallback preview.');
+        const localUrl = URL.createObjectURL(file);
+        setPhotos(prev => [...prev, localUrl]);
+      }
     } finally {
       setUploadingPhoto(false);
     }
@@ -165,6 +197,14 @@ export const CreateSpaceView: React.FC = () => {
 
   const handlePublish = async (asDraft = false) => {
     try {
+      if (!currentUser || !currentUser.is_host) {
+        setError('Authentication required. Please sign in to your Host account to publish a space.');
+        if (onOpenHostAuthModal) {
+          onOpenHostAuthModal();
+        }
+        return;
+      }
+
       if (!asDraft && !termsAccepted) {
         setError('You must review and agree to the SpaceLoop Terms & Conditions and Section 52 Easements Act compliance before publishing your listing.');
         return;
@@ -206,7 +246,22 @@ export const CreateSpaceView: React.FC = () => {
         navigate('/host/spaces');
       }
     } catch (err: any) {
-      setError(err.message || 'Failed to publish space. Please check all required fields.');
+      const isAuthError = err?.status === 401 ||
+        (err?.message && (
+          err.message.toLowerCase().includes('authentication required') ||
+          err.message.toLowerCase().includes('unauthorized') ||
+          err.message.toLowerCase().includes('log in') ||
+          err.message.includes('401')
+        ));
+
+      if (isAuthError) {
+        setError('Authentication required. Please sign in to your Host account to publish a space.');
+        if (onOpenHostAuthModal) {
+          onOpenHostAuthModal();
+        }
+      } else {
+        setError(err.message || 'Failed to publish space. Please check all required fields.');
+      }
     } finally {
       setSubmitting(false);
     }
@@ -297,11 +352,43 @@ export const CreateSpaceView: React.FC = () => {
         </div>
       </div>
 
+      {/* Unauthenticated Host Warning Banner */}
+      {(!currentUser || !currentUser.is_host) && (
+        <div className="p-3.5 bg-amber-500/10 border border-amber-500/30 rounded-xl text-xs text-amber-300 flex items-center justify-between flex-wrap gap-2.5">
+          <div className="flex items-center gap-2.5">
+            <i className="fa-solid fa-shield-halved text-amber-400 text-sm" />
+            <span>
+              <strong>Host Preview Mode:</strong> You are currently drafting in preview mode. Sign in to your Host account to upload photos and publish your space.
+            </span>
+          </div>
+          {onOpenHostAuthModal && (
+            <button
+              type="button"
+              onClick={onOpenHostAuthModal}
+              className="px-3 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs transition"
+            >
+              Sign In to Host
+            </button>
+          )}
+        </div>
+      )}
+
       {/* Error Notice */}
       {error && (
-        <div className="p-3.5 bg-rose-500/10 border border-rose-500/30 rounded-xl text-xs text-rose-300 flex items-center gap-2.5">
-          <i className="fa-solid fa-triangle-exclamation text-rose-400" />
-          <span>{error}</span>
+        <div className="p-3.5 bg-rose-500/10 border border-rose-500/30 rounded-xl text-xs text-rose-300 flex items-center justify-between flex-wrap gap-2.5">
+          <div className="flex items-center gap-2.5">
+            <i className="fa-solid fa-triangle-exclamation text-rose-400 text-sm" />
+            <span>{error}</span>
+          </div>
+          {error.toLowerCase().includes('sign in') && onOpenHostAuthModal && (
+            <button
+              type="button"
+              onClick={onOpenHostAuthModal}
+              className="px-3 py-1.5 rounded-lg bg-rose-500 hover:bg-rose-400 text-slate-950 font-bold text-xs transition shrink-0"
+            >
+              Sign In Now
+            </button>
+          )}
         </div>
       )}
 
