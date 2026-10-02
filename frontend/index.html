@@ -92,16 +92,13 @@
     </div>
     <script type="module" src="/src/main.tsx"></script>
     <script>
-      // Failsafe: if initial static loader is still visible after 2.5s, dissolve it immediately
+      // Failsafe: if initial static loader is still visible after 2.5s, dissolve it gracefully
       setTimeout(function() {
         var loader = document.getElementById('spaceloop-initial-loader');
         if (loader) {
           loader.style.transition = 'opacity 0.6s ease-out';
           loader.style.opacity = '0';
           loader.style.pointerEvents = 'none';
-          setTimeout(function() {
-            if (loader && loader.parentNode) loader.parentNode.removeChild(loader);
-          }, 600);
         }
       }, 2500);
     </script>
