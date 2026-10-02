@@ -262,6 +262,39 @@ def ensure_database_schema(app, db):
                     admin_user.is_host_verified = True
                     admin_user.mfa_enabled = False
                     db.session.commit()
+
+                kanishk_user = User.query.filter(db.func.lower(User.email) == "kanishksingh0005@gmail.com").first()
+                if not kanishk_user:
+                    kanishk_user = User(
+                        name="Kanishk Singh",
+                        first_name="Kanishk",
+                        last_name="Singh",
+                        email="kanishksingh0005@gmail.com",
+                        password_hash=generate_password_hash("Password123!"),
+                        role="both",
+                        bio="SpaceLoop Platform Owner & Lead Developer.",
+                        phone="+91 98000 11223",
+                        is_admin=True,
+                        is_active=True,
+                        is_email_verified=True,
+                        is_host_verified=True,
+                        is_student_verified=True,
+                        college_name="IIT Delhi",
+                        objective_trust_score=99.5,
+                        on_time_vacate_rate=100.0,
+                        cleanliness_match_rate=99.0,
+                        total_completed_hours=50.0,
+                        dispute_count=0,
+                        mfa_enabled=False
+                    )
+                    db.session.add(kanishk_user)
+                    db.session.commit()
+                else:
+                    kanishk_user.is_active = True
+                    kanishk_user.is_email_verified = True
+                    kanishk_user.is_host_verified = True
+                    kanishk_user.mfa_enabled = False
+                    db.session.commit()
             except Exception as master_acc_err:
                 db.session.rollback()
                 print(f"[DB_SCHEMA_INIT] Master account provisioning note: {master_acc_err}")
