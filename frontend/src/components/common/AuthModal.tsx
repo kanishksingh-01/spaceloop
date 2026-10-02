@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { loginUser, registerUser, digilockerAuth, studentSsoAuth, verifyMfaLogin, resendEmailVerification, instantVerifyEmail } from '../../services/auth';
 import { User } from '../../types';
+import { useI18n } from '../../i18n/I18nContext';
 
 interface AuthModalProps {
   isOpen: boolean;
@@ -19,6 +20,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   initialMode = 'login',
   onSwitchToHost,
 }) => {
+  const { t } = useI18n();
   const [mode, setMode] = useState<'login' | 'register'>(initialMode);
   const [method, setMethod] = useState<AuthMethod>('credentials');
 
@@ -264,16 +266,16 @@ export const AuthModal: React.FC<AuthModalProps> = ({
           <div>
             <div className="flex items-center gap-2 mb-1">
               <span className="px-2 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider bg-indigo-100 text-indigo-700 dark:bg-indigo-500/20 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-500/30">
-                🚀 Space Seeker Authentication
+                🚀 {t('nav.seekerPortal')}
               </span>
             </div>
             <h2 className="text-xl font-bold text-slate-900 dark:text-white">
-              {mode === 'login' ? 'Seeker Sign In' : 'Join SpaceLoop'}
+              {mode === 'login' ? t('auth.loginTitle') : t('auth.registerTitle')}
             </h2>
             <p className="text-xs text-slate-500 dark:text-slate-400">
               {mode === 'login'
-                ? 'Sign in to reserve workspaces, studios, micro-pods, and manage your bookings.'
-                : 'Create your Seeker account with verified credentials.'}
+                ? t('nav.signIn')
+                : t('nav.signUp')}
             </p>
           </div>
           <button
@@ -292,8 +294,8 @@ export const AuthModal: React.FC<AuthModalProps> = ({
               <div className="flex items-center gap-2.5">
                 <span className="text-xl">🏡</span>
                 <div>
-                  <div className="text-xs font-bold text-amber-300">Looking to Host or List Spaces?</div>
-                  <div className="text-[10px] text-slate-400">Hosts require State Electricity Discom & UPI Bank KYC.</div>
+                  <div className="text-xs font-bold text-amber-300">{t('nav.hostPortal')}</div>
+                  <div className="text-[10px] text-slate-400">{t('verify.bescomBillVerify')} & {t('verify.upiPennyDropVerify')}</div>
                 </div>
               </div>
               <button
@@ -304,7 +306,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                 }}
                 className="px-3 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs shrink-0 transition"
               >
-                Host Portal →
+                {t('nav.switchToHost')} →
               </button>
             </div>
           )}
@@ -496,7 +498,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                   : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-300'
               }`}
             >
-              Email & Password
+              {t('auth.guestLoginTab')}
             </button>
             <button
               type="button"
@@ -507,7 +509,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                   : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-300'
               }`}
             >
-              University SSO
+              {t('auth.studentLoginTab')}
             </button>
             <button
               type="button"
@@ -518,7 +520,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                   : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-300'
               }`}
             >
-              DigiLocker / Aadhaar
+              {t('verify.aadhaarVerification')}
             </button>
           </div>
 
@@ -529,21 +531,21 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                 <>
                   <div>
                     <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                      Full Name
+                      {t('auth.fullNameLabel')}
                     </label>
                     <input
                       type="text"
                       required
                       value={name}
                       onChange={(e) => setName(e.target.value)}
-                      placeholder="e.g. Full Name"
+                      placeholder={t('auth.fullNamePlaceholder')}
                       className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 text-sm text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500"
                     />
                   </div>
 
                   <div>
                     <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                      Account Type / Role
+                      {t('auth.roleLabel')}
                     </label>
                     <div className="grid grid-cols-2 gap-2">
                       <button
@@ -555,8 +557,8 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                             : 'border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400'
                         }`}
                       >
-                        <div>🎟️ Space Seeker</div>
-                        <div className="text-[10px] font-normal text-slate-400">Book desks, studios & spaces</div>
+                        <div>🎟️ {t('nav.seekerPortal')}</div>
+                        <div className="text-[10px] font-normal text-slate-400">{t('landing.spacesSubtitle')}</div>
                       </button>
                       <button
                         type="button"
@@ -567,8 +569,8 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                             : 'border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400'
                         }`}
                       >
-                        <div>🏠 Host / Owner</div>
-                        <div className="text-[10px] font-normal text-slate-400">List spaces & earn hourly</div>
+                        <div>🏠 {t('nav.hostPortal')}</div>
+                        <div className="text-[10px] font-normal text-slate-400">{t('calculator.badge')}</div>
                       </button>
                     </div>
                   </div>
@@ -577,28 +579,28 @@ export const AuthModal: React.FC<AuthModalProps> = ({
 
               <div>
                 <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                  Email Address
+                  {t('auth.emailLabel')}
                 </label>
                 <input
                   type="email"
                   required
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder="e.g. name@domain.com"
+                  placeholder={t('auth.emailPlaceholder')}
                   className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 text-sm text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500"
                 />
               </div>
 
               <div>
                 <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                  Password
+                  {t('auth.passwordLabel')}
                 </label>
                 <input
                   type="password"
                   required
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  placeholder="••••••••"
+                  placeholder={t('auth.passwordPlaceholder')}
                   className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 text-sm text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500"
                 />
               </div>
@@ -606,14 +608,14 @@ export const AuthModal: React.FC<AuthModalProps> = ({
               {mode === 'register' && (
                 <div>
                   <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                    Confirm Password
+                    {t('auth.confirmPasswordLabel')}
                   </label>
                   <input
                     type="password"
                     required
                     value={confirmPassword}
                     onChange={(e) => setConfirmPassword(e.target.value)}
-                    placeholder="••••••••"
+                    placeholder={t('auth.passwordPlaceholder')}
                     className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 text-sm text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500"
                   />
                 </div>
@@ -625,10 +627,10 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                 className="w-full py-3 px-4 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-sm transition shadow-lg shadow-indigo-600/25 disabled:opacity-50"
               >
                 {loading
-                  ? 'Authenticating...'
+                  ? t('common.loading')
                   : mode === 'login'
-                  ? 'Sign In to Account'
-                  : 'Complete Registration'}
+                  ? t('auth.loginBtn')
+                  : t('auth.registerBtn')}
               </button>
             </form>
           )}
@@ -637,33 +639,33 @@ export const AuthModal: React.FC<AuthModalProps> = ({
           {method === 'sso' && (
             <form onSubmit={handleSsoSubmit} className="space-y-3.5">
               <div className="p-3 bg-indigo-50/70 dark:bg-indigo-950/40 rounded-xl border border-indigo-200 dark:border-indigo-800 text-xs text-indigo-800 dark:text-indigo-300">
-                🎓 <strong>Verified Academic Access:</strong> Grants immediate student discount tier and verified trust badge on your door passes.
+                🎓 <strong>{t('verify.studentKycCard')}:</strong> {t('verify.collegeIdUpload')}
               </div>
 
               <div>
                 <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                  Full Name
+                  {t('auth.fullNameLabel')}
                 </label>
                 <input
                   type="text"
                   required
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  placeholder="Enter your full name"
+                  placeholder={t('auth.fullNamePlaceholder')}
                   className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
                 />
               </div>
 
               <div>
                 <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                  College / University
+                  {t('auth.collegeLabel')}
                 </label>
                 <input
                   type="text"
                   required
                   value={collegeName}
                   onChange={(e) => setCollegeName(e.target.value)}
-                  placeholder="e.g. IIT Delhi / BITS Pilani / COEP"
+                  placeholder="e.g. IIT / BITS / University"
                   className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
                 />
               </div>
@@ -678,7 +680,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                     required
                     value={studentId}
                     onChange={(e) => setStudentId(e.target.value)}
-                    placeholder="e.g. 2023CSB108"
+                    placeholder="e.g. 2024CS01"
                     className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
                   />
                 </div>
@@ -702,7 +704,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                 disabled={loading}
                 className="w-full py-3 px-4 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-sm transition shadow-lg shadow-indigo-600/25 disabled:opacity-50"
               >
-                {loading ? 'Authenticating SSO...' : 'Verify & Continue with College SSO'}
+                {loading ? t('common.loading') : `${t('auth.studentLoginTab')} →`}
               </button>
             </form>
           )}
@@ -711,19 +713,19 @@ export const AuthModal: React.FC<AuthModalProps> = ({
           {method === 'digilocker' && (
             <form onSubmit={handleDigiLockerSubmit} className="space-y-3.5">
               <div className="p-3 bg-emerald-50/70 dark:bg-emerald-950/40 rounded-xl border border-emerald-200 dark:border-emerald-800 text-xs text-emerald-800 dark:text-emerald-300">
-                🛡️ <strong>DigiLocker National Stack:</strong> Instantly issues verified host or seeker credentials with objective 920+ trust rating.
+                🛡️ <strong>{t('verify.digilockerConsent')}:</strong> {t('verify.aadhaarVerification')}
               </div>
 
               <div>
                 <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                  Full Name (as registered on Aadhaar)
+                  {t('auth.fullNameLabel')}
                 </label>
                 <input
                   type="text"
                   required
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  placeholder="Enter full legal name"
+                  placeholder={t('auth.fullNamePlaceholder')}
                   className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
                 />
               </div>
@@ -731,14 +733,14 @@ export const AuthModal: React.FC<AuthModalProps> = ({
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                    Aadhaar Number (12 digits)
+                    {t('verify.aadhaarVerification')}
                   </label>
                   <input
                     type="text"
                     required
                     value={aadhaarNumber}
                     onChange={(e) => setAadhaarNumber(e.target.value)}
-                    placeholder="Enter 12-digit Aadhaar number"
+                    placeholder="XXXX XXXX XXXX"
                     maxLength={14}
                     className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
                   />
@@ -761,7 +763,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
 
               <div>
                 <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                  Authenticate As
+                  {t('auth.roleLabel')}
                 </label>
                 <div className="grid grid-cols-2 gap-2">
                   <button
@@ -773,7 +775,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                         : 'border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400'
                     }`}
                   >
-                    Verified Seeker
+                    {t('nav.seekerPortal')}
                   </button>
                   <button
                     type="button"
@@ -784,7 +786,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                         : 'border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400'
                     }`}
                   >
-                    Verified Host
+                    {t('nav.hostPortal')}
                   </button>
                 </div>
               </div>
@@ -794,7 +796,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                 disabled={loading}
                 className="w-full py-3 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-sm transition shadow-lg shadow-emerald-600/25 disabled:opacity-50"
               >
-                {loading ? 'Verifying OTP...' : 'Authenticate via DigiLocker OTP'}
+                {loading ? t('common.loading') : `${t('verify.verifyNowBtn')} →`}
               </button>
             </form>
           )}
@@ -803,7 +805,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
           <div className="pt-3 border-t border-slate-200 dark:border-slate-800 text-center">
             {mode === 'login' ? (
               <p className="text-xs text-slate-600 dark:text-slate-400">
-                Don't have an account?{' '}
+                {t('auth.noAccount')}{' '}
                 <button
                   type="button"
                   onClick={() => {
@@ -813,12 +815,12 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                   }}
                   className="font-bold text-indigo-600 dark:text-indigo-400 hover:underline ml-1"
                 >
-                  Sign up
+                  {t('auth.registerBtn')}
                 </button>
               </p>
             ) : (
               <p className="text-xs text-slate-600 dark:text-slate-400">
-                Already have an account?{' '}
+                {t('auth.haveAccount')}{' '}
                 <button
                   type="button"
                   onClick={() => {
@@ -828,7 +830,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                   }}
                   className="font-bold text-indigo-600 dark:text-indigo-400 hover:underline ml-1"
                 >
-                  Log in
+                  {t('auth.loginBtn')}
                 </button>
               </p>
             )}

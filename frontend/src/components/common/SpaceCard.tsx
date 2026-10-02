@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Space } from '../../types';
 import { getCategoryFallbackImage } from '../../services/spaces';
+import { useTranslation } from '../../i18n';
 
 interface SpaceCardProps {
   space: Space;
@@ -8,6 +9,7 @@ interface SpaceCardProps {
 }
 
 export const SpaceCard: React.FC<SpaceCardProps> = ({ space, onPress }) => {
+  const { t, formatCurrency } = useTranslation();
   const [loaded, setLoaded] = useState(false);
   const [error, setError] = useState(false);
   const [triedFallback, setTriedFallback] = useState(false);
@@ -26,11 +28,11 @@ export const SpaceCard: React.FC<SpaceCardProps> = ({ space, onPress }) => {
   const hourlyRate = Math.round(space.hourly_rate ?? space.price_hourly ?? 50);
   const getMatchBadge = () => {
     if (space.ai_match_score !== undefined && space.ai_match_score !== null) {
-      if (space.ai_match_score >= 80) return 'Top Match';
-      if (space.ai_match_score >= 60) return 'Great Match';
-      return 'Matched';
+      if (space.ai_match_score >= 80) return t('spaceCard.topPickBadge') || 'Top Match';
+      if (space.ai_match_score >= 60) return t('common.matchScore') || 'Match';
+      return t('common.matchScore') || 'Matched';
     }
-    return 'Verified';
+    return t('common.verified') || 'Verified';
   };
 
   const matchBadgeLabel = getMatchBadge();
@@ -48,7 +50,7 @@ export const SpaceCard: React.FC<SpaceCardProps> = ({ space, onPress }) => {
     <div
       role="button"
       tabIndex={0}
-      aria-label={`View space ${space.title}`}
+      aria-label={`${t('spaceCard.viewDetails')}: ${space.title}`}
       onClick={() => onPress(space.id)}
       onKeyDown={(e) => {
         if (e.key === 'Enter' || e.key === ' ') {
@@ -65,7 +67,7 @@ export const SpaceCard: React.FC<SpaceCardProps> = ({ space, onPress }) => {
       >
         {!loaded && !error && (
           <div className="absolute inset-0 bg-slate-800/60 animate-pulse flex items-center justify-center">
-            <span className="text-[11px] font-medium text-slate-400">Loading preview...</span>
+            <span className="text-[11px] font-medium text-slate-400">{t('common.loading')}</span>
           </div>
         )}
 
@@ -75,7 +77,7 @@ export const SpaceCard: React.FC<SpaceCardProps> = ({ space, onPress }) => {
               <rect width="18" height="18" x="3" y="3" rx="2" strokeWidth="2" />
               <path d="m3 15 5-5 4 4 6-6" strokeWidth="2" strokeLinecap="round" />
             </svg>
-            <span className="text-[11px] font-medium">SpaceLoop Verified Asset</span>
+            <span className="text-[11px] font-medium">{t('common.verified')}</span>
           </div>
         ) : (
           <img
@@ -103,11 +105,7 @@ export const SpaceCard: React.FC<SpaceCardProps> = ({ space, onPress }) => {
 
         {/* Match / Verified Pill (Top Right) */}
         <div className="absolute top-3 right-3 z-10 flex items-center gap-1.5">
-          <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full backdrop-blur-md text-[10px] font-bold shadow-sm ${
-            matchBadgeLabel === 'Top Match'
-              ? 'bg-indigo-500/25 border border-indigo-400/50 text-indigo-200'
-              : 'bg-emerald-500/20 border border-emerald-500/40 text-emerald-300'
-          }`}>
+          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full backdrop-blur-md text-[10px] font-bold shadow-sm bg-indigo-500/25 border border-indigo-400/50 text-indigo-200">
             <span>✨</span>
             <span className="match-score-text">{matchBadgeLabel}</span>
           </span>
@@ -140,8 +138,8 @@ export const SpaceCard: React.FC<SpaceCardProps> = ({ space, onPress }) => {
             {space.title}
           </h3>
           <div className="shrink-0 text-right">
-            <span className="text-base font-bold text-white tracking-tight">₹{hourlyRate}</span>
-            <span className="text-[11px] text-slate-400 font-normal">/hr</span>
+            <span className="text-base font-bold text-white tracking-tight">{formatCurrency(hourlyRate)}</span>
+            <span className="text-[11px] text-slate-400 font-normal">{t('spaceCard.perHour')}</span>
           </div>
         </div>
 
@@ -153,16 +151,16 @@ export const SpaceCard: React.FC<SpaceCardProps> = ({ space, onPress }) => {
         <div className="flex items-center gap-2 text-[11px] text-slate-400 mb-3 flex-wrap">
           {space.distance_km !== undefined && (
             <span className="px-2 py-0.5 rounded bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 font-medium flex items-center gap-1">
-              <span>⚡</span> {space.distance_km} km away
+              <span>⚡</span> {t('spaceCard.distanceAway', { dist: space.distance_km })}
             </span>
           )}
           <span className="px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-medium flex items-center gap-1">
             <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-            <span>{space.availability_status || 'Available Now'}</span>
+            <span>{space.availability_status || t('spaceCard.availableNow')}</span>
           </span>
-          <span>{space.sqft || 240} sqft</span>
+          <span>{space.sqft || 240} {t('common.sqft')}</span>
           <span>•</span>
-          <span>Up to {space.max_capacity || 4} ppl</span>
+          <span>{t('spaceCard.seatsCount', { count: space.max_capacity || 4 })}</span>
         </div>
 
         {/* AI Match Reasoning if present */}
@@ -170,7 +168,7 @@ export const SpaceCard: React.FC<SpaceCardProps> = ({ space, onPress }) => {
           <div className="mb-3 p-2.5 rounded-lg bg-indigo-950/40 border border-indigo-500/25 text-xs text-indigo-300">
             <div className="flex items-center gap-1.5 font-semibold text-emerald-400 text-[11px] mb-1">
               <i className="fa-solid fa-sparkles text-[10px]" />
-              <span>Why this matches:</span>
+              <span>{t('explore.whyThisMatchesLabel')}:</span>
             </div>
             <p className="text-[11px] leading-relaxed text-indigo-200">
               {space.ai_match_reasoning}
@@ -188,7 +186,7 @@ export const SpaceCard: React.FC<SpaceCardProps> = ({ space, onPress }) => {
                 clipRule="evenodd"
               />
             </svg>
-            <span>DigiLocker Verified</span>
+            <span>{t('common.otiVerified')}</span>
           </div>
 
           <button
@@ -196,7 +194,7 @@ export const SpaceCard: React.FC<SpaceCardProps> = ({ space, onPress }) => {
             onClick={() => onPress(space.id)}
             className="inline-flex items-center gap-1 text-xs font-semibold text-indigo-400 hover:text-indigo-300 group-hover:translate-x-0.5 transition"
           >
-            <span>View Space</span>
+            <span>{t('spaceCard.viewDetails')}</span>
             <span>→</span>
           </button>
         </div>

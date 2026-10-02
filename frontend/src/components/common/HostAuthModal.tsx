@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { hostLogin, hostRegister, hostUpgrade, verifyMfaLogin, resendEmailVerification, instantVerifyEmail } from '../../services/auth';
 import { User } from '../../types';
+import { useI18n } from '../../i18n/I18nContext';
 
 interface HostAuthModalProps {
   isOpen: boolean;
@@ -17,6 +18,7 @@ export const HostAuthModal: React.FC<HostAuthModalProps> = ({
   currentUser,
   onSwitchToSeeker,
 }) => {
+  const { t } = useI18n();
   const isUpgradingSeeker = Boolean(currentUser && !currentUser.is_host);
   const [activeTab, setActiveTab] = useState<'login' | 'register'>(isUpgradingSeeker ? 'register' : 'login');
 
@@ -265,23 +267,23 @@ export const HostAuthModal: React.FC<HostAuthModalProps> = ({
           <div>
             <div className="flex items-center gap-2 mb-1">
               <span className="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider bg-amber-500/20 text-amber-300 border border-amber-500/30 flex items-center gap-1.5">
-                <i className="fa-solid fa-house-chimney" /> Host & Property Portal
+                <i className="fa-solid fa-house-chimney" /> {t('nav.hostPortal')}
               </span>
-              <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
-                Discom & UPI Verified
+              <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                {t('verify.bescomBillVerify')} & {t('verify.upiPennyDropVerify')}
               </span>
             </div>
             <h2 className="text-xl font-bold text-white flex items-center gap-2">
               {isUpgradingSeeker
-                ? 'Unlock Host Privileges & Property KYC'
+                ? t('verify.hostKycCard')
                 : activeTab === 'login'
-                ? 'Host Sign In'
-                : 'Register as Verified Space Host'}
+                ? t('auth.hostLoginTitle')
+                : t('auth.hostRegisterTitle')}
             </h2>
             <p className="text-xs text-slate-400 mt-0.5">
               {isUpgradingSeeker
-                ? 'Link your property electricity bill and UPI VPA to monetize unused square footage.'
-                : 'Manage listings, inspect condition delta reports, and receive micro-lease payouts.'}
+                ? t('calculator.subtitle')
+                : t('calculator.startListingCTA')}
             </p>
           </div>
           <button
@@ -486,7 +488,7 @@ export const HostAuthModal: React.FC<HostAuthModalProps> = ({
                     : 'text-slate-400 hover:text-white'
                 }`}
               >
-                Host Sign In
+                {t('auth.hostLoginTab')}
               </button>
               <button
                 type="button"
@@ -500,7 +502,7 @@ export const HostAuthModal: React.FC<HostAuthModalProps> = ({
                     : 'text-slate-400 hover:text-white'
                 }`}
               >
-                Host Onboarding & Discom KYC
+                {t('verify.hostKycCard')}
               </button>
             </div>
           )}
@@ -509,23 +511,23 @@ export const HostAuthModal: React.FC<HostAuthModalProps> = ({
           {activeTab === 'login' && !isUpgradingSeeker ? (
             <form onSubmit={handleHostLogin} className="space-y-4">
               <div>
-                <label className="block text-xs font-bold text-slate-300 mb-1">Host Account Email</label>
+                <label className="block text-xs font-bold text-slate-300 mb-1">{t('auth.emailLabel')}</label>
                 <input
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder="e.g. name@domain.com"
+                  placeholder={t('auth.emailPlaceholder')}
                   className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-white text-xs focus:outline-none focus:border-amber-500 transition"
                   required
                 />
               </div>
               <div>
-                <label className="block text-xs font-bold text-slate-300 mb-1">Host Password</label>
+                <label className="block text-xs font-bold text-slate-300 mb-1">{t('auth.passwordLabel')}</label>
                 <input
                   type="password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  placeholder="••••••••"
+                  placeholder={t('auth.passwordPlaceholder')}
                   className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-white text-xs focus:outline-none focus:border-amber-500 transition"
                   required
                 />
@@ -536,7 +538,7 @@ export const HostAuthModal: React.FC<HostAuthModalProps> = ({
                 className="w-full py-3 rounded-xl bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-500 hover:to-orange-500 text-white font-bold text-xs shadow-lg shadow-amber-600/25 transition disabled:opacity-50 flex items-center justify-center gap-2"
               >
                 {loading ? <i className="fa-solid fa-circle-notch fa-spin text-sm" /> : <i className="fa-solid fa-lock text-xs" />}
-                <span>{loading ? 'Authenticating Host...' : 'Sign In to Host Portal'}</span>
+                <span>{loading ? t('common.loading') : t('auth.loginBtn')}</span>
               </button>
             </form>
           ) : (

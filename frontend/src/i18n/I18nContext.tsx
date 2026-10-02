@@ -27,12 +27,17 @@ export interface I18nContextType {
   languages: LanguageOption[];
   currentLanguageOption: LanguageOption;
   t: (key: string, params?: Record<string, string | number>) => string;
+  formatCurrency: (amount: number) => string;
+  formatNumber: (num: number) => string;
+  formatDate: (dateInput: string | Date | number, options?: Intl.DateTimeFormatOptions) => string;
+  formatTime: (dateInput: string | Date | number, options?: Intl.DateTimeFormatOptions) => string;
 }
 
 const I18nContext = createContext<I18nContextType | undefined>(undefined);
 
 // Helper to resolve dot-notated nested keys like 'nav.explore' or 'loopbot.quickPrompts.findDesk'
 function resolveKey(dict: any, path: string): string | undefined {
+  if (!dict || typeof dict !== 'object') return undefined;
   const parts = path.split('.');
   let current = dict;
   for (const part of parts) {
@@ -45,6 +50,25 @@ function resolveKey(dict: any, path: string): string | undefined {
   return typeof current === 'string' ? current : undefined;
 }
 
+// Browser language auto-detection
+function detectBrowserLanguage(): SupportedLanguage {
+  try {
+    const navLangs = navigator.languages || [navigator.language];
+    for (const raw of navLangs) {
+      if (!raw) continue;
+      const lower = raw.toLowerCase();
+      if (lower.startsWith('hi')) return 'hi';
+      if (lower.startsWith('mr')) return 'mr';
+      if (lower.startsWith('gar') || lower.startsWith('gbm')) return 'gar';
+      if (lower.startsWith('kfy')) return 'kfy';
+      if (lower.startsWith('jns')) return 'jns';
+    }
+  } catch {
+    // ignore
+  }
+  return 'en';
+}
+
 export const LanguageProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [language, setLanguageState] = useState<SupportedLanguage>(() => {
     try {
@@ -53,9 +77,9 @@ export const LanguageProvider: React.FC<{ children: ReactNode }> = ({ children }
         return saved as SupportedLanguage;
       }
     } catch {
-      // localStorage may fail in restricted sandbox/iframe
+      // localStorage may fail in restricted sandbox
     }
-    return 'en';
+    return detectBrowserLanguage();
   });
 
   const [loopbotLanguage, setLoopbotLanguageState] = useState<string>(() => {
@@ -65,6 +89,13 @@ export const LanguageProvider: React.FC<{ children: ReactNode }> = ({ children }
       return 'auto';
     }
   });
+
+  // Sync html lang attribute
+  useEffect(() => {
+    if (typeof document !== 'undefined') {
+      document.documentElement.lang = language;
+    }
+  }, [language]);
 
   const setLanguage = (newLang: SupportedLanguage) => {
     if (newLang in DICTIONARIES) {
@@ -95,19 +126,105 @@ export const LanguageProvider: React.FC<{ children: ReactNode }> = ({ children }
     const fallbackDict = DICTIONARIES.en;
 
     return (key: string, params?: Record<string, string | number>): string => {
-      let text = resolveKey(currentDict, key);
-      // Fallback to English if key missing or blank
-      if (!text) {
-        text = resolveKey(fallbackDict, key) || key;
+      let text: string | undefined;
+
+      // Check pluralization if count param is provided
+      if (params && typeof params.count === 'number') {
+        const pluralKey = params.count === 1 ? `${key}_one` : `${key}_other`;
+        text = resolveKey(currentDict, pluralKey);
+        if (!text) {
+          text = resolveKey(fallbackDict, pluralKey);
+        }
       }
 
+      if (!text) {
+        text = resolveKey(currentDict, key);
+      }
+      // Fallback to English if key missing or blank
+      if (!text) {
+        text = resolveKey(fallbackDict, key);
+      }
+      if (!text) {
+        return key;
+      }
+
+      // Variable interpolation: replaces {varName} with param value
       if (params) {
-        Object.entries(params).forEach(([paramKey, val]) => {
-          text = text!.replace(new RegExp(`{${paramKey}}`, 'g'), String(val));
+        return text.replace(/\{(\w+)\}/g, (_, varName) => {
+          if (varName in params) {
+            return String(params[varName]);
+          }
+          return `{${varName}}`;
         });
       }
 
       return text;
+    };
+  }, [language]);
+
+  // Locale-aware currency formatting (INR ₹ standard across India)
+  const formatCurrency = useMemo(() => {
+    return (amount: number): string => {
+      try {
+        const localeTag = language === 'en' ? 'en-IN' : (language === 'mr' ? 'mr-IN' : 'hi-IN');
+        return new Intl.NumberFormat(localeTag, {
+          style: 'currency',
+          currency: 'INR',
+          maximumFractionDigits: amount % 1 === 0 ? 0 : 2,
+        }).format(amount);
+      } catch {
+        return `₹${amount}`;
+      }
+    };
+  }, [language]);
+
+  // Locale-aware number formatting
+  const formatNumber = useMemo(() => {
+    return (num: number): string => {
+      try {
+        const localeTag = language === 'en' ? 'en-IN' : (language === 'mr' ? 'mr-IN' : 'hi-IN');
+        return new Intl.NumberFormat(localeTag).format(num);
+      } catch {
+        return String(num);
+      }
+    };
+  }, [language]);
+
+  // Locale-aware date formatting
+  const formatDate = useMemo(() => {
+    return (dateInput: string | Date | number, options?: Intl.DateTimeFormatOptions): string => {
+      try {
+        const d = typeof dateInput === 'string' || typeof dateInput === 'number' ? new Date(dateInput) : dateInput;
+        if (isNaN(d.getTime())) return String(dateInput);
+        const localeTag = language === 'en' ? 'en-IN' : (language === 'mr' ? 'mr-IN' : 'hi-IN');
+        const defaultOptions: Intl.DateTimeFormatOptions = options || {
+          day: 'numeric',
+          month: 'short',
+          year: 'numeric',
+        };
+        return new Intl.DateTimeFormat(localeTag, defaultOptions).format(d);
+      } catch {
+        return String(dateInput);
+      }
+    };
+  }, [language]);
+
+  // Locale-aware time formatting
+  const formatTime = useMemo(() => {
+    return (dateInput: string | Date | number, options?: Intl.DateTimeFormatOptions): string => {
+      try {
+        const d = typeof dateInput === 'string' || typeof dateInput === 'number' ? new Date(dateInput) : dateInput;
+        if (isNaN(d.getTime())) return String(dateInput);
+        const localeTag = language === 'en' ? 'en-IN' : (language === 'mr' ? 'mr-IN' : 'hi-IN');
+        const defaultOptions: Intl.DateTimeFormatOptions = options || {
+          hour: 'numeric',
+          minute: '2-digit',
+          hour12: true,
+        };
+        return new Intl.DateTimeFormat(localeTag, defaultOptions).format(d);
+      } catch {
+        return String(dateInput);
+      }
     };
   }, [language]);
 
@@ -120,17 +237,25 @@ export const LanguageProvider: React.FC<{ children: ReactNode }> = ({ children }
       languages: SUPPORTED_LANGUAGES,
       currentLanguageOption,
       t,
+      formatCurrency,
+      formatNumber,
+      formatDate,
+      formatTime,
     }),
-    [language, loopbotLanguage, currentLanguageOption, t]
+    [language, loopbotLanguage, currentLanguageOption, t, formatCurrency, formatNumber, formatDate, formatTime]
   );
 
   return <I18nContext.Provider value={value}>{children}</I18nContext.Provider>;
 };
 
-export const useTranslation = (): I18nContextType => {
+export const useI18n = (): I18nContextType => {
   const context = useContext(I18nContext);
   if (!context) {
-    throw new Error('useTranslation must be used within a LanguageProvider');
+    throw new Error('useI18n must be used within a LanguageProvider');
   }
   return context;
+};
+
+export const useTranslation = (): I18nContextType => {
+  return useI18n();
 };

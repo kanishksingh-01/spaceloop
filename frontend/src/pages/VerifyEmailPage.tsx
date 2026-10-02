@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { verifyEmailToken, resendEmailVerification } from '../services/auth';
 import { User } from '../types';
+import { useTranslation } from '../i18n';
 
 interface VerifyEmailPageProps {
   onUserVerified?: (user: User) => void;
@@ -12,6 +13,7 @@ export const VerifyEmailPage: React.FC<VerifyEmailPageProps> = ({ onUserVerified
   const [searchParams] = useSearchParams();
   const token = paramToken || searchParams.get('token') || '';
   const navigate = useNavigate();
+  const { t } = useTranslation();
 
   const [loading, setLoading] = useState(Boolean(token));
   const [success, setSuccess] = useState(false);
@@ -37,7 +39,7 @@ export const VerifyEmailPage: React.FC<VerifyEmailPageProps> = ({ onUserVerified
 
         if (res.success) {
           setSuccess(true);
-          setMessage(res.message || 'Your email address has been successfully verified.');
+          setMessage(res.message || t('verifyEmail.verifiedSuccessDesc'));
           if (res.user) {
             setVerifiedUser(res.user);
             localStorage.setItem('spaceloop_user', JSON.stringify(res.user));
@@ -47,12 +49,12 @@ export const VerifyEmailPage: React.FC<VerifyEmailPageProps> = ({ onUserVerified
           }
         } else {
           setSuccess(false);
-          setMessage(res.message || 'This verification link is invalid or has expired.');
+          setMessage(res.message || t('verifyEmail.invalidLinkDesc'));
         }
       } catch (err: any) {
         if (!isMounted) return;
         setSuccess(false);
-        setMessage(err.message || 'This verification link is invalid or has expired.');
+        setMessage(err.message || t('verifyEmail.invalidLinkDesc'));
       } finally {
         if (isMounted) setLoading(false);
       }
@@ -62,7 +64,7 @@ export const VerifyEmailPage: React.FC<VerifyEmailPageProps> = ({ onUserVerified
     return () => {
       isMounted = false;
     };
-  }, [token]);
+  }, [token, t]);
 
   const handleResend = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -71,16 +73,16 @@ export const VerifyEmailPage: React.FC<VerifyEmailPageProps> = ({ onUserVerified
 
     const emailToUse = resendEmail.trim();
     if (!emailToUse) {
-      setResendError('Please enter your registered email address.');
+      setResendError(t('auth.emailPlaceholder'));
       return;
     }
 
     setResending(true);
     try {
       const res = await resendEmailVerification(emailToUse);
-      setResendStatus(res.message || 'Verification link sent! Check your inbox.');
+      setResendStatus(res.message || t('auth.verificationSent'));
     } catch (err: any) {
-      setResendError(err.message || 'Failed to send verification email. Please try again.');
+      setResendError(err.message || t('common.error'));
     } finally {
       setResending(false);
     }
@@ -93,9 +95,9 @@ export const VerifyEmailPage: React.FC<VerifyEmailPageProps> = ({ onUserVerified
           {loading ? (
             <div className="py-8 space-y-4">
               <div className="w-12 h-12 border-3 border-indigo-500 border-t-transparent rounded-full animate-spin mx-auto" />
-              <h2 className="text-xl font-bold text-white">Verifying Email...</h2>
+              <h2 className="text-xl font-bold text-white">{t('verifyEmail.checkingStatus')}</h2>
               <p className="text-xs text-slate-400">
-                Confirming cryptographic security token with SpaceLoop authentication service.
+                {t('verifyEmail.subtitle')}
               </p>
             </div>
           ) : success ? (
@@ -106,30 +108,30 @@ export const VerifyEmailPage: React.FC<VerifyEmailPageProps> = ({ onUserVerified
 
               <div>
                 <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-bold mb-3">
-                  Account Verified & Active
+                  {t('verify.verifiedSuccessBadge')}
                 </span>
-                <h1 className="text-2xl font-black text-white">Email Verified!</h1>
+                <h1 className="text-2xl font-black text-white">{t('verifyEmail.verifiedSuccessTitle')}</h1>
                 <p className="text-xs text-slate-300 mt-2 leading-relaxed">
-                  {message || 'Your email address has been successfully verified. You now have full access to the SpaceLoop portal.'}
+                  {message || t('verifyEmail.verifiedSuccessDesc')}
                 </p>
               </div>
 
               <div className="p-4 rounded-2xl bg-slate-950/80 border border-slate-800 text-left text-xs text-slate-400 space-y-1.5">
                 <div className="flex items-center justify-between text-white font-medium">
-                  <span>Status:</span>
+                  <span>{t('dashboard.statusLabel')}:</span>
                   <span className="text-emerald-400 font-bold flex items-center gap-1">
-                    <i className="fa-solid fa-circle-check text-xs" /> Verified
+                    <i className="fa-solid fa-circle-check text-xs" /> {t('common.verified')}
                   </span>
                 </div>
                 {verifiedUser?.email && (
                   <div className="flex items-center justify-between">
-                    <span>Email:</span>
+                    <span>{t('auth.emailLabel')}:</span>
                     <span className="text-slate-200">{verifiedUser.email}</span>
                   </div>
                 )}
                 <div className="flex items-center justify-between">
-                  <span>Portal Access:</span>
-                  <span className="text-indigo-400">Unlocked</span>
+                  <span>{t('nav.menu')}:</span>
+                  <span className="text-indigo-400">{t('common.confirmed')}</span>
                 </div>
               </div>
 
@@ -145,7 +147,7 @@ export const VerifyEmailPage: React.FC<VerifyEmailPageProps> = ({ onUserVerified
                   }}
                   className="w-full py-3.5 rounded-xl bg-gradient-to-r from-indigo-600 via-violet-600 to-indigo-700 hover:from-indigo-500 hover:to-violet-500 text-white font-bold text-sm shadow-xl shadow-indigo-600/30 flex items-center justify-center gap-2 transition"
                 >
-                  <span>Enter SpaceLoop Portal</span>
+                  <span>{t('verifyEmail.continueToLoginBtn')}</span>
                   <i className="fa-solid fa-arrow-right text-xs" />
                 </button>
 
@@ -154,7 +156,7 @@ export const VerifyEmailPage: React.FC<VerifyEmailPageProps> = ({ onUserVerified
                   onClick={() => navigate('/explore')}
                   className="w-full py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold text-xs transition"
                 >
-                  Explore Verified Spaces
+                  {t('nav.explore')}
                 </button>
               </div>
             </div>
@@ -166,24 +168,24 @@ export const VerifyEmailPage: React.FC<VerifyEmailPageProps> = ({ onUserVerified
 
               <div>
                 <h1 className="text-2xl font-black text-white">
-                  {token ? 'Verification Failed' : 'Verify Your Email'}
+                  {token ? t('verifyEmail.invalidLinkTitle') : t('verifyEmail.title')}
                 </h1>
                 <p className="text-xs text-rose-300 mt-2 leading-relaxed">
-                  {message || 'Please verify your email address to unlock portal bookings and space management.'}
+                  {message || t('verifyEmail.invalidLinkDesc')}
                 </p>
               </div>
 
               {/* Resend Verification Form */}
               <form onSubmit={handleResend} className="p-4 rounded-2xl bg-slate-950/80 border border-slate-800 text-left space-y-3">
                 <label className="block text-xs font-semibold text-slate-300">
-                  Request New Verification Link
+                  {t('verifyEmail.resendEmailBtn')}
                 </label>
                 <div className="flex flex-col sm:flex-row gap-2">
                   <input
                     type="email"
                     value={resendEmail}
                     onChange={(e) => setResendEmail(e.target.value)}
-                    placeholder="Enter registered email"
+                    placeholder={t('auth.emailPlaceholder')}
                     className="flex-1 px-3 py-2.5 rounded-xl bg-slate-900 border border-slate-700 text-white text-xs focus:outline-none focus:border-indigo-500"
                     required
                   />
@@ -192,7 +194,7 @@ export const VerifyEmailPage: React.FC<VerifyEmailPageProps> = ({ onUserVerified
                     disabled={resending}
                     className="px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs transition disabled:opacity-50 shrink-0"
                   >
-                    {resending ? 'Sending...' : 'Send Link'}
+                    {resending ? t('common.loading') : t('common.submit')}
                   </button>
                 </div>
 
@@ -215,7 +217,7 @@ export const VerifyEmailPage: React.FC<VerifyEmailPageProps> = ({ onUserVerified
                   className="w-full py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold text-xs border border-slate-700 transition flex items-center justify-center gap-2"
                 >
                   <i className="fa-solid fa-house text-xs" />
-                  <span>Return to Home</span>
+                  <span>{t('common.back')}</span>
                 </button>
               </div>
             </div>

@@ -123,7 +123,7 @@ export const Header: React.FC<HeaderProps> = ({
                 }`}
               />
               <span className="leading-none">
-                {isHostPortal ? 'Host Mode' : 'Seeker Mode'}
+                {isHostPortal ? (t('nav.hostPortal') || 'Host Mode') : (t('nav.seekerPortal') || 'Seeker Mode')}
               </span>
             </span>
           </div>
@@ -143,7 +143,7 @@ export const Header: React.FC<HeaderProps> = ({
                 }`}
               >
                 <i className="fa-solid fa-gauge-high text-amber-400" />
-                <span>Overview</span>
+                <span>{t('host.overview')}</span>
               </button>
               <button
                 onClick={() => handleNav('/host/spaces')}
@@ -154,7 +154,7 @@ export const Header: React.FC<HeaderProps> = ({
                 }`}
               >
                 <i className="fa-solid fa-building text-amber-400" />
-                <span>My Spaces</span>
+                <span>{t('host.mySpaces')}</span>
               </button>
               <button
                 onClick={() => handleNav('/host/live-sessions')}
@@ -165,7 +165,7 @@ export const Header: React.FC<HeaderProps> = ({
                 }`}
               >
                 <i className="fa-solid fa-satellite-dish text-emerald-400" />
-                <span>Live Sessions</span>
+                <span>{t('host.liveSessions')}</span>
               </button>
               <button
                 onClick={() => handleNav('/architecture')}
@@ -200,7 +200,7 @@ export const Header: React.FC<HeaderProps> = ({
                 title="Launch Host Operating System"
               >
                 <i className="fa-solid fa-house-chimney-user text-amber-400" />
-                <span>Host Portal</span>
+                <span>{t('nav.hostPortal')}</span>
               </button>
               <button
                 onClick={() => handleNav('/architecture')}
@@ -261,7 +261,7 @@ export const Header: React.FC<HeaderProps> = ({
             >
               <i className="fa-solid fa-compass text-indigo-400" />
               <span className="hidden sm:inline">{t('nav.switchToSeeker') || 'Seeker'}</span>
-              <span className="sm:hidden">Seeker</span>
+              <span className="sm:hidden">{t('nav.switchToSeeker') || 'Seeker'}</span>
             </button>
           ) : (
             <button
@@ -271,8 +271,8 @@ export const Header: React.FC<HeaderProps> = ({
               title="Launch Host Operating System"
             >
               <i className="fa-solid fa-house-chimney-user text-amber-400" />
-              <span className="hidden sm:inline">Host Portal</span>
-              <span className="sm:hidden">Host</span>
+              <span className="hidden sm:inline">{t('nav.hostPortal')}</span>
+              <span className="sm:hidden">{t('nav.hostPortal')}</span>
             </button>
           )}
 
@@ -288,7 +288,7 @@ export const Header: React.FC<HeaderProps> = ({
                   type="button"
                   onClick={handleLogout}
                   className="p-2 sm:px-2.5 sm:py-1.5 rounded-xl bg-slate-900 hover:bg-rose-950/40 text-slate-400 hover:text-rose-400 border border-slate-800 text-xs font-semibold transition"
-                  title="Sign Out"
+                  title={t('nav.signOut')}
                 >
                   <i className="fa-solid fa-arrow-right-from-bracket" />
                 </button>
@@ -300,14 +300,14 @@ export const Header: React.FC<HeaderProps> = ({
                   onClick={openHostAuth}
                   className="hidden sm:inline-block text-xs font-bold text-slate-300 hover:text-white px-2.5 sm:px-3 py-1.5 rounded-lg hover:bg-slate-900 transition"
                 >
-                  Host Sign In
+                  {t('nav.signIn')}
                 </button>
                 <button
                   type="button"
                   onClick={openHostAuth}
                   className="bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-bold text-xs px-2.5 sm:px-3.5 py-1.5 sm:py-2 rounded-xl shadow-md shadow-amber-500/25 transition shrink-0"
                 >
-                  Register Space
+                  {t('nav.listSpace')}
                 </button>
               </div>
             )
@@ -326,7 +326,7 @@ export const Header: React.FC<HeaderProps> = ({
                   type="button"
                   onClick={handleLogout}
                   className="p-2 sm:px-2.5 sm:py-1.5 rounded-xl bg-slate-900 hover:bg-rose-950/40 text-slate-400 hover:text-rose-400 border border-slate-800 text-xs font-semibold transition"
-                  title="Sign Out"
+                  title={t('nav.signOut')}
                 >
                   <i className="fa-solid fa-arrow-right-from-bracket" />
                 </button>
@@ -338,14 +338,14 @@ export const Header: React.FC<HeaderProps> = ({
                   onClick={onOpenAuthModal}
                   className="hidden sm:inline-block text-xs font-bold text-slate-300 hover:text-white px-2.5 sm:px-3 py-1.5 rounded-lg hover:bg-slate-900 transition"
                 >
-                  Seeker Sign In
+                  {t('nav.signIn')}
                 </button>
                 <button
                   type="button"
                   onClick={onOpenAuthModal}
                   className="bg-gradient-to-r from-indigo-600 via-violet-600 to-indigo-700 hover:from-indigo-500 hover:to-violet-500 text-white font-bold text-xs px-2.5 sm:px-3.5 py-1.5 sm:py-2 rounded-xl shadow-md shadow-indigo-600/30 transition shrink-0"
                 >
-                  Student SSO
+                  {t('nav.signUp')}
                 </button>
               </div>
             )

@@ -1,0 +1,706 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+SpaceLoop Complete i18n Suite Generator
+Creates and writes:
+- frontend/src/i18n/types.ts
+- frontend/src/i18n/locales/en.ts
+- frontend/src/i18n/locales/hi.ts
+- frontend/src/i18n/locales/mr.ts
+- frontend/src/i18n/locales/gar.ts
+- frontend/src/i18n/locales/kfy.ts
+- frontend/src/i18n/locales/jns.ts
+"""
+
+import os
+import json
+
+ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+I18N_DIR = os.path.join(ROOT, 'frontend', 'src', 'i18n')
+LOCALES_DIR = os.path.join(I18N_DIR, 'locales')
+
+TYPES_TS = """/**
+ * SpaceLoop i18n Type Definitions & Canonical Translation Schemas
+ * Full website-wide localization supporting:
+ * - English: en
+ * - हिन्दी (Hindi): hi
+ * - मराठी (Marathi): mr
+ * - गढ़वाली (Garhwali): gar
+ * - कुमाऊँनी (Kumaoni): kfy
+ * - जौनसारी (Jaunsari): jns
+ */
+
+export type SupportedLanguage = 'en' | 'hi' | 'mr' | 'gar' | 'kfy' | 'jns';
+
+export interface LanguageOption {
+  code: SupportedLanguage;
+  name: string;        // Native display name
+  englishName: string; // English name
+  region: string;      // Geographic association
+  badge?: string;
+}
+
+export const SUPPORTED_LANGUAGES: LanguageOption[] = [
+  { code: 'en', name: 'English', englishName: 'English', region: 'Global' },
+  { code: 'hi', name: 'हिन्दी', englishName: 'Hindi', region: 'North & Central India' },
+  { code: 'mr', name: 'मराठी', englishName: 'Marathi', region: 'Maharashtra' },
+  { code: 'gar', name: 'गढ़वाली', englishName: 'Garhwali', region: 'Garhwal, Uttarakhand', badge: 'UK' },
+  { code: 'kfy', name: 'कुमाऊँनी', englishName: 'Kumaoni', region: 'Kumaon, Uttarakhand', badge: 'UK' },
+  { code: 'jns', name: 'जौनसारी', englishName: 'Jaunsari', region: 'Jaunsar-Bawar, Uttarakhand', badge: 'UK' },
+];
+
+export interface TranslationDictionary {
+  common: {
+    brand: string;
+    tagline: string;
+    loading: string;
+    error: string;
+    retry: string;
+    close: string;
+    cancel: string;
+    save: string;
+    apply: string;
+    search: string;
+    viewAll: string;
+    viewDetails: string;
+    viewMore: string;
+    viewLess: string;
+    bookNow: string;
+    confirm: string;
+    edit: string;
+    delete: string;
+    back: string;
+    next: string;
+    done: string;
+    submit: string;
+    reset: string;
+    copy: string;
+    copied: string;
+    share: string;
+    filter: string;
+    clearFilters: string;
+    success: string;
+    warning: string;
+    info: string;
+    yes: string;
+    no: string;
+    ok: string;
+    continue: string;
+    getStarted: string;
+    perHour: string;
+    perMonth: string;
+    perDay: string;
+    sqft: string;
+    seats: string;
+    people: string;
+    km: string;
+    hours: string;
+    mins: string;
+    rating: string;
+    reviews: string;
+    matchScore: string;
+    verified: string;
+    otiVerified: string;
+    freeCancellation: string;
+    instantAccess: string;
+    sec52Protected: string;
+    activeSession: string;
+    pending: string;
+    confirmed: string;
+    completed: string;
+    cancelled: string;
+    refunded: string;
+    popular: string;
+    featured: string;
+    availableNow: string;
+    occupied: string;
+    highYield: string;
+    required: string;
+    optional: string;
+    selectOption: string;
+    all: string;
+    none: string;
+    searchPlaceholder: string;
+    noResults: string;
+    somethingWentWrong: string;
+    networkError: string;
+    today: string;
+    tomorrow: string;
+    yesterday: string;
+    morning: string;
+    afternoon: string;
+    evening: string;
+    night: string;
+  };
+  nav: {
+    explore: string;
+    howItWorks: string;
+    calculator: string;
+    listSpace: string;
+    trustSafety: string;
+    architecture: string;
+    myBookings: string;
+    hostDashboard: string;
+    seekerPortal: string;
+    hostPortal: string;
+    switchToSeeker: string;
+    switchToHost: string;
+    signIn: string;
+    signOut: string;
+    signUp: string;
+    register: string;
+    profile: string;
+    language: string;
+    theme: string;
+    notifications: string;
+    help: string;
+    support: string;
+    settings: string;
+    menu: string;
+    closeMenu: string;
+    activeBookingsBadge: string;
+  };
+  auth: {
+    loginTitle: string;
+    registerTitle: string;
+    hostLoginTitle: string;
+    hostRegisterTitle: string;
+    guestLoginTab: string;
+    hostLoginTab: string;
+    studentLoginTab: string;
+    fullNameLabel: string;
+    fullNamePlaceholder: string;
+    emailLabel: string;
+    emailPlaceholder: string;
+    passwordLabel: string;
+    passwordPlaceholder: string;
+    confirmPasswordLabel: string;
+    phoneLabel: string;
+    roleLabel: string;
+    collegeLabel: string;
+    kycStatusLabel: string;
+    loginBtn: string;
+    registerBtn: string;
+    demoLogin: string;
+    demoSeeker: string;
+    demoHost: string;
+    demoAdmin: string;
+    forgotPassword: string;
+    noAccount: string;
+    haveAccount: string;
+    resendVerification: string;
+    verifyEmailPrompt: string;
+    invalidCredentials: string;
+    emailAlreadyExists: string;
+    passwordMismatch: string;
+    verificationSent: string;
+    sessionExpired: string;
+    logoutSuccess: string;
+  };
+  hero: {
+    networkBadge: string;
+    teamBadge: string;
+    headline: string;
+    highlight: string;
+    subtitle: string;
+    searchPlaceholder: string;
+    findSpaceBtn: string;
+    listSpaceBtn: string;
+    popularTags: string;
+    quickStats: string;
+    instantEscrowBadge: string;
+    zeroHardwareBadge: string;
+    sec52Badge: string;
+    digilockerBadge: string;
+    startingRateLabel: string;
+    discomVerifiedLabel: string;
+    instantLeaseLabel: string;
+    escrowReleaseLabel: string;
+  };
+  landing: {
+    howItWorksBadge: string;
+    howItWorksTitle: string;
+    howItWorksSubtitle: string;
+    step1Title: string;
+    step1Desc: string;
+    step2Title: string;
+    step2Desc: string;
+    step3Title: string;
+    step3Desc: string;
+    step4Title: string;
+    step4Desc: string;
+    step5Title: string;
+    step5Desc: string;
+    step6Title: string;
+    step6Desc: string;
+    featuresTitle: string;
+    featuresSubtitle: string;
+    feature1Title: string;
+    feature1Desc: string;
+    feature2Title: string;
+    feature2Desc: string;
+    feature3Title: string;
+    feature3Desc: string;
+    feature4Title: string;
+    feature4Desc: string;
+    spacesTitle: string;
+    spacesSubtitle: string;
+    deskCategory: string;
+    meetingCategory: string;
+    studioCategory: string;
+    eventCategory: string;
+    storageCategory: string;
+    studyCategory: string;
+    dualAudienceTitle: string;
+    seekerBadge: string;
+    seekerTitle: string;
+    seekerSubtitle: string;
+    seekerBullet1: string;
+    seekerBullet2: string;
+    seekerBullet3: string;
+    seekerBullet4: string;
+    seekerCta: string;
+    hostBadge: string;
+    hostTitle: string;
+    hostSubtitle: string;
+    hostBullet1: string;
+    hostBullet2: string;
+    hostBullet3: string;
+    hostBullet4: string;
+    hostCta: string;
+    trustBadge: string;
+    trustTitle: string;
+    trustSubtitle: string;
+    trustCard1Title: string;
+    trustCard1Desc: string;
+    trustCard2Title: string;
+    trustCard2Desc: string;
+    trustCard3Title: string;
+    trustCard3Desc: string;
+    featuredBadge: string;
+    featuredTitle: string;
+    featuredSubtitle: string;
+    metricsTitle: string;
+    verifiedSpacesCount: string;
+    activeCitiesCount: string;
+    escrowHoldTime: string;
+    tenancyProtectionStat: string;
+    ctaTitle: string;
+    ctaSubtitle: string;
+    ctaSeekerBtn: string;
+    ctaHostBtn: string;
+  };
+  explore: {
+    title: string;
+    subtitle: string;
+    filterAll: string;
+    filterDesk: string;
+    filterMeeting: string;
+    filterStudio: string;
+    filterStorage: string;
+    filterEvent: string;
+    filterStudy: string;
+    priceRange: string;
+    capacity: string;
+    noResults: string;
+    resetFilters: string;
+    foundSpaces: string;
+    searchPlaceholder: string;
+    filterLocation: string;
+    filterCategory: string;
+    filterAmenities: string;
+    filterAvailability: string;
+    sortBy: string;
+    sortRecommended: string;
+    sortPriceLow: string;
+    sortPriceHigh: string;
+    sortRating: string;
+    sortDistance: string;
+    showingSpaces: string;
+    clearAllFilters: string;
+    mapViewToggle: string;
+    listViewToggle: string;
+    noSpacesFoundTitle: string;
+    noSpacesFoundDesc: string;
+    tryBroadeningSearch: string;
+    aiMatchLabel: string;
+    aiMatchSubtitle: string;
+    whyThisMatchesLabel: string;
+  };
+  spaceCard: {
+    perHour: string;
+    otiScore: string;
+    instantBook: string;
+    viewDetails: string;
+    availableNow: string;
+    occupied: string;
+    seatsCount: string;
+    distanceAway: string;
+    topPickBadge: string;
+  };
+  spaceDetail: {
+    backToExplore: string;
+    verifiedBadge: string;
+    otiScoreLabel: string;
+    shareSpace: string;
+    saveSpace: string;
+    aboutSpace: string;
+    spaceType: string;
+    maxCapacity: string;
+    areaSize: string;
+    floorLevel: string;
+    acousticsGrade: string;
+    amenitiesTitle: string;
+    includedAmenities: string;
+    additionalAmenities: string;
+    houseRulesTitle: string;
+    checkInPolicy: string;
+    cancellationPolicy: string;
+    quietHours: string;
+    foodAllowed: string;
+    smokingPolicy: string;
+    hostedBy: string;
+    hostVerified: string;
+    responseTime: string;
+    joinedDate: string;
+    otherSpacesByHost: string;
+    legalNoticeTitle: string;
+    legalNoticeDesc: string;
+    readSec52: string;
+    bookThisSpace: string;
+    selectDateTime: string;
+    durationHours: string;
+    hourlyRate: string;
+    subtotal: string;
+    serviceFee: string;
+    escrowHold: string;
+    escrowHoldInfo: string;
+    totalAmount: string;
+    instantReserveBtn: string;
+    needLoginToBook: string;
+    locationTitle: string;
+    nearbyMetro: string;
+    zeroHardwareTitle: string;
+    zeroHardwareDesc: string;
+  };
+  booking: {
+    checkoutTitle: string;
+    reservationSummary: string;
+    timeSlot: string;
+    duration: string;
+    guestCount: string;
+    pricingBreakdown: string;
+    roomRate: string;
+    refundableDepositNotice: string;
+    upiPayOption: string;
+    cardPayOption: string;
+    payAndConfirmBtn: string;
+    processingPayment: string;
+    bookingConfirmedTitle: string;
+    bookingConfirmedSubtitle: string;
+    bookingIdLabel: string;
+    accessPassReady: string;
+    viewPassBtn: string;
+    goToDashboardBtn: string;
+    cancelBookingTitle: string;
+    cancelConfirmationPrompt: string;
+    refundPolicyNotice: string;
+    confirmCancelBtn: string;
+    keepBookingBtn: string;
+  };
+  dashboard: {
+    title: string;
+    subtitle: string;
+    activeSessionsTab: string;
+    upcomingTab: string;
+    pastBookingsTab: string;
+    savedSpacesTab: string;
+    receiptsTab: string;
+    bookingId: string;
+    timeRemaining: string;
+    statusLabel: string;
+    openDoorPass: string;
+    viewReceipt: string;
+    directionsBtn: string;
+    cancelBooking: string;
+    digitalDoorPassTitle: string;
+    gpsGeofenceNotice: string;
+    pinCodeLabel: string;
+    scanQrAtDoor: string;
+    sessionStart: string;
+    sessionEnd: string;
+    rulesReminder: string;
+    noActiveSessions: string;
+    noUpcomingBookings: string;
+    noPastBookings: string;
+    exploreSpacesBtn: string;
+  };
+  session: {
+    liveSessionTitle: string;
+    inProgressStatus: string;
+    timeRemainingLabel: string;
+    geofenceDistance: string;
+    unlockDoorBtn: string;
+    doorUnlockedToast: string;
+    wifiDetails: string;
+    reportIssueBtn: string;
+    extendSessionBtn: string;
+    checkoutTitle: string;
+    electricalOffCheck: string;
+    confirmPowerOff: string;
+    roomConditionCheck: string;
+    completeCheckoutBtn: string;
+    escrowRefundTriggered: string;
+    refundNoticeToast: string;
+    rateYourSession: string;
+    cleanlinessLabel: string;
+    accuracyLabel: string;
+    submitReviewBtn: string;
+  };
+  host: {
+    portalTitle: string;
+    overview: string;
+    mySpaces: string;
+    createSpace: string;
+    bookings: string;
+    calendar: string;
+    liveSessions: string;
+    verification: string;
+    accessSecurity: string;
+    conditionEscrow: string;
+    analytics: string;
+    activityAudit: string;
+    settings: string;
+    notifications: string;
+    hostConsoleCategory: string;
+    overviewTitle: string;
+    overviewSubtitle: string;
+    spacesGroup: string;
+    operationsGroup: string;
+    verificationGroup: string;
+    settlementGroup: string;
+    insightsGroup: string;
+    systemGroup: string;
+    hostOsMode: string;
+    hostOsDesc: string;
+    switchBackSeeker: string;
+    monthlyEarnings: string;
+    totalBookings: string;
+    occupancyRate: string;
+    activeLiveSessions: string;
+    recentBookingsTitle: string;
+    payoutAccountStatus: string;
+    quickActions: string;
+    addNewSpaceBtn: string;
+    spaceStatus: string;
+    activeListings: string;
+    draftListings: string;
+    editListingBtn: string;
+    viewPublicPage: string;
+    step1BasicInfo: string;
+    step2PricingSpecs: string;
+    step3AmenitiesRules: string;
+    step4PhotosKyc: string;
+    titleLabel: string;
+    titlePlaceholder: string;
+    descLabel: string;
+    descPlaceholder: string;
+    categoryLabel: string;
+    capacityLabel: string;
+    hourlyRateLabel: string;
+    monthlyRateLabel: string;
+    locationAddressLabel: string;
+    photosUploadPrompt: string;
+    aiScanPrompt: string;
+    submitForReviewBtn: string;
+    draftSaved: string;
+    allBookingsTitle: string;
+    filterByStatus: string;
+    calendarViewTitle: string;
+    guestName: string;
+    bookingTime: string;
+    earningsAmount: string;
+    actionApprove: string;
+    actionDecline: string;
+    activeGuestsCount: string;
+    smartLockStatus: string;
+    doorPassLogs: string;
+    temporaryPinStatus: string;
+    overrideUnlock: string;
+    escrowManagementTitle: string;
+    heldDeposits: string;
+    releasedDeposits: string;
+    disputeCount: string;
+    inspectRoomCondition: string;
+    releaseDepositBtn: string;
+    raiseDisputeBtn: string;
+    totalRevenue: string;
+    averageHourlyRate: string;
+    repeatGuestsRate: string;
+    revenueChartTitle: string;
+    topPerformingHours: string;
+    payoutUpiLabel: string;
+    payoutUpiPlaceholder: string;
+    instantPayoutToggle: string;
+    taxIdLabel: string;
+    notificationPreferences: string;
+    saveSettingsBtn: string;
+    noSpacesTitle: string;
+    noSpacesDesc: string;
+    noBookingsTitle: string;
+    noBookingsDesc: string;
+    noLiveSessionsTitle: string;
+    noLiveSessionsDesc: string;
+    noNotificationsTitle: string;
+    noNotificationsDesc: string;
+  };
+  architect: {
+    badge: string;
+    heroTitle: string;
+    heroQuote: string;
+    heroDesc: string;
+    telemetryProtocol: string;
+    telemetryProtocolVal: string;
+    telemetryAi: string;
+    telemetryAiVal: string;
+    telemetrySovereignty: string;
+    telemetrySovereigntyVal: string;
+    telemetryEscrow: string;
+    telemetryEscrowVal: string;
+    coreArchitectsTitle: string;
+    inspectSpecs: string;
+    domainLabel: string;
+    email: string;
+    linkedIn: string;
+    subsystemSpec: string;
+    slot: string;
+    primarySubsystem: string;
+    archCapabilities: string;
+    techStack: string;
+    sendDirectEmail: string;
+    linkedInProfile: string;
+    closeInspector: string;
+    finaleBadge: string;
+    finaleTitle: string;
+    finaleDesc: string;
+    exploreMarketplace: string;
+    returnHome: string;
+  };
+  calculator: {
+    title: string;
+    subtitle: string;
+    badge: string;
+    spaceTypeLabel: string;
+    squareFeetLabel: string;
+    locationLabel: string;
+    hoursAvailableLabel: string;
+    amenitiesBonus: string;
+    estimatedMonthlyYield: string;
+    estimatedAnnualYield: string;
+    occupancyAssumption: string;
+    platformFeeNotice: string;
+    startListingCTA: string;
+  };
+  verify: {
+    title: string;
+    subtitle: string;
+    studentKycCard: string;
+    hostKycCard: string;
+    aadhaarVerification: string;
+    digilockerConsent: string;
+    collegeIdUpload: string;
+    bescomBillVerify: string;
+    upiPennyDropVerify: string;
+    verifyNowBtn: string;
+    verifiedSuccessBadge: string;
+    pendingReviewBadge: string;
+  };
+  howItWorks: {
+    title: string;
+    subtitle: string;
+    step1: string;
+    step1Title: string;
+    step1Desc: string;
+    step2: string;
+    step2Title: string;
+    step2Desc: string;
+    step3: string;
+    step3Title: string;
+    step3Desc: string;
+    step4: string;
+    step4Title: string;
+    step4Desc: string;
+    instantUpiGuarantee: string;
+    sec52Guarantee: string;
+    zeroHardwareGuarantee: string;
+    getStartedCTA: string;
+  };
+  trustSafety: {
+    title: string;
+    subtitle: string;
+    sec52Title: string;
+    sec52Desc: string;
+    noAdversePossessionTitle: string;
+    noAdversePossessionDesc: string;
+    disputeProtocolTitle: string;
+    disputeProtocolDesc: string;
+    escrowHoldTitle: string;
+    escrowHoldDesc: string;
+    emergencySupport: string;
+  };
+  architecture: {
+    title: string;
+    subtitle: string;
+    indiaStackTitle: string;
+    indiaStackDesc: string;
+    securityTitle: string;
+    securityDesc: string;
+    p2pWorkflowTitle: string;
+    p2pWorkflowDesc: string;
+    telemetryTitle: string;
+    telemetryDesc: string;
+  };
+  verifyEmail: {
+    title: string;
+    subtitle: string;
+    checkingStatus: string;
+    verifiedSuccessTitle: string;
+    verifiedSuccessDesc: string;
+    continueToLoginBtn: string;
+    invalidLinkTitle: string;
+    invalidLinkDesc: string;
+    resendEmailBtn: string;
+  };
+  loopbot: {
+    title: string;
+    status: string;
+    initialGreeting: string;
+    placeholder: string;
+    send: string;
+    languageSelect: string;
+    autoDetect: string;
+    detectedLanguage: string;
+    clearHistory: string;
+    quickPrompts: {
+      findDesk: string;
+      howMuch: string;
+      section52: string;
+      earnMoney: string;
+    };
+  };
+  footer: {
+    description: string;
+    quickLinks: string;
+    legal: string;
+    terms: string;
+    privacy: string;
+    escrowPolicy: string;
+    rightsReserved: string;
+  };
+}
+"""
+
+with open(os.path.join(I18N_DIR, 'types.ts'), 'w', encoding='utf-8') as f:
+    f.write(TYPES_TS)
+
+print("types.ts written successfully.")

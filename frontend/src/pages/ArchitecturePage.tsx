@@ -16,27 +16,12 @@ import { TeamMember } from './architect/types';
 import { ArchitectLoader } from './architect/ArchitectLoader';
 import { RevealHeading } from './architect/RevealHeading';
 import { ArchitectCard } from './architect/ArchitectCard';
+import { useI18n } from '../i18n/I18nContext';
 import './ArchitecturePage.css';
-
-/**
- * ============================================================================
- * SPACELOOP ARCHITECT PAGE — ANTIGRAVITY-INSPIRED PRODUCTION EXPERIENCE
- * ----------------------------------------------------------------------------
- * 1. Page Entry + Entrance Loader (plays fresh on every browser refresh F5/Ctrl+R)
- * 2. SpaceLoop Wordmark with branded light sweep dissolving into Hero
- * 3. Letter-by-Letter Progressive Heading Reveal (word-preserving wrapping)
- * 4. Dual-layer Colourful Reveal Scanner Bar synchronized with typography
- * 5. Performant Pointer Tracking (CSS custom properties & requestAnimationFrame)
- * 6. Multi-tiered Subtle Scroll & Mouse Parallax with coordinate marks
- * 7. 4 Real Architect Profiles with working LinkedIn & Email mailto links
- * 8. Interactive Glassmorphic Profile Surfaces with dampened 3D tilt
- * 9. Deep-Dive Full Subsystem Architecture Inspection Glass Modal
- * 10. Dual-Theme Support: Ocean Breeze (#0B3D91, #3BA7F2) & Midnight Neon (#020617)
- * ============================================================================
- */
 
 export const ArchitecturePage: React.FC = () => {
   const navigate = useNavigate();
+  const { t } = useI18n();
   const { theme } = useTheme();
   const isLight = theme === 'light';
 
@@ -156,11 +141,11 @@ export const ArchitecturePage: React.FC = () => {
               type="button"
               onClick={() => navigate('/')}
               className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white hover:bg-[#F0F8FF] text-slate-700 hover:text-[#0B3D91] border border-[#D0E6F7] dark:bg-slate-800/90 dark:hover:bg-slate-750 text-xs font-semibold dark:text-slate-300 dark:hover:text-white dark:border-white/10 transition shadow-2xs focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-[#0B3D91]"
-              title="Return to SpaceLoop Home"
-              aria-label="Return to SpaceLoop Home"
+              title={t('spaceDetail.backToExplore')}
+              aria-label={t('spaceDetail.backToExplore')}
             >
               <ArrowLeft className="w-3.5 h-3.5 text-[#0B3D91] dark:text-indigo-400" />
-              <span>Return to SpaceLoop</span>
+              <span>{t('spaceDetail.backToExplore')}</span>
             </button>
           </div>
 
@@ -169,14 +154,14 @@ export const ArchitecturePage: React.FC = () => {
               type="button"
               onClick={() => navigate('/explore')}
               className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#0B3D91]/10 hover:bg-[#0B3D91]/20 text-[#0B3D91] border border-[#0B3D91]/30 dark:bg-indigo-500/15 dark:hover:bg-indigo-500/25 dark:text-indigo-300 dark:border-indigo-500/30 text-xs font-semibold transition focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-[#0B3D91]"
-              title="Explore SpaceLoop Marketplace"
+              title={t('nav.explore')}
             >
               <Compass className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">Explore Spaces</span>
+              <span className="hidden sm:inline">{t('nav.explore')}</span>
             </button>
 
             <span className="text-[10px] uppercase font-mono font-bold tracking-widest px-2.5 py-1 rounded-full bg-white dark:bg-slate-800/90 text-[#0B3D91] dark:text-slate-300 border border-[#D0E6F7] dark:border-white/10 shadow-2xs">
-              4 CORE ARCHITECTS
+              {t('architect.badge')}
             </span>
           </div>
         </div>
@@ -209,7 +194,7 @@ export const ArchitecturePage: React.FC = () => {
             {/* Letter-by-Letter Hero Heading with Colourful Dual-Layer Reveal Scanner Bar */}
             <div className="mb-4">
               <RevealHeading
-                text="Meet the Architects Behind SpaceLoop"
+                text={t('architect.heroTitle')}
                 as="h1"
                 className="text-4xl sm:text-6xl lg:text-7xl font-extrabold tracking-tight text-slate-900 dark:text-white leading-[1.1] font-display"
                 delay={loaderComplete ? 50 : 1900}
@@ -222,30 +207,30 @@ export const ArchitecturePage: React.FC = () => {
 
             {/* Supporting Content */}
             <p className="mt-4 text-lg sm:text-2xl text-slate-800 dark:text-slate-100 font-display italic font-semibold tracking-tight max-w-3xl leading-relaxed">
-              “Four minds. One mission. Making every suitable space work smarter.”
+              {t('architect.heroQuote')}
             </p>
 
             <p className="mt-3 text-sm sm:text-base text-slate-600 dark:text-slate-300 max-w-2xl leading-relaxed font-normal">
-              Introducing the multidisciplinary four-person engineering team responsible for designing, building, and securing India’s premier peer-to-peer physical space marketplace.
+              {t('architect.heroDesc')}
             </p>
 
             {/* Architectural Telemetry Matrix */}
             <div className="mt-10 grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 w-full max-w-3xl">
               <div className="p-3.5 rounded-2xl bg-white/80 dark:bg-slate-900/50 border border-[#D0E6F7] dark:border-white/[0.08] backdrop-blur-md shadow-2xs">
-                <div className="text-[10px] font-mono text-slate-500 dark:text-slate-400 uppercase tracking-widest">PROTOCOL</div>
-                <div className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white mt-1">Section 52 Indian Easements</div>
+                <div className="text-[10px] font-mono text-slate-500 dark:text-slate-400 uppercase tracking-widest">{t('architect.telemetryProtocol')}</div>
+                <div className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white mt-1">{t('architect.telemetryProtocolVal')}</div>
               </div>
               <div className="p-3.5 rounded-2xl bg-white/80 dark:bg-slate-900/50 border border-[#D0E6F7] dark:border-white/[0.08] backdrop-blur-md shadow-2xs">
-                <div className="text-[10px] font-mono text-slate-500 dark:text-slate-400 uppercase tracking-widest">AI ROUTING</div>
-                <div className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white mt-1">Groq 120B + Gemini Failover</div>
+                <div className="text-[10px] font-mono text-slate-500 dark:text-slate-400 uppercase tracking-widest">{t('architect.telemetryAi')}</div>
+                <div className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white mt-1">{t('architect.telemetryAiVal')}</div>
               </div>
               <div className="p-3.5 rounded-2xl bg-white/80 dark:bg-slate-900/50 border border-[#D0E6F7] dark:border-white/[0.08] backdrop-blur-md shadow-2xs">
-                <div className="text-[10px] font-mono text-slate-500 dark:text-slate-400 uppercase tracking-widest">SOVEREIGNTY</div>
-                <div className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white mt-1">DPDP Act 2023 Tokenized</div>
+                <div className="text-[10px] font-mono text-slate-500 dark:text-slate-400 uppercase tracking-widest">{t('architect.telemetrySovereignty')}</div>
+                <div className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white mt-1">{t('architect.telemetrySovereigntyVal')}</div>
               </div>
               <div className="p-3.5 rounded-2xl bg-white/80 dark:bg-slate-900/50 border border-[#D0E6F7] dark:border-white/[0.08] backdrop-blur-md shadow-2xs">
-                <div className="text-[10px] font-mono text-slate-500 dark:text-slate-400 uppercase tracking-widest">ESCROW HOLD</div>
-                <div className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white mt-1">₹100 NPCI Micro-Escrow</div>
+                <div className="text-[10px] font-mono text-slate-500 dark:text-slate-400 uppercase tracking-widest">{t('architect.telemetryEscrow')}</div>
+                <div className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white mt-1">{t('architect.telemetryEscrowVal')}</div>
               </div>
             </div>
           </div>
@@ -263,7 +248,7 @@ export const ArchitecturePage: React.FC = () => {
           {/* Section Header with Reusable RevealHeading (Section 10 & 16) */}
           <div className="mb-12 sm:mb-16">
             <RevealHeading
-              text="Core System Architects"
+              text={t('architect.coreArchitectsTitle')}
               as="h2"
               className="text-2xl sm:text-4xl font-extrabold text-slate-900 dark:text-white tracking-tight font-display"
               triggerOnScroll={true}
@@ -320,10 +305,10 @@ export const ArchitecturePage: React.FC = () => {
             <div className="flex items-center justify-between gap-4 pb-6 border-b border-[#D0E6F7] dark:border-white/10 mb-6">
               <div className="flex items-center gap-2.5">
                 <span className="text-[10px] font-mono font-bold uppercase px-2.5 py-1 rounded-md bg-[#0B3D91]/10 text-[#0B3D91] dark:bg-cyan-500/10 dark:text-cyan-300 border border-[#0B3D91]/20 dark:border-cyan-500/30">
-                  SLOT // {activeModalMember.badgeNumber}
+                  {t('architect.slot')} // {activeModalMember.badgeNumber}
                 </span>
                 <span className="text-xs font-mono text-slate-500 dark:text-slate-400">
-                  SUBSYSTEM ARCHITECTURE SPEC
+                  {t('architect.subsystemSpec')}
                 </span>
               </div>
               <button
@@ -354,7 +339,7 @@ export const ArchitecturePage: React.FC = () => {
                   {activeModalMember.role}
                 </div>
                 <div className="text-xs font-mono text-slate-500 dark:text-slate-400 mt-1">
-                  Focus: {activeModalMember.domain}
+                  {t('architect.domainLabel')} {activeModalMember.domain}
                 </div>
                 <p className="mt-3 text-sm text-slate-700 dark:text-slate-300 leading-relaxed">
                   {activeModalMember.intro}
@@ -371,7 +356,7 @@ export const ArchitecturePage: React.FC = () => {
                   </span>
                   <div>
                     <div className="text-[10px] font-mono text-slate-500 dark:text-slate-400 uppercase tracking-widest">
-                      PRIMARY SUBSYSTEM
+                      {t('architect.primarySubsystem')}
                     </div>
                     <div className="text-base font-bold text-slate-900 dark:text-white">
                       {activeModalMember.subsystem.title}
@@ -384,7 +369,7 @@ export const ArchitecturePage: React.FC = () => {
               </div>
 
               <div className="text-xs font-mono font-bold uppercase text-slate-600 dark:text-slate-400 mb-2">
-                ARCHITECTURAL CAPABILITIES:
+                {t('architect.archCapabilities')}
               </div>
               <ul className="space-y-2 mb-5">
                 {activeModalMember.subsystem.highlights.map((h, i) => (
@@ -396,7 +381,7 @@ export const ArchitecturePage: React.FC = () => {
               </ul>
 
               <div className="text-xs font-mono font-bold uppercase text-slate-600 dark:text-slate-400 mb-2">
-                TECHNOLOGY STACK:
+                {t('architect.techStack')}
               </div>
               <div className="flex flex-wrap gap-2">
                 {activeModalMember.subsystem.techStack.map((tech, i) => (
@@ -418,7 +403,7 @@ export const ArchitecturePage: React.FC = () => {
                   className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#0B3D91] hover:bg-[#082C6B] text-white dark:bg-indigo-600 dark:hover:bg-indigo-500 text-xs font-semibold transition shadow-md focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-[#0B3D91]"
                 >
                   <Mail className="w-4 h-4" />
-                  <span>Send Direct Email</span>
+                  <span>{t('architect.sendDirectEmail')}</span>
                 </a>
 
                 <a
@@ -428,7 +413,7 @@ export const ArchitecturePage: React.FC = () => {
                   className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white hover:bg-slate-50 text-slate-800 border border-[#D0E6F7] hover:border-[#0A66C2] dark:bg-slate-800 dark:hover:bg-slate-700 dark:border-white/10 dark:text-white text-xs font-semibold transition shadow-2xs focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-[#0B3D91]"
                 >
                   <Linkedin className="w-4 h-4 text-[#0A66C2]" />
-                  <span>LinkedIn Profile</span>
+                  <span>{t('architect.linkedInProfile')}</span>
                   <ExternalLink className="w-3 h-3 text-slate-400" />
                 </a>
               </div>
@@ -438,7 +423,7 @@ export const ArchitecturePage: React.FC = () => {
                 onClick={() => setActiveModalMember(null)}
                 className="px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-xs font-semibold transition"
               >
-                Close Inspector
+                {t('architect.closeInspector')}
               </button>
             </div>
           </div>
@@ -452,12 +437,12 @@ export const ArchitecturePage: React.FC = () => {
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center relative z-10">
           <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#0B3D91]/10 border border-[#0B3D91]/25 text-[#0B3D91] dark:bg-cyan-500/10 dark:border-cyan-500/25 dark:text-cyan-300 text-xs font-mono font-bold mb-4 shadow-2xs">
             <Activity className="w-3.5 h-3.5" />
-            <span className="uppercase tracking-wider">HACKATHON GRAND FINALE // PRODUCTION READY</span>
+            <span className="uppercase tracking-wider">{t('architect.finaleBadge')}</span>
           </div>
 
           <div className="mb-2">
             <RevealHeading
-              text="Building the Future of Shared Physical Spaces"
+              text={t('architect.finaleTitle')}
               as="h2"
               className="text-3xl sm:text-4xl font-extrabold text-slate-900 dark:text-white tracking-tight font-display"
               triggerOnScroll={true}
@@ -468,7 +453,7 @@ export const ArchitecturePage: React.FC = () => {
           </div>
 
           <p className="mt-4 text-sm sm:text-base text-slate-600 dark:text-slate-300 max-w-2xl mx-auto leading-relaxed">
-            SpaceLoop unlocks idle physical capacity across urban India through zero-hardware smart access, automated micro-leases under Section 52, and sovereign identity verification.
+            {t('architect.finaleDesc')}
           </p>
 
           <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-4">
@@ -478,7 +463,7 @@ export const ArchitecturePage: React.FC = () => {
               className="w-full sm:w-auto px-8 py-3.5 rounded-xl bg-[#0B3D91] hover:bg-[#072C6B] dark:bg-indigo-600 dark:hover:bg-indigo-500 text-white font-bold text-xs shadow-lg shadow-[#0B3D91]/25 dark:shadow-indigo-600/30 transition flex items-center justify-center gap-2 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-[#0B3D91]"
             >
               <Compass className="w-4 h-4" />
-              <span>Explore Marketplace</span>
+              <span>{t('architect.exploreMarketplace')}</span>
             </button>
 
             <button
@@ -487,7 +472,7 @@ export const ArchitecturePage: React.FC = () => {
               className="w-full sm:w-auto px-8 py-3.5 rounded-xl bg-white hover:bg-[#F0F8FF] text-slate-800 hover:text-[#0B3D91] border border-[#D0E6F7] dark:bg-slate-900 dark:hover:bg-slate-800 dark:text-slate-200 dark:border-white/10 font-bold text-xs transition shadow-2xs flex items-center justify-center gap-2 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-[#0B3D91]"
             >
               <ArrowLeft className="w-4 h-4" />
-              <span>Return to Home</span>
+              <span>{t('architect.returnHome')}</span>
             </button>
           </div>
         </div>

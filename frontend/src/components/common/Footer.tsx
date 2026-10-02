@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
-import { View, Text, Pressable } from 'react-native';
 import { useNavigate, useLocation } from 'react-router-dom';
+import { useTranslation } from '../../i18n';
 
 export const Footer: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
+  const { t } = useTranslation();
   const [legalModalType, setLegalModalType] = useState<'privacy' | 'terms' | 'easements' | null>(null);
 
   const handleNav = (targetPath: string) => {
@@ -17,16 +18,16 @@ export const Footer: React.FC = () => {
 
   const legalContent = {
     privacy: {
-      title: 'Privacy Policy & DPDP Act (2023) Compliance',
-      body: 'SpaceLoop processes user data in strict adherence to the Digital Personal Data Protection (DPDP) Act, 2023. User identity verification through DigiLocker utilizes ephemeral tokenization—zero plaintext Aadhaar or government ID numbers are stored in platform databases. Geolocation telemetry is utilized exclusively at the instant of access validation (50m geofence handshake) and checkout verification, with zero background tracking outside active micro-lease windows.',
+      title: t('trustSafety.title'),
+      body: t('trustSafety.subtitle'),
     },
     terms: {
-      title: 'Terms of Service & Platform Governance',
-      body: 'All platform transactions constitute short-duration revocable micro-leases. Seekers and Hosts agree to punctuality benchmarks (on-time checkout) and premises condition preservation. A mandatory ₹100 UPI escrow deposit is reserved at booking creation and released automatically upon verified checkout handshake without property damage or overstay violations.',
+      title: t('footer.terms'),
+      body: t('trustSafety.sec52Desc'),
     },
     easements: {
-      title: 'Indian Easements Act, 1882 (Section 52)',
-      body: 'Every booking generated on SpaceLoop operates strictly as a revocable license under Section 52 of the Indian Easements Act, 1882. The booking does NOT create a tenancy, sub-tenancy, or leasehold interest. The host retains full legal possession, control, and dominion over the licensed premises at all times. The guest is deemed a temporary licensee permitted to occupy the specific space exclusively for the booked hourly slot.',
+      title: t('trustSafety.sec52Title'),
+      body: t('trustSafety.sec52Desc'),
     },
   };
 
@@ -41,23 +42,23 @@ export const Footer: React.FC = () => {
                 <div className="w-8 h-8 rounded-xl bg-indigo-600 flex items-center justify-center text-white text-sm shadow-md shadow-indigo-600/30">
                   <i className="fa-solid fa-infinity" />
                 </div>
-                <span className="text-xl font-extrabold text-white tracking-tight">SpaceLoop</span>
+                <span className="text-xl font-extrabold text-white tracking-tight">{t('common.brand')}</span>
               </div>
               <p className="text-sm text-slate-200 font-semibold italic">
                 &ldquo;Work &bull; Create &bull; Meet &bull; Build &bull; Learn &bull; Host &bull; Grow&rdquo;
               </p>
               <p className="text-xs text-slate-400 max-w-sm leading-relaxed">
-                India's premier AI-powered micro-leasing platform connecting creators, remote workers, teams, and property owners with verified workspaces, meeting suites, studios, and workshops.
+                {t('footer.description')}
               </p>
               <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-semibold">
                 <i className="fa-solid fa-shield-halved text-[11px]" />
-                <span>SpaceLoop Verified &bull; Zero-Hardware India Stack Protocol</span>
+                <span>{t('common.verified')} &bull; {t('common.sec52Protected')}</span>
               </div>
             </div>
 
             {/* Navigation (4 cols) */}
             <div className="md:col-span-4">
-              <h4 className="text-xs font-bold uppercase tracking-wider text-slate-300 mb-3.5">Navigation</h4>
+              <h4 className="text-xs font-bold uppercase tracking-wider text-slate-300 mb-3.5">{t('footer.quickLinks')}</h4>
               <ul className="grid grid-cols-2 gap-2 text-xs font-medium text-slate-400">
                 <li>
                   <button
@@ -65,7 +66,7 @@ export const Footer: React.FC = () => {
                     onClick={() => handleNav('/explore')}
                     className="hover:text-white hover:underline transition flex items-center gap-1.5"
                   >
-                    <i className="fa-solid fa-compass text-slate-500 text-[10px]" /> Explore
+                    <i className="fa-solid fa-compass text-slate-500 text-[10px]" /> {t('nav.explore')}
                   </button>
                 </li>
                 <li>
@@ -74,7 +75,7 @@ export const Footer: React.FC = () => {
                     onClick={() => handleNav('/list-space')}
                     className="hover:text-white hover:underline transition flex items-center gap-1.5"
                   >
-                    <i className="fa-solid fa-plus text-slate-500 text-[10px]" /> Host
+                    <i className="fa-solid fa-plus text-slate-500 text-[10px]" /> {t('nav.listSpace')}
                   </button>
                 </li>
                 <li>
@@ -83,7 +84,7 @@ export const Footer: React.FC = () => {
                     onClick={() => handleNav('/how-it-works')}
                     className="hover:text-white hover:underline transition flex items-center gap-1.5"
                   >
-                    <i className="fa-solid fa-circle-question text-slate-500 text-[10px]" /> How It Works
+                    <i className="fa-solid fa-circle-question text-slate-500 text-[10px]" /> {t('nav.howItWorks')}
                   </button>
                 </li>
                 <li>
@@ -92,7 +93,7 @@ export const Footer: React.FC = () => {
                     onClick={() => handleNav('/verify')}
                     className="hover:text-white hover:underline transition flex items-center gap-1.5"
                   >
-                    <i className="fa-solid fa-shield-check text-slate-500 text-[10px]" /> Safety
+                    <i className="fa-solid fa-shield-check text-slate-500 text-[10px]" /> {t('nav.trustSafety')}
                   </button>
                 </li>
                 <li>
@@ -101,7 +102,7 @@ export const Footer: React.FC = () => {
                     onClick={() => handleNav('/how-it-works')}
                     className="hover:text-white hover:underline transition flex items-center gap-1.5"
                   >
-                    <i className="fa-solid fa-comments text-slate-500 text-[10px]" /> Help
+                    <i className="fa-solid fa-comments text-slate-500 text-[10px]" /> {t('nav.help')}
                   </button>
                 </li>
                 <li>
@@ -110,7 +111,7 @@ export const Footer: React.FC = () => {
                     onClick={() => handleNav('/calculator')}
                     className="hover:text-white hover:underline transition flex items-center gap-1.5"
                   >
-                    <i className="fa-solid fa-calculator text-slate-500 text-[10px]" /> Calculator
+                    <i className="fa-solid fa-calculator text-slate-500 text-[10px]" /> {t('nav.calculator')}
                   </button>
                 </li>
                 <li>
@@ -119,7 +120,7 @@ export const Footer: React.FC = () => {
                     onClick={() => handleNav('/architecture')}
                     className="hover:text-white hover:underline transition flex items-center gap-1.5 text-indigo-300 font-semibold"
                   >
-                    <i className="fa-solid fa-cubes text-indigo-400 text-[10px]" /> Architecture & Team
+                    <i className="fa-solid fa-cubes text-indigo-400 text-[10px]" /> {t('nav.architecture')}
                   </button>
                 </li>
               </ul>
@@ -127,7 +128,7 @@ export const Footer: React.FC = () => {
 
             {/* Legal (3 cols) */}
             <div className="md:col-span-3">
-              <h4 className="text-xs font-bold uppercase tracking-wider text-slate-300 mb-3.5">Legal</h4>
+              <h4 className="text-xs font-bold uppercase tracking-wider text-slate-300 mb-3.5">{t('footer.legal')}</h4>
               <ul className="space-y-2 text-xs font-medium text-slate-400">
                 <li>
                   <button
@@ -135,7 +136,7 @@ export const Footer: React.FC = () => {
                     onClick={() => setLegalModalType('privacy')}
                     className="hover:text-white hover:underline transition flex items-center gap-1.5"
                   >
-                    <i className="fa-solid fa-user-shield text-slate-500 text-[10px]" /> Privacy Policy
+                    <i className="fa-solid fa-user-shield text-slate-500 text-[10px]" /> {t('footer.privacy')}
                   </button>
                 </li>
                 <li>
@@ -144,7 +145,7 @@ export const Footer: React.FC = () => {
                     onClick={() => setLegalModalType('terms')}
                     className="hover:text-white hover:underline transition flex items-center gap-1.5"
                   >
-                    <i className="fa-solid fa-file-contract text-slate-500 text-[10px]" /> Terms of Service
+                    <i className="fa-solid fa-file-contract text-slate-500 text-[10px]" /> {t('footer.terms')}
                   </button>
                 </li>
                 <li>
@@ -153,7 +154,7 @@ export const Footer: React.FC = () => {
                     onClick={() => setLegalModalType('easements')}
                     className="hover:text-white hover:underline transition flex items-center gap-1.5"
                   >
-                    <i className="fa-solid fa-scale-balanced text-slate-500 text-[10px]" /> Indian Easements Act, 1882
+                    <i className="fa-solid fa-scale-balanced text-slate-500 text-[10px]" /> {t('trustSafety.sec52Title')}
                   </button>
                 </li>
               </ul>
@@ -163,19 +164,19 @@ export const Footer: React.FC = () => {
           {/* Bottom Bar */}
           <div className="pt-8 border-t border-slate-900 flex flex-col sm:flex-row items-center justify-between text-xs text-slate-500 gap-4">
             <div className="flex items-center gap-3">
-              <p>&copy; 2026 SpaceLoop. All rights reserved.</p>
+              <p>&copy; 2026 {t('common.brand')}. {t('footer.rightsReserved')}</p>
             </div>
             <div className="flex items-center gap-3 text-slate-400 flex-wrap justify-center">
               <span className="flex items-center gap-1">
-                <i className="fa-solid fa-shield-halved text-emerald-400" /> ₹100 UPI Escrow
+                <i className="fa-solid fa-shield-halved text-emerald-400" /> {t('hero.instantEscrowBadge')}
               </span>
               <span>&bull;</span>
               <span className="flex items-center gap-1">
-                <i className="fa-solid fa-robot text-indigo-400" /> AI Condition Delta
+                <i className="fa-solid fa-robot text-indigo-400" /> {t('landing.feature4Title')}
               </span>
               <span>&bull;</span>
               <span className="flex items-center gap-1">
-                <i className="fa-solid fa-location-crosshairs text-amber-400" /> 50m Geofence Gate
+                <i className="fa-solid fa-location-crosshairs text-amber-400" /> {t('hero.zeroHardwareBadge')}
               </span>
             </div>
           </div>
@@ -208,7 +209,7 @@ export const Footer: React.FC = () => {
                 onClick={() => setLegalModalType(null)}
                 className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-white text-xs font-semibold transition"
               >
-                Close
+                {t('common.close')}
               </button>
             </div>
           </div>

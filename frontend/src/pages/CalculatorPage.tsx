@@ -2,8 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, Pressable, TextInput } from 'react-native';
 import { estimateRevenue } from '../services/calculator';
 import { CalculatorEstimate } from '../types';
+import { useTranslation } from '../i18n';
 
 export const CalculatorPage: React.FC = () => {
+  const { t, formatCurrency } = useTranslation();
   const [spaceType, setSpaceType] = useState('Study Pod');
   const [sqft, setSqft] = useState('140');
   const [city, setCity] = useState('Pune');
@@ -69,14 +71,14 @@ export const CalculatorPage: React.FC = () => {
         <View className="max-w-4xl mx-auto">
           <View className="inline-flex flex-row items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 mb-3 self-center">
             <Text className="text-xs font-bold text-emerald-300">
-              📊 Dynamic Host Earnings Engine
+              📊 {t('calculator.badge')}
             </Text>
           </View>
           <Text className="text-3xl sm:text-4xl font-black text-white mb-2">
-            Calculate Your Idle Property's Value
+            {t('calculator.title')}
           </Text>
           <Text className="text-sm text-slate-400 max-w-xl mx-auto">
-            Discover how much extra monthly income your empty room, meeting suite, workshop, or studio can generate.
+            {t('calculator.subtitle')}
           </Text>
         </View>
       </View>
@@ -85,10 +87,10 @@ export const CalculatorPage: React.FC = () => {
         <View className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {/* Inputs */}
           <View className="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-4 floating-container">
-            <Text className="text-base font-bold text-white mb-2">Space Specifications</Text>
+            <Text className="text-base font-bold text-white mb-2">{t('calculator.spaceTypeLabel')}</Text>
 
             <View>
-              <Text className="text-xs font-medium text-slate-300 mb-1.5">Category</Text>
+              <Text className="text-xs font-medium text-slate-300 mb-1.5">{t('explore.filterCategory')}</Text>
               <View className="flex-row flex-wrap gap-2">
                 {categoriesList.map((cat) => (
                   <Pressable
@@ -109,7 +111,7 @@ export const CalculatorPage: React.FC = () => {
             </View>
 
             <View>
-              <Text className="text-xs font-medium text-slate-300 mb-1">Usable Square Footage</Text>
+              <Text className="text-xs font-medium text-slate-300 mb-1">{t('calculator.squareFeetLabel')}</Text>
               <TextInput
                 value={sqft}
                 onChangeText={setSqft}
@@ -121,7 +123,7 @@ export const CalculatorPage: React.FC = () => {
             </View>
 
             <View>
-              <Text className="text-xs font-medium text-slate-300 mb-1">City Hub</Text>
+              <Text className="text-xs font-medium text-slate-300 mb-1">{t('calculator.locationLabel')}</Text>
               <View className="flex-row gap-2">
                 {['Pune', 'Delhi', 'Bengaluru', 'Mumbai'].map((c) => (
                   <Pressable
@@ -146,33 +148,33 @@ export const CalculatorPage: React.FC = () => {
           <View className="bg-slate-900 border border-indigo-500/30 rounded-2xl p-6 flex-col justify-between floating-panel">
             <View>
               <Text className="text-xs font-bold text-indigo-300 uppercase tracking-wider mb-1">
-                Projected Monthly Return
+                {t('calculator.estimatedMonthlyYield')}
               </Text>
               <Text className="text-4xl sm:text-5xl font-black text-emerald-400 mb-2">
-                ₹{estimate?.estimated_monthly_inr?.toLocaleString('en-IN') || '5,400'}
-                <Text className="text-sm font-normal text-slate-400"> / month</Text>
+                {formatCurrency(estimate?.estimated_monthly_inr || 5400)}
+                <Text className="text-sm font-normal text-slate-400"> {t('common.perMonth')}</Text>
               </Text>
               <Text className="text-xs text-slate-400 mb-6">
-                Based on ~{estimate?.occupancy_rate_pct || 65}% occupancy rate in {city}.
+                {t('calculator.occupancyAssumption')}
               </Text>
 
               <View className="space-y-3 pt-4 border-t border-slate-800">
                 <View className="flex-row justify-between text-xs">
-                  <Text className="text-slate-400">Estimated Hourly Market Rate:</Text>
+                  <Text className="text-slate-400">{t('host.averageHourlyRate')}:</Text>
                   <Text className="text-white font-bold">
-                    ₹{estimate?.estimated_hourly_inr || 45}/hr
+                    {formatCurrency(estimate?.estimated_hourly_inr || 45)}{t('common.perHour')}
                   </Text>
                 </View>
                 <View className="flex-row justify-between text-xs">
-                  <Text className="text-slate-400">Annual Gross Potential:</Text>
+                  <Text className="text-slate-400">{t('calculator.estimatedAnnualYield')}:</Text>
                   <Text className="text-white font-bold">
-                    ₹{((estimate?.estimated_monthly_inr || 5400) * 12).toLocaleString('en-IN')}/yr
+                    {formatCurrency((estimate?.estimated_monthly_inr || 5400) * 12)}
                   </Text>
                 </View>
                 <View className="flex-row justify-between text-xs">
-                  <Text className="text-slate-400">Market Benchmarking:</Text>
+                  <Text className="text-slate-400">{t('common.info')}:</Text>
                   <Text className="text-emerald-400 font-bold">
-                    {estimate?.peer_comparison || 'High student demand'}
+                    {estimate?.peer_comparison || 'High demand'}
                   </Text>
                 </View>
               </View>
@@ -180,7 +182,7 @@ export const CalculatorPage: React.FC = () => {
 
             <View className="mt-6 pt-4 border-t border-slate-800">
               <Text className="text-[11px] text-slate-500 text-center">
-                * Estimates are calculated using real booking telemetry across Indian urban centers.
+                {t('calculator.platformFeeNotice')}
               </Text>
             </View>
           </View>

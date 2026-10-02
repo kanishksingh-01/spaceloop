@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
 import { View, Text, Pressable, TextInput } from 'react-native';
 import { request } from '../services/api';
+import { useTranslation } from '../i18n';
 
 export const VerifyPage: React.FC = () => {
+  const { t } = useTranslation();
   const [collegeName, setCollegeName] = useState('IIT Delhi');
   const [studentId, setStudentId] = useState('2024CS10892');
   const [hostAddressProof, setHostAddressProof] = useState('MSEDCL Electricity Bill - Wagholi');
@@ -49,14 +51,14 @@ export const VerifyPage: React.FC = () => {
         <View className="max-w-4xl mx-auto">
           <View className="inline-flex flex-row items-center gap-2 px-3 py-1 rounded-full bg-indigo-500/10 border border-indigo-500/20 mb-3 self-center">
             <Text className="text-xs font-bold text-indigo-300">
-              🛡️ Zero-Hardware Trust Protocol
+              🛡️ {t('trustSafety.title')}
             </Text>
           </View>
           <Text className="text-3xl sm:text-4xl font-black text-white mb-2">
-            DigiLocker & India Stack Verification
+            {t('verify.title')}
           </Text>
           <Text className="text-sm text-slate-400 max-w-xl mx-auto">
-            SpaceLoop complies strictly with the Digital Personal Data Protection (DPDP) Act, 2023. We never store raw Aadhaar numbers.
+            {t('verify.subtitle')}
           </Text>
         </View>
       </View>
@@ -69,24 +71,24 @@ export const VerifyPage: React.FC = () => {
               <View className="flex-row items-center gap-2 mb-3">
                 <Text className="text-2xl">🎓</Text>
                 <View>
-                  <Text className="text-base font-bold text-white">Student Verification</Text>
-                  <Text className="text-xs text-slate-400">Unlock student rates & study pods</Text>
+                  <Text className="text-base font-bold text-white">{t('verify.studentKycCard')}</Text>
+                  <Text className="text-xs text-slate-400">{t('verify.collegeIdUpload')}</Text>
                 </View>
               </View>
 
               {studentSuccess ? (
                 <View className="p-4 bg-emerald-500/10 border border-emerald-500/30 rounded-xl my-4">
                   <Text className="text-xs font-bold text-emerald-300">
-                    ✓ Verified via DigiLocker College Registry
+                    {t('verify.verifiedSuccessBadge')}
                   </Text>
                   <Text className="text-[11px] text-slate-300 mt-1">
-                    Your account is granted full student study pod privileges.
+                    {t('verify.digilockerConsent')}
                   </Text>
                 </View>
               ) : (
                 <View className="space-y-3 my-4">
                   <View>
-                    <Text className="text-xs font-medium text-slate-300 mb-1">College / Institute</Text>
+                    <Text className="text-xs font-medium text-slate-300 mb-1">{t('auth.collegeLabel')}</Text>
                     <TextInput
                       value={collegeName}
                       onChangeText={setCollegeName}
@@ -96,7 +98,7 @@ export const VerifyPage: React.FC = () => {
                     />
                   </View>
                   <View>
-                    <Text className="text-xs font-medium text-slate-300 mb-1">Roll / Student ID Number</Text>
+                    <Text className="text-xs font-medium text-slate-300 mb-1">{t('verify.collegeIdUpload')}</Text>
                     <TextInput
                       value={studentId}
                       onChangeText={setStudentId}
@@ -116,7 +118,7 @@ export const VerifyPage: React.FC = () => {
                 className="w-full py-2.5 bg-indigo-600 hover:bg-indigo-500 rounded-xl items-center justify-center transition"
               >
                 <Text className="text-xs font-bold text-white">
-                  {loading ? 'Verifying...' : 'Verify Student Credentials'}
+                  {loading ? t('common.loading') : t('verify.verifyNowBtn')}
                 </Text>
               </Pressable>
             )}
@@ -128,24 +130,24 @@ export const VerifyPage: React.FC = () => {
               <View className="flex-row items-center gap-2 mb-3">
                 <Text className="text-2xl">🏠</Text>
                 <View>
-                  <Text className="text-base font-bold text-white">Host Ownership Verification</Text>
-                  <Text className="text-xs text-slate-400">Verify property authority & boost listing rank</Text>
+                  <Text className="text-base font-bold text-white">{t('verify.hostKycCard')}</Text>
+                  <Text className="text-xs text-slate-400">{t('verify.bescomBillVerify')}</Text>
                 </View>
               </View>
 
               {hostSuccess ? (
                 <View className="p-4 bg-emerald-500/10 border border-emerald-500/30 rounded-xl my-4">
                   <Text className="text-xs font-bold text-emerald-300">
-                    ✓ Verified Property Host Badge Active
+                    {t('verify.verifiedSuccessBadge')}
                   </Text>
                   <Text className="text-[11px] text-slate-300 mt-1">
-                    Your listings now display the official DigiLocker verified host badge.
+                    {t('spaceDetail.hostVerified')}
                   </Text>
                 </View>
               ) : (
                 <View className="space-y-3 my-4">
                   <View>
-                    <Text className="text-xs font-medium text-slate-300 mb-1">Masked Aadhaar Number</Text>
+                    <Text className="text-xs font-medium text-slate-300 mb-1">{t('verify.aadhaarVerification')}</Text>
                     <TextInput
                       value={aadhaarMasked}
                       onChangeText={setAadhaarMasked}
@@ -155,7 +157,7 @@ export const VerifyPage: React.FC = () => {
                     />
                   </View>
                   <View>
-                    <Text className="text-xs font-medium text-slate-300 mb-1">Utility / Property Document</Text>
+                    <Text className="text-xs font-medium text-slate-300 mb-1">{t('verify.bescomBillVerify')}</Text>
                     <TextInput
                       value={hostAddressProof}
                       onChangeText={setHostAddressProof}
@@ -175,7 +177,7 @@ export const VerifyPage: React.FC = () => {
                 className="w-full py-2.5 bg-emerald-600 hover:bg-emerald-500 rounded-xl items-center justify-center transition"
               >
                 <Text className="text-xs font-bold text-white">
-                  {loading ? 'Submitting...' : 'Submit Host Verification'}
+                  {loading ? t('common.loading') : t('verify.verifyNowBtn')}
                 </Text>
               </Pressable>
             )}

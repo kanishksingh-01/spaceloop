@@ -10,6 +10,7 @@ import {
   HostCardSkeleton,
   StatusBadge,
 } from '../components';
+import { useTranslation } from '../../../i18n';
 
 interface OverviewViewProps {
   currentUser?: User | null;
@@ -17,6 +18,7 @@ interface OverviewViewProps {
 
 export const OverviewView: React.FC<OverviewViewProps> = () => {
   const navigate = useNavigate();
+  const { t, formatCurrency } = useTranslation();
 
   const [loading, setLoading] = useState(true);
   const [spaces, setSpaces] = useState<Space[]>([]);
@@ -87,9 +89,9 @@ export const OverviewView: React.FC<OverviewViewProps> = () => {
     <div className="px-4 sm:px-6 lg:px-8 py-6 max-w-7xl mx-auto w-full space-y-6">
       {/* Top Banner / Welcome & Quick Actions */}
       <HostPageHeader
-        category="Host Operations Console"
-        title="Operational Overview"
-        subtitle="Real-time command center for your physical spaces, occupant sessions, and micro-escrow settlements."
+        category={t('host.hostConsoleCategory')}
+        title={t('host.overviewTitle')}
+        subtitle={t('host.overviewSubtitle')}
         actions={
           <div className="flex items-center gap-2 flex-wrap">
             <button
@@ -97,21 +99,21 @@ export const OverviewView: React.FC<OverviewViewProps> = () => {
               className="px-4 py-2 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-bold text-xs shadow-md shadow-amber-500/20 transition flex items-center gap-1.5"
             >
               <i className="fa-solid fa-plus text-xs" />
-              <span>List New Space</span>
+              <span>{t('host.addNewSpaceBtn')}</span>
             </button>
             <button
               onClick={() => navigate('/host/calendar')}
               className="px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold text-xs border border-slate-700 transition flex items-center gap-1.5"
             >
               <i className="fa-regular fa-calendar text-xs text-amber-400" />
-              <span>Calendar</span>
+              <span>{t('host.calendar')}</span>
             </button>
             <button
               onClick={() => navigate('/host/activity')}
               className="px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold text-xs border border-slate-700 transition flex items-center gap-1.5"
             >
               <i className="fa-solid fa-clock-rotate-left text-xs text-slate-400" />
-              <span>Audit Trail</span>
+              <span>{t('host.activityAudit')}</span>
             </button>
           </div>
         }

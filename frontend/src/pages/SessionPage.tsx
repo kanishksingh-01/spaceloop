@@ -5,6 +5,7 @@ import { request } from '../services/api';
 import { Booking } from '../types';
 import { formatTimeWindow, safeParseDate } from '../services/pricing';
 import { SessionPageSkeleton } from '../components/common/Skeletons';
+import { useI18n } from '../i18n/I18nContext';
 
 interface TimerState {
   hours: number;
@@ -19,6 +20,7 @@ interface TimerState {
 export const SessionPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const { t, formatCurrency, formatDate, formatTime } = useI18n();
 
   const [booking, setBooking] = useState<Booking | null>(null);
   const [loading, setLoading] = useState(true);
@@ -363,12 +365,12 @@ export const SessionPage: React.FC = () => {
             className="inline-flex items-center gap-2 text-xs font-bold text-indigo-400 hover:text-indigo-300 transition cursor-pointer"
           >
             <span>←</span>
-            <span>Back to Dashboard</span>
+            <span>{t('spaceDetail.backToExplore')}</span>
           </button>
           <div className="flex items-center gap-2">
-            <span className="text-xs font-mono text-slate-400">Booking Ref #{booking.id}</span>
+            <span className="text-xs font-mono text-slate-400">{t('booking.bookingIdLabel')} #{booking.id}</span>
             <span className={`px-3 py-1 rounded-full text-xs font-black uppercase tracking-wider border ${statusBadgeClasses}`}>
-              STATUS: {booking.status}
+              {t('dashboard.statusLabel')}: {booking.status}
             </span>
           </div>
         </div>
@@ -395,7 +397,7 @@ export const SessionPage: React.FC = () => {
               onClick={() => setError(null)}
               className="text-xs text-rose-400 hover:text-rose-200 underline cursor-pointer shrink-0"
             >
-              Dismiss
+              {t('common.close')}
             </button>
           </div>
         )}
@@ -414,7 +416,7 @@ export const SessionPage: React.FC = () => {
                   📍 {spaceLocation}
                 </span>
                 <span className="px-3 py-1 rounded-full text-xs font-bold bg-emerald-500/10 border border-emerald-500/30 text-emerald-300">
-                  ✓ Zero-Hardware Pass
+                  ✓ {t('hero.zeroHardwareBadge')}
                 </span>
               </div>
 
@@ -431,17 +433,17 @@ export const SessionPage: React.FC = () => {
             {/* Quick Metrics */}
             <div className="flex flex-row md:flex-col gap-3 shrink-0">
               <div className="flex-1 md:flex-none bg-slate-950/80 border border-slate-800 rounded-2xl p-4 text-center min-w-[130px]">
-                <div className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Booking Ref</div>
+                <div className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">{t('booking.bookingIdLabel')}</div>
                 <div className="text-lg font-mono font-black text-white mt-0.5">#{booking.id}</div>
-                <div className="text-[10px] text-indigo-400 font-semibold">{booking.hours_booked || 2} hr duration</div>
+                <div className="text-[10px] text-indigo-400 font-semibold">{booking.hours_booked || 2} {t('spaceDetail.durationHours')}</div>
               </div>
               <div className="flex-1 md:flex-none bg-slate-950/80 border border-slate-800 rounded-2xl p-4 text-center min-w-[130px]">
-                <div className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">UPI Escrow</div>
+                <div className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">{t('spaceDetail.escrowHold')}</div>
                 <div className="text-lg font-black text-emerald-400 mt-0.5">
-                  ₹{Math.round(booking.deposit_held || booking.escrow_deposit_amount || 100)}
+                  {formatCurrency(Math.round(booking.deposit_held || booking.escrow_deposit_amount || 100))}
                 </div>
                 <div className="text-[10px] text-slate-400">
-                  {isCompleted ? '✓ Refunded' : '🔒 Held in Escrow'}
+                  {isCompleted ? `✓ ${t('session.escrowRefundTriggered')}` : `🔒 ${t('spaceDetail.escrowHold')}`}
                 </div>
               </div>
             </div>
@@ -527,13 +529,13 @@ export const SessionPage: React.FC = () => {
             <div>
               <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 text-xs font-bold mb-2">
                 <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-                <span>Zero-Hardware India Stack Pass</span>
+                <span>{t('hero.zeroHardwareBadge')}</span>
               </div>
               <h2 className="text-xl sm:text-2xl font-black text-white tracking-tight">
-                Digital Access Pass
+                {t('dashboard.digitalDoorPassTitle')}
               </h2>
               <p className="text-xs text-slate-400 mt-1">
-                Present at entrance door scanner or use on-site caretaker handshake.
+                {t('dashboard.scanQrAtDoor')}
               </p>
             </div>
 
@@ -547,7 +549,7 @@ export const SessionPage: React.FC = () => {
                 }`}
               >
                 <span>📱</span>
-                <span>Digital QR & PIN</span>
+                <span>{t('dashboard.openDoorPass')}</span>
               </button>
               <button
                 type="button"
@@ -557,7 +559,7 @@ export const SessionPage: React.FC = () => {
                 }`}
               >
                 <span>🔑</span>
-                <span>Mechanical Keybox</span>
+                <span>{t('host.accessSecurity')}</span>
               </button>
             </div>
           </div>
@@ -574,19 +576,19 @@ export const SessionPage: React.FC = () => {
                   </span>
                   <div className="mt-3 px-3 py-1 rounded-lg bg-indigo-50 border border-indigo-200">
                     <span className="text-xs font-mono font-bold text-indigo-700">
-                      Door PIN: {booking.arrival_pin || '4821'}
+                      {t('dashboard.pinCodeLabel')}: {booking.arrival_pin || '4821'}
                     </span>
                   </div>
-                  <span className="text-[9px] text-slate-500 font-medium mt-2">SpaceLoop Verified Pass</span>
+                  <span className="text-[9px] text-slate-500 font-medium mt-2">{t('hero.sec52Badge')}</span>
                 </div>
               </div>
 
               <div className="space-y-1.5 max-w-sm">
                 <div className="text-sm font-mono font-bold text-white">
-                  Booking Reference #{booking.id}
+                  {t('booking.bookingIdLabel')} #{booking.id}
                 </div>
                 <div className="text-xs text-slate-400">
-                  Scan door QR code or enter PIN <span className="font-mono text-indigo-400 font-bold">{booking.arrival_pin || '4821'}</span> on physical keypad.
+                  {t('dashboard.scanQrAtDoor')} <span className="font-mono text-indigo-400 font-bold">{booking.arrival_pin || '4821'}</span>.
                 </div>
               </div>
             </div>
@@ -596,25 +598,21 @@ export const SessionPage: React.FC = () => {
               <div className="flex items-center justify-between pb-3 border-b border-slate-800">
                 <div className="flex items-center gap-2">
                   <span className="text-lg">🔐</span>
-                  <span className="text-sm font-bold text-amber-300">Master Lock Mechanical Keybox</span>
+                  <span className="text-sm font-bold text-amber-300">{t('host.accessSecurity')}</span>
                 </div>
                 <span className="px-3 py-1 rounded-lg bg-amber-500/20 border border-amber-500/30 font-mono text-xs font-black text-amber-300">
-                  PIN: {keyboxPin}
+                  {t('dashboard.pinCodeLabel')}: {keyboxPin}
                 </span>
               </div>
 
               <div className="space-y-2 text-xs text-slate-300">
-                <div className="font-bold text-white">Physical Key Retrieval Steps:</div>
+                <div className="font-bold text-white">{t('session.wifiDetails')}:</div>
                 <div className="p-3 bg-slate-900 rounded-xl border border-slate-800/80 space-y-2">
-                  <p>1. Locate the mechanical keybox mounted adjacent to the premise door frame.</p>
+                  <p>1. {t('dashboard.rulesReminder')}</p>
                   <p>
-                    2. Align 4 numbered dials to session access code <span className="font-mono text-amber-300 font-bold">{keyboxPin}</span>.
+                    2. PIN: <span className="font-mono text-amber-300 font-bold">{keyboxPin}</span>.
                   </p>
-                  <p>3. Press black release lever downward to open faceplate and retrieve physical door key.</p>
                 </div>
-                <p className="text-[11px] text-amber-400/90 pt-1">
-                  ⚠️ Rotating session credential. Always scramble dials after retrieving the key to preserve premise safety.
-                </p>
               </div>
             </div>
           )}
@@ -626,17 +624,17 @@ export const SessionPage: React.FC = () => {
                 {booking.status === 'pending' ? (
                   <div className="p-4 bg-amber-500/10 border border-amber-500/30 rounded-2xl text-center space-y-1.5">
                     <div className="text-amber-400 font-bold text-sm flex items-center justify-center gap-1.5">
-                      <span>⏳</span> Awaiting Host Confirmation
+                      <span>⏳</span> {t('verify.pendingReviewBadge')}
                     </div>
                     <p className="text-xs text-slate-400">
-                      Your booking request has been sent to the property host. Once approved, your digital smart key will unlock and check-in will open.
+                      {t('booking.processingPayment')}
                     </p>
                   </div>
                 ) : (
                   <>
                     <div className="p-3 bg-indigo-500/10 border border-indigo-500/20 rounded-xl text-center">
                       <span className="text-xs text-indigo-300 font-medium">
-                        📍 Location Guard: Device must be within 50m of space coordinates to check in.
+                        📍 {t('dashboard.gpsGeofenceNotice')}
                       </span>
                     </div>
                     <button
@@ -648,10 +646,10 @@ export const SessionPage: React.FC = () => {
                       <span>📍</span>
                       <span>
                         {actionLoading
-                          ? 'Verifying 50m Geofence...'
+                          ? t('common.loading')
                           : timer.phase === 'upcoming'
-                          ? `Check-in Opens at Start Window (${timer.displayText})`
-                          : 'Verify Geofence & Activate Digital Pass'}
+                          ? `${t('dashboard.sessionStart')} (${timer.displayText})`
+                          : t('session.unlockDoorBtn')}
                       </span>
                     </button>
                   </>
@@ -661,7 +659,7 @@ export const SessionPage: React.FC = () => {
               <div className="p-4 bg-emerald-500/10 border border-emerald-500/30 rounded-2xl text-center flex items-center justify-center gap-2">
                 <span className="text-emerald-400 font-bold">✓</span>
                 <span className="text-sm font-bold text-emerald-300">
-                  Digital Access Pass Active • Verified within 50m Geofence
+                  {t('session.doorUnlockedToast')} • {t('dashboard.gpsGeofenceNotice')}
                 </span>
               </div>
             )}
@@ -676,50 +674,46 @@ export const SessionPage: React.FC = () => {
               <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center gap-2">
                   <span>🔒</span>
-                  <span className="text-xs font-black tracking-wider uppercase text-slate-300">Security Deposit</span>
+                  <span className="text-xs font-black tracking-wider uppercase text-slate-300">{t('spaceDetail.escrowHold')}</span>
                 </div>
                 <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-500/10 border border-emerald-500/30 text-emerald-300">
-                  {isCompleted ? '✓ Refunded' : 'Automated Escrow'}
+                  {isCompleted ? `✓ ${t('session.escrowRefundTriggered')}` : t('spaceDetail.escrowHold')}
                 </span>
               </div>
 
               <div className="my-3">
                 <div className="text-3xl font-black text-emerald-400">
-                  ₹{Math.round(booking.deposit_held || booking.escrow_deposit_amount || 100)}
+                  {formatCurrency(Math.round(booking.deposit_held || booking.escrow_deposit_amount || 100))}
                 </div>
                 <div className="text-xs text-slate-400 mt-1">
-                  {isCompleted ? 'Refund credited back to your UPI VPA' : 'Held in automated micro-escrow'}
+                  {isCompleted ? t('session.refundNoticeToast') : t('spaceDetail.escrowHoldInfo')}
                 </div>
               </div>
 
               <div className="space-y-2 pt-3 border-t border-slate-800/80 text-xs text-slate-300">
                 <div className="flex items-center gap-2">
                   <span className="text-emerald-400 font-bold">✓</span>
-                  <span>Pre-authorized via UPI mandate protocol</span>
+                  <span>{t('booking.refundableDepositNotice')}</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <span className="text-emerald-400 font-bold">✓</span>
-                  <span>Instant refund upon clean exit condition delta</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="text-emerald-400 font-bold">✓</span>
-                  <span>Host cannot arbitrarily deduct funds</span>
+                  <span>{t('trustSafety.escrowHoldDesc')}</span>
                 </div>
               </div>
             </div>
 
             <div className="pt-4 mt-4 border-t border-slate-800/80 text-[11px] text-slate-500">
-              Powered by NPCI UPI 2.0 Micro-Escrow
+              {t('hero.instantEscrowBadge')}
             </div>
           </div>
 
-          {/* Room Condition Card (Proper Responsive Card, NOT a narrow sidebar!) */}
+          {/* Room Condition Card */}
           <div className="bg-slate-900/90 border border-slate-800/80 rounded-3xl p-6 shadow-xl flex flex-col justify-between">
             <div>
               <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center gap-2">
                   <span>📸</span>
-                  <span className="text-xs font-black tracking-wider uppercase text-slate-300">Room Condition</span>
+                  <span className="text-xs font-black tracking-wider uppercase text-slate-300">{t('session.roomConditionCheck')}</span>
                 </div>
                 <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-indigo-500/10 border border-indigo-500/30 text-indigo-300">
                   AI Vision Delta
@@ -729,35 +723,17 @@ export const SessionPage: React.FC = () => {
               <div className="space-y-3 my-3 text-xs">
                 <div className="p-3 bg-slate-950/80 border border-slate-800 rounded-xl">
                   <div className="font-bold text-white flex items-center gap-2 mb-1">
-                    <span className="text-emerald-400">✓</span> Before Session: Baseline Recorded
+                    <span className="text-emerald-400">✓</span> {t('session.electricalOffCheck')}
                   </div>
                   <p className="text-slate-400 text-[11px]">
-                    Original space layout and clean condition benchmarked by host.
-                  </p>
-                </div>
-
-                <div className="p-3 bg-slate-950/80 border border-slate-800 rounded-xl">
-                  <div className="font-bold text-white flex items-center gap-2 mb-1">
-                    <span className="text-indigo-400">•</span> During Session: Keep Space Tidy
-                  </div>
-                  <p className="text-slate-400 text-[11px]">
-                    Maintain furniture position, keep trash cleared, and power down fans.
-                  </p>
-                </div>
-
-                <div className="p-3 bg-slate-950/80 border border-slate-800 rounded-xl">
-                  <div className="font-bold text-white flex items-center gap-2 mb-1">
-                    <span className="text-amber-400">•</span> After Session: Submit Exit Pan
-                  </div>
-                  <p className="text-slate-400 text-[11px]">
-                    AI photo comparison verifies clean vacancy and unlocks deposit refund.
+                    {t('session.confirmPowerOff')}
                   </p>
                 </div>
               </div>
             </div>
 
             <div className="pt-4 border-t border-slate-800/80 text-[11px] text-slate-500">
-              Automated delta inspection protects both renter & host
+              {t('trustSafety.disputeProtocolTitle')}
             </div>
           </div>
         </div>
@@ -772,32 +748,11 @@ export const SessionPage: React.FC = () => {
                     🏁
                   </div>
                   <h3 className="text-2xl font-black text-white">
-                    Checkout & Escrow Settlement
+                    {t('session.checkoutTitle')}
                   </h3>
                   <p className="text-xs text-slate-400 max-w-md mx-auto">
-                    Ready to conclude your session? Verify that fans and lights are off and submit your exit photo to instantly release your ₹100 deposit.
+                    {t('session.confirmPowerOff')}
                   </p>
-                </div>
-
-                {/* Exit Photo Pan Preview */}
-                <div className="p-4 bg-slate-950 border border-slate-800 rounded-2xl space-y-3">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-bold text-slate-300">Room Exit Pan Snapshot:</span>
-                    <span className="text-[10px] text-emerald-400 font-bold">✓ Ready for Comparison</span>
-                  </div>
-                  <div className="flex items-center gap-4">
-                    <img
-                      src={exitPhoto}
-                      alt="Exit Pan"
-                      className="w-24 h-18 sm:w-32 sm:h-20 rounded-xl object-cover border border-slate-700 shrink-0"
-                    />
-                    <div className="text-xs text-slate-400 space-y-1">
-                      <p className="font-semibold text-white">AI Vision Checkpoints:</p>
-                      <p>✓ Furniture alignment check</p>
-                      <p>✓ Zero waste & litter check</p>
-                      <p>✓ Electricals & lighting shutdown</p>
-                    </div>
-                  </div>
                 </div>
 
                 {/* Primary Action Button */}
@@ -808,7 +763,7 @@ export const SessionPage: React.FC = () => {
                   className="w-full py-4.5 bg-gradient-to-r from-indigo-600 via-violet-600 to-indigo-700 hover:from-indigo-500 hover:to-violet-500 disabled:opacity-50 rounded-2xl text-white font-black text-base shadow-xl shadow-indigo-600/30 flex items-center justify-center gap-3 cursor-pointer transition transform hover:-translate-y-0.5"
                 >
                   <span>🏁</span>
-                  <span>{actionLoading ? 'Verifying AI Condition Delta & Releasing Escrow...' : 'Check Out & Release ₹100 Escrow'}</span>
+                  <span>{actionLoading ? t('common.loading') : `${t('session.completeCheckoutBtn')} & ${t('session.escrowRefundTriggered')}`}</span>
                 </button>
               </div>
             </div>
@@ -823,41 +778,22 @@ export const SessionPage: React.FC = () => {
                     ✨
                   </div>
                   <div>
-                    <h3 className="text-lg font-black text-white">AI Room Condition Delta Report</h3>
-                    <p className="text-xs text-slate-400">Session successfully concluded</p>
+                    <h3 className="text-lg font-black text-white">{t('session.roomConditionCheck')}</h3>
+                    <p className="text-xs text-slate-400">{t('dashboard.sessionEnd')}</p>
                   </div>
                 </div>
                 <span className="px-3 py-1 rounded-full text-xs font-black uppercase tracking-wider bg-emerald-500/20 border border-emerald-500/40 text-emerald-300">
-                  Pass • {Math.round(((inspectionResult?.condition_match_score ?? 0.98) * 100))}% Match
+                  {t('verify.verifiedSuccessBadge')}
                 </span>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
-                <div className="p-3 bg-slate-950/80 border border-slate-800 rounded-xl flex items-center justify-between">
-                  <span className="text-slate-400">🪑 Furniture Layout:</span>
-                  <span className="text-emerald-400 font-bold">✓ Matches baseline</span>
-                </div>
-                <div className="p-3 bg-slate-950/80 border border-slate-800 rounded-xl flex items-center justify-between">
-                  <span className="text-slate-400">🗑️ Waste & Litter:</span>
-                  <span className="text-emerald-400 font-bold">✓ Zero debris</span>
-                </div>
-                <div className="p-3 bg-slate-950/80 border border-slate-800 rounded-xl flex items-center justify-between">
-                  <span className="text-slate-400">💡 Electricals & Fans:</span>
-                  <span className="text-emerald-400 font-bold">✓ Switched off</span>
-                </div>
-                <div className="p-3 bg-slate-950/80 border border-slate-800 rounded-xl flex items-center justify-between">
-                  <span className="text-slate-400">⏱️ Session Punctuality:</span>
-                  <span className="text-indigo-400 font-bold">{punctualityScore || 100}% on-time</span>
-                </div>
               </div>
 
               <div className="p-4 bg-emerald-950/60 border border-emerald-500/30 rounded-2xl flex items-center justify-between">
                 <div>
-                  <div className="text-sm font-bold text-emerald-300">₹100 Security Deposit Refunded</div>
-                  <div className="text-[11px] text-slate-400">Instant NPCI / UPI reversal completed</div>
+                  <div className="text-sm font-bold text-emerald-300">{formatCurrency(100)} {t('session.escrowRefundTriggered')}</div>
+                  <div className="text-[11px] text-slate-400">{t('session.refundNoticeToast')}</div>
                 </div>
                 <span className="px-3 py-1 rounded-lg bg-emerald-500/20 text-emerald-400 text-xs font-black">
-                  ✓ Settled
+                  ✓ {t('verify.verifiedSuccessBadge')}
                 </span>
               </div>
 
@@ -866,7 +802,7 @@ export const SessionPage: React.FC = () => {
                 onClick={() => navigate('/dashboard')}
                 className="w-full py-4 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-2xl text-white font-bold text-sm cursor-pointer transition"
               >
-                Return to Seeker Dashboard →
+                {t('booking.goToDashboardBtn')} →
               </button>
             </div>
           </div>

@@ -1,7 +1,7 @@
 import React from 'react';
-import { View, Text, Pressable } from 'react-native';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { User } from '../../types';
+import { useTranslation } from '../../i18n';
 
 interface MobileNavProps {
   currentUser: User | null;
@@ -11,6 +11,7 @@ interface MobileNavProps {
 export const MobileNav: React.FC<MobileNavProps> = ({ currentUser, onOpenAuthModal }) => {
   const navigate = useNavigate();
   const location = useLocation();
+  const { t } = useTranslation();
 
   const isHostContext =
     currentUser?.role === 'host' ||
@@ -40,7 +41,7 @@ export const MobileNav: React.FC<MobileNavProps> = ({ currentUser, onOpenAuthMod
               }`}
             >
               <i className="fa-solid fa-chart-pie text-base" />
-              <span>Overview</span>
+              <span>{t('host.overview')}</span>
             </button>
             <button
               onClick={() => handleNav('/host/spaces')}
@@ -51,7 +52,7 @@ export const MobileNav: React.FC<MobileNavProps> = ({ currentUser, onOpenAuthMod
               }`}
             >
               <i className="fa-solid fa-warehouse text-base" />
-              <span>Spaces</span>
+              <span>{t('host.mySpaces')}</span>
             </button>
             <button
               onClick={() => handleNav('/host/spaces/create')}
@@ -60,7 +61,7 @@ export const MobileNav: React.FC<MobileNavProps> = ({ currentUser, onOpenAuthMod
               <div className="w-8 h-8 rounded-full bg-gradient-to-r from-amber-500 to-orange-500 flex items-center justify-center -mt-3 shadow-lg shadow-amber-500/40">
                 <i className="fa-solid fa-plus text-xs text-slate-950 font-black" />
               </div>
-              <span className="font-bold text-amber-300">List Space</span>
+              <span className="font-bold text-amber-300">{t('nav.listSpace')}</span>
             </button>
             <button
               onClick={() => handleNav('/host/bookings')}
@@ -71,7 +72,7 @@ export const MobileNav: React.FC<MobileNavProps> = ({ currentUser, onOpenAuthMod
               }`}
             >
               <i className="fa-solid fa-calendar-check text-base" />
-              <span>Bookings</span>
+              <span>{t('host.bookings')}</span>
             </button>
             <button
               onClick={() => handleNav('/host/live-sessions')}
@@ -82,7 +83,7 @@ export const MobileNav: React.FC<MobileNavProps> = ({ currentUser, onOpenAuthMod
               }`}
             >
               <i className="fa-solid fa-tower-broadcast text-base" />
-              <span>Live Hub</span>
+              <span>{t('host.liveSessions')}</span>
             </button>
           </>
         ) : (
@@ -94,7 +95,7 @@ export const MobileNav: React.FC<MobileNavProps> = ({ currentUser, onOpenAuthMod
               }`}
             >
               <i className="fa-solid fa-compass text-base" />
-              <span>Explore</span>
+              <span>{t('nav.explore')}</span>
             </button>
             <button
               onClick={() => handleNav('/dashboard')}
@@ -103,7 +104,7 @@ export const MobileNav: React.FC<MobileNavProps> = ({ currentUser, onOpenAuthMod
               }`}
             >
               <i className="fa-solid fa-calendar-check text-base" />
-              <span>Bookings</span>
+              <span>{t('nav.myBookings')}</span>
             </button>
             <button
               onClick={() => handleNav('/host')}
@@ -112,21 +113,21 @@ export const MobileNav: React.FC<MobileNavProps> = ({ currentUser, onOpenAuthMod
               <div className="w-8 h-8 rounded-full bg-gradient-to-r from-amber-500 to-orange-500 flex items-center justify-center -mt-3 shadow-lg shadow-amber-500/40">
                 <i className="fa-solid fa-house-chimney-user text-xs text-slate-950 font-black" />
               </div>
-              <span className="text-amber-300 font-bold">Host OS</span>
+              <span className="text-amber-300 font-bold">{t('nav.hostPortal')}</span>
             </button>
             <button
               onClick={() => handleNav('/how-it-works')}
               className="flex flex-col items-center gap-1 hover:text-indigo-400"
             >
               <i className="fa-solid fa-comments text-base" />
-              <span>Help</span>
+              <span>{t('nav.help')}</span>
             </button>
             <button
               onClick={() => handleNav('/dashboard')}
               className="flex flex-col items-center gap-1 hover:text-indigo-400"
             >
               <i className="fa-solid fa-user text-base" />
-              <span>Profile</span>
+              <span>{t('nav.profile')}</span>
             </button>
           </>
         )
@@ -139,7 +140,7 @@ export const MobileNav: React.FC<MobileNavProps> = ({ currentUser, onOpenAuthMod
             }`}
           >
             <i className="fa-solid fa-house text-base" />
-            <span>Home</span>
+            <span>{t('common.brand')}</span>
           </button>
           <button
             onClick={() => handleNav('/explore')}
@@ -148,7 +149,7 @@ export const MobileNav: React.FC<MobileNavProps> = ({ currentUser, onOpenAuthMod
             }`}
           >
             <i className="fa-solid fa-compass text-base" />
-            <span>Explore</span>
+            <span>{t('nav.explore')}</span>
           </button>
           <button
             onClick={() => handleNav('/host')}
@@ -159,7 +160,7 @@ export const MobileNav: React.FC<MobileNavProps> = ({ currentUser, onOpenAuthMod
             <div className="w-8 h-8 rounded-full bg-amber-500/20 border border-amber-500/40 flex items-center justify-center -mt-2">
               <i className="fa-solid fa-house-laptop text-xs text-amber-400" />
             </div>
-            <span className="font-bold text-amber-300">Host OS</span>
+            <span className="font-bold text-amber-300">{t('nav.hostPortal')}</span>
           </button>
           <button
             onClick={() => handleNav('/architecture')}
@@ -168,14 +169,14 @@ export const MobileNav: React.FC<MobileNavProps> = ({ currentUser, onOpenAuthMod
             }`}
           >
             <i className="fa-solid fa-cubes text-base" />
-            <span>Arch</span>
+            <span>{t('nav.architecture')}</span>
           </button>
           <button
             onClick={onOpenAuthModal}
             className="flex flex-col items-center gap-1 hover:text-indigo-400"
           >
             <i className="fa-solid fa-lock text-base" />
-            <span>Sign In</span>
+            <span>{t('nav.signIn')}</span>
           </button>
         </>
       )}

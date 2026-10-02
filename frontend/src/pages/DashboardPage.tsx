@@ -7,6 +7,7 @@ import { cancelBooking } from '../services/bookings';
 import { toggleSpaceStatus, getInquiries } from '../services/spaces';
 import { setupMfa, verifyMfaSetup, disableMfa, resendEmailVerification } from '../services/auth';
 import { DashboardBookingSkeleton } from '../components/common/Skeletons';
+import { useI18n } from '../i18n/I18nContext';
 
 interface DashboardPageProps {
   currentUser: User | null;
@@ -14,6 +15,7 @@ interface DashboardPageProps {
 
 export const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
   const navigate = useNavigate();
+  const { t, formatCurrency, formatDate, formatTime } = useI18n();
   const [userState, setUserState] = useState<User | null>(currentUser);
   const [activeTab, setActiveTab] = useState<'seeker' | 'host' | 'security'>('seeker');
 
@@ -304,11 +306,11 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => 
             </span>
             <div>
               <div className="text-xs font-bold text-white flex items-center gap-2">
-                SpaceLoop Host Operating System
-                <span className="px-1.5 py-0.5 rounded bg-amber-400/20 text-amber-300 text-[10px] font-mono font-bold uppercase">Dedicated Portal</span>
+                {t('host.portalTitle')}
+                <span className="px-1.5 py-0.5 rounded bg-amber-400/20 text-amber-300 text-[10px] font-mono font-bold uppercase">{t('nav.hostPortal')}</span>
               </div>
               <p className="text-[11px] text-slate-400">
-                Manage your spaces, check-in codes, live IoT telemetry, escrows, and instant UPI payouts in the Host OS.
+                {t('calculator.subtitle')}
               </p>
             </div>
           </div>
@@ -316,7 +318,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => 
             onClick={() => navigate('/host')}
             className="w-full sm:w-auto px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs shadow-lg shadow-amber-500/20 transition flex items-center justify-center gap-1.5 whitespace-nowrap cursor-pointer"
           >
-            Launch Host Portal →
+            {t('nav.hostPortal')} →
           </button>
         </div>
       </div>
@@ -338,11 +340,11 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => 
             <View>
               <View className="flex-row items-center gap-2">
                 <Text className="text-xl font-bold text-white">
-                  {currentUser?.name || currentUser?.email?.split('@')[0] || 'Member'}
+                  {currentUser?.name || currentUser?.email?.split('@')[0] || t('nav.profile')}
                 </Text>
                 <View className="px-2 py-0.5 rounded-md bg-indigo-500/20 border border-indigo-500/30">
                   <Text className="text-[10px] font-bold text-indigo-300 uppercase">
-                    {currentUser?.role || (currentUser?.is_host ? 'Host' : 'Seeker')}
+                    {currentUser?.role || (currentUser?.is_host ? t('nav.hostPortal') : t('nav.seekerPortal'))}
                   </Text>
                 </View>
               </View>
@@ -351,11 +353,11 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => 
               </Text>
               <View className="flex-row items-center gap-2 mt-1 flex-wrap">
                 <Text className="text-[11px] text-emerald-400 font-medium">
-                  ✓ DigiLocker Verified
+                  ✓ {t('verify.verifiedSuccessBadge')}
                 </Text>
                 <Text className="text-[11px] text-slate-500">•</Text>
                 <Text className={`text-[11px] font-medium ${userState?.is_email_verified ? 'text-emerald-400' : 'text-amber-400'}`}>
-                  {userState?.is_email_verified ? '✓ Email Verified' : '⚠️ Email Unverified'}
+                  {userState?.is_email_verified ? `✓ ${t('verify.verifiedSuccessBadge')}` : `⚠️ ${t('verify.pendingReviewBadge')}`}
                 </Text>
                 <Text className="text-[11px] text-slate-500">•</Text>
                 <Text className={`text-[11px] font-medium ${userState?.mfa_enabled ? 'text-emerald-400' : 'text-slate-400'}`}>
@@ -367,10 +369,10 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => 
                   className="flex-row items-center gap-1.5 bg-indigo-500/10 hover:bg-indigo-500/20 border border-indigo-500/30 px-2 py-0.5 rounded-md transition cursor-pointer"
                 >
                   <Text className="text-[11px] text-indigo-300 font-bold">
-                    OTI: {(currentUser as any)?.objective_trust_score ?? 98.5}/100
+                    {t('spaceCard.otiScore')}: {(currentUser as any)?.objective_trust_score ?? 98.5}/100
                   </Text>
                   <Text className="text-[10px] text-indigo-400 font-mono">
-                    {showOtiBreakdown ? '▲ Hide' : '▼ 4 Pillars'}
+                    {showOtiBreakdown ? '▲' : '▼'}
                   </Text>
                 </Pressable>
               </View>
@@ -382,30 +384,30 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => 
             {activeTab === 'seeker' ? (
               <>
                 <View className="p-3.5 bg-slate-950 rounded-xl border border-slate-800 items-center min-w-[95px] floating-interactive">
-                  <Text className="text-[10px] text-slate-400 font-semibold">Active Passes</Text>
+                  <Text className="text-[10px] text-slate-400 font-semibold">{t('dashboard.activeSessionsTab')}</Text>
                   <Text className="text-base font-black text-emerald-400">
-                    {bookings.filter(b => b.status === 'confirmed').length} Active
+                    {bookings.filter(b => b.status === 'confirmed').length}
                   </Text>
                 </View>
                 <View className="p-3.5 bg-slate-950 rounded-xl border border-slate-800 items-center min-w-[95px] floating-interactive">
-                  <Text className="text-[10px] text-slate-400 font-semibold">Micro-Escrow</Text>
+                  <Text className="text-[10px] text-slate-400 font-semibold">{t('spaceDetail.escrowHold')}</Text>
                   <Text className="text-base font-black text-indigo-400">
-                    ₹{bookings.filter(b => b.status === 'confirmed').reduce((acc, b) => acc + (b.deposit_held || 100), 0)} Held
+                    {formatCurrency(bookings.filter(b => b.status === 'confirmed').reduce((acc, b) => acc + (b.deposit_held || 100), 0))}
                   </Text>
                 </View>
               </>
             ) : (
               <>
                 <View className="p-3.5 bg-slate-950 rounded-xl border border-slate-800 items-center min-w-[95px] floating-interactive">
-                  <Text className="text-[10px] text-slate-400 font-semibold">Net Earnings</Text>
+                  <Text className="text-[10px] text-slate-400 font-semibold">{t('host.monthlyEarnings')}</Text>
                   <Text className="text-base font-black text-emerald-400">
-                    ₹{metrics?.net_earnings ?? 0}
+                    {formatCurrency(metrics?.net_earnings ?? 0)}
                   </Text>
                 </View>
                 <View className="p-3.5 bg-slate-950 rounded-xl border border-slate-800 items-center min-w-[95px] floating-interactive">
-                  <Text className="text-[10px] text-slate-400 font-semibold">Active Spaces</Text>
+                  <Text className="text-[10px] text-slate-400 font-semibold">{t('host.activeListings')}</Text>
                   <Text className="text-base font-black text-indigo-400">
-                    {hostSpaces.filter(s => s.is_active).length} Listed
+                    {hostSpaces.filter(s => s.is_active).length}
                   </Text>
                 </View>
               </>
@@ -418,9 +420,9 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => 
           <View className="max-w-7xl mx-auto mt-6 pt-6 border-t border-slate-800 animate-fadeIn">
             <View className="flex-col sm:flex-row items-start sm:items-center justify-between mb-3 gap-2">
               <View className="flex-row items-center gap-2">
-                <Text className="text-sm font-bold text-white">Objective Trust Index (OTI) Multi-Pillar Audit</Text>
+                <Text className="text-sm font-bold text-white">{t('spaceDetail.otiScoreLabel')} Multi-Pillar Audit</Text>
                 <View className="px-2 py-0.5 rounded bg-emerald-500/20 border border-emerald-500/30">
-                  <Text className="text-[10px] font-bold text-emerald-300">Grade AAA • Verified</Text>
+                  <Text className="text-[10px] font-bold text-emerald-300">Grade AAA • {t('verify.verifiedSuccessBadge')}</Text>
                 </View>
               </View>
               <Text className="text-[11px] font-mono text-slate-400">
@@ -489,7 +491,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => 
                 activeTab === 'seeker' ? 'text-white' : 'text-slate-400'
               }`}
             >
-              🎟️ My Bookings (Seeker)
+              🎟️ {t('nav.myBookings')}
             </Text>
           </Pressable>
 
@@ -506,7 +508,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => 
                 activeTab === 'security' ? 'text-white' : 'text-slate-400'
               }`}
             >
-              🛡️ Security & Two-Factor Authentication
+              🛡️ {t('nav.settings')} & 2FA
             </Text>
           </Pressable>
 
@@ -515,7 +517,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => 
             className="px-4 py-2 rounded-xl border border-amber-500/30 bg-amber-500/10 text-amber-300 hover:bg-amber-500/20 transition flex-row items-center gap-1.5 ml-auto cursor-pointer"
           >
             <Text className="text-xs font-bold text-amber-300">
-              🏡 Switch to Host Operating System →
+              🏡 {t('nav.switchToHost')} →
             </Text>
           </Pressable>
         </View>
@@ -524,12 +526,12 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => 
         {activeTab === 'seeker' && (
           <View className="space-y-4">
             <View className="flex-row items-center justify-between mb-2">
-              <Text className="text-base font-bold text-white">Your Reserved Spaces</Text>
+              <Text className="text-base font-bold text-white">{t('dashboard.title')}</Text>
               <Pressable
                 onPress={() => navigate('/')}
                 className="text-xs text-indigo-400 hover:underline"
               >
-                <Text className="text-xs font-medium text-indigo-400">+ Find New Space</Text>
+                <Text className="text-xs font-medium text-indigo-400">+ {t('hero.findSpaceBtn')}</Text>
               </Pressable>
             </View>
 
@@ -538,15 +540,15 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => 
             ) : bookings.length === 0 ? (
               <View className="p-8 bg-slate-900 rounded-2xl border border-slate-800 text-center items-center floating-container">
                 <Text className="text-3xl mb-2">🎟️</Text>
-                <Text className="text-sm font-bold text-white mb-1">No active bookings</Text>
+                <Text className="text-sm font-bold text-white mb-1">{t('dashboard.noActiveSessions')}</Text>
                 <Text className="text-xs text-slate-400 mb-4">
-                  You haven't reserved any temporary spaces yet.
+                  {t('dashboard.noUpcomingBookings')}
                 </Text>
                 <Pressable
                   onPress={() => navigate('/')}
                   className="px-4 py-2 bg-indigo-600 rounded-xl"
                 >
-                  <Text className="text-xs font-semibold text-white">Explore Spaces</Text>
+                  <Text className="text-xs font-semibold text-white">{t('dashboard.exploreSpacesBtn')}</Text>
                 </Pressable>
               </View>
             ) : (
@@ -575,7 +577,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => 
                       </View>
                       <Text className="text-xs text-slate-400 mb-1">{b.space_address}</Text>
                       <Text className="text-xs font-semibold text-indigo-300">
-                        Total: ₹{b.total_price} (₹{b.deposit_held} Deposit Escrow Held)
+                        {t('spaceDetail.totalAmount')}: {formatCurrency(b.total_price)} ({formatCurrency(b.deposit_held || 100)} {t('spaceDetail.escrowHold')})
                       </Text>
                     </View>
                   </View>
@@ -585,7 +587,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => 
                       onPress={() => navigate(`/session/${b.id}`)}
                       className="px-4 py-2.5 bg-indigo-600 hover:bg-indigo-500 rounded-xl transition"
                     >
-                      <Text className="text-xs font-bold text-white">📱 Digital Door Pass →</Text>
+                      <Text className="text-xs font-bold text-white">📱 {t('dashboard.openDoorPass')} →</Text>
                     </Pressable>
 
                     {b.status !== 'cancelled' && b.status !== 'completed' && (
@@ -595,7 +597,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => 
                         className="px-3 py-2.5 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-xl transition"
                       >
                         <Text className="text-xs font-medium text-rose-300">
-                          {cancelingId === b.id ? 'Canceling...' : 'Cancel'}
+                          {cancelingId === b.id ? t('common.loading') : t('dashboard.cancelBooking')}
                         </Text>
                       </Pressable>
                     )}

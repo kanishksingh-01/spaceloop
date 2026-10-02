@@ -8,6 +8,7 @@ import {
   Maximize2,
 } from 'lucide-react';
 import { TeamMember, AccentThemeToken } from './types';
+import { useTranslation } from '../../i18n';
 
 interface ArchitectCardProps {
   member: TeamMember;
@@ -30,6 +31,7 @@ export const ArchitectCard: React.FC<ArchitectCardProps> = ({
   prefersReducedMotion = false,
   isTouchDevice = false,
 }) => {
+  const { t } = useTranslation();
   const cardRef = useRef<HTMLElement>(null);
   const [hasImageFailed, setHasImageFailed] = useState(false);
   const rafRef = useRef<number | null>(null);
@@ -155,7 +157,7 @@ export const ArchitectCard: React.FC<ArchitectCardProps> = ({
 
           {/* Domain Focus */}
           <div className="text-[11px] font-mono font-medium text-slate-500 dark:text-slate-400 mt-1 mb-2 line-clamp-1">
-            Domain: <span className="text-slate-700 dark:text-slate-300 font-semibold">{member.domain}</span>
+            {t('architect.domainLabel')} <span className="text-slate-700 dark:text-slate-300 font-semibold">{member.domain}</span>
           </div>
 
           {/* Bio Introduction */}
@@ -176,7 +178,7 @@ export const ArchitectCard: React.FC<ArchitectCardProps> = ({
           aria-label={`Inspect ${member.name}'s architecture specifications`}
         >
           <Maximize2 className="w-3.5 h-3.5" />
-          <span>Inspect Specs</span>
+          <span>{t('architect.inspectSpecs')}</span>
         </button>
 
         {/* Interactive Contact Actions */}
@@ -190,7 +192,7 @@ export const ArchitectCard: React.FC<ArchitectCardProps> = ({
               aria-label={`Send direct email to ${member.name} at ${member.email}`}
             >
               <Mail className="w-3.5 h-3.5 text-[#0B3D91] dark:text-cyan-400 shrink-0" />
-              <span className="font-mono text-[11px]">Email</span>
+              <span className="font-mono text-[11px]">{t('architect.email')}</span>
             </a>
 
             {/* Copy Email Helper */}
@@ -219,7 +221,7 @@ export const ArchitectCard: React.FC<ArchitectCardProps> = ({
             aria-label={`Open ${member.name}'s LinkedIn profile in new tab`}
           >
             <Linkedin className="w-3.5 h-3.5 text-[#0A66C2] shrink-0" />
-            <span>LinkedIn</span>
+            <span>{t('architect.linkedIn')}</span>
             <ExternalLink className="w-3 h-3 text-slate-400 shrink-0" />
           </a>
         </div>

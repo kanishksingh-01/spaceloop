@@ -13,9 +13,11 @@ import {
   RiskLevel,
   ActionTaken,
 } from '../types';
+import { useI18n } from '../i18n/I18nContext';
 
 export const TrustSafetyPage: React.FC = () => {
   const navigate = useNavigate();
+  const { t, formatNumber } = useI18n();
   const [stats, setStats] = useState<TrustSafetyStats | null>(null);
   const [assessments, setAssessments] = useState<RiskAssessment[]>([]);
   const [loading, setLoading] = useState(true);
@@ -177,17 +179,17 @@ export const TrustSafetyPage: React.FC = () => {
           <div>
             <div className="flex items-center gap-2 mb-2">
               <span className="px-2.5 py-0.5 rounded-full bg-indigo-500/10 border border-indigo-500/30 text-indigo-400 text-xs font-bold tracking-wide uppercase">
-                Trust & Safety Intelligence
+                {t('trustSafety.title')}
               </span>
               <span className="text-slate-500 text-xs">•</span>
               <span className="text-slate-400 text-xs font-mono">DPDP Act 2023 Compliant</span>
             </div>
             <h1 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight flex items-center gap-3">
               <i className="fa-solid fa-shield-halved text-indigo-400" />
-              Risk & Abuse Operations Console
+              {t('trustSafety.title')}
             </h1>
             <p className="text-sm text-slate-400 mt-1 max-w-2xl">
-              Real-time multi-tier forensic inspection across seeker bookings, host listings, reviews, shared devices, and circular transaction collusion.
+              {t('trustSafety.subtitle')}
             </p>
           </div>
 
@@ -198,13 +200,13 @@ export const TrustSafetyPage: React.FC = () => {
               className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-sm font-semibold text-slate-200 transition flex items-center gap-2"
             >
               <i className={`fa-solid fa-rotate-right ${loading ? 'animate-spin' : ''}`} />
-              Refresh Signals
+              {loading ? t('common.loading') : 'Refresh'}
             </button>
             <button
               onClick={() => navigate('/dashboard')}
               className="px-4 py-2 rounded-xl bg-indigo-600/20 hover:bg-indigo-600/30 border border-indigo-500/30 text-sm font-semibold text-indigo-300 transition"
             >
-              Back to Dashboard
+              {t('spaceDetail.backToExplore')}
             </button>
           </div>
         </div>

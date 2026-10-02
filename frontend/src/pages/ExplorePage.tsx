@@ -1,16 +1,17 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { View, Text, Pressable } from 'react-native';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Space } from '../types';
-import { getSpaces, searchSpacesHybrid, aiMatchSpaces } from '../services/spaces';
+import { getSpaces, searchSpacesHybrid } from '../services/spaces';
 import { SpaceCard } from '../components/common/SpaceCard';
 import { SpaceCardGridSkeleton } from '../components/common/Skeletons';
+import { useTranslation } from '../i18n';
 
 const PAGE_SIZE = 12;
 
 export const ExplorePage: React.FC = () => {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
+  const { t, formatCurrency } = useTranslation();
 
   // State
   const [spaces, setSpaces] = useState<Space[]>([]);
@@ -29,15 +30,15 @@ export const ExplorePage: React.FC = () => {
   const [userLng, setUserLng] = useState<number | null>(null);
 
   const categories = [
-    { label: 'All Spaces', icon: 'fa-border-all', value: 'All' },
-    { label: 'Workspaces', icon: 'fa-laptop-code', value: 'Workspace', color: 'text-indigo-400' },
-    { label: 'Meeting Rooms', icon: 'fa-handshake', value: 'Meeting', color: 'text-blue-400' },
-    { label: 'Creative & Studio', icon: 'fa-microphone-lines', value: 'Studio', color: 'text-purple-400' },
-    { label: 'Maker Workshops', icon: 'fa-screwdriver-wrench', value: 'Workshop', color: 'text-amber-400' },
-    { label: 'Pop-Up Retail', icon: 'fa-store', value: 'Retail', color: 'text-pink-400' },
-    { label: 'Storage Units', icon: 'fa-boxes-stacked', value: 'Storage', color: 'text-yellow-400' },
-    { label: 'Study Pods', icon: 'fa-book-open', value: 'Study', color: 'text-emerald-400' },
-    { label: 'Event Spaces', icon: 'fa-users', value: 'Event', color: 'text-cyan-400' },
+    { label: t('explore.filterAll'), icon: 'fa-border-all', value: 'All' },
+    { label: t('explore.filterDesk'), icon: 'fa-laptop-code', value: 'Workspace', color: 'text-indigo-400' },
+    { label: t('explore.filterMeeting'), icon: 'fa-handshake', value: 'Meeting', color: 'text-blue-400' },
+    { label: t('explore.filterStudio'), icon: 'fa-microphone-lines', value: 'Studio', color: 'text-purple-400' },
+    { label: t('landing.studyCategory'), icon: 'fa-screwdriver-wrench', value: 'Workshop', color: 'text-amber-400' },
+    { label: t('landing.spacesTitle'), icon: 'fa-store', value: 'Retail', color: 'text-pink-400' },
+    { label: t('explore.filterStorage'), icon: 'fa-boxes-stacked', value: 'Storage', color: 'text-yellow-400' },
+    { label: t('explore.filterStudy'), icon: 'fa-book-open', value: 'Study', color: 'text-emerald-400' },
+    { label: t('explore.filterEvent'), icon: 'fa-users', value: 'Event', color: 'text-cyan-400' },
   ];
 
   const quickHubs = [
@@ -149,56 +150,70 @@ export const ExplorePage: React.FC = () => {
     }
 
     if (refLat && refLng) {
-      result = result.map((sp) => {
-        if (sp.latitude && sp.longitude) {
-          const dist = computeHaversineKm(refLat!, refLng!, sp.latitude, sp.longitude);
-          return { ...sp, distance_km: sp.distance_km ?? dist };
+      result = result.map((s) => {
+        if (s.latitude && s.longitude) {
+          const dist = computeHaversineKm(refLat!, refLng!, s.latitude, s.longitude);
+          return { ...s, distance_km: dist };
         }
-        return sp;
+        return s;
       });
 
       if (selectedRadius && selectedRadius !== 'All') {
-        const maxKm = Number(selectedRadius);
-        if (!isNaN(maxKm) && maxKm > 0) {
-          result = result.filter((sp) => sp.distance_km !== undefined && sp.distance_km <= maxKm);
+        const maxRad = Number(selectedRadius);
+        if (!isNaN(maxRad) && maxRad > 0) {
+          result = result.filter((s) => s.distance_km === undefined || s.distance_km <= maxRad);
         }
       }
-
-      result.sort((a, b) => (a.distance_km ?? 9999) - (b.distance_km ?? 9999));
     }
 
     if (selectedMaxPrice) {
-      const p = Number(selectedMaxPrice);
-      if (!isNaN(p)) {
-        result = result.filter((sp) => (sp.hourly_rate ?? sp.price_hourly ?? 50) <= p);
+      const maxP = Number(selectedMaxPrice);
+      if (!isNaN(maxP) && maxP > 0) {
+        result = result.filter((s) => (s.hourly_rate ?? 50) <= maxP);
       }
     }
 
-    if (activeCategory && activeCategory !== 'All') {
-      const c = activeCategory.toLowerCase();
-      result = result.filter((sp) => {
-        const spCat = (sp.category || '').toLowerCase();
-        const spTitle = (sp.title || '').toLowerCase();
-        if (c === 'studio') return spCat.includes('studio') || spCat.includes('creative') || spTitle.includes('studio') || spTitle.includes('podcast');
-        if (c === 'workspace') return spCat.includes('workspace') || spCat.includes('work') || spTitle.includes('hackathon') || spTitle.includes('coding');
-        if (c === 'meeting') return spCat.includes('meeting') || spTitle.includes('discussion') || spTitle.includes('whiteboard') || spTitle.includes('sprint');
-        if (c === 'study') return spCat.includes('study') || spCat.includes('pod') || spTitle.includes('study') || spTitle.includes('library');
-        if (c === 'workshop') return spCat.includes('workshop') || spCat.includes('creative') || spTitle.includes('maker') || spTitle.includes('soldering');
-        if (c === 'retail') return spCat.includes('retail') || spTitle.includes('retail') || spTitle.includes('pop-up') || spTitle.includes('store');
-        if (c === 'storage') return spCat.includes('storage') || spTitle.includes('storage') || spTitle.includes('gear');
-        if (c === 'event') return spCat.includes('event') || spTitle.includes('event');
-        return spCat.includes(c) || spTitle.includes(c);
-      });
-    }
-
     return result;
-  }, [spaces, userLat, userLng, locationInput, selectedRadius, selectedMaxPrice, activeCategory]);
+  }, [spaces, userLat, userLng, locationInput, selectedRadius, selectedMaxPrice]);
 
   const visibleSpaces = useMemo(() => {
     return displaySpaces.slice(0, visibleCount);
   }, [displaySpaces, visibleCount]);
 
-  const handleSelectQuickHub = (hub: (typeof quickHubs)[0]) => {
+  const handleSelectCategory = (cat: string) => {
+    setActiveCategory(cat);
+    setVisibleCount(PAGE_SIZE);
+    setSearchParams((prev) => {
+      const p = new URLSearchParams(prev);
+      if (cat === 'All') p.delete('category');
+      else p.set('category', cat);
+      return p;
+    });
+  };
+
+  const handleRadiusChange = (rad: string) => {
+    setSelectedRadius(rad);
+    setVisibleCount(PAGE_SIZE);
+    setSearchParams((prev) => {
+      const p = new URLSearchParams(prev);
+      if (!rad || rad === 'All') p.delete('radius');
+      else p.set('radius', rad);
+      return p;
+    });
+  };
+
+  const handleMaxPriceChange = (price: string) => {
+    setSelectedMaxPrice(price);
+    setVisibleCount(PAGE_SIZE);
+    setSearchParams((prev) => {
+      const p = new URLSearchParams(prev);
+      if (!price) p.delete('max_price');
+      else p.set('max_price', price);
+      return p;
+    });
+  };
+
+  const handleSelectQuickHub = (hub: { label: string; loc: string; lat: number; lng: number }) => {
     setLocationInput(hub.loc);
     setUserLat(hub.lat);
     setUserLng(hub.lng);
@@ -206,35 +221,18 @@ export const ExplorePage: React.FC = () => {
     fetchSpaces({ loc: hub.loc, lat: hub.lat, lng: hub.lng });
   };
 
-  const handleSelectCategory = (catVal: string) => {
-    setActiveCategory(catVal);
-    setAiMatchActive(false);
-    setVisibleCount(PAGE_SIZE);
-  };
-
-  const handleRadiusChange = (rad: string) => {
-    setSelectedRadius(rad);
-    setVisibleCount(PAGE_SIZE);
-  };
-
-  const handleMaxPriceChange = (price: string) => {
-    setSelectedMaxPrice(price);
-    setVisibleCount(PAGE_SIZE);
-  };
-
-  // AI Match handler
-  const handleAiSearch = async (queryText?: string) => {
-    const q = (queryText !== undefined ? queryText : searchQuery).trim();
-    if (!q) {
-      setAiMatchActive(false);
-      setExtractedConstraints({});
-      setSearchSummary('');
+  // Hybrid AI Search
+  const handleAiSearch = async (overridePrompt?: string) => {
+    const q = overridePrompt || searchQuery;
+    if (!q.trim()) {
       fetchSpaces();
       return;
     }
 
     setIsAiSearching(true);
     setLoading(true);
+    setVisibleCount(PAGE_SIZE);
+
     try {
       let curLat = userLat;
       let curLng = userLng;
@@ -312,7 +310,6 @@ export const ExplorePage: React.FC = () => {
     <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col antialiased">
       {/* 1. FOCUSED DISCOVERY HEADER & NATURAL LANGUAGE AI SEARCH */}
       <section className="relative overflow-hidden pt-8 pb-8 md:pt-12 md:pb-12 border-b border-slate-800/60 bg-gradient-to-b from-slate-900 via-slate-950 to-slate-950">
-        {/* Glowing Background Ambience */}
         <div className="absolute -top-40 left-1/2 -translate-x-1/2 w-[600px] h-[300px] bg-indigo-600/15 blur-[120px] rounded-full pointer-events-none" />
         <div className="absolute top-10 right-10 w-[240px] h-[240px] bg-violet-600/10 blur-[100px] rounded-full pointer-events-none" />
 
@@ -320,15 +317,15 @@ export const ExplorePage: React.FC = () => {
           <div className="text-center max-w-3xl mx-auto mb-6">
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-indigo-300 text-xs font-medium mb-3 shadow-sm">
               <span className="flex h-2 w-2 rounded-full bg-indigo-400 animate-ping" />
-              <span className="font-semibold">AI Matchmaker</span> • Real-time Instant Availability
+              <span className="font-semibold">{t('explore.aiMatchLabel')}</span> • {t('common.availableNow')}
             </div>
 
             <h1 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold tracking-tight text-white leading-tight">
-              Find Flexible Space Near You
+              {t('explore.title')}
             </h1>
 
             <p className="mt-3 text-sm sm:text-base text-slate-300 leading-relaxed max-w-2xl mx-auto">
-              Instantly discover and reserve workspaces, client meeting rooms, creative studios, maker bays, and study pods by the hour.
+              {t('explore.subtitle')}
             </p>
           </div>
 
@@ -350,7 +347,7 @@ export const ExplorePage: React.FC = () => {
                     type="text"
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    placeholder="Describe your ideal space (e.g. 'podcast studio for 2' or 'client meeting room near Koramangala')..."
+                    placeholder={t('explore.searchPlaceholder')}
                     className="w-full bg-slate-800 border border-slate-700/80 rounded-xl pl-11 pr-4 py-3 text-sm text-slate-100 placeholder-slate-400 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition"
                   />
                 </div>
@@ -363,89 +360,16 @@ export const ExplorePage: React.FC = () => {
                   {isAiSearching ? (
                     <>
                       <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                      <span>Matching...</span>
+                      <span>{t('common.loading')}</span>
                     </>
                   ) : (
                     <>
-                      <span>Match with AI</span>
+                      <span>{t('common.search')}</span>
                       <i className="fa-solid fa-arrow-right text-xs group-hover:translate-x-0.5 transition" />
                     </>
                   )}
                 </button>
               </form>
-
-              {/* Prompt Suggestion Chips */}
-              <div className="mt-3 pt-2.5 border-t border-slate-800/70 flex items-center gap-2 text-xs overflow-x-auto whitespace-nowrap pb-1 scrollbar-none">
-                <span className="text-slate-400 font-medium shrink-0 flex items-center gap-1 text-[11px]">
-                  <i className="fa-regular fa-compass text-indigo-400" /> Try prompts:
-                </span>
-                <button
-                  type="button"
-                  onClick={() => {
-                    const p = 'quiet place for 6 people near Kharadi for a 4-hour team meeting';
-                    setSearchQuery(p);
-                    handleAiSearch(p);
-                  }}
-                  className="px-2.5 py-1 rounded-lg bg-indigo-950/70 hover:bg-indigo-900/80 text-indigo-200 hover:text-white border border-indigo-500/40 text-[11px] font-medium transition flex items-center gap-1.5"
-                >
-                  <span>✨</span> Kharadi Team Meeting
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    const p = 'quiet room for 4 people';
-                    setSearchQuery(p);
-                    handleAiSearch(p);
-                  }}
-                  className="px-2.5 py-1 rounded-lg bg-slate-800/80 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700/60 text-[11px] transition flex items-center gap-1.5"
-                >
-                  <span>📚</span> Quiet Room (4 ppl)
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    const p = 'workspace near Kharadi';
-                    setSearchQuery(p);
-                    handleAiSearch(p);
-                  }}
-                  className="px-2.5 py-1 rounded-lg bg-slate-800/80 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700/60 text-[11px] transition flex items-center gap-1.5"
-                >
-                  <span>💼</span> Workspace in Kharadi
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    const p = 'place for a small team meeting';
-                    setSearchQuery(p);
-                    handleAiSearch(p);
-                  }}
-                  className="px-2.5 py-1 rounded-lg bg-slate-800/80 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700/60 text-[11px] transition flex items-center gap-1.5"
-                >
-                  <span>👥</span> Small Team Meeting
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    const p = 'studio for a photography session';
-                    setSearchQuery(p);
-                    handleAiSearch(p);
-                  }}
-                  className="px-2.5 py-1 rounded-lg bg-slate-800/80 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700/60 text-[11px] transition flex items-center gap-1.5"
-                >
-                  <span>📸</span> Photography Studio
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    const p = 'office space under ₹1000 per hour';
-                    setSearchQuery(p);
-                    handleAiSearch(p);
-                  }}
-                  className="px-2.5 py-1 rounded-lg bg-slate-800/80 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700/60 text-[11px] transition flex items-center gap-1.5"
-                >
-                  <span>💰</span> Under ₹1000/hr
-                </button>
-              </div>
             </div>
           </div>
         </div>
@@ -480,12 +404,11 @@ export const ExplorePage: React.FC = () => {
           {/* Active Indicator */}
           <div className="flex items-center gap-3 text-xs text-slate-400">
             <span>
-              {displaySpaces.length} {displaySpaces.length === 1 ? 'space' : 'spaces'} available
-              {selectedRadius ? ` within ${selectedRadius} km` : ''}
+              {displaySpaces.length} {t('explore.foundSpaces')}
             </span>
             <span className="w-1 h-1 rounded-full bg-slate-700" />
             <span className="flex items-center gap-1 text-emerald-400">
-              <i className="fa-solid fa-shield-check" /> 100% Host Verified
+              <i className="fa-solid fa-shield-check" /> {t('common.verified')}
             </span>
           </div>
         </div>
@@ -506,7 +429,7 @@ export const ExplorePage: React.FC = () => {
                 type="text"
                 value={locationInput}
                 onChange={(e) => setLocationInput(e.target.value)}
-                placeholder="Enter location or college (e.g. Wagholi, Hauz Khas, Koramangala)..."
+                placeholder={t('explore.filterLocation')}
                 className="bg-transparent border-none text-xs sm:text-sm text-slate-100 placeholder-slate-400 focus:outline-none w-full"
               />
               <button
@@ -516,44 +439,44 @@ export const ExplorePage: React.FC = () => {
                 title="Use my current GPS coordinates"
               >
                 <i className="fa-solid fa-crosshairs text-indigo-400" />
-                <span className="hidden sm:inline">Use GPS</span>
+                <span className="hidden sm:inline">GPS</span>
               </button>
             </div>
 
             {/* Radius Selector */}
             <div className="flex items-center gap-2 shrink-0">
               <label className="text-xs text-slate-400 font-medium shrink-0 flex items-center gap-1">
-                <i className="fa-solid fa-ruler-combined text-slate-500" /> Radius:
+                <i className="fa-solid fa-ruler-combined text-slate-500" /> {t('explore.filterAvailability')}:
               </label>
               <select
                 value={selectedRadius}
                 onChange={(e) => handleRadiusChange(e.target.value)}
                 className="bg-slate-800 border border-slate-700/80 rounded-xl px-3 py-2 text-xs sm:text-sm text-slate-100 focus:outline-none focus:border-indigo-500 transition"
               >
-                <option value="">Any Distance</option>
-                <option value="1">Within 1 km</option>
-                <option value="3">Within 3 km</option>
-                <option value="5">Within 5 km</option>
-                <option value="10">Within 10 km</option>
+                <option value="">{t('common.all')}</option>
+                <option value="1">1 km</option>
+                <option value="3">3 km</option>
+                <option value="5">5 km</option>
+                <option value="10">10 km</option>
               </select>
             </div>
 
             {/* Max Budget Filter */}
             <div className="flex items-center gap-2 shrink-0">
               <label className="text-xs text-slate-400 font-medium shrink-0 flex items-center gap-1">
-                <i className="fa-solid fa-indian-rupee-sign text-slate-500" /> Max Price:
+                <i className="fa-solid fa-indian-rupee-sign text-slate-500" /> {t('explore.priceRange')}:
               </label>
               <select
                 value={selectedMaxPrice}
                 onChange={(e) => handleMaxPriceChange(e.target.value)}
                 className="bg-slate-800 border border-slate-700/80 rounded-xl px-3 py-2 text-xs sm:text-sm text-slate-100 focus:outline-none focus:border-indigo-500 transition"
               >
-                <option value="">Any Budget</option>
-                <option value="60">Under ₹60/hr</option>
-                <option value="80">Under ₹80/hr</option>
-                <option value="100">Under ₹100/hr</option>
-                <option value="150">Under ₹150/hr</option>
-                <option value="200">Under ₹200/hr</option>
+                <option value="">{t('common.all')}</option>
+                <option value="60">{formatCurrency(60)}</option>
+                <option value="80">{formatCurrency(80)}</option>
+                <option value="100">{formatCurrency(100)}</option>
+                <option value="150">{formatCurrency(150)}</option>
+                <option value="200">{formatCurrency(200)}</option>
               </select>
             </div>
 
@@ -563,7 +486,7 @@ export const ExplorePage: React.FC = () => {
                 type="submit"
                 className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs sm:text-sm font-semibold transition flex items-center justify-center gap-1.5 shadow-md shadow-indigo-600/20"
               >
-                <i className="fa-solid fa-filter text-xs" /> Apply Filter
+                <i className="fa-solid fa-filter text-xs" /> {t('common.filter')}
               </button>
               <button
                 type="button"
@@ -573,17 +496,17 @@ export const ExplorePage: React.FC = () => {
                     ? 'bg-slate-800 hover:bg-slate-700 text-slate-200 border-slate-700 shadow-sm'
                     : 'bg-slate-950/60 hover:bg-slate-850 text-slate-400 hover:text-slate-200 border-slate-800'
                 }`}
-                title="Reset all filters to default"
+                title={t('common.clearFilters')}
               >
                 <i className="fa-solid fa-rotate-left text-xs" />
-                <span>Reset</span>
+                <span>{t('common.reset')}</span>
               </button>
             </div>
           </form>
 
           {/* Quick Hub Chips */}
           <div className="mt-3 pt-2.5 border-t border-slate-800/60 flex items-center gap-2 text-xs overflow-x-auto whitespace-nowrap scrollbar-none">
-            <span className="text-slate-500 text-[11px] font-medium shrink-0">Quick Hubs:</span>
+            <span className="text-slate-500 text-[11px] font-medium shrink-0">{t('explore.filterLocation')}:</span>
             {quickHubs.map((hub, idx) => (
               <button
                 key={idx}
@@ -606,9 +529,9 @@ export const ExplorePage: React.FC = () => {
                   <i className="fa-solid fa-sparkles text-sm" />
                 </div>
                 <div>
-                  <h3 className="text-sm font-semibold text-white">Hybrid Semantic Match Active</h3>
+                  <h3 className="text-sm font-semibold text-white">{t('explore.aiMatchLabel')}</h3>
                   <p className="text-xs text-slate-400">
-                    {searchSummary || 'Ranked by semantic intent and verified physical constraints'}
+                    {searchSummary || t('explore.aiMatchSubtitle')}
                   </p>
                 </div>
               </div>
@@ -622,46 +545,9 @@ export const ExplorePage: React.FC = () => {
                 }}
                 className="text-xs text-indigo-400 hover:text-indigo-300 font-medium px-3 py-1.5 rounded-lg bg-indigo-950 border border-indigo-800/60 shrink-0"
               >
-                Clear AI Filter
+                {t('explore.clearAllFilters')}
               </button>
             </div>
-
-            {/* Extracted Structured Constraint Badges */}
-            {Object.keys(extractedConstraints).length > 0 && (
-              <div className="flex items-center gap-2 flex-wrap pt-2.5 border-t border-slate-800/70 text-xs">
-                <span className="text-[11px] text-slate-400 font-medium shrink-0">Extracted constraints:</span>
-                {extractedConstraints.location && (
-                  <span className="px-2.5 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 text-[11px] font-medium flex items-center gap-1">
-                    <span>📍</span> {extractedConstraints.location}
-                  </span>
-                )}
-                {extractedConstraints.capacity && (
-                  <span className="px-2.5 py-0.5 rounded-full bg-blue-500/20 text-blue-300 border border-blue-500/30 text-[11px] font-medium flex items-center gap-1">
-                    <span>👥</span> {extractedConstraints.capacity}+ people
-                  </span>
-                )}
-                {extractedConstraints.space_type && (
-                  <span className="px-2.5 py-0.5 rounded-full bg-purple-500/20 text-purple-300 border border-purple-500/30 text-[11px] font-medium flex items-center gap-1">
-                    <span>🏷️</span> {extractedConstraints.space_type}
-                  </span>
-                )}
-                {extractedConstraints.hours && (
-                  <span className="px-2.5 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30 text-[11px] font-medium flex items-center gap-1">
-                    <span>⏱️</span> {extractedConstraints.hours} hr duration
-                  </span>
-                )}
-                {extractedConstraints.max_price && (
-                  <span className="px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 text-[11px] font-medium flex items-center gap-1">
-                    <span>💰</span> Under ₹{extractedConstraints.max_price}/hr
-                  </span>
-                )}
-                {Array.isArray(extractedConstraints.amenities) && extractedConstraints.amenities.map((am: string, i: number) => (
-                  <span key={i} className="px-2.5 py-0.5 rounded-full bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 text-[11px] font-medium">
-                    {am}
-                  </span>
-                ))}
-              </div>
-            )}
           </div>
         )}
 
@@ -673,15 +559,15 @@ export const ExplorePage: React.FC = () => {
             <div className="w-16 h-16 rounded-full bg-slate-800 flex items-center justify-center mx-auto mb-4 text-2xl">
               📍
             </div>
-            <h3 className="text-lg font-bold text-white mb-2">No spaces found matching this criteria</h3>
+            <h3 className="text-lg font-bold text-white mb-2">{t('explore.noSpacesFoundTitle')}</h3>
             <p className="text-xs text-slate-400 mb-6 max-w-sm mx-auto">
-              Try adjusting your location, selecting "All Spaces", or increasing your radius/budget limit.
+              {t('explore.noSpacesFoundDesc')}
             </p>
             <button
               onClick={resetAllFilters}
               className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold rounded-xl transition"
             >
-              Show All Available Spaces
+              {t('explore.filterAll')}
             </button>
           </div>
         ) : (
@@ -700,7 +586,7 @@ export const ExplorePage: React.FC = () => {
             {displaySpaces.length > visibleSpaces.length && (
               <div className="mt-10 pt-6 border-t border-slate-800/80 flex flex-col items-center justify-center gap-3">
                 <div className="text-xs text-slate-400 font-medium">
-                  Showing <span className="text-white font-semibold">{visibleSpaces.length}</span> of <span className="text-white font-semibold">{displaySpaces.length}</span> spaces
+                  {t('explore.showingSpaces', { count: visibleSpaces.length })}
                 </div>
                 <div className="flex items-center gap-3">
                   <button
@@ -709,17 +595,8 @@ export const ExplorePage: React.FC = () => {
                     className="px-6 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-100 hover:text-white text-xs sm:text-sm font-semibold border border-slate-700 hover:border-slate-600 transition shadow-sm flex items-center gap-2"
                   >
                     <i className="fa-solid fa-chevron-down text-xs text-indigo-400" />
-                    <span>Load More Spaces</span>
+                    <span>{t('common.viewMore')}</span>
                   </button>
-                  {displaySpaces.length > visibleCount + PAGE_SIZE && (
-                    <button
-                      type="button"
-                      onClick={() => setVisibleCount(displaySpaces.length)}
-                      className="px-4 py-2.5 rounded-xl bg-slate-900/80 hover:bg-slate-800 text-slate-400 hover:text-slate-200 text-xs sm:text-sm font-medium border border-slate-800 transition"
-                    >
-                      <span>Show All ({displaySpaces.length})</span>
-                    </button>
-                  )}
                 </div>
               </div>
             )}

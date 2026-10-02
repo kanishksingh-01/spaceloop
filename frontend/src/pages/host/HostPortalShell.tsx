@@ -4,6 +4,7 @@ import { User, Booking } from '../../types';
 import { getHostNotifications, getHostBookings } from '../../services/host';
 import { MASTER_DEMO_USER } from '../../services/auth';
 import { NotificationsDrawer } from './components/NotificationsDrawer';
+import { useI18n } from '../../i18n/I18nContext';
 
 interface HostPortalShellProps {
   currentUser: User | null;
@@ -16,6 +17,7 @@ export const HostPortalShell: React.FC<HostPortalShellProps> = ({
 }) => {
   const navigate = useNavigate();
   const location = useLocation();
+  const { t } = useI18n();
 
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
@@ -50,10 +52,10 @@ export const HostPortalShell: React.FC<HostPortalShellProps> = ({
     {
       label: null,
       items: [
-        { path: '/host', label: 'Overview', icon: 'fa-solid fa-gauge-high', exact: true },
+        { path: '/host', label: t('host.overview'), icon: 'fa-solid fa-gauge-high', exact: true },
         {
           path: '/host/notifications',
-          label: 'Notifications',
+          label: t('host.notifications'),
           icon: 'fa-solid fa-bell',
           badge: unreadNotifsCount > 0 ? `${unreadNotifsCount}` : undefined,
           badgeColor: 'bg-amber-500 text-slate-950 font-black',
@@ -61,52 +63,52 @@ export const HostPortalShell: React.FC<HostPortalShellProps> = ({
       ],
     },
     {
-      group: 'Spaces',
+      group: t('host.spacesGroup'),
       items: [
-        { path: '/host/spaces', label: 'My Spaces', icon: 'fa-solid fa-building' },
-        { path: '/host/spaces/create', label: 'Create Space', icon: 'fa-solid fa-plus-circle' },
+        { path: '/host/spaces', label: t('host.mySpaces'), icon: 'fa-solid fa-building' },
+        { path: '/host/spaces/create', label: t('host.createSpace'), icon: 'fa-solid fa-plus-circle' },
       ],
     },
     {
-      group: 'Operations',
+      group: t('host.operationsGroup'),
       items: [
-        { path: '/host/bookings', label: 'Bookings', icon: 'fa-solid fa-calendar-check' },
-        { path: '/host/calendar', label: 'Calendar', icon: 'fa-solid fa-calendar-days' },
+        { path: '/host/bookings', label: t('host.bookings'), icon: 'fa-solid fa-calendar-check' },
+        { path: '/host/calendar', label: t('host.calendar'), icon: 'fa-solid fa-calendar-days' },
         {
           path: '/host/live-sessions',
-          label: 'Live Sessions',
+          label: t('host.liveSessions'),
           icon: 'fa-solid fa-satellite-dish',
-          badge: activeSession ? 'Active' : undefined,
+          badge: activeSession ? t('common.activeSession') : undefined,
           badgeColor: 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 animate-pulse',
         },
       ],
     },
     {
-      group: 'Verification',
+      group: t('host.verificationGroup'),
       items: [
-        { path: '/host/verification', label: 'Space Verification', icon: 'fa-solid fa-shield-halved' },
-        { path: '/host/access', label: 'Access & Security', icon: 'fa-solid fa-key' },
+        { path: '/host/verification', label: t('host.verification'), icon: 'fa-solid fa-shield-halved' },
+        { path: '/host/access', label: t('host.accessSecurity'), icon: 'fa-solid fa-key' },
       ],
     },
     {
-      group: 'Settlement',
+      group: t('host.settlementGroup'),
       items: [
-        { path: '/host/condition-reports', label: 'Condition Reports', icon: 'fa-solid fa-clipboard-check' },
-        { path: '/host/escrow', label: 'Escrow Ledger', icon: 'fa-solid fa-vault' },
+        { path: '/host/condition-reports', label: t('host.conditionEscrow'), icon: 'fa-solid fa-clipboard-check' },
+        { path: '/host/escrow', label: t('host.escrowManagementTitle'), icon: 'fa-solid fa-vault' },
       ],
     },
     {
-      group: 'Insights',
+      group: t('host.insightsGroup'),
       items: [
-        { path: '/host/analytics', label: 'Analytics', icon: 'fa-solid fa-chart-line' },
-        { path: '/host/activity', label: 'Activity Trail', icon: 'fa-solid fa-list-check' },
+        { path: '/host/analytics', label: t('host.analytics'), icon: 'fa-solid fa-chart-line' },
+        { path: '/host/activity', label: t('host.activityAudit'), icon: 'fa-solid fa-list-check' },
       ],
     },
     {
-      group: 'System',
+      group: t('host.systemGroup'),
       items: [
-        { path: '/host/settings', label: 'Settings', icon: 'fa-solid fa-gear' },
-        { path: '/host/help', label: 'Help & Support', icon: 'fa-solid fa-circle-question' },
+        { path: '/host/settings', label: t('host.settings'), icon: 'fa-solid fa-gear' },
+        { path: '/host/help', label: t('nav.help'), icon: 'fa-solid fa-circle-question' },
       ],
     },
   ];
@@ -135,7 +137,7 @@ export const HostPortalShell: React.FC<HostPortalShellProps> = ({
             onClick={onOpenHostAuthModal}
             className="px-3 py-1 rounded-lg bg-amber-500 text-slate-950 font-bold text-[11px] hover:bg-amber-400 transition"
           >
-            Sign In to Your Host Account
+            {t('auth.loginBtn')}
           </button>
         </div>
       )}
@@ -180,8 +182,8 @@ export const HostPortalShell: React.FC<HostPortalShellProps> = ({
               className="flex items-center gap-2.5 px-3.5 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/25 text-emerald-300 text-xs font-semibold hover:bg-emerald-500/15 transition cursor-pointer"
             >
               <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping shrink-0" />
-              <span>Session #{activeSession.id} Active</span>
-              <span className="text-[10px] text-emerald-400/80 font-mono">View Cockpit →</span>
+              <span>{t('host.liveSessions')} #{activeSession.id}</span>
+              <span className="text-[10px] text-emerald-400/80 font-mono">→</span>
             </button>
           </div>
         )}
@@ -195,7 +197,7 @@ export const HostPortalShell: React.FC<HostPortalShellProps> = ({
             className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-bold text-xs shadow-md shadow-amber-500/15 transition"
           >
             <i className="fa-solid fa-plus text-[10px]" />
-            <span>List Space</span>
+            <span>{t('host.createSpace')}</span>
           </button>
 
           {/* Notifications Button */}
@@ -203,7 +205,7 @@ export const HostPortalShell: React.FC<HostPortalShellProps> = ({
             type="button"
             onClick={() => setNotificationsOpen(true)}
             className="relative p-2 rounded-xl text-slate-400 hover:text-white hover:bg-slate-900 border border-slate-800 transition"
-            title="Operational Notifications"
+            title={t('host.notifications')}
           >
             <i className="fa-solid fa-bell text-sm" />
             {unreadNotifsCount > 0 && (
@@ -218,10 +220,10 @@ export const HostPortalShell: React.FC<HostPortalShellProps> = ({
             type="button"
             onClick={() => navigate('/explore')}
             className="px-2.5 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-850 border border-slate-800 text-slate-300 text-xs font-semibold transition hidden sm:flex items-center gap-1.5"
-            title="Switch to Seeker Portal"
+            title={t('nav.switchToSeeker')}
           >
             <i className="fa-solid fa-compass text-indigo-400 text-xs" />
-            <span>Seeker Mode</span>
+            <span>{t('nav.seekerPortal')}</span>
           </button>
 
           {/* Host Profile & OTI Pill */}
