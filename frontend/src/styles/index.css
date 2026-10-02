@@ -62,6 +62,17 @@
   --status-ai: #7c3aed;           /* Violet-600 (AI Concierge / Matchmaker) */
 }
 
+html {
+  scroll-behavior: smooth;
+  scroll-padding-top: 5rem;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+}
+
 html, body, #root {
   height: 100%;
   margin: 0;

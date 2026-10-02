@@ -57,6 +57,14 @@ export const Header: React.FC<HeaderProps> = ({
     }
   };
 
+  const handleNav = (targetPath: string) => {
+    if (location.pathname === targetPath) {
+      window.scrollTo({ top: 0, left: 0, behavior: 'smooth' });
+    } else {
+      navigate(targetPath);
+    }
+  };
+
   return (
     <>
       <header className="sticky top-0 z-50 backdrop-blur-md bg-slate-950/95 border-b border-slate-800/80">
@@ -70,7 +78,7 @@ export const Header: React.FC<HeaderProps> = ({
           />
           <button
             type="button"
-            onClick={() => navigate(isHostPortal ? '/host/dashboard' : '/')}
+            onClick={() => handleNav(isHostPortal ? '/host/dashboard' : '/')}
             className="flex items-center gap-2.5 group shrink-0 focus:outline-none"
           >
             <div
@@ -127,7 +135,7 @@ export const Header: React.FC<HeaderProps> = ({
             /* HOST PORTAL NAVIGATION */
             <>
               <button
-                onClick={() => navigate('/host')}
+                onClick={() => handleNav('/host')}
                 className={`px-3 py-1.5 rounded-lg transition flex items-center gap-1.5 ${
                   location.pathname === '/host' || location.pathname === '/host/overview' || location.pathname === '/host/dashboard'
                     ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
@@ -138,7 +146,7 @@ export const Header: React.FC<HeaderProps> = ({
                 <span>Overview</span>
               </button>
               <button
-                onClick={() => navigate('/host/spaces')}
+                onClick={() => handleNav('/host/spaces')}
                 className={`px-3 py-1.5 rounded-lg transition flex items-center gap-1.5 ${
                   location.pathname.startsWith('/host/spaces')
                     ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
@@ -149,7 +157,7 @@ export const Header: React.FC<HeaderProps> = ({
                 <span>My Spaces</span>
               </button>
               <button
-                onClick={() => navigate('/host/live-sessions')}
+                onClick={() => handleNav('/host/live-sessions')}
                 className={`px-3 py-1.5 rounded-lg transition flex items-center gap-1.5 ${
                   location.pathname.startsWith('/host/live-sessions')
                     ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
@@ -160,7 +168,7 @@ export const Header: React.FC<HeaderProps> = ({
                 <span>Live Sessions</span>
               </button>
               <button
-                onClick={() => navigate('/architecture')}
+                onClick={() => handleNav('/architecture')}
                 className={`px-3 py-1.5 rounded-lg transition flex items-center gap-1.5 ${
                   location.pathname === '/architecture'
                     ? 'bg-amber-500/30 text-amber-200 border border-amber-500/50 shadow-sm shadow-amber-500/20'
@@ -176,7 +184,7 @@ export const Header: React.FC<HeaderProps> = ({
             /* SEEKER PORTAL NAVIGATION */
             <>
               <button
-                onClick={() => navigate('/explore')}
+                onClick={() => handleNav('/explore')}
                 className={`px-3 py-1.5 rounded-lg transition flex items-center gap-1.5 ${
                   location.pathname === '/explore'
                     ? 'bg-indigo-600/20 text-indigo-300 border border-indigo-500/30'
@@ -187,7 +195,7 @@ export const Header: React.FC<HeaderProps> = ({
                 <span>{t('nav.explore')}</span>
               </button>
               <button
-                onClick={() => navigate('/host')}
+                onClick={() => handleNav('/host')}
                 className="px-3 py-1.5 rounded-lg transition flex items-center gap-1.5 text-amber-300 hover:text-white hover:bg-amber-500/10 border border-amber-500/20 font-bold"
                 title="Launch Host Operating System"
               >
@@ -195,7 +203,7 @@ export const Header: React.FC<HeaderProps> = ({
                 <span>Host Portal</span>
               </button>
               <button
-                onClick={() => navigate('/architecture')}
+                onClick={() => handleNav('/architecture')}
                 className={`px-3 py-1.5 rounded-lg transition flex items-center gap-1.5 ${
                   location.pathname === '/architecture'
                     ? 'bg-indigo-600/30 text-indigo-200 border border-indigo-500/50 shadow-sm shadow-indigo-500/20'
@@ -247,7 +255,7 @@ export const Header: React.FC<HeaderProps> = ({
           {isHostPortal ? (
             <button
               type="button"
-              onClick={() => navigate('/explore')}
+              onClick={() => handleNav('/explore')}
               className="inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl bg-indigo-600/10 hover:bg-indigo-600/20 text-indigo-300 border border-indigo-500/30 text-xs font-bold transition shrink-0"
               title="Switch to Seeker Marketplace"
             >
@@ -258,7 +266,7 @@ export const Header: React.FC<HeaderProps> = ({
           ) : (
             <button
               type="button"
-              onClick={() => navigate('/host')}
+              onClick={() => handleNav('/host')}
               className="inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border border-amber-500/30 text-xs font-bold transition shrink-0"
               title="Launch Host Operating System"
             >
@@ -309,7 +317,7 @@ export const Header: React.FC<HeaderProps> = ({
               <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
                 <button
                   type="button"
-                  onClick={() => navigate('/dashboard')}
+                  onClick={() => handleNav('/dashboard')}
                   className="flex items-center gap-1.5 px-2 sm:px-2.5 py-1 rounded-xl bg-slate-900 border border-slate-800 text-xs font-bold text-slate-200"
                 >
                   <span>🎓 {getUserBadgeName(currentUser?.name, 'Seeker')}</span>

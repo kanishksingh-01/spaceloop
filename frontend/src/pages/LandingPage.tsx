@@ -270,7 +270,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ currentUser }) => {
       {/* =========================================================================
           2. HOW SPACELOOP WORKS (6-STEP WORKFLOW)
           ========================================================================= */}
-      <section id="how-it-works" className="py-20 bg-slate-950 border-b border-slate-800/80">
+      <section id="how-it-works" className="py-20 bg-slate-950 border-b border-slate-800/80 scroll-mt-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center max-w-3xl mx-auto mb-16">
             <span className="text-xs font-extrabold uppercase tracking-wider text-indigo-400 bg-indigo-500/10 border border-indigo-500/20 px-3 py-1 rounded-full">
@@ -359,7 +359,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ currentUser }) => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
             {/* For Seekers */}
-            <div id="for-seekers" className="bg-slate-950/80 border border-slate-800 rounded-3xl p-8 lg:p-10 floating-container relative overflow-hidden">
+            <div id="for-seekers" className="bg-slate-950/80 border border-slate-800 rounded-3xl p-8 lg:p-10 floating-container relative overflow-hidden scroll-mt-20">
               <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-500/10 text-indigo-300 text-xs font-bold mb-4">
                 <i className="fa-solid fa-briefcase" /> For Creators, Remote Workers & Teams
               </div>
@@ -398,7 +398,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ currentUser }) => {
             </div>
 
             {/* For Hosts */}
-            <div id="for-hosts" className="bg-slate-950/80 border border-slate-800 rounded-3xl p-8 lg:p-10 floating-container relative overflow-hidden">
+            <div id="for-hosts" className="bg-slate-950/80 border border-slate-800 rounded-3xl p-8 lg:p-10 floating-container relative overflow-hidden scroll-mt-20">
               <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500/10 text-amber-300 text-xs font-bold mb-4">
                 <i className="fa-solid fa-house-chimney-user" /> For Property & Space Owners
               </div>
@@ -442,7 +442,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ currentUser }) => {
       {/* =========================================================================
           4. TRUST & SAFETY SECTION
           ========================================================================= */}
-      <section id="trust-safety" className="py-20 bg-slate-950 border-b border-slate-800/80">
+      <section id="trust-safety" className="py-20 bg-slate-950 border-b border-slate-800/80 scroll-mt-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center max-w-3xl mx-auto mb-16">
             <span className="text-xs font-extrabold uppercase tracking-wider text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-3 py-1 rounded-full">
@@ -491,7 +491,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ currentUser }) => {
       {/* =========================================================================
           5. FEATURED SPACES SHOWCASE
           ========================================================================= */}
-      <section id="featured-spaces" className="py-20 bg-slate-900/40 border-b border-slate-800/80">
+      <section id="featured-spaces" className="py-20 bg-slate-900/40 border-b border-slate-800/80 scroll-mt-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex flex-col sm:flex-row sm:items-end justify-between mb-12 gap-4">
             <div>

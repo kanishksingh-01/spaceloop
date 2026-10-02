@@ -163,7 +163,11 @@ export const NavigationDrawer: React.FC<NavigationDrawerProps> = ({
   };
 
   const handleNavigate = (path: string) => {
-    navigate(path);
+    if (location.pathname === path) {
+      window.scrollTo({ top: 0, left: 0, behavior: 'smooth' });
+    } else {
+      navigate(path);
+    }
     onClose();
   };
 

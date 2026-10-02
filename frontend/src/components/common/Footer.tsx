@@ -1,10 +1,19 @@
 import React, { useState } from 'react';
 import { View, Text, Pressable } from 'react-native';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 
 export const Footer: React.FC = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const [legalModalType, setLegalModalType] = useState<'privacy' | 'terms' | 'easements' | null>(null);
+
+  const handleNav = (targetPath: string) => {
+    if (location.pathname === targetPath) {
+      window.scrollTo({ top: 0, left: 0, behavior: 'smooth' });
+    } else {
+      navigate(targetPath);
+    }
+  };
 
   const legalContent = {
     privacy: {
@@ -53,7 +62,7 @@ export const Footer: React.FC = () => {
                 <li>
                   <button
                     type="button"
-                    onClick={() => navigate('/explore')}
+                    onClick={() => handleNav('/explore')}
                     className="hover:text-white hover:underline transition flex items-center gap-1.5"
                   >
                     <i className="fa-solid fa-compass text-slate-500 text-[10px]" /> Explore
@@ -62,7 +71,7 @@ export const Footer: React.FC = () => {
                 <li>
                   <button
                     type="button"
-                    onClick={() => navigate('/list-space')}
+                    onClick={() => handleNav('/list-space')}
                     className="hover:text-white hover:underline transition flex items-center gap-1.5"
                   >
                     <i className="fa-solid fa-plus text-slate-500 text-[10px]" /> Host
@@ -71,7 +80,7 @@ export const Footer: React.FC = () => {
                 <li>
                   <button
                     type="button"
-                    onClick={() => navigate('/how-it-works')}
+                    onClick={() => handleNav('/how-it-works')}
                     className="hover:text-white hover:underline transition flex items-center gap-1.5"
                   >
                     <i className="fa-solid fa-circle-question text-slate-500 text-[10px]" /> How It Works
@@ -80,7 +89,7 @@ export const Footer: React.FC = () => {
                 <li>
                   <button
                     type="button"
-                    onClick={() => navigate('/verify')}
+                    onClick={() => handleNav('/verify')}
                     className="hover:text-white hover:underline transition flex items-center gap-1.5"
                   >
                     <i className="fa-solid fa-shield-check text-slate-500 text-[10px]" /> Safety
@@ -89,7 +98,7 @@ export const Footer: React.FC = () => {
                 <li>
                   <button
                     type="button"
-                    onClick={() => navigate('/how-it-works')}
+                    onClick={() => handleNav('/how-it-works')}
                     className="hover:text-white hover:underline transition flex items-center gap-1.5"
                   >
                     <i className="fa-solid fa-comments text-slate-500 text-[10px]" /> Help
@@ -98,7 +107,7 @@ export const Footer: React.FC = () => {
                 <li>
                   <button
                     type="button"
-                    onClick={() => navigate('/calculator')}
+                    onClick={() => handleNav('/calculator')}
                     className="hover:text-white hover:underline transition flex items-center gap-1.5"
                   >
                     <i className="fa-solid fa-calculator text-slate-500 text-[10px]" /> Calculator
@@ -107,7 +116,7 @@ export const Footer: React.FC = () => {
                 <li>
                   <button
                     type="button"
-                    onClick={() => navigate('/architecture')}
+                    onClick={() => handleNav('/architecture')}
                     className="hover:text-white hover:underline transition flex items-center gap-1.5 text-indigo-300 font-semibold"
                   >
                     <i className="fa-solid fa-cubes text-indigo-400 text-[10px]" /> Architecture & Team

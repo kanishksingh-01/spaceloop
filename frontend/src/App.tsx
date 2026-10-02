@@ -9,6 +9,7 @@ import { LoopBot } from './components/common/LoopBot';
 import { AuthModal } from './components/common/AuthModal';
 import { HostAuthModal } from './components/common/HostAuthModal';
 import { InitialLoadingScreen } from './components/common/InitialLoadingScreen';
+import { ScrollRestorationManager } from './components/common/ScrollRestorationManager';
 
 // Lazy-Loaded Page Components for optimized bundle chunking
 const LandingPage = React.lazy(() => import('./pages/LandingPage').then(m => ({ default: m.LandingPage })));
@@ -231,6 +232,7 @@ export const App: React.FC = () => {
         <InitialLoadingScreen isFading={loadingScreenFading} />
       )}
       <BrowserRouter basename={basename}>
+        <ScrollRestorationManager />
         <div className="flex flex-col min-h-screen bg-slate-950 text-slate-100 selection:bg-indigo-500 selection:text-white pb-16 md:pb-0">
         {/* Clean Startup Navigation Header with Portal Switcher */}
         <Header

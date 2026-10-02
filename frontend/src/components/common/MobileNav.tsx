@@ -18,13 +18,21 @@ export const MobileNav: React.FC<MobileNavProps> = ({ currentUser, onOpenAuthMod
     Boolean(currentUser?.is_host) ||
     location.pathname.startsWith('/host');
 
+  const handleNav = (targetPath: string) => {
+    if (location.pathname === targetPath) {
+      window.scrollTo({ top: 0, left: 0, behavior: 'smooth' });
+    } else {
+      navigate(targetPath);
+    }
+  };
+
   return (
     <nav className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-slate-950/95 backdrop-blur-lg border-t border-slate-800/80 px-2 py-2 flex items-center justify-around text-[10px] font-medium text-slate-400">
       {currentUser ? (
         isHostContext ? (
           <>
             <button
-              onClick={() => navigate('/host')}
+              onClick={() => handleNav('/host')}
               className={`flex flex-col items-center gap-1 ${
                 location.pathname === '/host' || location.pathname === '/host/' || location.pathname === '/host/overview'
                   ? 'text-amber-400 font-bold'
@@ -35,7 +43,7 @@ export const MobileNav: React.FC<MobileNavProps> = ({ currentUser, onOpenAuthMod
               <span>Overview</span>
             </button>
             <button
-              onClick={() => navigate('/host/spaces')}
+              onClick={() => handleNav('/host/spaces')}
               className={`flex flex-col items-center gap-1 ${
                 location.pathname.startsWith('/host/spaces') && !location.pathname.includes('/create')
                   ? 'text-amber-400 font-bold'
@@ -46,7 +54,7 @@ export const MobileNav: React.FC<MobileNavProps> = ({ currentUser, onOpenAuthMod
               <span>Spaces</span>
             </button>
             <button
-              onClick={() => navigate('/host/spaces/create')}
+              onClick={() => handleNav('/host/spaces/create')}
               className="flex flex-col items-center gap-1 text-white"
             >
               <div className="w-8 h-8 rounded-full bg-gradient-to-r from-amber-500 to-orange-500 flex items-center justify-center -mt-3 shadow-lg shadow-amber-500/40">
@@ -55,7 +63,7 @@ export const MobileNav: React.FC<MobileNavProps> = ({ currentUser, onOpenAuthMod
               <span className="font-bold text-amber-300">List Space</span>
             </button>
             <button
-              onClick={() => navigate('/host/bookings')}
+              onClick={() => handleNav('/host/bookings')}
               className={`flex flex-col items-center gap-1 ${
                 location.pathname.startsWith('/host/bookings')
                   ? 'text-amber-400 font-bold'
@@ -66,7 +74,7 @@ export const MobileNav: React.FC<MobileNavProps> = ({ currentUser, onOpenAuthMod
               <span>Bookings</span>
             </button>
             <button
-              onClick={() => navigate('/host/live-sessions')}
+              onClick={() => handleNav('/host/live-sessions')}
               className={`flex flex-col items-center gap-1 ${
                 location.pathname.startsWith('/host/live')
                   ? 'text-amber-400 font-bold'
@@ -80,7 +88,7 @@ export const MobileNav: React.FC<MobileNavProps> = ({ currentUser, onOpenAuthMod
         ) : (
           <>
             <button
-              onClick={() => navigate('/explore')}
+              onClick={() => handleNav('/explore')}
               className={`flex flex-col items-center gap-1 ${
                 location.pathname === '/explore' ? 'text-indigo-400 font-semibold' : 'hover:text-indigo-400'
               }`}
@@ -89,7 +97,7 @@ export const MobileNav: React.FC<MobileNavProps> = ({ currentUser, onOpenAuthMod
               <span>Explore</span>
             </button>
             <button
-              onClick={() => navigate('/dashboard')}
+              onClick={() => handleNav('/dashboard')}
               className={`flex flex-col items-center gap-1 ${
                 location.pathname === '/dashboard' ? 'text-indigo-400 font-semibold' : 'hover:text-indigo-400'
               }`}
@@ -98,7 +106,7 @@ export const MobileNav: React.FC<MobileNavProps> = ({ currentUser, onOpenAuthMod
               <span>Bookings</span>
             </button>
             <button
-              onClick={() => navigate('/host')}
+              onClick={() => handleNav('/host')}
               className="flex flex-col items-center gap-1 text-amber-400 font-semibold"
             >
               <div className="w-8 h-8 rounded-full bg-gradient-to-r from-amber-500 to-orange-500 flex items-center justify-center -mt-3 shadow-lg shadow-amber-500/40">
@@ -107,14 +115,14 @@ export const MobileNav: React.FC<MobileNavProps> = ({ currentUser, onOpenAuthMod
               <span className="text-amber-300 font-bold">Host OS</span>
             </button>
             <button
-              onClick={() => navigate('/how-it-works')}
+              onClick={() => handleNav('/how-it-works')}
               className="flex flex-col items-center gap-1 hover:text-indigo-400"
             >
               <i className="fa-solid fa-comments text-base" />
               <span>Help</span>
             </button>
             <button
-              onClick={() => navigate('/dashboard')}
+              onClick={() => handleNav('/dashboard')}
               className="flex flex-col items-center gap-1 hover:text-indigo-400"
             >
               <i className="fa-solid fa-user text-base" />
@@ -125,7 +133,7 @@ export const MobileNav: React.FC<MobileNavProps> = ({ currentUser, onOpenAuthMod
       ) : (
         <>
           <button
-            onClick={() => navigate('/')}
+            onClick={() => handleNav('/')}
             className={`flex flex-col items-center gap-1 ${
               location.pathname === '/' ? 'text-indigo-400 font-semibold' : 'hover:text-indigo-400'
             }`}
@@ -134,7 +142,7 @@ export const MobileNav: React.FC<MobileNavProps> = ({ currentUser, onOpenAuthMod
             <span>Home</span>
           </button>
           <button
-            onClick={() => navigate('/explore')}
+            onClick={() => handleNav('/explore')}
             className={`flex flex-col items-center gap-1 ${
               location.pathname === '/explore' ? 'text-indigo-400 font-semibold' : 'hover:text-indigo-400'
             }`}
@@ -143,7 +151,7 @@ export const MobileNav: React.FC<MobileNavProps> = ({ currentUser, onOpenAuthMod
             <span>Explore</span>
           </button>
           <button
-            onClick={() => navigate('/host')}
+            onClick={() => handleNav('/host')}
             className={`flex flex-col items-center gap-1 ${
               location.pathname.startsWith('/host') ? 'text-amber-400 font-bold' : 'text-amber-300/80 hover:text-amber-300'
             }`}
@@ -154,7 +162,7 @@ export const MobileNav: React.FC<MobileNavProps> = ({ currentUser, onOpenAuthMod
             <span className="font-bold text-amber-300">Host OS</span>
           </button>
           <button
-            onClick={() => navigate('/architecture')}
+            onClick={() => handleNav('/architecture')}
             className={`flex flex-col items-center gap-1 ${
               location.pathname === '/architecture' ? 'text-indigo-400 font-semibold' : 'hover:text-indigo-400'
             }`}
