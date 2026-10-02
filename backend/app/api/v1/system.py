@@ -743,11 +743,11 @@ def api_verify_host():
 
     user = current_user
     user.is_host_verified = True
-    user.discom_provider = discom_res["discom_provider"]
-    user.discom_ca_masked = discom_res["discom_ca_masked"]
+    user.discom_provider = discom_res.get("discom_provider") or discom_res.get("provider") or provider
+    user.discom_ca_masked = discom_res.get("discom_ca_masked") or discom_res.get("ca_number_masked") or (ca_number[-4:] if len(ca_number) >= 4 else ca_number)
     user.upi_verified = True
-    user.upi_vpa_masked = upi_res["upi_vpa_masked"]
-    user.bank_beneficiary_name = upi_res["bank_beneficiary_name"]
+    user.upi_vpa_masked = upi_res.get("upi_vpa_masked") or upi_vpa
+    user.bank_beneficiary_name = upi_res.get("bank_beneficiary_name") or upi_res.get("beneficiary_name") or pan_name
     user.objective_trust_score = compute_objective_trust_index(
         user.on_time_vacate_rate,
         user.cleanliness_match_rate,

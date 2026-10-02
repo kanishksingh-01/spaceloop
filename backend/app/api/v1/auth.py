@@ -383,30 +383,44 @@ def api_host_register():
         return jsonify({"success": False, "error": f"Payout verification failed: {upi_res.get('error')}"}), 400
 
     # 3. Create host user or elevate existing user
-    user, raw_token, error = AuthService.register_user(
-        first_name=first_name,
-        last_name=last_name,
-        email=email,
-        password=password,
-        confirm_password=confirm_password,
-        role="host"
-    )
-
-    if not user:
-        return jsonify({"success": False, "error": error}), 400
+    clean_email = email.lower().strip()
+    existing_user = User.query.filter(db.func.lower(User.email) == clean_email).first()
+    if existing_user:
+        if not existing_user.check_password(password):
+            return jsonify({"success": False, "error": "An account with this email already exists. Please sign in or use a different email."}), 400
+        user = existing_user
+        if user.role == "seeker":
+            user.role = "both"
+        elif user.role not in ("host", "owner", "both"):
+            user.role = "host"
+        raw_token, _ = AuthService.create_email_verification_token(user.id)
+    else:
+        user, raw_token, error = AuthService.register_user(
+            first_name=first_name,
+            last_name=last_name,
+            email=email,
+            password=password,
+            confirm_password=confirm_password,
+            role="host"
+        )
+        if not user:
+            return jsonify({"success": False, "error": error}), 400
 
     # Persist verified infrastructure credentials
     user.is_host_verified = True
-    user.discom_provider = discom_res["provider"]
-    user.discom_ca_masked = discom_res["ca_number_masked"]
+    user.discom_provider = discom_res.get("discom_provider") or discom_res.get("provider") or provider
+    user.discom_ca_masked = discom_res.get("discom_ca_masked") or discom_res.get("ca_number_masked") or (ca_number[-4:] if len(ca_number) >= 4 else ca_number)
     user.upi_verified = True
-    user.upi_vpa_masked = upi_res["upi_vpa_masked"]
-    user.bank_beneficiary_name = upi_res["beneficiary_name"]
+    user.upi_vpa_masked = upi_res.get("upi_vpa_masked") or upi_vpa
+    user.bank_beneficiary_name = upi_res.get("bank_beneficiary_name") or upi_res.get("beneficiary_name") or pan_name
     user.objective_trust_score = 98.5
     db.session.commit()
 
     # Dispatch email verification link and welcome notification
-    EmailService.send_email_verification(user.email, raw_token)
+    try:
+        EmailService.send_email_verification(user.email, raw_token)
+    except Exception:
+        pass
     try:
         EmailService.notify_welcome(user)
     except Exception:
@@ -454,11 +468,11 @@ def api_host_upgrade():
         current_user.role = "both"
 
     current_user.is_host_verified = True
-    current_user.discom_provider = discom_res["provider"]
-    current_user.discom_ca_masked = discom_res["ca_number_masked"]
+    current_user.discom_provider = discom_res.get("discom_provider") or discom_res.get("provider") or provider
+    current_user.discom_ca_masked = discom_res.get("discom_ca_masked") or discom_res.get("ca_number_masked") or (ca_number[-4:] if len(ca_number) >= 4 else ca_number)
     current_user.upi_verified = True
-    current_user.upi_vpa_masked = upi_res["upi_vpa_masked"]
-    current_user.bank_beneficiary_name = upi_res["beneficiary_name"]
+    current_user.upi_vpa_masked = upi_res.get("upi_vpa_masked") or upi_vpa
+    current_user.bank_beneficiary_name = upi_res.get("bank_beneficiary_name") or upi_res.get("beneficiary_name") or pan_name
     current_user.objective_trust_score = max(getattr(current_user, "objective_trust_score", 90.0) or 90.0, 98.0)
     db.session.commit()
 
