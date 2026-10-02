@@ -6,9 +6,6 @@ export default defineConfig({
   plugins: [react()],
   resolve: {
     alias: {
-      '@': path.resolve(__dirname, './src'),
-      'motion/react': path.resolve(__dirname, './src/lib/motion.tsx'),
-      'framer-motion': path.resolve(__dirname, './src/lib/motion.tsx'),
       'react-native': path.resolve(__dirname, './src/lib/react-native.tsx'),
       'react-native-web': path.resolve(__dirname, './src/lib/react-native.tsx'),
     },

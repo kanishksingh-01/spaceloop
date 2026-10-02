@@ -16,9 +16,6 @@
     "noFallthroughCasesInSwitch": true,
     "baseUrl": ".",
     "paths": {
-      "@/*": ["src/*"],
-      "motion/react": ["src/lib/motion.tsx"],
-      "framer-motion": ["src/lib/motion.tsx"],
       "react-native": ["src/react-native.d.ts"]
     }
   },
