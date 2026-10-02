@@ -19,7 +19,6 @@ export const HostPortalShell: React.FC<HostPortalShellProps> = ({
   const location = useLocation();
   const { t } = useI18n();
 
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [unreadNotifsCount, setUnreadNotifsCount] = useState(0);
   const [activeSession, setActiveSession] = useState<Booking | null>(null);
@@ -47,6 +46,12 @@ export const HostPortalShell: React.FC<HostPortalShellProps> = ({
     const interval = setInterval(checkState, 15000);
     return () => clearInterval(interval);
   }, [location.pathname]);
+
+  useEffect(() => {
+    const handleOpenNotifs = () => setNotificationsOpen(true);
+    window.addEventListener('open-host-notifications', handleOpenNotifs);
+    return () => window.removeEventListener('open-host-notifications', handleOpenNotifs);
+  }, []);
 
   const navGroups = [
     {
@@ -124,7 +129,7 @@ export const HostPortalShell: React.FC<HostPortalShellProps> = ({
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col antialiased selection:bg-amber-500 selection:text-slate-950">
-      {/* Optional Preview Mode Ribbon for unauthenticated visitors */}
+      {/* Optional Preview Mode Notice for unauthenticated visitors */}
       {(!currentUser || !currentUser.is_host) && (
         <div className="bg-amber-500/10 border-b border-amber-500/25 px-4 py-2 flex items-center justify-between text-xs text-amber-300 flex-wrap gap-2">
           <div className="flex items-center gap-2">
@@ -133,132 +138,8 @@ export const HostPortalShell: React.FC<HostPortalShellProps> = ({
               <strong>Host Interactive Preview Mode:</strong> Active host telemetry loaded with verified Discom CA and ₹100 UPI Micro-Escrow.
             </span>
           </div>
-          <button
-            onClick={onOpenHostAuthModal}
-            className="px-3 py-1 rounded-lg bg-amber-500 text-slate-950 font-bold text-[11px] hover:bg-amber-400 transition"
-          >
-            {t('auth.loginBtn')}
-          </button>
         </div>
       )}
-
-      {/* Top Application Header */}
-      <header className="sticky top-0 z-40 h-16 bg-slate-950/95 backdrop-blur-md border-b border-slate-800/80 px-4 sm:px-6 lg:px-8 flex items-center justify-between gap-4">
-        {/* Left: Mobile hamburger & Logo */}
-        <div className="flex items-center gap-3">
-          <button
-            type="button"
-            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className="lg:hidden p-2 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800 transition"
-          >
-            <i className={`fa-solid ${mobileMenuOpen ? 'fa-xmark' : 'fa-bars'} text-lg`} />
-          </button>
-
-          <button
-            type="button"
-            onClick={() => navigate('/host')}
-            className="flex items-center gap-2.5 group focus:outline-none"
-          >
-            <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-amber-500 via-orange-500 to-amber-400 flex items-center justify-center text-slate-950 font-black text-sm shadow-md shadow-amber-500/25 group-hover:scale-105 transition-transform">
-              <i className="fa-solid fa-infinity text-xs" />
-            </div>
-            <div className="text-left hidden sm:block">
-              <span className="text-sm font-bold tracking-tight text-white flex items-center gap-1.5">
-                SpaceLoop
-                <span className="text-amber-400 font-extrabold text-[10px] px-1.5 py-0.5 rounded bg-amber-500/10 border border-amber-500/20 tracking-wider">
-                  HOST
-                </span>
-              </span>
-            </div>
-          </button>
-        </div>
-
-        {/* Center: Active Session Live Beacon */}
-        {activeSession && (
-          <div className="hidden md:flex items-center">
-            <button
-              type="button"
-              onClick={() => navigate(`/host/live-sessions/${activeSession.id}`)}
-              className="flex items-center gap-2.5 px-3.5 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/25 text-emerald-300 text-xs font-semibold hover:bg-emerald-500/15 transition cursor-pointer"
-            >
-              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping shrink-0" />
-              <span>{t('host.liveSessions')} #{activeSession.id}</span>
-              <span className="text-[10px] text-emerald-400/80 font-mono">→</span>
-            </button>
-          </div>
-        )}
-
-        {/* Right Action Controls */}
-        <div className="flex items-center gap-2.5">
-          {/* Quick Create Space */}
-          <button
-            type="button"
-            onClick={() => navigate('/host/spaces/create')}
-            className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-bold text-xs shadow-md shadow-amber-500/15 transition"
-          >
-            <i className="fa-solid fa-plus text-[10px]" />
-            <span>{t('host.createSpace')}</span>
-          </button>
-
-          {/* Notifications Button */}
-          <button
-            type="button"
-            onClick={() => setNotificationsOpen(true)}
-            className="relative p-2 rounded-xl text-slate-400 hover:text-white hover:bg-slate-900 border border-slate-800 transition"
-            title={t('host.notifications')}
-          >
-            <i className="fa-solid fa-bell text-sm" />
-            {unreadNotifsCount > 0 && (
-              <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-amber-500 text-slate-950 text-[10px] font-black flex items-center justify-center shadow">
-                {unreadNotifsCount}
-              </span>
-            )}
-          </button>
-
-          {/* Seeker Switcher */}
-          <button
-            type="button"
-            onClick={() => navigate('/explore')}
-            className="px-2.5 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-850 border border-slate-800 text-slate-300 text-xs font-semibold transition hidden sm:flex items-center gap-1.5"
-            title={t('nav.switchToSeeker')}
-          >
-            <i className="fa-solid fa-compass text-indigo-400 text-xs" />
-            <span>{t('nav.seekerPortal')}</span>
-          </button>
-
-          {/* Host Profile & OTI Pill */}
-          <div className="flex items-center gap-2 pl-2 border-l border-slate-800">
-            {currentUser && currentUser.is_host ? (
-              <button
-                type="button"
-                onClick={() => navigate('/host/settings')}
-                className="flex items-center gap-2 p-1 rounded-xl hover:bg-slate-900 transition text-left"
-              >
-                <div className="w-7 h-7 rounded-lg bg-amber-500/20 border border-amber-500/40 text-amber-400 font-bold text-xs flex items-center justify-center">
-                  {currentUser?.name ? (currentUser.name.replace(/^SpaceLoop\s*/i, '').trim().charAt(0).toUpperCase() || 'H') : 'H'}
-                </div>
-                <div className="hidden xl:block">
-                  <div className="text-xs font-bold text-white line-clamp-1">
-                    {currentUser?.name ? (currentUser.name.replace(/^SpaceLoop\s*/i, '').trim() || 'Host') : 'Host'}
-                  </div>
-                  <div className="text-[10px] text-amber-400 font-mono font-semibold">
-                    OTI {(currentUser as any)?.objective_trust_score ?? 99.2}/100
-                  </div>
-                </div>
-              </button>
-            ) : (
-              <button
-                type="button"
-                onClick={onOpenHostAuthModal}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs transition"
-              >
-                <i className="fa-solid fa-right-to-bracket text-xs" />
-                <span>Host Sign In</span>
-              </button>
-            )}
-          </div>
-        </div>
-      </header>
 
       {/* Main Container with Sidebar + Content */}
       <div className="flex-1 flex overflow-hidden">
@@ -325,65 +206,6 @@ export const HostPortalShell: React.FC<HostPortalShellProps> = ({
             </div>
           </div>
         </aside>
-
-        {/* Mobile Navigation Drawer */}
-        {mobileMenuOpen && (
-          <div className="lg:hidden fixed inset-0 z-50 flex">
-            <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm" onClick={() => setMobileMenuOpen(false)} />
-            <div className="relative w-72 max-w-[85vw] bg-slate-900 border-r border-slate-800 flex flex-col p-4 overflow-y-auto">
-              <div className="flex items-center justify-between pb-4 border-b border-slate-800 mb-4">
-                <span className="text-sm font-bold text-white">SpaceLoop Host Portal</span>
-                <button
-                  type="button"
-                  onClick={() => setMobileMenuOpen(false)}
-                  className="w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 hover:text-white"
-                >
-                  ✕
-                </button>
-              </div>
-
-              <div className="space-y-4 flex-1">
-                {navGroups.map((group, gIdx) => (
-                  <div key={gIdx} className="space-y-1">
-                    {group.group && (
-                      <div className="px-2 text-[10px] font-mono uppercase tracking-widest text-slate-500 mb-1">
-                        {group.group}
-                      </div>
-                    )}
-                    {group.items.map((item) => {
-                      const active = isCurrentPath(item.path, item.exact);
-                      return (
-                        <button
-                          key={item.path}
-                          type="button"
-                          onClick={() => {
-                            navigate(item.path);
-                            setMobileMenuOpen(false);
-                          }}
-                          className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-semibold transition ${
-                            active
-                              ? 'bg-amber-500/10 text-amber-300 border border-amber-500/30'
-                              : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800'
-                          }`}
-                        >
-                          <div className="flex items-center gap-2.5">
-                            <i className={`${item.icon} text-xs ${active ? 'text-amber-400' : 'text-slate-500'}`} />
-                            <span>{item.label}</span>
-                          </div>
-                          {item.badge && (
-                            <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-amber-500/20 text-amber-300">
-                              {item.badge}
-                            </span>
-                          )}
-                        </button>
-                      );
-                    })}
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        )}
 
         {/* Primary Operational Content Surface */}
         <main className="flex-1 flex flex-col overflow-y-auto bg-slate-950 min-h-0">
