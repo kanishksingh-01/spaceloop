@@ -72,7 +72,7 @@
         animation: spaceloop-line-pulse 2.2s cubic-bezier(0.4, 0, 0.2, 1) infinite;
       }
     </style>
-    <script type="module" crossorigin src="/assets/index-D9FhuUKo.js"></script>
+    <script type="module" crossorigin src="/assets/index-DlWUt9eC.js"></script>
     <link rel="modulepreload" crossorigin href="/assets/vendor-react-B0LjdGIp.js">
     <link rel="stylesheet" crossorigin href="/assets/index-DO6iMpdW.css">
   </head>
@@ -92,6 +92,20 @@
         </div>
       </div>
       <noscript>SpaceLoop: India's premier AI-powered micro-leasing platform. Verified spaces starting at ₹35/hr.</noscript>
-    </div>
+    </div>
+    <script>
+      // Failsafe: if initial static loader is still visible after 2.5s, dissolve it immediately
+      setTimeout(function() {
+        var loader = document.getElementById('spaceloop-initial-loader');
+        if (loader) {
+          loader.style.transition = 'opacity 0.6s ease-out';
+          loader.style.opacity = '0';
+          loader.style.pointerEvents = 'none';
+          setTimeout(function() {
+            if (loader && loader.parentNode) loader.parentNode.removeChild(loader);
+          }, 600);
+        }
+      }, 2500);
+    </script>
   </body>
 </html>

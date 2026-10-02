@@ -33,17 +33,38 @@ export const MASTER_DEMO_USER: User = {
 
 export async function getCurrentUser(): Promise<User | null> {
   try {
-    const data = await request<{ user?: User } | User>('/api/v1/auth/me');
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 3500);
+
+    const data = await request<{ user?: User } | User>('/api/v1/auth/me', {
+      signal: controller.signal,
+    });
+    clearTimeout(timeoutId);
+
     let user: User | null = null;
-    if ('user' in data && data.user) user = data.user;
-    else if ('id' in data) user = data as User;
+    if (data && typeof data === 'object') {
+      if ('user' in data && data.user) user = data.user;
+      else if ('id' in data) user = data as User;
+    }
 
     if (user) {
       localStorage.setItem('spaceloop_user', JSON.stringify(user));
       return user;
     }
   } catch (err: any) {
-    localStorage.removeItem('spaceloop_user');
+    // Only clear localStorage if the server explicitly rejected the authentication (401)
+    const errStr = (err?.message || '').toLowerCase();
+    if (errStr.includes('authentication required') || errStr.includes('unauthorized') || errStr.includes('401')) {
+      localStorage.removeItem('spaceloop_user');
+      return null;
+    }
+    // For network timeouts or server cold boots, return cached user to prevent jarring flashes
+    const cached = localStorage.getItem('spaceloop_user');
+    if (cached) {
+      try {
+        return JSON.parse(cached);
+      } catch {}
+    }
     return null;
   }
 

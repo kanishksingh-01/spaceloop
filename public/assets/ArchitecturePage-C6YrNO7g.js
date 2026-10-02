@@ -1,8 +1,4 @@
-<<<<<<<< HEAD:public/assets/ArchitecturePage-DBUCyQ5o.js
-import{j as e,a as G,b as Q,u as Z}from"./index-D9FhuUKo.js";import{r as s,R as W,u as K}from"./vendor-react-B0LjdGIp.js";/**
-========
-import{j as e,a as G,b as Q,u as Z}from"./index-CQ0B44qb.js";import{r as s,R as W,u as K}from"./vendor-react-B0LjdGIp.js";/**
->>>>>>>> 8abf031 (fix(ui): eliminate infinite buffering with 1.8s hard ceiling timeout, fetch AbortControllers, and failsafe loader dissolution):public/assets/ArchitecturePage-Bmq7xu6I.js
+import{j as e,a as G,b as Q,u as Z}from"./index-DlWUt9eC.js";import{r as s,R as W,u as K}from"./vendor-react-B0LjdGIp.js";/**
  * @license lucide-react v0.378.0 - ISC
  *
  * This source code is licensed under the ISC license.

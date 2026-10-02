@@ -190,6 +190,23 @@ export const App: React.FC = () => {
 
   useEffect(() => {
     const startTime = Date.now();
+    let hasDismissed = false;
+
+    const dismissLoadingScreen = () => {
+      if (hasDismissed) return;
+      hasDismissed = true;
+      setLoadingScreenFading(true);
+      setTimeout(() => {
+        setShowLoadingScreen(false);
+      }, 700);
+    };
+
+    // Absolute fallback ceiling: NEVER block user for more than 1.8 seconds regardless of network/API latency
+    const fallbackTimer = setTimeout(() => {
+      setInitializing(false);
+      dismissLoadingScreen();
+    }, 1800);
+
     const initAuth = async () => {
       try {
         const user = await getCurrentUser();
@@ -203,20 +220,17 @@ export const App: React.FC = () => {
         setCurrentUser(null);
       } finally {
         setInitializing(false);
-        // Ensure entrance animation completes gracefully before initiating smooth fade-out
+        clearTimeout(fallbackTimer);
         const elapsed = Date.now() - startTime;
-        const minDisplayTime = 600;
+        const minDisplayTime = 500;
         const remainingTime = Math.max(0, minDisplayTime - elapsed);
 
-        setTimeout(() => {
-          setLoadingScreenFading(true);
-          setTimeout(() => {
-            setShowLoadingScreen(false);
-          }, 700);
-        }, remainingTime);
+        setTimeout(dismissLoadingScreen, remainingTime);
       }
     };
     initAuth();
+
+    return () => clearTimeout(fallbackTimer);
   }, []);
 
   const pathname = typeof window !== 'undefined' ? window.location.pathname : '';

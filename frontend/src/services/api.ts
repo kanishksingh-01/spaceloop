@@ -13,6 +13,7 @@ export class ApiError extends Error {
 export interface RequestOptions extends RequestInit {
   skipCache?: boolean;
   ttlMs?: number;
+  timeoutMs?: number;
 }
 
 interface CacheEntry<T> {
@@ -72,11 +73,25 @@ export async function request<T>(endpoint: string, options: RequestOptions = {})
     headers['Content-Type'] = 'application/json';
   }
 
+  const timeoutMs = options.timeoutMs || 10000;
+  let timeoutId: any = null;
+  let signal = options.signal;
+  if (!signal) {
+    const controller = new AbortController();
+    timeoutId = setTimeout(() => {
+      try {
+        controller.abort();
+      } catch {}
+    }, timeoutMs);
+    signal = controller.signal;
+  }
+
   // Include credentials for Flask session cookies
   const config: RequestInit = {
     ...options,
     headers,
     credentials: 'include',
+    signal,
   };
 
   const fetchPromise = (async (): Promise<T> => {
@@ -144,6 +159,9 @@ export async function request<T>(endpoint: string, options: RequestOptions = {})
 
       return data as T;
     } finally {
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+      }
       if (isGet) {
         inFlightRequests.delete(cacheKey);
       }
