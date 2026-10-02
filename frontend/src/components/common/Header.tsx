@@ -6,6 +6,7 @@ import { useTheme } from '../../context/ThemeContext';
 import { useTranslation } from '../../i18n';
 import { NavigationDrawer, HamburgerButton } from './NavigationDrawer';
 import { getHostNotifications } from '../../services/host';
+import { AccountDropdown } from './AccountDropdown';
 
 interface HeaderProps {
   currentUser: User | null;
@@ -301,20 +302,14 @@ export const Header: React.FC<HeaderProps> = ({
             {/* Authenticated Controls vs Single Host Sign In */}
             {isHostPortal ? (
               /* HOST PORTAL AUTH CONTROLS */
-              isVerifiedHost ? (
-                <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
-                  <div className="flex items-center gap-1.5 px-2 sm:px-2.5 py-1 rounded-xl bg-slate-900 border border-slate-800 text-xs font-bold text-slate-200">
-                    <span>🏡 {getUserBadgeName(currentUser?.name, 'Host')}</span>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={handleLogout}
-                    className="p-2 sm:px-2.5 sm:py-1.5 rounded-xl bg-slate-900 hover:bg-rose-950/40 text-slate-400 hover:text-rose-400 border border-slate-800 text-xs font-semibold transition"
-                    title={t('nav.signOut') || 'Sign Out'}
-                  >
-                    <i className="fa-solid fa-arrow-right-from-bracket" />
-                  </button>
-                </div>
+              isVerifiedHost && currentUser ? (
+                <AccountDropdown
+                  currentUser={currentUser}
+                  isHostPortal={true}
+                  onOpenAuthModal={onOpenAuthModal}
+                  onOpenHostAuthModal={onOpenHostAuthModal}
+                  onLogout={handleLogout}
+                />
               ) : (
                 <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
                   <button
@@ -330,23 +325,13 @@ export const Header: React.FC<HeaderProps> = ({
             ) : (
               /* SEEKER PORTAL AUTH CONTROLS */
               currentUser ? (
-                <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
-                  <button
-                    type="button"
-                    onClick={() => handleNav('/dashboard')}
-                    className="flex items-center gap-1.5 px-2 sm:px-2.5 py-1 rounded-xl bg-slate-900 border border-slate-800 text-xs font-bold text-slate-200"
-                  >
-                    <span>🎓 {getUserBadgeName(currentUser?.name, 'Seeker')}</span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={handleLogout}
-                    className="p-2 sm:px-2.5 sm:py-1.5 rounded-xl bg-slate-900 hover:bg-rose-950/40 text-slate-400 hover:text-rose-400 border border-slate-800 text-xs font-semibold transition"
-                    title={t('nav.signOut') || 'Sign Out'}
-                  >
-                    <i className="fa-solid fa-arrow-right-from-bracket" />
-                  </button>
-                </div>
+                <AccountDropdown
+                  currentUser={currentUser}
+                  isHostPortal={false}
+                  onOpenAuthModal={onOpenAuthModal}
+                  onOpenHostAuthModal={onOpenHostAuthModal}
+                  onLogout={handleLogout}
+                />
               ) : (
                 <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
                   <button
