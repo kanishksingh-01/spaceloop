@@ -198,7 +198,30 @@ export const Header: React.FC<HeaderProps> = ({
                 }`}
               >
                 <i className="fa-solid fa-compass text-indigo-400" />
-                <span>{t('nav.explore') || 'Explore Spaces'}</span>
+                <span>{t('nav.explore') || 'Explore'}</span>
+              </button>
+              <button
+                onClick={() => handleNav('/host')}
+                className="px-3 py-1.5 rounded-lg transition flex items-center gap-1.5 text-amber-300 hover:text-white hover:bg-amber-500/10 border border-amber-500/20 font-bold"
+                title="Launch Host Operating System"
+              >
+                <i className="fa-solid fa-house-chimney-user text-amber-400" />
+                <span>{t('nav.hostPortal') || 'Host Portal'}</span>
+              </button>
+              <button
+                onClick={() => handleNav('/architecture')}
+                className={`px-3 py-1.5 rounded-lg transition flex items-center gap-1.5 ${
+                  location.pathname === '/architecture'
+                    ? 'bg-indigo-600/30 text-indigo-200 border border-indigo-500/50 shadow-sm shadow-indigo-500/20'
+                    : 'text-slate-300 hover:text-white hover:bg-slate-800/80 border border-transparent hover:border-slate-700/60'
+                }`}
+                title="System Architecture & Engineering Team"
+              >
+                <i className="fa-solid fa-cubes text-indigo-400" />
+                <span>{t('nav.architecture') || 'Architecture'}</span>
+                <span className="px-1.5 py-0.5 rounded text-[9px] font-mono font-bold bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
+                  Team
+                </span>
               </button>
             </nav>
           )}
@@ -226,8 +249,8 @@ export const Header: React.FC<HeaderProps> = ({
               )}
             </button>
 
-            {/* Switch to Seeker marketplace (Host mode only) */}
-            {isHostPortal && (
+            {/* Switch between Seeker and Host portals */}
+            {isHostPortal ? (
               <button
                 type="button"
                 onClick={() => handleNav('/explore')}
@@ -237,6 +260,17 @@ export const Header: React.FC<HeaderProps> = ({
                 <i className="fa-solid fa-compass text-indigo-400" />
                 <span className="hidden sm:inline">{t('nav.switchToSeeker') || 'Seeker'}</span>
                 <span className="sm:hidden">{t('nav.switchToSeeker') || 'Seeker'}</span>
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={() => handleNav('/host')}
+                className="inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border border-amber-500/30 text-xs font-bold transition shrink-0"
+                title="Launch Host Operating System"
+              >
+                <i className="fa-solid fa-house-chimney-user text-amber-400" />
+                <span className="hidden sm:inline">{t('nav.hostPortal') || 'Host Portal'}</span>
+                <span className="sm:hidden">{t('nav.hostPortal') || 'Host'}</span>
               </button>
             )}
 

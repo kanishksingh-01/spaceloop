@@ -171,11 +171,19 @@ export const LandingPage: React.FC<LandingPageProps> = ({ currentUser }) => {
         <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 relative z-20 text-center">
           
           {/* Eyebrow Pill */}
-          <div className="flex items-center justify-center mb-6">
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-2 mb-6">
             <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-indigo-500/10 border border-indigo-500/25 text-indigo-300 text-xs font-semibold shadow-sm backdrop-blur-md">
               <span className="flex h-2 w-2 rounded-full bg-indigo-400 animate-ping" />
               <span>{t('hero.quickStats')}</span>
             </div>
+            <button
+              onClick={() => navigate('/architecture')}
+              className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full bg-indigo-950/40 hover:bg-indigo-900/60 border border-indigo-500/30 hover:border-indigo-400/60 text-indigo-300 text-[11px] font-bold tracking-wide transition shadow-sm"
+              title={t('nav.architecture')}
+            >
+              <i className="fa-solid fa-cubes text-indigo-400 text-[10px]" />
+              <span>{t('nav.architecture')} →</span>
+            </button>
           </div>
 
           {/* Main Headline */}
