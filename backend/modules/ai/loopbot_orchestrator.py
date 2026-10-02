@@ -56,76 +56,69 @@ class LoopBotIntent:
 
 
 def detect_loopbot_intent(query: str, context_data: dict | None = None) -> tuple[str, dict]:
+    """
+    Detects LoopBot intent using the unified SpaceLoop NLPPipeline.
+    Maps canonical IntentTypes to LoopBot operational actions.
+    """
+    context_data = context_data or {}
     clean_q = (query or "").lower().strip()
     extracted_params = {}
 
-    space_id_match = re.search(r"\b(?:space|room|listing|id)\s*#?\s*(\d+)\b", clean_q)
-    if space_id_match:
-        extracted_params["space_id"] = int(space_id_match.group(1))
-    elif context_data and context_data.get("space_id"):
-        extracted_params["space_id"] = int(context_data["space_id"])
+    from backend.modules.nlp.pipeline import NLPPipeline
+    from backend.modules.nlp.schemas import IntentType
 
-    hours_match = re.search(r"\b(\d+(?:\.\d+)?)\s*(?:hours?|hrs?|hr)\b", clean_q)
-    if hours_match:
-        extracted_params["hours"] = float(hours_match.group(1))
+    nlp_res = NLPPipeline.process(query, context_data)
+    entities_dict = nlp_res.entities or {}
 
-    capacity_match = re.search(r"\b(?:for\s+)?(\d+)\s*(?:people|persons?|guests?|members?|pax|team\s+of\s+(\d+))\b", clean_q)
-    if capacity_match:
-        extracted_params["capacity"] = int(capacity_match.group(1) or capacity_match.group(2))
+    if entities_dict.get("listing_id"):
+        extracted_params["space_id"] = entities_dict["listing_id"]
+    elif context_data.get("space_id"):
+        try:
+            extracted_params["space_id"] = int(context_data["space_id"])
+        except (ValueError, TypeError):
+            pass
 
-    if "tomorrow" in clean_q:
-        extracted_params["date"] = "tomorrow"
-    elif "today" in clean_q:
-        extracted_params["date"] = "today"
-    elif "weekend" in clean_q:
-        extracted_params["date"] = "weekend"
+    if entities_dict.get("duration_hours"):
+        extracted_params["hours"] = entities_dict["duration_hours"]
+    if entities_dict.get("guest_count") or entities_dict.get("capacity"):
+        extracted_params["capacity"] = entities_dict.get("guest_count") or entities_dict.get("capacity")
+    if entities_dict.get("date_str"):
+        extracted_params["date"] = entities_dict["date_str"]
+    if entities_dict.get("max_price") or entities_dict.get("price"):
+        extracted_params["max_price"] = entities_dict.get("max_price") or entities_dict.get("price")
+    if entities_dict.get("location"):
+        extracted_params["location"] = entities_dict["location"]
 
-    price_match = re.search(r"\b(?:under|below|less than|max|budget)\s*(?:₹|rs\.?|inr)?\s*(\d+)\b", clean_q)
-    if price_match:
-        extracted_params["max_price"] = float(price_match.group(1))
+    canonical_intent = nlp_res.intent
 
-    # A. Booking Action Intent
-    if any(k in clean_q for k in ["book this space", "book space", "reserve this space", "how do i book", "how to book", "book now", "reserve now", "make a reservation", "checkout link"]):
-        return LoopBotIntent.BOOKING_ACTION, extracted_params
-
-    # B. Compare Spaces Intent
-    if any(k in clean_q for k in ["compare these spaces", "compare spaces", "difference between", "which one is better", "compare #", "compare space"]):
+    # Check Compare IDs
+    if canonical_intent == IntentType.COMPARE_SPACES.value or "compare" in clean_q:
         all_ids = [int(m) for m in re.findall(r"#?(\d+)", clean_q)]
         if len(all_ids) >= 2:
             extracted_params["compare_ids"] = all_ids[:3]
         return LoopBotIntent.COMPARE_SPACES, extracted_params
 
-    # C. Pricing Calculation Intent
-    if any(k in clean_q for k in ["how much for", "how much does it cost", "calculate cost", "what is the price for", "what would it cost", "pricing for", "fee for", "how much to rent", "how much will it cost"]):
-        return LoopBotIntent.PRICING_CALCULATION, extracted_params
-
-    # D. Availability DB Intent
-    if any(k in clean_q for k in ["available tomorrow", "what's available", "what is available", "available today", "available this weekend", "open tomorrow", "free tomorrow", "open slots", "available slots", "is it free at"]):
-        return LoopBotIntent.AVAILABILITY_QUERY, extracted_params
-
-    # E. Suitability Intent (RAG + Listing Data)
+    # Check Suitability queries
     if any(k in clean_q for k in ["is this good for", "is it good for", "good for a", "suitable for", "can we host a", "can i do a", "can we shoot", "is this space suitable", "will 8 people fit", "will 10 people fit", "fit for a"]):
         return LoopBotIntent.SUITABILITY_ASSESSMENT, extracted_params
 
-    # F. Rules & Policies RAG Intent
-    if any(k in clean_q for k in ["bring food", "can i eat", "food allowed", "food and drink", "smoking", "smoke", "pets", "pet friendly", "alcohol", "what are the rules", "house rules", "guest policy", "cancellation policy"]):
-        return LoopBotIntent.RAG_RULES_POLICY, extracted_params
-
-    # G. Amenities RAG Intent
-    if any(k in clean_q for k in ["what amenities", "amenities does this", "what is included", "is there wifi", "high speed wifi", "has air condition", "have ac", "presentation screen", "monitor", "whiteboard", "parking available", "power backup", "inverter"]):
+    # Map Canonical NLP intents to LoopBot intents
+    if canonical_intent == IntentType.BOOK_SPACE.value:
+        return LoopBotIntent.BOOKING_ACTION, extracted_params
+    elif canonical_intent == IntentType.ASK_PRICE.value:
+        return LoopBotIntent.PRICING_CALCULATION, extracted_params
+    elif canonical_intent == IntentType.CHECK_AVAILABILITY.value:
+        return LoopBotIntent.AVAILABILITY_QUERY, extracted_params
+    elif canonical_intent == IntentType.ASK_AMENITIES.value:
         return LoopBotIntent.RAG_AMENITIES, extracted_params
-
-    # H. Marketplace Search Intent
-    if any(k in clean_q for k in ["find spaces", "find a space", "search spaces", "spaces for", "looking for", "recommend a space", "find workspace", "find studio", "find meeting", "need a desk", "need a room"]):
-        return LoopBotIntent.MARKETPLACE_SEARCH, extracted_params
-
-    # I. Host Monetization Intent
-    if any(k in clean_q for k in ["how can i rent", "rent out", "how to host", "monetiz", "earn", "list my", "my garage", "unused garage", "empty room", "calculator"]):
+    elif canonical_intent == IntentType.ASK_RULES.value:
+        return LoopBotIntent.RAG_RULES_POLICY, extracted_params
+    elif canonical_intent == IntentType.CREATE_LISTING.value:
         return LoopBotIntent.HOST_MONETIZATION, extracted_params
-
-    # J. Legal Framework & Safety
-    if any(k in clean_q for k in ["section 52", "easements act", "legal", "squat", "tenancy", "escrow", "upi deposit", "geofence", "door pass"]):
+    elif canonical_intent == IntentType.LEGAL_SAFETY.value:
         return LoopBotIntent.LEGAL_AND_SAFETY, extracted_params
+    elif canonical_intent in (IntentType.SEARCH_SPACE.value, IntentType.SEARCH_PROPERTY.value):
+        return LoopBotIntent.MARKETPLACE_SEARCH, extracted_params
 
     return LoopBotIntent.GENERAL_CHAT, extracted_params
 
@@ -477,6 +470,13 @@ def _handle_clarification(effective_lang: str, raw_query: str = "") -> str:
     from backend.modules.nlp.i18n import MultilingualService
     if raw_query:
         q_lower = raw_query.lower().strip()
+        security_triggers = [
+            "system prompt", "database password", "secret tokens", "api_key",
+            "api key", "print your system prompt", "secret token", "db password", "password"
+        ]
+        if any(sec in q_lower for sec in security_triggers):
+            return "🛡️ **Security Protection:** SpaceLoop AI Concierge does not disclose internal system instructions, configuration tokens, or platform credentials. How can I assist you with physical spaces or listings today?"
+
         out_of_scope = [
             "weather", "temperature", "forecast", "rain", "climate",
             "cricket", "ipl", "football", "sports",
@@ -686,6 +686,35 @@ def _handle_ask_amenities(query: str, space_id: int | None, effective_lang: str)
     )
 
 
+def _handle_ask_rules(query: str, space_id: int | None, effective_lang: str) -> str:
+    from backend.modules.ai.rag_service import generate_rag_response
+    return generate_rag_response(
+        query=query,
+        target_space_id=space_id,
+        intent="ASK_RULES",
+        effective_lang=effective_lang
+    )
+
+
+def _handle_compare_spaces(params: dict, effective_lang: str) -> str:
+    compare_ids = params.get("compare_ids") or []
+    comp_list = compare_spaces_db_rag(compare_ids)
+    if not comp_list:
+        return "Please specify two space IDs to compare (e.g. 'compare space #1 and space #2')."
+    lines = ["⚖️ **Side-by-Side Space Comparison:**\n"]
+    for item in comp_list:
+        lines.append(
+            f"• **{item['title']}** ({item['category']})\n"
+            f"  - Location: {item['location']}\n"
+            f"  - Capacity: {item['capacity']}\n"
+            f"  - Rate: {item['rate']}\n"
+            f"  - Amenities: {item['amenities']}\n"
+            f"  - Noise: {item['noise_level']} | Food Policy: {item['food_policy']}\n"
+            f"  - Trust: {item['trust_rating']}"
+        )
+    return "\n\n".join(lines)
+
+
 
 def _handle_create_listing(query: str, params: dict, effective_lang: str) -> tuple[str, dict | None]:
     from backend.modules.nlp.listing_assistance import ListingAssistanceService
@@ -893,7 +922,7 @@ def _handle_ask_help(query: str, effective_lang: str, space_id: int | None = Non
     if any(k in q for k in ["how do i book", "how to book", "steps to book", "booking steps"]):
         return (
             "🚀 **How to Book a Space:**\n\n"
-            "1. **Select a Space**: Choose any listing on `/explore` or from search recommendations.\n"
+            "1. **Select a Space**: Choose any listing on `/space` or `/explore` from search recommendations.\n"
             "2. **Pick Duration**: Choose your start time and booking duration (minimum 30 minutes).\n"
             "3. **Review Upfront Breakdown**: Total = Hourly Rent + 5% Platform Fee + ₹100 Refundable UPI Escrow.\n"
             "4. **Authorize Payment**: Complete instant payment via any UPI app (GPay, PhonePe, Paytm) or card.\n"
@@ -1007,19 +1036,23 @@ def orchestrate_loopbot_query(
         if canonical_intent == IntentType.CLARIFICATION_NEEDED.value or nlp_result.confidence < 0.60:
             raw_reply = _handle_clarification(effective_lang, raw_query=query)
             canonical_intent = IntentType.CLARIFICATION_NEEDED.value
-        elif canonical_intent == IntentType.SEARCH_PROPERTY.value:
+        elif canonical_intent in (IntentType.SEARCH_SPACE.value, IntentType.SEARCH_PROPERTY.value):
             raw_reply = _handle_search_property(params, effective_lang, raw_query=query)
         elif canonical_intent == IntentType.CHECK_AVAILABILITY.value:
             raw_reply = _handle_check_availability(params, space_id, effective_lang)
-        elif canonical_intent == IntentType.BOOK_PROPERTY.value:
+        elif canonical_intent in (IntentType.BOOK_SPACE.value, IntentType.BOOK_PROPERTY.value):
             raw_reply = _handle_book_property(params, space_id, hours, effective_lang)
-        elif canonical_intent == IntentType.ASK_PRICE.value:
+        elif canonical_intent in (IntentType.ASK_PRICE.value, IntentType.GET_PRICING.value):
             raw_reply = _handle_ask_price(params, space_id, hours, effective_lang)
         elif canonical_intent == IntentType.ASK_LOCATION.value:
             raw_reply = _handle_ask_location(params, space_id, effective_lang)
-        elif canonical_intent == IntentType.ASK_AMENITIES.value:
+        elif canonical_intent in (IntentType.ASK_AMENITIES.value, IntentType.INQUIRE_AMENITIES.value):
             raw_reply = _handle_ask_amenities(query, space_id, effective_lang)
-        elif canonical_intent == IntentType.CREATE_LISTING.value:
+        elif canonical_intent in (IntentType.ASK_RULES.value, IntentType.INQUIRE_RULES.value):
+            raw_reply = _handle_ask_rules(query, space_id, effective_lang)
+        elif canonical_intent == IntentType.COMPARE_SPACES.value:
+            raw_reply = _handle_compare_spaces(params, effective_lang)
+        elif canonical_intent in (IntentType.CREATE_LISTING.value, IntentType.HOST_MONETIZE.value):
             raw_reply, listing_draft = _handle_create_listing(query, params, effective_lang)
         elif canonical_intent == IntentType.EDIT_LISTING.value:
             raw_reply = _handle_edit_listing(params, effective_lang)
@@ -1029,12 +1062,12 @@ def orchestrate_loopbot_query(
             raw_reply = _handle_ask_payment_status(params, effective_lang)
         elif canonical_intent == IntentType.REPORT_FRAUD.value:
             raw_reply = _handle_report_fraud(params, effective_lang)
-        elif canonical_intent == IntentType.ASK_HELP.value:
+        elif canonical_intent in (IntentType.ASK_HELP.value, IntentType.LEGAL_SAFETY.value):
             raw_reply = _handle_ask_help(query, effective_lang, space_id=space_id)
-        elif canonical_intent == IntentType.GENERAL_CONVERSATION.value:
+        elif canonical_intent in (IntentType.GENERAL_GREETING.value, IntentType.GENERAL_CONVERSATION.value):
             raw_reply = _handle_general_conversation(effective_lang, context_data)
         else:
-            raw_reply = _handle_clarification(effective_lang)
+            raw_reply = _handle_clarification(effective_lang, raw_query=query)
             canonical_intent = IntentType.CLARIFICATION_NEEDED.value
     except Exception as err:
         logger.error(f"LoopBot dispatch exception: {err}")

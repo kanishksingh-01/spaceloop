@@ -462,25 +462,14 @@ Return ONLY valid JSON with this format:
             score_map[m["id"]] = m
 
     # Fallback / heuristic scoring if AI call was unavailable or partial
-    q = query_text.lower()
-    ranked_results = []
-    
-    # Extract intent from query
-    budget_target = None
-    budget_match = re.search(r'(?:under|below|budget|max|within|less than)?\s*[₹$]?\s*(\d+)\s*(?:rs|inr|/hr|per hour)?', q)
-    if budget_match:
-        try:
-            budget_target = float(budget_match.group(1))
-        except Exception:
-            budget_target = None
+    # Extract intent & normalized constraints using NLPPipeline
+    from backend.modules.nlp.pipeline import NLPPipeline
+    nlp_res = NLPPipeline.process(query_text)
+    entities_dict = nlp_res.entities or {}
 
-    capacity_target = None
-    cap_match = re.search(r'(\d+)\s*(?:people|person|persons|guests|members|ppl)', q)
-    if cap_match:
-        try:
-            capacity_target = int(cap_match.group(1))
-        except Exception:
-            capacity_target = None
+    budget_target = entities_dict.get("max_price") or entities_dict.get("price")
+    capacity_target = entities_dict.get("guest_count") or entities_dict.get("capacity")
+    soft_preferences = entities_dict.get("soft_preferences", [])
 
     for s in spaces:
         s_id = s["id"]

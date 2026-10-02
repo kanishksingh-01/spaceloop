@@ -15,9 +15,10 @@ from backend.modules.nlp.schemas import IntentType
 
 GREETING_PATTERNS = [
     # English
-    r"\b(?:hi|hello|hey|greetings|good\s+(?:morning|afternoon|evening))\b",
+    r"^(?:hi|hello|hey|greetings|good\s+(?:morning|afternoon|evening)|howdy)\b",
+    r"\b(?:hi\s+there|hello\s+spaceloop|hey\s+bot|hey\s+loopbot)\b",
     # Hindi / Hinglish
-    r"\b(?:नमस्ते|नमस्कार|प्रणाम|राम\s*राम|namaste|pranam|ram\s*ram|kaise\s+ho|kese\s+ho)\b",
+    r"\b(?:नमस्ते|नमस्कार|प्रणाम|राम\s*राम|namaste|pranam|ram\s*ram|kaise\s+ho|kese\s+ho|kya\s+haal\s+hai)\b",
     # Marathi
     r"\b(?:नमस्कार|कसे\s+आहात|कसा\s+आहेस|namaskar|kasa\s+aahat|kashi\s+aahat)\b",
     # Garhwali / Kumaoni / Jaunsari
@@ -26,10 +27,10 @@ GREETING_PATTERNS = [
 
 BOOKING_PATTERNS = [
     # English
-    r"\b(?:book\s+(?:this|a|listing)?\s*(?:space|room|desk|listing|\w+)|reserve\s+(?:now|this)|how\s+to\s+book|make\s+a\s+reservation|checkout\s+link|direct\s+booking)\b",
+    r"\b(?:book\s+(?:this|a|the|listing)?\s*(?:space|room|desk|studio|slot|\w+)?|reserve\s+(?:now|this|a\s+space)|how\s+to\s+book|make\s+a\s+reservation|checkout\s+link|direct\s+booking|proceed\s+to\s+book)\b",
     # Hindi / Hinglish
     r"\b(?:book\s+karna\s+hai|reserve\s+karna\s+hai|booking\s+kaise\s+kare(?:in)?|booking\s+karo|booking\s+link\s+chahiye|ye\s+space\s+book\s+karo)\b",
-    r"(?:बुक\s+करना\s+है|आरक्षण\s+करना)",
+    r"(?:बुक\s+करना\s+है|आरक्षण\s+करना|बुकिंग\s+करो)",
     # Marathi
     r"\b(?:book\s+karaycha\s+aahe|aarakshan\s+kara|booking\s+kashi\s+karaychi|aarakshit\s+kara)\b",
     r"बुक\s+करायचं\s+आहे",
@@ -48,11 +49,11 @@ COMPARE_PATTERNS = [
 
 PRICING_PATTERNS = [
     # English
-    r"\b(?:how\s+much\s+(?:for|does\s+it\s+cost|will\s+it\s+cost)|calculate\s+cost|what\s+is\s+the\s+price|pricing\s+for|hourly\s+rate|fee\s+for)\b",
+    r"\b(?:how\s+much\s+(?:for|does\s+it\s+cost|will\s+it\s+cost)|calculate\s+cost|what\s+is\s+the\s+price|pricing\s+for|hourly\s+rate|fee\s+for|cost\s+breakdown)\b",
     # Hindi / Hinglish
     r"\b(?:kitna\s+(?:lagega|kharcha|hoga|padega)|price\s+kitni\s+hai|kitne\s+rupaye\s+lagenge|kiraya\s+kitna\s+hai|rates\s+kya\s+hain|rate\s+batao)\b",
     r"\bkitna\s+(?:lagega|hoga|hai)\b",
-    r"(?:कितना\s+(?:लगेगा|खर्चा|होगा|पड़ेगा)|किराया\s+कितना\s+है)",
+    r"(?:कितना\s+(?:लगेगा|खर्चा|होगा|पड़ेगा)|किराया\s+कितना\s+है|दर\s+क्या\s+है)",
     # Marathi
     r"\b(?:kiti\s+kharch\s+yeil|bhada\s+kiti\s+aahe|kiti\s+rupaye\s+lagtil|dar\s+kay\s+aahet)\b",
     r"(?:भाडं\s+किती\s+आहे|किती\s+खर्च\s+येईल)",
@@ -62,8 +63,9 @@ PRICING_PATTERNS = [
 
 AVAILABILITY_PATTERNS = [
     # English
-    r"\b(?:available\s+(?:tomorrow|today|this\s+weekend)|what(?:'s|\s+is)\s+available|open\s+slots|free\s+slots|is\s+it\s+free\s+at)\b",
+    r"\b(?:available\s+(?:tomorrow|today|this\s+weekend|after\s+\d+|at\s+\d+)|what(?:'s|\s+is)\s+available|open\s+slots|free\s+slots|is\s+it\s+free\s+at|show\s+places\s+available\s+after)\b",
     r"\b(?:is\s+it|are\s+there\s+spaces?)\s+available\b",
+    r"\bavailable\s+after\s+\d+\b",
     # Hindi / Hinglish
     r"\b(?:kal|aaj)\s+(?:\w+\s+)?(?:available|khali|free)\s*(?:hai|milega|hoga|kya)?\b",
     r"\b(?:open|free)\s+slots\s+hain\b",
@@ -126,173 +128,184 @@ LEGAL_SAFETY_PATTERNS = [
     r"\b(?:section\s+52|easements\s+act|tenancy\s+protection|squatting|upi\s+escrow|refundable\s+deposit|geofence\s+pass|digital\s+pass|security\s+deposit|deposit\s+hold|get\s+refunded|when\s+will.*refund|dispute|raise\s+a\s+dispute|complaint|smart\s+lock|pin\s+code|qr\s*code|unlock.*gate|check[\s-]out|end\s+(?:my\s+)?session)\b",
     # Hindi / Hinglish
     r"\b(?:section\s+52\s+kya\s+hai|tenancy\s+ka\s+(?:lafda|risk)|deposit\s+kaise\s+wapas\s+hoga|kabza\s+to\s+nahi\s+karega)\b",
-    r"(?:डिपॉजिट\s+वापस|रिफंड)",
+    r"(?:डिपॉजिट\s+वापस|रिफंड|सुरक्षा)",
     # Marathi
     r"\b(?:section\s+52\s+kay\s+aahe|kabja\s+tar\s+honar\s+nahi\s+na|deposit\s+parat\s+kase\s+milnar)\b",
     r"डिपॉझिट\s+परत"
 ]
 
+HELP_PATTERNS = [
+    # English Help & Guides
+    r"\b(?:what\s+is\s+spaceloop|about\s+spaceloop|tell\s+me\s+about\s+spaceloop|spaceloop\s+overview)\b",
+    r"\b(?:how\s+(?:does\s+)?spaceloop\s+work|how\s+it\s+works|workflow)\b",
+    r"\b(?:how\s+(?:do\s+i|to|can\s+i)\s+find(?:\s+(?:a\s+)?space)?|where\s+to\s+find(?:\s+(?:a\s+)?space)?|where\s+can\s+i\s+search)\b",
+    r"\b(?:how\s+(?:do\s+i|to|can\s+i)\s+book(?:\s+(?:a\s+)?space)?|steps\s+to\s+book|booking\s+steps)\b",
+    r"\b(?:what\s+information\s+is\s+required|what\s+documents|requirements)\b",
+    r"^(?:help|platform\s+guide|support|what\s+can\s+you\s+do)$",
+    # Multilingual / Code-mixed / Indic
+    r"(?:spaceloop|स्पेस\s*लूप)\s*(?:क्या\s+है|काय\s+आहे|kya\s+hai|kay\s+aahe)",
+    r"\b(?:spaceloop\s+kya\s+hai|kaise\s+kaam\s+karta\s+hai|spaceloop\s+kay\s+aahe|kasa\s+chaltoy|jaga\s+kashi\s+shodhaychi|book\s+kasa\s+karaycha)\b",
+    r"(?:स्पेस\s*लूप\s+काय\s+आहे|स्पेस\s*लूप\s+क्या\s+है|कसा\s+वापरायचा|कसा\s+चालतो|स्पेस\s+कशी\s+शोधायची)"
+]
+
+# Comprehensive marketplace search queries
 SEARCH_SPACE_PATTERNS = [
-    # English
-    r"\b(?:find|search|looking\s+for|need)\s+(?:a\s+|an\s+)?(?:\w+\s+)?(?:space|spaces|room|rooms|desk|desks|studio|studios|workspace|workspaces|office|offices|hall|halls)\b",
-    r"\b(?:spaces?|rooms?|desks?|studios?)\s+for\b",
+    # English natural phrasing
+    r"\b(?:i\s+need|need|looking\s+for|look\s+for|find|search|search\s+for|any|can\s+i\s+find|show\s+me|get\s+me|want)\s+(?:a\s+|an\s+|some\s+)?.*?(?:place|space|room|desk|studio|workspace|office|hall|curb|booth|cafe|terrace|spot|somewhere)\b",
+    r"\b(?:somewhere\s+to|place\s+to|space\s+to)\s+(?:work|study|record|shoot|host|meet|celebrate|park|gather|work\s+out|practice)\b",
+    r"\b(?:place|space|room|desk|studio|workspace|office|hall)\s+(?:for|near|in|around|under|with)\b",
+    r"\b(?:any\s+)?(?:affordable|cheap|quiet|budget|silent|sunlit)\s+(?:workspace|place|space|room|desk|studio)\b",
+    r"\b(?:shoot\s+a\s+(?:short\s+)?film|birthday\s+party|podcast\s+recording|team\s+meeting|study\s+session|hackathon|collab)\b",
+    r"\b(?:near\s+the\s+metro|around\s+me|near\s+[a-zA-Z]+)\b",
     # Hindi / Hinglish (Latin & Devanagari)
-    r"\b(?:kamra|kamre|desk|meeting\s+room|office|jagah|studio|hall)\s+(?:chahiye|khojo|dhoondo|dedo|milega|dikhao|dakhva)\b",
-    r"(?:कमरा|कमरे|खोली|खोल्या|जागा|कक्ष|कक्षा|दफ्तर|कार्यालय).*?(?:चाहिए|पाहिजे|हवी|हवा|खोजो|ढूंढो|बथों|दिखाओ|दाखवा)",
-    r"\b(?:kamra|kamre|jagah|desk)\s+(?:dhoond|khoj)\b",
+    r"\b(?:kamra|kamre|desk|meeting\s+room|office|jagah|studio|hall|workspace)\s+(?:chahiye|khojo|dhoondo|dedo|milega|dikhao|dakhva)\b",
+    r"(?:कमरा|कमरे|खोली|खोल्या|जागा|कक्ष|कक्षा|दफ्तर|कार्यालय|वर्कस्पेस|स्टूडियो).*?(?:चाहिए|पाहिजे|हवी|हवा|खोजो|ढूंढो|बथों|दिखाओ|दाखवा|मिलेगा)",
+    r"\b(?:kamra|kamre|jagah|desk|workspace)\s+(?:dhoond|khoj|chahiye)\b",
+    r"\b(?:mujhe|humein|mere\s+ko)\s+.*?(?:chahiye|milega)\b",
     # Marathi
-    r"\b(?:kholi|kholya|desk|jaga|office)\s+(?:pahije|shodha|dakhva|havay|havi|hava)\b",
+    r"\b(?:kholi|kholya|desk|jaga|office|workspace)\s+(?:pahije|shodha|dakhva|havay|havi|hava)\b",
+    r"\b(?:mala|amhala)\s+.*?(?:pahije|hava|havi)\b",
     # Pahari
     r"\b(?:kamro|basa|jaga)\s+(?:chyan|chho|chha)\b",
     r"\b(?:kakh|ketha)\s+(?:jaga|kamro|basa)\s+milal\b",
     r"\bpadhai\s+khatir\s+jaga\s+chyan\b"
 ]
 
-LOCATION_PATTERNS = [
-    # English
-    r"\b(?:where\s+is\s+(?:this|the)?\s*space|location\s+of|how\s+to\s+reach|what\s+is\s+the\s+address|neighborhood|exact\s+location|gps\s+coordinates|directions\s+to|where\s+located)\b",
-    # Hindi / Hinglish
-    r"\b(?:kahan\s+(?:pe\s+)?hai|address\s+kya\s+hai|kaise\s+pahunche|location\s+batao|kaha\s+hai|jagah\s+kahan\s+hai)\b",
-    r"(?:कहाँ\s+है|पता\s+क्या\s+है|लोकेशन)",
-    # Marathi
-    r"\b(?:kuthe\s+aahe|patta\s+kay\s+aahe|kase\s+pohachayche)\b",
-    r"कुठे\s+आहे",
-    # Pahari
-    r"\b(?:kakh\s+chho|ketha\s+chha)\b"
-]
-
-EDIT_LISTING_PATTERNS = [
-    # English
-    r"\b(?:edit\s+(?:my\s+)?listing|update\s+(?:my\s+)?space|change\s+(?:price|rate|photos|timing|amenities|rules)|modify\s+listing|update\s+listing)\b",
-    # Hindi / Hinglish
-    r"\b(?:listing\s+edit\s+karna|price\s+change\s+karna|photos\s+update\s+karna|listing\s+badalna\s+hai|details\s+update\s+karni)\b",
-    # Marathi
-    r"\b(?:listing\s+badlaychi\s+aahe|dar\s+badla|photos\s+badlayche)\b"
-]
-
-BOOKING_STATUS_PATTERNS = [
-    # English
-    r"\b(?:booking\s+status|check\s+(?:my\s+)?booking|my\s+reservation|is\s+my\s+booking\s+confirmed|door\s+pass\s+status|arrival\s+pin\s+code|check\s+status)\b",
-    # Hindi / Hinglish
-    r"\b(?:booking\s+(?:confirm\s+hui\s+kya|status\s+kya\s+hai|kaise\s+check\s+kare)|meri\s+booking|pass\s+mila\s+kya|pin\s+code\s+kya\s+hai)\b",
-    # Marathi
-    r"\b(?:booking\s+jhali\s+ka|majhi\s+booking|booking\s+status\s+dakhva)\b"
-]
-
-PAYMENT_STATUS_PATTERNS = [
-    # English
-    r"\b(?:payment\s+status|deposit\s+status|escrow\s+status|when\s+will.*(?:refund|deposit)|refund\s+status|100\s*(?:rs|rupees)?\s*deposit\s*refund|deposit\s+refund)\b",
-    # Hindi / Hinglish
-    r"\b(?:deposit\s+kab\s+aayega|refund\s+kab\s+milega|payment\s+status\s+kya\s+hai|paisa\s+wapas\s+aaya\s+kya|100\s*rupaye\s+kab\s+milenge)\b",
-    # Marathi
-    r"\b(?:refund\s+kadhi\s+yeil|paise\s+parat\s+ale\s+ka|payment\s+status\s+kay\s+aahe)\b"
-]
-
-REPORT_FRAUD_PATTERNS = [
-    # English
-    r"\b(?:report\s+fraud|report\s+(?:a\s+)?(?:scam|host|guest|violation)|suspicious\s+activity|safety\s+issue|fake\s+listing|fraud\s+report|fraudulent)\b",
-    # Hindi / Hinglish
-    r"\b(?:fraud\s+report\s+karna\s+hai|scam\s+hai|fraud\s+hai|dhokha\s+hua|report\s+karna\s+hai|fake\s+listing\s+hai)\b",
-    # Marathi
-    r"\b(?:fraud\s+aahe|takraar\s+karaychi\s+aahe|khota\s+listing)\b"
-]
-
-HELP_PATTERNS = [
-    # English
-    r"\b(?:help|how\s+does\s+spaceloop\s+work|what\s+is\s+spaceloop|how\s+spaceloop\s+works|how\s+(?:do\s+i|to)\s+(?:find|search)\s+(?:a\s+)?space|how\s+(?:do\s+i|to)\s+book\s+(?:a\s+)?space|what\s+information\s+(?:is\s+)?(?:required|needed)|what\s+(?:is|do\s+i)\s+need(?:ed)?\s+to\s+book|what\s+documents\s+(?:are\s+)?(?:required|needed)|platform\s+guide|how\s+it\s+works|support|contact\s+support|section\s+52\s+protection|terms\s+and\s+conditions|what\s+can\s+you\s+do)\b",
-    # Hindi / Hinglish
-    r"\b(?:help\s+chahiye|madad\s+chahiye|spaceloop\s+kya\s+hai|spaceloop\s+kaise\s+kam\s+karta\s+hai|booking\s+ke\s+liye\s+kya\s+chahiye|support\s+se\s+baat\s+karni\s+hai|madad\s+karo)\b",
-    r"(?:(?:स्पेस\s*लूप|spaceloop)\s+)?(?:क्या\s+है|कैसे\s+काम\s+करता\s+है|मदद\s*चाहिए|मदद\s+करो|सहायता|धारा\s*52|कानूनी\s*सुरक्षा)",
-    # Marathi
-    r"\b(?:madat\s+pahije|spaceloop\s+kay\s+aahe|spaceloop\s+kasa\s+chalto|sahayyata)\b",
-    r"(?:(?:स्पेस\s*लूप|spaceloop)\s+)?(?:काय\s+आहे|कसे\s+चालते|मदत\s*हवी|मदत\s+करा|कलम\s*52|कायदेशीर\s*संरक्षण)"
-]
-
-CANONICAL_INTENTS_MAP = {
-    IntentType.SEARCH_SPACE.value: IntentType.SEARCH_PROPERTY.value,
-    IntentType.SEARCH_PROPERTY.value: IntentType.SEARCH_PROPERTY.value,
-    IntentType.CHECK_AVAILABILITY.value: IntentType.CHECK_AVAILABILITY.value,
-    IntentType.BOOK_SPACE.value: IntentType.BOOK_PROPERTY.value,
-    IntentType.BOOK_PROPERTY.value: IntentType.BOOK_PROPERTY.value,
-    IntentType.GET_PRICING.value: IntentType.ASK_PRICE.value,
-    IntentType.ASK_PRICE.value: IntentType.ASK_PRICE.value,
-    IntentType.ASK_LOCATION.value: IntentType.ASK_LOCATION.value,
-    IntentType.INQUIRE_AMENITIES.value: IntentType.ASK_AMENITIES.value,
-    IntentType.ASK_AMENITIES.value: IntentType.ASK_AMENITIES.value,
-    IntentType.HOST_MONETIZE.value: IntentType.CREATE_LISTING.value,
-    IntentType.CREATE_LISTING.value: IntentType.CREATE_LISTING.value,
-    IntentType.EDIT_LISTING.value: IntentType.EDIT_LISTING.value,
-    IntentType.ASK_BOOKING_STATUS.value: IntentType.ASK_BOOKING_STATUS.value,
-    IntentType.ASK_PAYMENT_STATUS.value: IntentType.ASK_PAYMENT_STATUS.value,
-    IntentType.REPORT_FRAUD.value: IntentType.REPORT_FRAUD.value,
-    IntentType.INQUIRE_RULES.value: IntentType.ASK_HELP.value,
-    IntentType.LEGAL_SAFETY.value: IntentType.ASK_HELP.value,
-    IntentType.ASK_HELP.value: IntentType.ASK_HELP.value,
-    IntentType.COMPARE_SPACES.value: IntentType.SEARCH_PROPERTY.value,
-    IntentType.GENERAL_GREETING.value: IntentType.GENERAL_CONVERSATION.value,
-    IntentType.GENERAL_CONVERSATION.value: IntentType.GENERAL_CONVERSATION.value,
-    IntentType.CLARIFICATION_NEEDED.value: IntentType.CLARIFICATION_NEEDED.value,
-}
-
 
 class IntentService:
     """
-    Deterministic multilingual intent classifier with strict confidence scoring.
+    Multilingual Intent Extraction Service with confidence grading and low-confidence guardrail.
     """
 
-    INTENT_MAP = [
-        (IntentType.REPORT_FRAUD.value, REPORT_FRAUD_PATTERNS, 0.96),
-        (IntentType.BOOK_SPACE.value, BOOKING_PATTERNS, 0.96),
-        (IntentType.HOST_MONETIZE.value, HOST_MONETIZE_PATTERNS, 0.95),
-        (IntentType.EDIT_LISTING.value, EDIT_LISTING_PATTERNS, 0.95),
-        (IntentType.ASK_BOOKING_STATUS.value, BOOKING_STATUS_PATTERNS, 0.95),
-        (IntentType.ASK_PAYMENT_STATUS.value, PAYMENT_STATUS_PATTERNS, 0.95),
-        (IntentType.COMPARE_SPACES.value, COMPARE_PATTERNS, 0.94),
-        (IntentType.GET_PRICING.value, PRICING_PATTERNS, 0.95),
-        (IntentType.CHECK_AVAILABILITY.value, AVAILABILITY_PATTERNS, 0.94),
-        (IntentType.ASK_LOCATION.value, LOCATION_PATTERNS, 0.94),
-        (IntentType.INQUIRE_AMENITIES.value, AMENITIES_PATTERNS, 0.93),
-        (IntentType.INQUIRE_RULES.value, RULES_PATTERNS, 0.93),
-        (IntentType.LEGAL_SAFETY.value, LEGAL_SAFETY_PATTERNS, 0.92),
-        (IntentType.ASK_HELP.value, HELP_PATTERNS, 0.92),
-        (IntentType.SEARCH_SPACE.value, SEARCH_SPACE_PATTERNS, 0.94),
-        (IntentType.GENERAL_GREETING.value, GREETING_PATTERNS, 0.92),
-    ]
+    @classmethod
+    def extract_intent(cls, text: str, context_data: Optional[Dict[str, Any]] = None) -> Tuple[str, float]:
+        """
+        Determines the primary user intent and returns (intent_name, confidence).
+        Returns CLARIFICATION_NEEDED when confidence is below threshold.
+        """
+        if not text or not text.strip():
+            return IntentType.CLARIFICATION_NEEDED.value, 0.0
+
+        clean = text.lower().strip()
+
+        # Check for explicit out-of-scope queries
+        out_of_scope = any(re.search(rf"\b{w}\b", clean) for w in [
+            "weather", "forecast", "temperature", "rain", "climate",
+            "bitcoin", "crypto", "cryptocurrency", "ethereum", "eth", "solana", "stock", "shares", "trading", "crypto currency",
+            "recipe", "cooking recipe", "cricket score", "ipl score",
+            "politics", "election result", "medicine", "symptoms", "doctor"
+        ])
+        if out_of_scope:
+            return IntentType.CLARIFICATION_NEEDED.value, 0.20
+
+        # 0. Help / Platform Guide (High Priority)
+        for pat in HELP_PATTERNS:
+            if re.search(pat, clean):
+                return IntentType.ASK_HELP.value, 0.96
+
+        # 1. Booking Action Intent
+        for pat in BOOKING_PATTERNS:
+            if re.search(pat, clean):
+                return IntentType.BOOK_SPACE.value, 0.94
+
+        # 2. Host Monetization / Create Listing Intent
+        for pat in HOST_MONETIZE_PATTERNS:
+            if re.search(pat, clean):
+                return IntentType.CREATE_LISTING.value, 0.93
+
+        # 3. Compare Spaces Intent
+        for pat in COMPARE_PATTERNS:
+            if re.search(pat, clean):
+                return IntentType.COMPARE_SPACES.value, 0.91
+
+        # 4. Pricing / Cost Estimation Intent
+        for pat in PRICING_PATTERNS:
+            if re.search(pat, clean):
+                return IntentType.ASK_PRICE.value, 0.92
+
+        # 5. Availability Query Intent
+        for pat in AVAILABILITY_PATTERNS:
+            if re.search(pat, clean):
+                return IntentType.CHECK_AVAILABILITY.value, 0.90
+
+        # 6. Amenities Query Intent (only if not an active marketplace search with pricing/room constraints)
+        for pat in AMENITIES_PATTERNS:
+            if re.search(pat, clean):
+                if any(p in clean for p in ["under", "below", "max", "₹", "/hr", "per hour", "need", "find", "show me", "khojo"]):
+                    return IntentType.SEARCH_SPACE.value, 0.90
+                return IntentType.ASK_AMENITIES.value, 0.90
+
+        # 7. Rules & Policies Query Intent
+        for pat in RULES_PATTERNS:
+            if re.search(pat, clean):
+                return IntentType.ASK_RULES.value, 0.91
+
+        # 8. Legal & Platform Safety / Escrow
+        for pat in LEGAL_SAFETY_PATTERNS:
+            if re.search(pat, clean):
+                return IntentType.LEGAL_SAFETY.value, 0.92
+
+        # 9. General Greeting
+        for pat in GREETING_PATTERNS:
+            if re.search(pat, clean):
+                # If greeting contains subsequent space search words, fall through to search
+                if not any(k in clean for k in ["need", "looking", "want", "space", "room", "desk", "find", "chahiye", "pahije"]):
+                    return IntentType.GENERAL_GREETING.value, 0.95
+
+        # 10. Marketplace Search Intent
+        for pat in SEARCH_SPACE_PATTERNS:
+            if re.search(pat, clean):
+                return IntentType.SEARCH_SPACE.value, 0.89
+
+        # Fallback heuristic: Check if text contains space/activity keywords
+        space_signals = [
+            "space", "room", "desk", "studio", "hall", "office", "workspace",
+            "film", "recording", "podcast", "study", "meeting", "party", "collab",
+            "people", "persons", "hours", "₹", "rs", "kharadi", "delhi", "pune",
+            "mumbai", "bengaluru", "dehradun", "metro", "near", "quiet", "cheap",
+            "chahiye", "pahije", "khojo", "dhoondo", "kamra", "jaga", "kholi"
+        ]
+        matched_signals = sum(1 for s in space_signals if s in clean)
+        if matched_signals >= 2:
+            return IntentType.SEARCH_SPACE.value, 0.78
+        elif matched_signals == 1:
+            return IntentType.SEARCH_SPACE.value, 0.65
+
+        return IntentType.CLARIFICATION_NEEDED.value, 0.40
 
     @classmethod
-    def canonicalize_intent(cls, intent_name: str) -> str:
-        """
-        Maps any intent variant or alias to the 13 canonical SpaceLoop intents.
-        """
-        return CANONICAL_INTENTS_MAP.get(intent_name, intent_name)
-
-    @classmethod
-    def extract_intent(cls, normalized_text: str, context_data: Optional[Dict[str, Any]] = None) -> Tuple[str, float]:
-        """
-        Extracts intent and confidence from normalized text.
-        Guarantees: If query does not match known patterns or confidence is below 0.60,
-        returns (CLARIFICATION_NEEDED, 0.50).
-        """
-        if not normalized_text or len(normalized_text.strip()) < 2:
-            return IntentType.CLARIFICATION_NEEDED.value, 0.10
-
-        clean = normalized_text.lower().strip()
-
-        # 1. Match against deterministic multilingual pattern groups
-        for intent_name, patterns, base_conf in cls.INTENT_MAP:
-            for pattern in patterns:
-                if re.search(pattern, clean, flags=re.IGNORECASE):
-                    return intent_name, base_conf
-
-        # 2. Check standalone single greetings
-        if clean in ("hi", "hello", "hey", "hola", "namaste", "pranam", "namaskar", "ram ram"):
-            return IntentType.GENERAL_GREETING.value, 0.95
-
-        # 3. Keyword co-occurrence heuristic for search (e.g. mentions of location + capacity or price)
-        has_search_indicators = any(k in clean for k in ["for", "near", "under", "₹", "seats", "pax", "people", "hours", "hr"])
-        has_space_types = any(k in clean for k in ["desk", "office", "studio", "meeting", "workshop", "retail", "hall", "study"])
-        if has_search_indicators and has_space_types:
-            return IntentType.SEARCH_SPACE.value, 0.82
-
-        # 4. Low-confidence fallback guardrail: Do NOT invent an intent
-        return IntentType.CLARIFICATION_NEEDED.value, 0.50
+    def canonicalize_intent(cls, intent_str: str) -> str:
+        """Translates legacy and alias intent names to canonical IntentType values."""
+        if not intent_str:
+            return IntentType.CLARIFICATION_NEEDED.value
+        mapping = {
+            "SEARCH_PROPERTY": IntentType.SEARCH_SPACE.value,
+            "SEARCH_SPACE": IntentType.SEARCH_SPACE.value,
+            "MARKETPLACE_SEARCH": IntentType.SEARCH_SPACE.value,
+            "BOOK_PROPERTY": IntentType.BOOK_SPACE.value,
+            "BOOK_SPACE": IntentType.BOOK_SPACE.value,
+            "BOOKING_ACTION": IntentType.BOOK_SPACE.value,
+            "GET_PRICING": IntentType.ASK_PRICE.value,
+            "ASK_PRICE": IntentType.ASK_PRICE.value,
+            "PRICING_CALCULATION": IntentType.ASK_PRICE.value,
+            "CHECK_AVAILABILITY": IntentType.CHECK_AVAILABILITY.value,
+            "AVAILABILITY_QUERY": IntentType.CHECK_AVAILABILITY.value,
+            "INQUIRE_AMENITIES": IntentType.ASK_AMENITIES.value,
+            "ASK_AMENITIES": IntentType.ASK_AMENITIES.value,
+            "RAG_AMENITIES": IntentType.ASK_AMENITIES.value,
+            "INQUIRE_RULES": IntentType.ASK_RULES.value,
+            "ASK_RULES": IntentType.ASK_RULES.value,
+            "RAG_RULES_POLICY": IntentType.ASK_RULES.value,
+            "COMPARE_SPACES": IntentType.COMPARE_SPACES.value,
+            "HOST_MONETIZE": IntentType.CREATE_LISTING.value,
+            "CREATE_LISTING": IntentType.CREATE_LISTING.value,
+            "HOST_MONETIZATION": IntentType.CREATE_LISTING.value,
+            "LEGAL_SAFETY": IntentType.LEGAL_SAFETY.value,
+            "LEGAL_AND_SAFETY": IntentType.LEGAL_SAFETY.value,
+            "ASK_HELP": IntentType.ASK_HELP.value,
+            "GENERAL_GREETING": IntentType.GENERAL_GREETING.value,
+            "GENERAL_CONVERSATION": IntentType.GENERAL_GREETING.value,
+            "GENERAL_CHAT": IntentType.GENERAL_GREETING.value,
+            "CLARIFICATION_NEEDED": IntentType.CLARIFICATION_NEEDED.value
+        }
+        return mapping.get(intent_str, intent_str)

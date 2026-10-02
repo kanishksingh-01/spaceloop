@@ -1,11 +1,11 @@
 """
 SpaceLoop Lightweight Hybrid Search Engine
 Combines:
-1. Query Understanding (structured constraints + semantic query)
-2. Deterministic Hard Filtering (Capacity, Budget, Category, Location Proximity)
+1. Query Understanding (structured constraints + clean semantic query + soft preferences)
+2. Deterministic Hard Filtering (Capacity, Budget, Category, Location Proximity, Required Amenities)
 3. Real-Time Booking Availability (from actual Booking database records)
 4. Semantic Vector Similarity Search (Cosine similarity over dense embeddings)
-5. Keyword Relevance Match (Token overlap)
+5. Keyword & Trait Relevance Match (Token overlap + AI lighting / acoustics / vibe matching)
 6. Composite Ranking & Result Formulation
 7. Seamless Fallback to Keyword/Filter search on provider failure
 """
@@ -31,19 +31,17 @@ def _resolve_query_time_window(date_str: str | None, time_range_str: str | None,
 
     if date_str:
         d_clean = date_str.lower().strip()
-        if "tomorrow" in d_clean:
+        if "tomorrow" in d_clean or "kal" in d_clean or "udya" in d_clean:
             target_date = (now + timedelta(days=1)).date()
-        elif "today" in d_clean:
+        elif "today" in d_clean or "aaj" in d_clean:
             target_date = now.date()
         elif "weekend" in d_clean:
-            # Days until next Saturday (weekday 5)
             days_until_sat = (5 - now.weekday()) % 7
             if days_until_sat == 0 and now.hour > 18:
                 days_until_sat = 7
             target_date = (now + timedelta(days=days_until_sat)).date()
         else:
             try:
-                # Try parsing ISO or YYYY-MM-DD
                 parsed_d = datetime.fromisoformat(d_clean).date()
                 target_date = parsed_d
             except Exception:
@@ -53,13 +51,13 @@ def _resolve_query_time_window(date_str: str | None, time_range_str: str | None,
     start_hour = 14  # Default 2:00 PM if time range not specified
     if time_range_str:
         tr = time_range_str.lower().strip()
-        if "morning" in tr:
+        if "morning" in tr or "subah" in tr or "sakali" in tr:
             start_hour = 9
-        elif "afternoon" in tr:
-            start_hour = 14
-        elif "evening" in tr:
+        elif "afternoon" in tr or "dopahar" in tr or "dupari" in tr:
+            start_hour = 13
+        elif "evening" in tr or "shaam" in tr or "sandhyakali" in tr:
             start_hour = 17
-        elif "night" in tr:
+        elif "night" in tr or "raat" in tr or "late night" in tr:
             start_hour = 20
 
     start_dt = datetime(target_date.year, target_date.month, target_date.day, start_hour, 0, 0)
@@ -69,34 +67,61 @@ def _resolve_query_time_window(date_str: str | None, time_range_str: str | None,
     return start_dt, end_dt
 
 
-def _compute_keyword_relevance(query_text: str, space: Space) -> float:
+def _compute_keyword_relevance(query_text: str, space: Space, soft_preferences: list[str] | None = None) -> float:
     """
-    Calculates keyword overlap relevance score between query tokens and listing attributes.
+    Calculates keyword and soft trait overlap relevance score between query and listing attributes.
     Returns a normalized float in range [0.0, 1.0].
     """
-    if not query_text:
+    if not query_text and not soft_preferences:
         return 0.5
 
-    clean_q = query_text.lower()
-    tokens = [t for t in re.findall(r'\b[a-zA-Z0-9]{3,}\b', clean_q) if t not in ("for", "and", "the", "with", "near", "place", "need")]
-    if not tokens:
-        return 0.5
+    clean_q = (query_text or "").lower()
+    tokens = [t for t in re.findall(r'\b[a-zA-Z0-9]{3,}\b', clean_q) if t not in ("for", "and", "the", "with", "near", "place", "need", "some", "want")]
+    
+    s_title = (space.title or "").lower()
+    s_cat = space.category or ""
+    s_neigh = space.neighborhood or ""
+    s_city = space.city or ""
+    s_desc = space.description or ""
+    s_amen = " ".join(space.amenities or [])
+    s_tags = " ".join(space.ai_tags or [])
+    s_rec = space.ai_recommended_uses or ""
+    s_light = (space.ai_lighting or "").lower()
+    s_noise = (space.ai_noise_level or "").lower()
 
-    space_text = f"{space.title} {space.category} {space.neighborhood} {space.city} {space.description} {' '.join(space.amenities)} {' '.join(space.ai_tags)} {space.ai_recommended_uses}".lower()
+    space_text = f"{s_title} {s_cat} {s_neigh} {s_city} {s_desc} {s_amen} {s_tags} {s_rec} {s_light} {s_noise}".lower()
 
     matches = 0
     title_matches = 0
     for token in tokens:
-        if token in space.title.lower():
+        if token in s_title:
             title_matches += 1
             matches += 1
         elif token in space_text:
             matches += 1
 
-    ratio = matches / len(tokens)
+    ratio = (matches / len(tokens)) if tokens else 0.5
     if title_matches > 0:
         ratio = min(1.0, ratio + 0.2)
-    return round(ratio, 4)
+
+    # Bonus for soft preferences match (e.g. "quiet", "good lighting", "soundproof", "cafe-like")
+    if soft_preferences:
+        soft_matched = 0
+        for sp in soft_preferences:
+            sp_clean = sp.lower()
+            if sp_clean in space_text:
+                soft_matched += 1
+            elif "quiet" in sp_clean and ("<" in s_noise or "quiet" in s_noise or "silent" in s_noise):
+                soft_matched += 1
+            elif "lighting" in sp_clean and ("natural" in s_light or "sunlit" in s_light or "ambient" in s_light):
+                soft_matched += 1
+            elif "soundproof" in sp_clean and ("acoustic" in space_text or "soundproof" in space_text):
+                soft_matched += 1
+        if soft_matched > 0:
+            soft_bonus = min(0.25, soft_matched * 0.1)
+            ratio = min(1.0, ratio + soft_bonus)
+
+    return round(min(1.0, max(0.0, ratio)), 4)
 
 
 def _compute_completeness_score(space: Space) -> float:
@@ -132,16 +157,17 @@ def hybrid_search_spaces(
 ) -> dict:
     """
     Executes hybrid semantic search:
-    1. Extracts structured constraints from natural language query.
+    1. Extracts structured constraints & soft preferences from natural language query.
     2. Merges query constraints with explicit user filter parameters (explicit overrides query).
     3. Deterministically applies hard filters (Capacity, Price, Category, Radius, Booking Availability).
     4. Generates query vector embedding and computes cosine similarity with listing embeddings.
-    5. Calculates keyword relevance and composite ranking.
+    5. Calculates keyword & trait relevance and composite ranking.
     6. Formats explainable search results with real availability.
     """
     # Step 1: Query understanding
     parsed_query = understand_search_query(raw_query) if raw_query else {}
     semantic_query = parsed_query.get("semantic_query") or raw_query
+    soft_preferences = parsed_query.get("soft_preferences", [])
 
     # Step 2: Merge explicit overrides with extracted constraints
     effective_loc = location or parsed_query.get("location")
@@ -246,6 +272,25 @@ def hybrid_search_spaces(
 
         candidate_spaces = query.all()
 
+        # Graceful fallback: If location was inferred from free-text query and produced 0 results, relax location
+        if not candidate_spaces and location is None and effective_loc:
+            fallback_query = Space.query.filter_by(is_active=True)
+            if current_user_id:
+                fallback_query = fallback_query.filter(Space.owner_id != current_user_id)
+            if effective_cap is not None and effective_cap > 0:
+                fallback_query = fallback_query.filter(Space.max_capacity >= effective_cap)
+            if effective_max_price is not None and effective_max_price > 0:
+                fallback_query = fallback_query.filter(Space.price_hourly <= effective_max_price)
+            if effective_cat and effective_cat.lower() not in ("all", "any"):
+                cat_lower = effective_cat.lower()
+                fallback_query = fallback_query.filter(
+                    db.or_(
+                        Space.category.ilike(f"%{cat_lower}%"),
+                        Space.title.ilike(f"%{cat_lower}%")
+                    )
+                )
+            candidate_spaces = fallback_query.all()
+
     # Step 4: Secondary Deterministic Filters (Radius & Real Booking Availability)
     surviving_spaces = []
     for s in candidate_spaces:
@@ -318,7 +363,6 @@ def hybrid_search_spaces(
         # 1. Semantic Similarity
         semantic_sim = 0.5
         if query_vector:
-            # Ensure listing embedding exists in DB; compute and store if missing
             listing_vector = s.embedding
             if not listing_vector:
                 try:
@@ -335,8 +379,8 @@ def hybrid_search_spaces(
             if listing_vector:
                 semantic_sim = cosine_similarity(query_vector, listing_vector)
 
-        # 2. Keyword Relevance
-        keyword_rel = _compute_keyword_relevance(semantic_query or raw_query, s)
+        # 2. Keyword & Trait Relevance
+        keyword_rel = _compute_keyword_relevance(semantic_query or raw_query, s, soft_preferences)
 
         # 3. Location Proximity Score
         if dist_km is not None:
@@ -353,14 +397,13 @@ def hybrid_search_spaces(
         completeness = _compute_completeness_score(s)
 
         # Composite Ranking Formula:
-        # Semantic (45%) + Keyword (25%) + Location (15%) + Completeness (10%) + Availability (5%)
+        # Semantic (45%) + Keyword & Traits (25%) + Location (15%) + Completeness (10%) + Availability (5%)
         if embedding_failed or not query_vector:
-            # Keyword/Deterministic fallback ranking
             composite_score = (0.50 * keyword_rel) + (0.25 * location_score) + (0.15 * completeness) + (0.10 * avail_score)
         else:
             composite_score = (0.45 * semantic_sim) + (0.25 * keyword_rel) + (0.15 * location_score) + (0.10 * completeness) + (0.05 * avail_score)
 
-        # Build explainable match reasoning without exposing raw scores
+        # Build explainable match reasoning
         reasons = []
         if effective_cap and s.max_capacity >= effective_cap:
             reasons.append(f"Fits {effective_cap}+ people (capacity: {s.max_capacity})")
@@ -370,6 +413,11 @@ def hybrid_search_spaces(
             reasons.append(f"Located in {s.location}")
         if s.ai_recommended_uses:
             reasons.append(f"Ideal for {s.ai_recommended_uses.split(',')[0].strip()}")
+        if soft_preferences:
+            for sp in soft_preferences:
+                if sp.lower() in (s.ai_noise_level or "").lower() or sp.lower() in (s.ai_lighting or "").lower():
+                    reasons.append(f"Matches '{sp}' requirement")
+                    break
         if not reasons:
             reasons.append(f"Verified {s.category} with instant check-in")
 
