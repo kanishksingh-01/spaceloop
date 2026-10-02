@@ -179,9 +179,9 @@ def ensure_database_schema(app, db):
                 demo_user = User.query.filter_by(email="demo@spaceloop.in").first()
                 if not demo_user:
                     demo_user = User(
-                        name="SpaceLoop Demo User",
-                        first_name="SpaceLoop",
-                        last_name="Demo",
+                        name="Demo User",
+                        first_name="Demo",
+                        last_name="User",
                         email="demo@spaceloop.in",
                         password_hash=generate_password_hash("password123"),
                         role="both",
@@ -195,7 +195,7 @@ def ensure_database_schema(app, db):
                         discom_ca_masked="***1234",
                         upi_verified=True,
                         upi_vpa_masked="demo***@okhdfcbank",
-                        bank_beneficiary_name="SpaceLoop Demo User",
+                        bank_beneficiary_name="Demo User",
                         is_student_verified=True,
                         college_name="IIT Delhi",
                         college_email="demo@iitd.ac.in",
@@ -212,6 +212,9 @@ def ensure_database_schema(app, db):
                     db.session.add(demo_user)
                     db.session.commit()
                 else:
+                    demo_user.name = "Demo User"
+                    demo_user.first_name = "Demo"
+                    demo_user.last_name = "User"
                     demo_user.password_hash = generate_password_hash("password123")
                     demo_user.role = "both"
                     demo_user.is_admin = True

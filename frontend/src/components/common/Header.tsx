@@ -13,6 +13,14 @@ interface HeaderProps {
   onOpenHostAuthModal?: () => void;
 }
 
+const getUserBadgeName = (name: string | undefined | null, fallback: string): string => {
+  if (!name) return fallback;
+  const stripped = name.replace(/^SpaceLoop\s*/i, '').trim();
+  const first = stripped.split(' ')[0];
+  if (!first || first.toLowerCase() === 'spaceloop') return fallback;
+  return first;
+};
+
 export const Header: React.FC<HeaderProps> = ({
   currentUser,
   onOpenAuthModal,
@@ -181,7 +189,7 @@ export const Header: React.FC<HeaderProps> = ({
               <button
                 onClick={() => navigate('/host')}
                 className="px-3 py-1.5 rounded-lg transition flex items-center gap-1.5 text-amber-300 hover:text-white hover:bg-amber-500/10 border border-amber-500/20 font-bold"
-                title="Launch SpaceLoop Host Operating System"
+                title="Launch Host Operating System"
               >
                 <i className="fa-solid fa-house-chimney-user text-amber-400" />
                 <span>Host Portal</span>
@@ -252,7 +260,7 @@ export const Header: React.FC<HeaderProps> = ({
               type="button"
               onClick={() => navigate('/host')}
               className="inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border border-amber-500/30 text-xs font-bold transition shrink-0"
-              title="Launch SpaceLoop Host Operating System"
+              title="Launch Host Operating System"
             >
               <i className="fa-solid fa-house-chimney-user text-amber-400" />
               <span className="hidden sm:inline">Host Portal</span>
@@ -266,7 +274,7 @@ export const Header: React.FC<HeaderProps> = ({
             isVerifiedHost ? (
               <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
                 <div className="flex items-center gap-1.5 px-2 sm:px-2.5 py-1 rounded-xl bg-slate-900 border border-slate-800 text-xs font-bold text-slate-200">
-                  <span>🏡 {currentUser?.name?.split(' ')[0] || 'Host'}</span>
+                  <span>🏡 {getUserBadgeName(currentUser?.name, 'Host')}</span>
                 </div>
                 <button
                   type="button"
@@ -304,7 +312,7 @@ export const Header: React.FC<HeaderProps> = ({
                   onClick={() => navigate('/dashboard')}
                   className="flex items-center gap-1.5 px-2 sm:px-2.5 py-1 rounded-xl bg-slate-900 border border-slate-800 text-xs font-bold text-slate-200"
                 >
-                  <span>🎓 {currentUser.name?.split(' ')[0] || 'Seeker'}</span>
+                  <span>🎓 {getUserBadgeName(currentUser?.name, 'Seeker')}</span>
                 </button>
                 <button
                   type="button"

@@ -4,7 +4,7 @@ import { User } from '../types';
 export const MASTER_DEMO_USER: User = {
   id: 999,
   email: 'demo@spaceloop.in',
-  name: 'SpaceLoop Demo User',
+  name: 'Demo User',
   role: 'both',
   is_host: true,
   college_verified: true,
@@ -14,7 +14,7 @@ export const MASTER_DEMO_USER: User = {
   discom_ca_masked: '***1234',
   upi_verified: true,
   upi_vpa_masked: 'demo***@okhdfcbank',
-  bank_beneficiary_name: 'SpaceLoop Demo User',
+  bank_beneficiary_name: 'Demo User',
   trust_score: 99.5,
   objective_trust_score: 99.5,
   oti_breakdown: {

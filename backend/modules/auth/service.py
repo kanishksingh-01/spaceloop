@@ -97,9 +97,9 @@ class AuthService:
                 is_admin_flag = (clean_email == "admin@spaceloop.in")
                 if not user:
                     user = User(
-                        name="SpaceLoop Platform Admin" if is_admin_flag else "SpaceLoop Demo User",
-                        first_name="Platform" if is_admin_flag else "SpaceLoop",
-                        last_name="Admin" if is_admin_flag else "Demo",
+                        name="SpaceLoop Platform Admin" if is_admin_flag else "Demo User",
+                        first_name="Platform" if is_admin_flag else "Demo",
+                        last_name="Admin" if is_admin_flag else "User",
                         email=clean_email,
                         password_hash=generate_password_hash("password123"),
                         role="both",
@@ -113,7 +113,7 @@ class AuthService:
                         discom_ca_masked="***9999" if is_admin_flag else "***1234",
                         upi_verified=True,
                         upi_vpa_masked="admin***@oksbi" if is_admin_flag else "demo***@okhdfcbank",
-                        bank_beneficiary_name="SpaceLoop Platform Admin" if is_admin_flag else "SpaceLoop Demo User",
+                        bank_beneficiary_name="SpaceLoop Platform Admin" if is_admin_flag else "Demo User",
                         is_student_verified=True,
                         college_name="IIT Delhi",
                         college_email="admin@iitd.ac.in" if is_admin_flag else "demo@iitd.ac.in",
@@ -129,6 +129,9 @@ class AuthService:
                     )
                     db.session.add(user)
                 else:
+                    user.name = "SpaceLoop Platform Admin" if is_admin_flag else "Demo User"
+                    user.first_name = "Platform" if is_admin_flag else "Demo"
+                    user.last_name = "Admin" if is_admin_flag else "User"
                     user.password_hash = generate_password_hash("password123")
                     user.role = "both"
                     user.is_admin = True

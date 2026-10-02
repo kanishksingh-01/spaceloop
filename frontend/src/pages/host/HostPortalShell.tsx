@@ -232,10 +232,12 @@ export const HostPortalShell: React.FC<HostPortalShellProps> = ({
               className="flex items-center gap-2 p-1 rounded-xl hover:bg-slate-900 transition text-left"
             >
               <div className="w-7 h-7 rounded-lg bg-amber-500/20 border border-amber-500/40 text-amber-400 font-bold text-xs flex items-center justify-center">
-                {effectiveUser?.name ? effectiveUser.name.charAt(0).toUpperCase() : 'H'}
+                {effectiveUser?.name ? (effectiveUser.name.replace(/^SpaceLoop\s*/i, '').trim().charAt(0).toUpperCase() || 'H') : 'H'}
               </div>
               <div className="hidden xl:block">
-                <div className="text-xs font-bold text-white line-clamp-1">{effectiveUser?.name || 'Host'}</div>
+                <div className="text-xs font-bold text-white line-clamp-1">
+                  {effectiveUser?.name ? (effectiveUser.name.replace(/^SpaceLoop\s*/i, '').trim() || 'Host') : 'Host'}
+                </div>
                 <div className="text-[10px] text-amber-400 font-mono font-semibold">
                   OTI {(effectiveUser as any)?.objective_trust_score ?? 99.2}/100
                 </div>
