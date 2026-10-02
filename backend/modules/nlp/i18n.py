@@ -154,15 +154,21 @@ class MultilingualService:
     ) -> Tuple[str, str, bool]:
         """
         Negotiates effective language for response generation:
-        1. If user explicitly selected a valid preference, respect it.
-        2. If preference is 'auto' or not provided, run fast language detection on message.
+        1. If user message is detected in an Indic language or code-mixed dialect (Hindi, Hinglish, Marathi, Pahari),
+           LoopBot understands and responds in that language even if the global website language is English.
+        2. If user explicitly selected a language preference in LoopBot, respect it.
         3. Returns (effective_language, detected_language, is_code_mixed).
         """
-        # Step A: Detect message language using Part 2 LanguageDetectionService
-        det_code, secondary_langs, is_code_mixed, _ = LanguageDetectionService.detect_language(user_message or "")
+        # Step A: Detect message language using LanguageDetectionService
+        det_code, secondary_langs, is_code_mixed, det_conf = LanguageDetectionService.detect_language(user_message or "")
         detected_lang = det_code if isinstance(det_code, str) else det_code.value
 
-        # Step B: Check explicit preference
+        # Step B: If the query is distinctly non-English (Indic/bilingual/dialect), adopt the query language
+        if detected_lang in ("hi", "mr", "gbm", "gar", "kfy", "jns", "hi-Latn", "mr-Latn") and det_conf >= 0.70:
+            eff = "gar" if detected_lang == "gbm" else detected_lang
+            return eff, detected_lang, is_code_mixed
+
+        # Step C: Check explicit preference if provided
         if explicit_preference and explicit_preference.strip().lower() not in ("auto", "none", "", "null"):
             pref_clean = explicit_preference.strip().lower()
             # Normalize synonyms (e.g. 'gar' -> 'gbm')
@@ -175,9 +181,8 @@ class MultilingualService:
             if pref_clean in SUPPORTED_CODES:
                 return pref_clean, detected_lang, is_code_mixed
 
-        # Step C: Fallback to detected language if valid, else English
+        # Step D: Fallback to detected language if valid, else English
         if detected_lang in SUPPORTED_CODES:
-            # Map gbm -> gar for presentation
             eff = "gar" if detected_lang == "gbm" else detected_lang
             return eff, detected_lang, is_code_mixed
 

@@ -478,32 +478,29 @@ def _handle_clarification(effective_lang: str, raw_query: str = "") -> str:
             return "🛡️ **Security Protection:** SpaceLoop AI Concierge does not disclose internal system instructions, configuration tokens, or platform credentials. How can I assist you with physical spaces or listings today?"
 
         out_of_scope = [
-            "weather", "temperature", "forecast", "rain", "climate",
+            "weather", "forecast", "rain", "climate",
             "cricket", "ipl", "football", "sports",
             "politics", "election", "president", "prime minister", "modi",
             "recipe", "cooking", "how to cook",
             "movie", "song", "lyrics", "celebrity",
             "crypto", "bitcoin", "ethereum", "stock market", "trading", "share market",
-            "flight ticket", "train ticket", "pnr", "hotel booking",
+            "flight ticket", "train ticket", "pnr",
             "doctor", "medical", "medicine", "disease"
         ]
         if any(w in q_lower for w in out_of_scope):
-            if effective_lang == "hi":
+            if effective_lang in ("hi", "hi-Latn", "gar", "gbm", "kfy", "jns"):
                 return (
                     "ℹ️ **जानकारी उपलब्ध नहीं है:**\n\n"
-                    "यह जानकारी SpaceLoop पर उपलब्ध नहीं है। SpaceLoop केवल फिजिकल स्पेस (डेस्क, स्टूडियो, मीटिंग रूम) खोजने, बुक करने, स्मार्ट एक्सेस और होस्ट स्पेस लिस्टिंग में मदद करता है।\n\n"
-                    "क्या मैं आपको किसी फिजिकल स्पेस की बुकिंग या खोज में मदद कर सकता हूँ?"
+                    "यह जानकारी SpaceLoop पर उपलब्ध नहीं है। SpaceLoop केवल भौतिक कार्यक्षेत्र (डेस्क, स्टूडियो, मीटिंग रूम) खोजने, प्रति घंटा बुक करने, स्मार्ट एक्सेस और खाली जगह से कमाई में सहायता करता है।"
                 )
-            elif effective_lang == "mr":
+            elif effective_lang in ("mr", "mr-Latn"):
                 return (
                     "ℹ️ **माहिती उपलब्ध नाही:**\n\n"
-                    "ही माहिती SpaceLoop वर उपलब्ध नाही. SpaceLoop फक्त जागा (डेस्क, स्टुडिओ, मीटिंग रूम) शोधणे, बुक करणे आणि होस्ट लिस्टिंगसाठी आहे.\n\n"
-                    "मी तुम्हाला जागेच्या बुकिंग किंवा शोधात कशी मदत करू?"
+                    "ही माहिती SpaceLoop वर उपलब्ध नाही. SpaceLoop फक्त जागा (डेस्क, स्टुडिओ, मीटिंग रूम) शोधणे, बुक करणे आणि होस्ट लिस्टिंगसाठी आहे."
                 )
             return (
                 "ℹ️ **Information Unavailable:**\n\n"
-                "I don't have information about that. SpaceLoop's assistant only provides assistance with discovering verified workspaces, hourly bookings, pricing breakdowns, smart access, Section 52 legal protection, and host space monetization.\n\n"
-                "How can I assist you with physical spaces today?"
+                "I don't have information about that. This information is unavailable on SpaceLoop. SpaceLoop only provides assistance with discovering verified workspaces, hourly bookings, pricing breakdowns, smart access, Section 52 legal protection, and host space monetization."
             )
     return MultilingualService.get_localized_response("CLARIFICATION_NEEDED", effective_lang)
 
@@ -861,16 +858,21 @@ def _handle_ask_help(query: str, effective_lang: str, space_id: int | None = Non
     from backend.modules.nlp.i18n import MultilingualService
     from backend.modules.ai.rag_service import generate_rag_response
 
-    q = (query or "").lower().strip()
+    raw_q = (query or "").lower().strip()
+    q = re.sub(r"[^\w\s]", "", raw_q).strip()
     is_hi = effective_lang in ("hi", "hi-Latn", "gar", "gbm", "kfy", "jns")
     is_mr = effective_lang in ("mr", "mr-Latn")
 
-    # 1. "What is SpaceLoop?"
-    if any(k in q for k in ["what is spaceloop", "tell me about spaceloop", "about spaceloop", "spaceloop overview", "क्या है", "काय आहे"]):
+    # 1. "What is SpaceLoop?" (Platform identity overview)
+    is_overview = (
+        any(k in q for k in ["what is spaceloop", "tell me about spaceloop", "about spaceloop", "spaceloop overview", "spaceloop kya hai", "spaceloop kay aahe"]) or
+        (("spaceloop" in raw_q or "स्पेस लूप" in raw_q) and any(k in raw_q for k in ["क्या है", "काय आहे", "के बारे में", "what is", "kya hai", "kay aahe"]))
+    )
+    if is_overview:
         if is_hi:
             return (
                 "🏢 **SpaceLoop क्या है?**\n\n"
-                "SpaceLoop अप्रयुक्त भौतिक स्थानों (वर्कस्पेस, मीटिंग रूम, पॉडकास्ट केबिन, फोटो स्टूडियो) को घंटे के हिसाब से खोजने, बुक करने और कमाई करने का भारत का प्रमुख पीयर-टू-पीयर प्लेटफ़ॉर्म है।\n\n"
+                "SpaceLoop अप्रयुक्त भौतिक स्थानों (वर्कस्पेस, मीटिंग रूम, पॉडकास्ट केबिन, फोटो स्टूडियो) को प्रति घंटे के हिसाब से खोजने, बुक करने और कमाई करने का भारत का प्रमुख पीयर-टू-पीयर प्लेटफ़ॉर्म है।\n\n"
                 "• **लचीले स्थान**: 30 मिनट से लेकर 7 दिन तक तात्कालिक बुकिंग (कोई दीर्घकालिक अनुबंध नहीं)।\n"
                 "• **स्मार्ट डिजिटल पास**: 50m जीपीएस जियोफेंस और डायनामिक क्यूआर कोड आधारित आगमन।\n"
                 "• **धारा 52 कानूनी सुरक्षा**: भारतीय सुखाधिकार अधिनियम, 1882 की धारा 52 के तहत लाइसेंस (किराएदारी का कोई प्रतिकूल दावा नहीं)।\n"
@@ -898,8 +900,8 @@ def _handle_ask_help(query: str, effective_lang: str, space_id: int | None = Non
             "Would you like to find a space or list your own unused space?"
         )
 
-    # 2. "How does SpaceLoop work?"
-    if any(k in q for k in ["how does spaceloop work", "how spaceloop works", "workflow", "how it works"]):
+    # 2. "How does SpaceLoop work?" (4-step flow overview)
+    if any(k in q for k in ["how does spaceloop work", "how spaceloop works", "workflow", "how it works", "kaise kaam karta hai", "kasa chaltoy"]):
         return (
             "⚡ **How SpaceLoop Works (4-Step Flow):**\n\n"
             "1. **Search & Match**: Browse verified spaces by city, neighborhood, budget, or amenities on `/explore`.\n"
@@ -909,7 +911,7 @@ def _handle_ask_help(query: str, effective_lang: str, space_id: int | None = Non
         )
 
     # 3. "How do I find a space?"
-    if any(k in q for k in ["how do i find", "how to find", "find a space", "where to find", "where can i search"]):
+    if any(k in q for k in ["how do i find a space", "how to find a space", "how do i find", "how to find", "where to find", "where can i search", "space kaise khoje", "jaga kashi shodhaychi"]):
         return (
             "🔍 **How to Find a Space on SpaceLoop:**\n\n"
             "1. **Browse Marketplace**: Visit `/explore` to view verified spaces across Pune, Dehradun, Mumbai, and Delhi.\n"
@@ -919,7 +921,7 @@ def _handle_ask_help(query: str, effective_lang: str, space_id: int | None = Non
         )
 
     # 4. "How do I book a space?"
-    if any(k in q for k in ["how do i book", "how to book", "steps to book", "booking steps"]):
+    if any(k in q for k in ["how do i book a space", "how to book a space", "how do i book", "how to book", "steps to book", "booking steps", "book kaise kare", "booking kashi karaychi"]):
         return (
             "🚀 **How to Book a Space:**\n\n"
             "1. **Select a Space**: Choose any listing on `/space` or `/explore` from search recommendations.\n"
@@ -930,7 +932,7 @@ def _handle_ask_help(query: str, effective_lang: str, space_id: int | None = Non
         )
 
     # 5. "What information is required?"
-    if any(k in q for k in ["information is required", "what information", "what is required", "what documents", "requirements"]):
+    if any(k in q for k in ["what information is required", "what documents are required", "information is required", "what information", "what is required", "what documents", "requirements"]):
         return (
             "📋 **Information Required on SpaceLoop:**\n\n"
             "**To Book a Space (Seeker / Guest):**\n"
@@ -945,7 +947,7 @@ def _handle_ask_help(query: str, effective_lang: str, space_id: int | None = Non
         )
 
     # 6. Generic high-level help trigger
-    if q in ["help", "platform guide", "support", "what can you do"]:
+    if q in ["help", "platform guide", "support", "what can you do", "मदद", "सहायता"]:
         return (
             "🤝 **SpaceLoop Help & Platform Guide:**\n\n"
             "• **How SpaceLoop Works**: Discover and book verified physical spaces by the hour with zero hardware keys or physical handoffs.\n"
@@ -959,8 +961,7 @@ def _handle_ask_help(query: str, effective_lang: str, space_id: int | None = Non
             "What can I help you accomplish today?"
         )
 
-    # 7. For all specific knowledge/policy/rule queries, retrieve exact context via RAG
-    from backend.modules.ai.rag_service import generate_rag_response
+    # 7. For all specific knowledge/policy/design/rule/amenity queries, retrieve grounded context via RAG
     return generate_rag_response(
         query=query,
         target_space_id=space_id,

@@ -95,26 +95,44 @@ AMENITIES_PATTERNS = [
     r"\b(?:suvidha\s+kya\s+chhan|wifi\s+chho\s+ki\s+na|bijli\s+chhan\s+ki\s+na)\b"
 ]
 
+# Comprehensive rules and house policies
 RULES_PATTERNS = [
     # English
-    r"\b(?:bring\s+food|food\s+allowed|can\s+i\s+eat|smoking\s+policy|house\s+rules|pets\s+allowed|cancellation\s+policy|cancellation|cancel(?:ling)?|refund\s+policy|guest\s+policy|rules\s+for|what\s+are\s+the\s+rules)\b",
+    r"\b(?:bring\s+food|food\s+allowed|can\s+i\s+eat|outside\s+food|snacks\s+allowed|coffee\s+allowed|tea\s+allowed|smoking\s+policy|house\s+rules|pets?\s+allowed|pet\s+friendly|bring\s+my\s+dog|bring\s+my\s+pet|cancellation\s+policy|cancellation|cancel(?:ling)?|refund\s+policy|guest\s+policy|rules\s+for|what\s+are\s+the\s+rules|quiet\s+hours|noise\s+policy|overstay\s+policy|grace\s+period|extend\s+booking|booking\s+extension)\b",
     # Hindi / Hinglish
-    r"\b(?:khana\s+la\s+sakte\s+hain|food\s+allowed\s+hai|smoking\s+kar\s+sakte\s+hain|house\s+rules\s+kya\s+hain|cancellation\s+rules|cancel\s+kaise\s+kare)\b",
+    r"\b(?:khana\s+la\s+sakte\s+hain|food\s+allowed\s+hai|bahar\s+ka\s+khana|smoking\s+kar\s+sakte\s+hain|house\s+rules\s+kya\s+hain|pet\s+la\s+sakte\s+hain|cancellation\s+rules|cancel\s+kaise\s+kare|extend\s+kaise\s+kare|late\s+ho\s+gaye\s+to|quiet\s+hours)\b",
+    r"(?:खाना\s+ला\s+सकते|पालतू\s+जानवर|धूम्रपान|रद्द\s+करना|नियम\s+क्या\s+हैं)",
     # Marathi
-    r"\b(?:jevan\s+aanta\s+yeil\s+ka|niyam\s+kay\s+aahet|dhumrapan\s+chalel\s+ka|shashan\s+kay\s+aahe|cancel\s+kasa\s+karaycha)\b",
+    r"\b(?:jevan\s+aanta\s+yeil\s+ka|niyam\s+kay\s+aahet|dhumrapan\s+chalel\s+ka|shashan\s+kay\s+aahe|cancel\s+kasa\s+karaycha|kholit\s+jevan\s+chalel\s+ka)\b",
+    r"(?:जेवण\s+आणता\s+येईल|नियम\s+काय\s+आहेत|धूम्रपान\s+चालेल)",
     # Pahari
     r"\b(?:khano\s+la\s+sakan\s+ki\s+na|niyam\s+kya\s+chhan)\b"
 ]
 
+# System Design & Architecture Patterns
+SYSTEM_DESIGN_PATTERNS = [
+    # English
+    r"\b(?:zero[\s-]hardware|geofence|50m\s+geofence|door\s+pass|arrival\s+pin|digital\s+pass|how\s+does\s+check[\s-]in\s+work|how\s+to\s+check[\s-]out|discom\s+verification|ca\s+number|power\s+meter|ai\s+photo\s+scan|ai\s+scanner|sqft\s+scan|objective\s+trust\s+index|oti\s+score|trust\s+score|student\s+discount|student\s+id|academic\s+discount|95%\s+yield|5%\s+fee|platform\s+fee|instant\s+refund|120\s+seconds|escrow\s+refund)\b",
+    r"\b(?:how\s+does\s+(?:the\s+)?(?:access|pass|geofence|discom|escrow|verification|scanner|scoring)\s+work)\b",
+    r"\b(?:why\s+(?:use\s+)?section\s+52|why\s+50m|why\s+discom|why\s+escrow)\b",
+    # Hindi / Hinglish
+    r"\b(?:zero\s+hardware\s+kya\s+hai|geofence\s+pass\s+kaise\s+kaam\s+karta\s+hai|discom\s+verification\s+kya\s+hai|electricity\s+bill\s+kyun|oti\s+score\s+kya\s+hai|student\s+discount\s+kaise\s+milega|checkout\s+kaise\s+kare|escrow\s+refund\s+kab\s+aayega|bijli\s+(?:bill|meter))\b",
+    r"(?:जियोफेंस|डिजिटल\s+पास|डिस्कॉम|बिजली\s+मीटर|बिजली\s+का\s+बिल|सत्यापन|एस्क्रो\s+रिफंड|चेकआउट|विद्यार्थी\s+छूट)",
+    # Marathi
+    r"\b(?:geofence\s+pass\s+kasa\s+chaltoy|discom\s+padtalni\s+kashi\s+hote|checkout\s+kasa\s+karaycha|student\s+discount\s+kasa\s+milnar|vijeche\s+bill|bijli\s+bill)\b",
+    r"(?:डिजिटल\s+पास|डिस्कॉम\s+पडताळणी|विजेचे\s+बिल|पडताळणी|चेकआउट)"
+]
+
 HOST_MONETIZE_PATTERNS = [
     # English
-    r"\b(?:how\s+to\s+(?:host|monetize|rent\s+out)|monetiz\w*|list\s+(?:my\s+)?(?:\w+\s+)?(?:space|room|garage|office|property|terrace|hall|land|rooftop)|earn\s+(?:money|passive\s+income|income)|earnings\s+calculator|host\s+calculator)\b",
-    r"\b(?:(?:i\s+)?(?:want\s+to\s+)?(?:list|create\s+listing|add\s+listing|draft\s+listing|put\s+on\s+rent|rent\s+out)(?:\s+(?:a|an|my))?.*?(?:space|room|flat|apartment|bhk|garage|office|property|terrace|hall|studio|desk))\b",
-    r"\b(?:\d+\s*(?:bhk|bedroom|bed\s+room))\b.*?\b(?:workspace|flat|apartment|house|hall|studio|office|property|space)\b",
+    r"\b(?:how\s+to\s+(?:host|monetize|rent\s+out)|monetiz\w*|list\s+(?:my\s+)?(?:\w+\s+)?(?:space|room|garage|office|property|terrace|hall|land|rooftop)|earn\s+(?:money|passive\s+income|income)|earnings\s+calculator|host\s+calculator|host\s+payouts?|how\s+much\s+can\s+i\s+earn)\b",
+    r"\b(?:i\s+)?(?:want\s+to\s+)?(?:list|host|monetize)\s+(?:my|a|an|the|this)?\s*(?:space|property|room|flat|apartment|garage|terrace|hall|studio|desk|workspace)?\b",
+    r"\b(?:\d+\s*(?:bhk|bedroom|bed\s+room))\b",
+    r"\b(?:put\s+on\s+rent|rent\s+out|create\s+listing|add\s+listing|draft\s+listing)\b",
     # Hindi / Hinglish
-    r"\b(?:apni\s+jagah\s+rent\s+pe\s+kaise\s+du|garage\s+se\s+kamai|space\s+list\s+karna\s+hai|host\s+kaise\s+banein|kitna\s+kama\s+sakte\s+hain|kamai\s+kaise\s+kare)\b",
+    r"\b(?:apni\s+jagah\s+rent\s+pe\s+kaise\s+du|garage\s+se\s+kamai|space\s+list\s+karna\s+hai|host\s+kaise\s+banein|kitna\s+kama\s+sakte\s+hain|kamai\s+kaise\s+kare|payout\s+kab\s+milta\s+hai)\b",
     r"\b(?:\w+\s+)?(?:list\s+karna\s+hai|listing\s+banani\s+hai|rent\s+pe\s+dena\s+hai)\b",
-    r"(?:जगह\s+लिस्ट\s+करना|किराये\s+पर\s+देना|लिस्टिंग\s+बना|कमरा\s+किराये)",
+    r"(?:जगह\s+लिस्ट\s+करना|किराये\s+पर\s+देना|लिस्टिंग\s+बना|कमरा\s+किराये|कमाई\s+कैसे)",
     # Marathi
     r"\b(?:maza\s+garage\s+bhadyane\s+kasa\s+deu|paisa\s+kasa\s+kamvaycha|space\s+list\s+karaychi\s+aahe|host\s+kasa\s+honar)\b",
     r"\b(?:\w+\s+)?(?:list\s+karaych[ei]\s+aahe|bhadyane\s+d[ey]aych[aei]\s+aahe)\b",
@@ -125,13 +143,13 @@ HOST_MONETIZE_PATTERNS = [
 
 LEGAL_SAFETY_PATTERNS = [
     # English
-    r"\b(?:section\s+52|easements\s+act|tenancy\s+protection|squatting|upi\s+escrow|refundable\s+deposit|geofence\s+pass|digital\s+pass|security\s+deposit|deposit\s+hold|get\s+refunded|when\s+will.*refund|dispute|raise\s+a\s+dispute|complaint|smart\s+lock|pin\s+code|qr\s*code|unlock.*gate|check[\s-]out|end\s+(?:my\s+)?session)\b",
+    r"\b(?:section\s+52|easements\s+act|tenancy\s+protection|squatting|upi\s+escrow|refundable\s+deposit|security\s+deposit|deposit\s+hold|get\s+refunded|when\s+will.*refund|dispute|raise\s+a\s+dispute|complaint|legal\s+protection|adverse\s+possession|tenancy\s+rights|rent\s+control\s+act)\b",
     # Hindi / Hinglish
-    r"\b(?:section\s+52\s+kya\s+hai|tenancy\s+ka\s+(?:lafda|risk)|deposit\s+kaise\s+wapas\s+hoga|kabza\s+to\s+nahi\s+karega)\b",
-    r"(?:डिपॉजिट\s+वापस|रिफंड|सुरक्षा)",
+    r"\b(?:section\s+52\s+kya\s+hai|tenancy\s+ka\s+(?:lafda|risk)|deposit\s+kaise\s+wapas\s+hoga|kabza\s+to\s+nahi\s+karega|kanooni\s+suraksha)\b",
+    r"(?:धारा\s+52|डिपॉजिट\s+वापस|रिफंड|सुरक्षा|कानूनी)",
     # Marathi
-    r"\b(?:section\s+52\s+kay\s+aahe|kabja\s+tar\s+honar\s+nahi\s+na|deposit\s+parat\s+kase\s+milnar)\b",
-    r"डिपॉझिट\s+परत"
+    r"\b(?:section\s+52\s+kay\s+aahe|kabja\s+tar\s+honar\s+nahi\s+na|deposit\s+parat\s+kase\s+milnar|kaydeshir\s+suraksha)\b",
+    r"(?:कलम\s+५२|डिपॉझिट\s+परत|सुरक्षा)"
 ]
 
 HELP_PATTERNS = [
@@ -188,12 +206,12 @@ class IntentService:
 
         clean = text.lower().strip()
 
-        # Check for explicit out-of-scope queries
+        # Check for explicit out-of-scope queries (strictly non-SpaceLoop topics)
         out_of_scope = any(re.search(rf"\b{w}\b", clean) for w in [
-            "weather", "forecast", "temperature", "rain", "climate",
-            "bitcoin", "crypto", "cryptocurrency", "ethereum", "eth", "solana", "stock", "shares", "trading", "crypto currency",
-            "recipe", "cooking recipe", "cricket score", "ipl score",
-            "politics", "election result", "medicine", "symptoms", "doctor"
+            "weather", "forecast", "rain", "climate",
+            "bitcoin", "crypto", "cryptocurrency", "ethereum", "stock", "stocks",
+            "cooking", "recipe", "cricket", "ipl", "football",
+            "election", "medicine", "disease"
         ])
         if out_of_scope:
             return IntentType.CLARIFICATION_NEEDED.value, 0.20
@@ -203,59 +221,80 @@ class IntentService:
             if re.search(pat, clean):
                 return IntentType.ASK_HELP.value, 0.96
 
-        # 1. Booking Action Intent
-        for pat in BOOKING_PATTERNS:
+        # 1. System Design & Architectural Inquiries
+        for pat in SYSTEM_DESIGN_PATTERNS:
             if re.search(pat, clean):
-                return IntentType.BOOK_SPACE.value, 0.94
+                if any(k in clean for k in ["section 52", "legal", "easements", "tenancy", "escrow", "refund"]):
+                    return IntentType.LEGAL_SAFETY.value, 0.95
+                return IntentType.ASK_HELP.value, 0.95
 
         # 2. Host Monetization / Create Listing Intent
         for pat in HOST_MONETIZE_PATTERNS:
             if re.search(pat, clean):
-                return IntentType.CREATE_LISTING.value, 0.93
+                return IntentType.CREATE_LISTING.value, 0.95
 
-        # 3. Compare Spaces Intent
-        for pat in COMPARE_PATTERNS:
+        # 3. Rules & Policies Query Intent
+        for pat in RULES_PATTERNS:
             if re.search(pat, clean):
-                return IntentType.COMPARE_SPACES.value, 0.91
+                return IntentType.ASK_RULES.value, 0.94
 
-        # 4. Pricing / Cost Estimation Intent
-        for pat in PRICING_PATTERNS:
-            if re.search(pat, clean):
-                return IntentType.ASK_PRICE.value, 0.92
-
-        # 5. Availability Query Intent
-        for pat in AVAILABILITY_PATTERNS:
-            if re.search(pat, clean):
-                return IntentType.CHECK_AVAILABILITY.value, 0.90
-
-        # 6. Amenities Query Intent (only if not an active marketplace search with pricing/room constraints)
+        # 4. Amenities Query Intent (only if not an active marketplace search with pricing/room constraints)
         for pat in AMENITIES_PATTERNS:
             if re.search(pat, clean):
                 if any(p in clean for p in ["under", "below", "max", "₹", "/hr", "per hour", "need", "find", "show me", "khojo"]):
                     return IntentType.SEARCH_SPACE.value, 0.90
-                return IntentType.ASK_AMENITIES.value, 0.90
+                return IntentType.ASK_AMENITIES.value, 0.92
 
-        # 7. Rules & Policies Query Intent
-        for pat in RULES_PATTERNS:
-            if re.search(pat, clean):
-                return IntentType.ASK_RULES.value, 0.91
-
-        # 8. Legal & Platform Safety / Escrow
+        # 5. Legal & Platform Safety / Escrow
         for pat in LEGAL_SAFETY_PATTERNS:
             if re.search(pat, clean):
-                return IntentType.LEGAL_SAFETY.value, 0.92
+                return IntentType.LEGAL_SAFETY.value, 0.93
 
-        # 9. General Greeting
+        # 6. Booking Action Intent
+        for pat in BOOKING_PATTERNS:
+            if re.search(pat, clean):
+                return IntentType.BOOK_SPACE.value, 0.94
+
+        # 6. Host Monetization / Create Listing Intent
+        for pat in HOST_MONETIZE_PATTERNS:
+            if re.search(pat, clean):
+                return IntentType.CREATE_LISTING.value, 0.93
+
+        # 7. Compare Spaces Intent
+        for pat in COMPARE_PATTERNS:
+            if re.search(pat, clean):
+                return IntentType.COMPARE_SPACES.value, 0.91
+
+        # 8. Pricing / Cost Estimation Intent
+        for pat in PRICING_PATTERNS:
+            if re.search(pat, clean):
+                return IntentType.ASK_PRICE.value, 0.92
+
+        # 9. Availability Query Intent
+        for pat in AVAILABILITY_PATTERNS:
+            if re.search(pat, clean):
+                return IntentType.CHECK_AVAILABILITY.value, 0.90
+
+        # 10. General Greeting
         for pat in GREETING_PATTERNS:
             if re.search(pat, clean):
                 # If greeting contains subsequent space search words, fall through to search
                 if not any(k in clean for k in ["need", "looking", "want", "space", "room", "desk", "find", "chahiye", "pahije"]):
                     return IntentType.GENERAL_GREETING.value, 0.95
 
-        # 10. Marketplace Search Intent
+        # 11. Marketplace Search Intent
         for pat in SEARCH_SPACE_PATTERNS:
             if re.search(pat, clean):
                 return IntentType.SEARCH_SPACE.value, 0.89
+
+        # 12. Question/Inquiry Semantic Fallback (Route to RAG ASK_HELP rather than CLARIFICATION_NEEDED)
+        question_markers = ["how", "what", "why", "where", "can", "is", "are", "will", "kya", "kaise", "kyun", "kasa", "kay", "kiti", "kuthe", "kakh", "kile"]
+        has_question_marker = any(re.search(rf"\b{q}\b", clean) for q in question_markers)
+        domain_markers = ["space", "spaceloop", "room", "desk", "host", "guest", "pass", "door", "lock", "wifi", "deposit", "escrow", "refund", "discom", "bill", "scanner", "camera", "food", "eat", "pet", "smoke", "hours", "rate", "cost", "chahiye", "pahije", "allowed", "rules"]
+        has_domain_marker = any(d in clean for d in domain_markers)
+
+        if has_question_marker and has_domain_marker:
+            return IntentType.ASK_HELP.value, 0.88
 
         # Fallback heuristic: Check if text contains space/activity keywords
         space_signals = [

@@ -41,203 +41,268 @@ MIN_RELEVANCE_THRESHOLD = 0.45
 
 
 # =====================================================================
-# 1. PLATFORM KNOWLEDGE BASE (7 Domains)
+# 1. PLATFORM KNOWLEDGE BASE (System Design, Platform Rules, Common Queries)
 # =====================================================================
 
 PLATFORM_KNOWLEDGE_DOCUMENTS = [
-    # Domain 1: Platform Rules
+    # Domain 1: Legal & Section 52 Easements Act Protection
     {
         "id": "rules-section-52",
         "domain": "rules",
-        "title": "Section 52 Indian Easements Act Legal Protection",
-        "keywords": ["section 52", "legal", "easements act", "license", "tenancy", "squatting", "eviction", "ownership", "rights"],
+        "title": "Section 52 Indian Easements Act Legal Protection & Micro-License",
+        "keywords": ["section 52", "legal", "easements act", "license", "tenancy", "squatting", "eviction", "ownership", "rights", "adverse possession", "rent control", "धारा 52", "कानूनी", "कलम 52", "कलम ५२", "कब्जा", "kabza", "malik", "kanoon", "tenancy risk"],
         "text": (
-            "Every SpaceLoop reservation is legally executed as a Revocable License under Section 52 of the Indian Easements Act, 1882. "
-            "It grants a strictly temporary permission to enter and use the premises for the specified hours. "
-            "Crucially, no tenancy, leasehold rights, exclusive possession, or statutory tenant protections are created. "
-            "The property host retains absolute ownership and legal possession at all times."
+            "Every SpaceLoop reservation is executed as a Revocable Temporary Micro-License under Section 52 of the Indian Easements Act, 1882. "
+            "This grants non-possessory, temporary permission to use the designated space strictly for the booked hours. "
+            "Crucially, no tenancy rights, leasehold interests, exclusive possession, or statutory tenant protections (such as under Rent Control Acts) are created. "
+            "The host retains 100% legal possession and absolute ownership at all times, completely eliminating squatting and adverse tenancy risks."
         )
     },
+    # Domain 2: Zero-Hardware Smart Access Architecture
+    {
+        "id": "system-zero-hardware-access",
+        "domain": "system_design",
+        "title": "Zero-Hardware Smart Access: 50m Geofence, QR Pass & 4-Digit PIN",
+        "keywords": ["zero hardware", "access", "geofence", "pin", "arrival", "check-in", "door pass", "qr code", "smart lock", "keys", "door", "डिजिटल पास", "जियोफेंस", "प्रवेश", "चाबी", "door lock", "checkin", "arrival pin", "50m"],
+        "text": (
+            "SpaceLoop replaces physical key handoffs and expensive smart locks with a Zero-Hardware Geofenced Access system. "
+            "Upon booking confirmation, a digital pass is generated in your dashboard. When your smartphone GPS is within 50 meters "
+            "of the property's verified coordinates, the pass activates, displaying a dynamic time-bound QR code and a 4-digit arrival PIN "
+            "to share with the on-site caretaker or building security. It works reliably even with intermittent internet connectivity."
+        )
+    },
+    # Domain 3: Discom Electricity CA Meter Verification
+    {
+        "id": "fraud-discom-verification",
+        "domain": "fraud",
+        "title": "Discom Electricity CA Meter Verification & Land Title Proof",
+        "keywords": ["discom", "ca number", "electricity", "meter", "fake listing", "fraud", "address verification", "utility bill", "verification", "डिस्कॉम", "बिजली", "मीटर", "सत्यापन", "विजेचे बिल", "पडताळणी", "bijli bill", "light bill", "bijli", "meter"],
+        "text": (
+            "To prevent phantom listings, unauthorized subletting, and broker fraud, SpaceLoop verifies the host's state Electricity Discom Consumer Account (CA) number "
+            "and recent utility bill via OCR and government utility APIs before activating any listing. "
+            "This anchors every digital space to a verified physical power meter and authentic physical premises without requiring intrusive physical title deeds."
+        )
+    },
+    # Domain 4: ₹100 Automated UPI Micro-Escrow & Instant Refund Protocol
+    {
+        "id": "fraud-micro-escrow-protocol",
+        "domain": "fraud",
+        "title": "₹100 Automated UPI Micro-Escrow & 120-Second Instant Refund Protocol",
+        "keywords": ["escrow", "upi deposit", "micro-escrow", "100", "security deposit", "refund", "120 seconds", "safe deposit", "deposit refund", "power off", "एस्क्रो", "रिफंड", "डिपॉजिट", "डिपॉझिट", "परतावा", "deposit wapas", "100 rupaye", "deposit refund", "paisa"],
+        "text": (
+            "To deter energy waste, accidental damage, and unauthorized overstays, SpaceLoop pre-authorizes a nominal ₹100 security deposit via UPI during booking. "
+            "The funds remain in an RBI-compliant escrow hold. Upon on-time checkout and room electrical appliance shutoff check via the `/dashboard`, "
+            "the ₹100 escrow hold is automatically released back to the user's UPI VPA within 120 seconds. Zero manual mediation needed."
+        )
+    },
+    # Domain 5: Sovereign DigiLocker KYC & Penny Drops
+    {
+        "id": "fraud-host-identity-kyc",
+        "domain": "fraud",
+        "title": "DigiLocker Sovereign Aadhaar KYC & ₹1 Host Penny-Drop Verification",
+        "keywords": ["kyc", "digilocker", "aadhaar", "penny drop", "host verification", "identity", "trust score", "bank check", "आधार", "केवाईसी", "पडताळणी", "पहचान", "aadhaar"],
+        "text": (
+            "Both guests and hosts undergo tokenized sovereign DigiLocker Aadhaar KYC. Host bank accounts are validated via a ₹1 penny drop "
+            "to ensure instant automated payout routing. Every user receives an Objective Trust Index (OTI) score computed from verified punctuality, "
+            "cleanliness match rate, and Discom credentials."
+        )
+    },
+    # Domain 6: AI Room Vision Scanner
+    {
+        "id": "system-ai-room-scanner",
+        "domain": "system_design",
+        "title": "AI Computer Vision Room Scanner & Acoustic Classification",
+        "keywords": ["ai scan", "photo scan", "computer vision", "sqft", "lumens", "lighting", "noise level", "acoustic floor", "vision model", "फोटो स्कैन", "कैमरा", "माप", "scanner"],
+        "text": (
+            "When creating a space at `/list-space`, hosts upload 1 to 4 photos. SpaceLoop's AI vision engine automatically estimates usable square footage, "
+            "measures natural and artificial lighting levels (lumens), assesses acoustic noise floor (whisper <40dB vs standard conversational), "
+            "detects electrical outlet accessibility, and suggests optimal space categories (Focus Desk, Meeting Room, Studio, Workshop)."
+        )
+    },
+    # Domain 7: Dynamic Pricing, Upfront Fees & 95% Host Yield
+    {
+        "id": "pricing-host-yield-breakdown",
+        "domain": "pricing",
+        "title": "Transparent Upfront Pricing Formula & 95% Net Host Yield",
+        "keywords": ["pricing", "cost", "calculation", "breakdown", "platform fee", "5%", "95%", "host payout", "earnings", "fees", "commission", "किराया", "कमाई", "भाडे", "कमीशन", "kamai", "payout", "host kamai", "income"],
+        "text": (
+            "SpaceLoop enforces 100% upfront pricing transparency with zero hidden charges. "
+            "Seeker Total = (Hourly Rate × Hours) + 5% Platform Fee + ₹100 Refundable UPI Escrow. "
+            "Hosts keep 95% of gross rental revenue. Payouts are transferred automatically via UPI within 24 hours of session completion. "
+            "Listing a space is completely free with zero subscription fees."
+        )
+    },
+    # Domain 8: Objective Trust Index (OTI)
+    {
+        "id": "system-objective-trust-index",
+        "domain": "system_design",
+        "title": "Objective Trust Index (OTI): Calibrated Trust & Punctuality Scoring",
+        "keywords": ["oti", "trust score", "objective trust index", "rating", "punctuality", "cleanliness", "telemetry", "ट्रस्ट स्कोर", "रेटिंग", "oti score"],
+        "text": (
+            "SpaceLoop calculates an Objective Trust Index (OTI) scored from 0 to 100 for all hosts and users. "
+            "The score is mathematically derived from on-time vacate rate (GPS telemetry), Discom power meter verification, "
+            "cleanliness audit matches, and verified user reviews. High-OTI spaces receive priority matching and featured badges."
+        )
+    },
+    # Domain 9: Food, Beverage & Catering Policy
     {
         "id": "rules-food-beverage",
         "domain": "rules",
-        "title": "Food, Beverage & Catering Policy",
-        "keywords": ["food", "beverage", "eat", "drink", "snacks", "coffee", "water", "catering", "lunch", "meals"],
+        "title": "Food, Beverage & Outside Snacks Policy",
+        "keywords": ["food", "beverage", "eat", "drink", "snacks", "coffee", "tea", "water", "catering", "lunch", "meals", "outside food", "खाना", "नाश्ता", "चाय", "कॉफ़ी", "जेवण", "खाणे", "khana", "jevan", "bahar ka khana", "nashta", "bhojan", "drink"],
         "text": (
-            "Outside light dry snacks, sealed beverages, coffee, tea, and personal water bottles are welcome across all private workspaces, "
-            "meeting pods, and quiet study nooks. Messy, greasy, strong-smelling foods or full hot catered buffets are strictly prohibited "
-            "unless the host grants explicit pre-authorization before the session begins. Guests must clear all waste into provided bins."
+            "Light dry snacks, sealed beverages, coffee, tea, and personal water bottles are welcome across private workspaces, meeting pods, "
+            "and quiet study spaces. Messy, greasy, strong-smelling foods or full hot catered buffets require explicit prior host authorization. "
+            "Guests are required to dispose of all food waste in provided trash bins before checkout."
         )
     },
+    # Domain 10: Noise Etiquette, Focus Pods & Quiet Hours
     {
         "id": "rules-noise-acoustic",
         "domain": "rules",
-        "title": "Noise Limits & Acoustic Etiquette",
-        "keywords": ["noise", "loud", "quiet", "music", "decibel", "sound", "shouting", "acoustic", "call"],
+        "title": "Noise Limits, Focus Pod Etiquette & Quiet Hours",
+        "keywords": ["noise", "loud", "quiet", "music", "decibel", "sound", "shouting", "acoustic", "call", "quiet hours", "शोर", "आवाज़", "शांत", "आवाज", "shant", "aawaz", "shor"],
         "text": (
-            "All SpaceLoop spaces enforce moderate acoustic levels. Private offices and meeting rooms accommodate normal speaking volume "
-            "and video conferencing. Study pods maintain a strict whisper policy (<40 dB). Quiet hours apply after 9:00 PM across all residential "
-            "neighborhood locations. Amplified speakers or heavy instruments require a specialized Sound Studio listing."
+            "SpaceLoop enforces acoustic decorum per category: Study and focus pods enforce a whisper-quiet policy (<40 dB). "
+            "Private meeting rooms and offices comfortably accommodate conversational speaking volume and video calls. "
+            "Quiet hours apply after 9:00 PM across all residential locations. Loud music or amplified instruments require a specialized sound studio listing."
         )
     },
+    # Domain 11: 100% Smoke-Free & Substance Prohibition
     {
         "id": "rules-smoke-substance",
         "domain": "rules",
-        "title": "Smoke-Free & Substance Prohibition",
-        "keywords": ["smoking", "smoke", "cigarette", "vape", "alcohol", "drugs", "substance", "drinking"],
+        "title": "100% Smoke-Free, Alcohol & Substance Prohibition",
+        "keywords": ["smoking", "smoke", "cigarette", "vape", "alcohol", "drugs", "substance", "drinking", "tobacco", "धूम्रपान", "सिगरेट", "शराब", "दारू", "dhumrapan", "cigarette"],
         "text": (
-            "SpaceLoop enforces a zero-tolerance 100% smoke-free policy across all indoor premises, including cigarettes, e-cigarettes, "
-            "and vaporizers. Alcohol and illicit substances are strictly prohibited. Any violation results in immediate license revocation, "
-            "forfeiture of the ₹100 security deposit, and potential account suspension."
+            "SpaceLoop enforces a strict zero-tolerance 100% smoke-free policy indoors, covering cigarettes, biddies, e-cigarettes, and vapes. "
+            "Alcohol and illicit substances are prohibited. Violations trigger immediate license termination, forfeiture of the ₹100 deposit, "
+            "and permanent platform ban."
         )
     },
-
-    # Domain 2: Booking Information
+    # Domain 12: Pet Policy
+    {
+        "id": "rules-pet-policy",
+        "domain": "rules",
+        "title": "Pet Policy & Pet-Friendly Spaces",
+        "keywords": ["pet", "pets", "dog", "cat", "animals", "pet friendly", "pets allowed", "पालतू", "कुत्ता", "कुत्रा", "प्राणी", "kutta", "kuta", "dog allowed"],
+        "text": (
+            "Pets are permitted only in spaces explicitly tagged as 'Pet Friendly' by the host. "
+            "Certified service animals are accommodated with advance notice. Pet owners are responsible for cleanliness and preventing damage."
+        )
+    },
+    # Domain 13: Parking & Transit Availability
+    {
+        "id": "guidance-parking-transit",
+        "domain": "guidance",
+        "title": "Parking Availability & Transit Access",
+        "keywords": ["parking", "car parking", "bike parking", "vehicle", "metro", "transit", "bus", "location access", "पार्किंग", "गाड़ी", "मेट्रो", "parking"],
+        "text": (
+            "Parking options (Free Dedicated, Street, Covered, Visitor, or 2-Wheeler Only) are displayed on each listing's verified amenity cards. "
+            "Each space page also includes neighborhood transit directions, nearest metro/bus stations, and 50m geofence arrival coordinates."
+        )
+    },
+    # Domain 14: Booking Duration, Scheduling & Real-Time Availability
     {
         "id": "booking-duration-slots",
         "domain": "booking",
-        "title": "Hourly Booking Structure & Scheduling",
-        "keywords": ["hourly", "booking", "schedule", "slots", "minimum hours", "reserve", "timing", "duration"],
+        "title": "Hourly Booking Duration, Scheduling & Real-Time Availability",
+        "keywords": ["hourly", "booking", "schedule", "slots", "minimum hours", "reserve", "timing", "duration", "availability", "समय", "घंटे", "तास", "उपलब्ध", "khali", "slots", "time"],
         "text": (
-            "Spaces can be reserved by the hour with instant confirmation, starting from as short as 30 minutes up to multiple days. "
-            "Standard minimum booking duration is 1 hour. Booking availability is validated in real time against the central database "
-            "to prevent double-booking or scheduling conflicts."
+            "Spaces can be booked by the hour with instant confirmation, starting from 30 minutes up to 7 consecutive days. "
+            "Standard minimum duration is 1 hour. All slot availability is checked in real time against active bookings to eliminate double-booking."
         )
     },
-    {
-        "id": "booking-access-geofence",
-        "domain": "booking",
-        "title": "Zero-Hardware Geofenced Check-In & Arrival PIN",
-        "keywords": ["access", "geofence", "pin", "arrival", "check-in", "door", "pass", "qr", "hardware", "key"],
-        "text": (
-            "SpaceLoop eliminates physical keys and costly smart hardware. Once a booking is confirmed, a digital door pass is issued. "
-            "When the guest arrives within 50 meters of the property's verified GPS coordinates, the system activates the pass, revealing "
-            "a 4-digit arrival PIN to share with the on-site caretaker or a printable door QR code to scan."
-        )
-    },
+    # Domain 15: Cancellation & Rescheduling Guidelines
     {
         "id": "booking-cancellation-policy",
         "domain": "booking",
         "title": "Cancellation & Rescheduling Guidelines",
-        "keywords": ["cancellation", "cancel", "refund", "reschedule", "change time", "policy"],
+        "keywords": ["cancellation", "cancel", "refund", "reschedule", "change time", "policy", "refund policy", "रद्द", "रद्द करणे", "कैनसेल", "cancel kaise kare", "cancelation", "cancel"],
         "text": (
-            "Reservations cancelled more than 2 hours before the scheduled start time receive a 100% full refund of all rental fees and the ₹100 deposit. "
-            "Cancellations made within 2 hours of the start time incur a 50% reservation fee to protect host preparation time, while the ₹100 deposit is fully returned."
+            "Cancellations made more than 2 hours before the start time receive a 100% full refund of all rental fees and the ₹100 deposit. "
+            "Cancellations within 2 hours of the start time incur a 50% reservation fee for host preparation, while the ₹100 deposit is 100% refunded."
         )
     },
-
-    # Domain 3: User Guidance
+    # Domain 16: Booking Extensions, Grace Periods & Overstay Policy
+    {
+        "id": "booking-extension-overstay",
+        "domain": "booking",
+        "title": "Booking Extensions, 15-Minute Grace Period & Overstay Rules",
+        "keywords": ["extend", "extension", "more time", "overstay", "late checkout", "grace period", "delay", "बढ़ाना", "वेळ वाढवणे", "extend kaise kare", "overstay"],
+        "text": (
+            "Guests can easily extend active bookings from their `/dashboard` if the next slot is unbooked. "
+            "A 15-minute checkout grace period is provided. Unapproved overstays exceeding 15 minutes are charged at 1.5x the hourly rate "
+            "to compensate incoming guests and the host."
+        )
+    },
+    # Domain 17: Student Verification & Academic Concessions
+    {
+        "id": "guidance-student-discount",
+        "domain": "guidance",
+        "title": "Student Verification & 10% Academic Concessions",
+        "keywords": ["student", "college", "university", "student discount", "academic", "study pod", "concession", "student id", "छात्र", "विद्यार्थी", "कॉलेज", "छूट", "student id", "discount"],
+        "text": (
+            "Verified students receive a 10% discount on study pods, focus desks, and collaborative spaces. "
+            "Upload your valid college/university ID card at `/verify` or during sign-up to unlock academic pricing badges across the marketplace."
+        )
+    },
+    # Domain 18: How to Discover & Filter Spaces
     {
         "id": "guidance-search-filters",
         "domain": "guidance",
-        "title": "How to Discover & Filter Spaces",
-        "keywords": ["how to find", "how to search", "filter", "explore", "search spaces", "budget", "amenities", "capacity"],
+        "title": "How to Discover, Filter & Compare Spaces",
+        "keywords": ["how to find", "how to search", "filter", "explore", "search spaces", "budget", "amenities", "capacity", "compare", "खोज", "शोधणे", "dhoondo", "khojo"],
         "text": (
-            "Seekers can discover spaces via natural language queries (e.g., 'quiet place near Kharadi under 500') on the home page or `/explore`. "
-            "You can filter by capacity, hourly price ceiling, location radius, space type (Workspace, Meeting, Studio, Study), and amenities "
-            "(high-speed Wi-Fi, 4K monitor, power backup, parking). Each listing displays an AI Match badge and explainable reasoning."
+            "Browse verified spaces at `/explore` or use natural language queries on the home page (e.g., 'meeting room in Baner under ₹500'). "
+            "Filter by distance radius (1km–25km), hourly budget ceiling, capacity, and amenities (Wi-Fi, power backup, AC, monitor, whiteboard). "
+            "Every card displays an AI Match score and explainable match reasons."
         )
     },
+    # Domain 19: Managing Reservations on the Guest Dashboard
     {
         "id": "guidance-dashboard-navigation",
         "domain": "guidance",
         "title": "Managing Reservations on the Guest Dashboard",
-        "keywords": ["dashboard", "my bookings", "active booking", "receipt", "pass", "view booking"],
+        "keywords": ["dashboard", "my bookings", "active booking", "receipt", "pass", "view booking", "invoice", "डैशबोर्ड", "माझी बुकिंग", "खाता"],
         "text": (
-            "Your centralized dashboard at `/dashboard` lets you view upcoming reservations, live access timers, geofenced door passes, "
-            "and download GST-compliant invoices and escrow refund receipts anytime."
+            "Your centralized dashboard at `/dashboard` allows you to view active reservations, track session countdown timers, "
+            "access geofenced door passes with arrival PINs, extend bookings, check out, and download GST invoices and escrow refund receipts."
         )
     },
-
-    # Domain 4: Marketplace Procedures
-    {
-        "id": "procedures-host-monetization",
-        "domain": "procedures",
-        "title": "Host Payouts & 95% Net Revenue Yield",
-        "keywords": ["host", "payout", "earnings", "monetize", "revenue", "commission", "platform fee", "fee", "yield", "95%"],
-        "text": (
-            "SpaceLoop provides hosts with maximum yield: hosts keep 95% of gross rental revenue. SpaceLoop charges a modest 5% platform fee "
-            "to renters at checkout. Payouts are automated via UPI or direct bank transfer within 24 hours of successful session conclusion. "
-            "There are zero upfront listing fees or recurring subscription charges."
-        )
-    },
-    {
-        "id": "procedures-checkout-flow",
-        "domain": "procedures",
-        "title": "Automated Checkout & Room Inspection",
-        "keywords": ["checkout", "check out", "leave", "vacate", "inspection", "power off", "appliances", "end session"],
-        "text": (
-            "When your booked session concludes, tap 'Check Out' on your `/dashboard`. Guests are prompted to take a quick photo confirming "
-            "that electrical appliances (lights, AC, fans) are powered off and the room is clean. This triggers instantaneous release of the ₹100 deposit."
-        )
-    },
-
-    # Domain 5: Fraud Explanations
-    {
-        "id": "fraud-micro-escrow-protocol",
-        "domain": "fraud",
-        "title": "₹100 UPI Micro-Escrow Security Deposit",
-        "keywords": ["escrow", "upi deposit", "micro-escrow", "100", "security deposit", "refund", "120 seconds", "safe deposit"],
-        "text": (
-            "To deter fraudulent bookings, malicious damage, and energy waste, SpaceLoop pre-authorizes a nominal ₹100 security deposit via UPI. "
-            "The funds are safely held in an RBI-compliant escrow account. Upon verified on-time vacate and appliance power-off, "
-            "the escrow service automatically processes an instant refund directly back to the guest's UPI VPA within 120 seconds."
-        )
-    },
-    {
-        "id": "fraud-premise-verification",
-        "domain": "fraud",
-        "title": "Discom Electricity CA Meter & Physical Verification",
-        "keywords": ["discom", "ca number", "electricity", "meter", "fake listing", "fraud", "address verification", "meter bill"],
-        "text": (
-            "SpaceLoop eliminates ghost listings and address fraud by verifying the host's state Electricity Discom Consumer Account (CA) number "
-            "and recent utility bill before activating any physical space. This binds the digital listing to a verified physical electrical meter."
-        )
-    },
-    {
-        "id": "fraud-host-identity-kyc",
-        "domain": "fraud",
-        "title": "DigiLocker Aadhaar KYC & Host Penny Drops",
-        "keywords": ["kyc", "digilocker", "aadhaar", "penny drop", "host verification", "identity", "trust score"],
-        "text": (
-            "Every host must complete digital identity verification via DigiLocker tokenized Aadhaar and a ₹1 penny-drop bank account check. "
-            "SpaceLoop computes an Objective Trust Score (OTI) based on on-time vacating rates, cleanliness feedback, and response times."
-        )
-    },
-
-    # Domain 6: Listing Requirements
+    # Domain 20: Host Listing Creation & 60-Second Setup
     {
         "id": "listing-ai-photo-scan",
         "domain": "listing",
-        "title": "Listing Creation & 60-Second AI Photo Scan",
-        "keywords": ["list space", "create listing", "photo scan", "ai scan", "sqft", "requirements", "noise level", "lighting"],
+        "title": "Host Space Listing & 60-Second AI Setup",
+        "keywords": ["list space", "create listing", "photo scan", "ai scan", "sqft", "requirements", "noise level", "lighting", "monetize space", "लिस्ट", "जोड़ें", "space list"],
         "text": (
-            "Hosts can list idle square footage at `/list-space` in under 60 seconds. Uploading 1 to 4 space photos invokes our AI vision pipeline, "
-            "which automatically estimates usable square footage, classifies natural lighting, recommends optimal uses (Meeting, Studio, Workspace), "
-            "and evaluates acoustic noise floors."
+            "Hosts can list idle square footage at `/list-space` in under 60 seconds. Upload 1 to 4 space photos to activate the AI scanner "
+            "that calculates dimensions, verifies power outlets, and classifies lighting and acoustics. Enter hourly rate, upload electricity bill "
+            "for Discom CA verification, and publish immediately."
         )
     },
+    # Domain 21: Host Dashboard, Listing Management & Payouts
     {
-        "id": "listing-mandatory-standards",
-        "domain": "listing",
-        "title": "Mandatory Physical Space Standards",
-        "keywords": ["standards", "amenities required", "minimum requirements", "power", "seating", "cleanliness"],
+        "id": "procedures-host-management",
+        "domain": "procedures",
+        "title": "Host Dashboard, Listing Management & Instant Payouts",
+        "keywords": ["host dashboard", "manage space", "edit listing", "payouts", "host earnings", "update rates", "change rules", "होस्ट", "कमाई", "पैसे"],
         "text": (
-            "To be published on the SpaceLoop marketplace, a space must provide: stable electrical power outlets, adequate ambient lighting, "
-            "ergonomic seating appropriate for the listed capacity, clean hygienic flooring, and clear access instructions."
+            "Hosts manage active spaces from the Host Dashboard at `/dashboard`. You can adjust hourly rates, update photos, edit amenities, "
+            "modify quiet hours, or change house rules without downtime. Payouts (95% net revenue) are credited automatically to your registered UPI VPA within 24 hours."
         )
     },
-
-    # Domain 7: Help Documentation
+    # Domain 22: Trust, Safety, Incident Reporting & Escrow Mediation
     {
         "id": "help-support-disputes",
         "domain": "help",
-        "title": "Customer Support & Incident Escalation",
-        "keywords": ["help", "support", "contact", "emergency", "incident", "report", "dispute", "complaint", "issue"],
+        "title": "Trust & Safety, Incident Reporting & Escrow Mediation",
+        "keywords": ["help", "support", "contact", "emergency", "incident", "report", "dispute", "complaint", "issue", "freeze", "मदद", "सहायता", "तक्रार", "शिकायत", "dispute"],
         "text": (
-            "If an issue arises during a session (e.g. host unreachable, Wi-Fi outage, or cleanliness mismatch), report the incident immediately "
-            "via your `/dashboard` or click 'Report an Issue' on the space page. The ₹100 deposit and session payment are frozen in escrow "
-            "until our 24/7 Trust & Safety mediation team reviews the GPS telemetry and photo audit logs."
+            "If an issue occurs during a booking (e.g. host unreachable, Wi-Fi failure, cleanliness discrepancy), tap 'Report an Issue' "
+            "on your `/dashboard` or the space page. The ₹100 deposit and rental fees are instantly frozen in escrow while our 24/7 Trust & Safety "
+            "mediation team reviews GPS audit logs and photos to resolve the dispute fairly."
         )
     }
 ]
@@ -410,29 +475,69 @@ def retrieve_rag_documents(
         embedding_failed = True
 
     # Tokenizer for keyword/concept matching fallback
-    tokens = [t.lower() for t in re.findall(r"\b[a-zA-Z0-9]{3,}\b", clean_q.lower())
-              if t not in ("for", "and", "the", "with", "this", "that", "what", "how", "can", "are")]
+    indic_stop_words = {
+        "क्या", "है", "हैं", "हो", "का", "की", "के", "में", "से", "पर", "को", "काय", "आहे",
+        "आहेत", "कसे", "कशी", "करावे", "नाही", "छन", "छौ", "था", "थी", "थे", "ने", "तो", "ही"
+    }
+    stop_words = {
+        "a", "an", "the", "is", "are", "was", "were", "be", "been", "being", "in", "on",
+        "at", "to", "for", "of", "with", "by", "from", "about", "into", "through", "during",
+        "before", "after", "above", "below", "up", "down", "out", "off", "over", "under",
+        "again", "further", "then", "once", "here", "there", "when", "where", "why", "how",
+        "all", "any", "both", "each", "few", "more", "most", "other", "some", "such", "no",
+        "nor", "not", "only", "own", "same", "so", "than", "too", "very", "can", "will",
+        "just", "should", "now", "what", "does", "please", "tell", "show", "give", "know",
+        "want", "like", "do", "did", "doing", "would", "could", "have", "has", "had", "having",
+        "you", "your", "my", "our", "their", "his", "her", "its", "it", "they", "them",
+        "we", "us", "this", "that", "these", "those"
+    }.union(indic_stop_words)
+
+    raw_tokens = re.findall(r"[\u0900-\u097F]+|[a-zA-Z0-9]{2,}", clean_q.lower())
+    tokens = [t.lower() for t in raw_tokens if t not in stop_words]
+    if not tokens:
+        tokens = [t.lower() for t in raw_tokens if t not in ("for", "and", "the", "with", "this", "that", "what", "how", "क्या", "काय")]
 
     scored_chunks = []
     for doc in corpus:
         score = 0.0
 
+        # Keyword & concept overlap component with token sets
+        keywords_list = [k.lower() for k in doc.get("keywords", [])]
+        kw_overlap = sum(1 for t in tokens if t in keywords_list or any(t == k or (len(t) > 3 and t in k) for k in keywords_list))
+
+        doc_text_lower = (doc["title"] + " " + " ".join(doc.get("keywords", [])) + " " + doc["text"]).lower()
+        doc_tokens = set(re.findall(r"[\u0900-\u097F]+|[a-zA-Z0-9]{2,}", doc_text_lower))
+        text_overlap = sum(1 for t in tokens if t in doc_tokens)
+
+        title_lower = doc.get("title", "").lower()
+        title_tokens = set(re.findall(r"[\u0900-\u097F]+|[a-zA-Z0-9]{2,}", title_lower))
+        title_overlap = sum(1 for t in tokens if t in title_tokens)
+
+        overlap_score = 0.0
+        if tokens:
+            overlap_score = (text_overlap / len(tokens)) * 0.35 + (kw_overlap / len(tokens)) * 0.40 + (title_overlap / len(tokens)) * 0.25
+
         # Vector similarity component
+        sim = 0.0
         if query_vector and not embedding_failed:
             doc_vec = generate_embedding(doc["text"][:400])
             if doc_vec:
                 sim = cosine_similarity(query_vector, doc_vec)
-                score += sim * 0.70
 
-        # Keyword & concept overlap component
-        doc_text_lower = (doc["title"] + " " + " ".join(doc.get("keywords", [])) + " " + doc["text"]).lower()
-        if tokens:
-            overlap = sum(1 for t in tokens if t in doc_text_lower)
-            score += (overlap / len(tokens)) * 0.30
+        # Hybrid combination: require some semantic/lexical affinity
+        if tokens and (text_overlap > 0 or kw_overlap > 0 or title_overlap > 0):
+            score = (sim * 0.45) + (overlap_score * 0.55)
+        elif not tokens:
+            score = sim * 0.70
+        else:
+            # When query has distinct tokens but zero match in text, title, or keywords, suppress vector baseline
+            score = sim * 0.25
 
-        # Boost exact space match if space_id specified
+        # Boost exact space match if space_id specified, otherwise boost relevant platform documents
         if target_space_id and doc.get("space_id") == target_space_id:
-            score += 0.20
+            score += 0.25
+        elif not target_space_id and (title_overlap >= 1 or kw_overlap >= 1) and doc.get("domain") in ("rules", "system_design", "fraud", "pricing", "guidance", "booking", "legal"):
+            score += 0.15
 
         scored_chunks.append({
             "doc": doc,
@@ -469,30 +574,38 @@ def synthesize_rag_response(
     """
     Synthesizes a helpful, accurate user response strictly grounded in retrieved documents.
     Safely degrades to clean deterministic formatting if LLM fails.
-    Never exposes internal scores, JSON, vectors, or database fields.
+    Directly answers what was asked without dumping irrelevant sections.
     """
     if not retrieved_docs:
         if effective_lang in ("hi", "hi-Latn", "gar", "gbm", "kfy", "jns"):
             return (
-                "SpaceLoop के दस्तावेज़ों में इस प्रश्न का उत्तर देने के लिए पर्याप्त जानकारी नहीं मिली। "
-                "SpaceLoop भारतीय सुखाधिकार अधिनियम की धारा 52 के तहत लाइसेंस पर स्थान प्रदान करता है, जिसमें ₹100 का वापसी योग्य UPI माइक्रो-एस्क्रो शामिल है। "
-                "कृपया सहायता के लिए अपने `/dashboard` पर जाएँ या ट्रस्ट एंड सेफ्टी से संपर्क करें।"
+                "SpaceLoop के दस्तावेज़ों में इस प्रश्न का सीधा उत्तर नहीं मिला। "
+                "SpaceLoop धारा 52 के तहत प्रति घंटा सत्यापन युक्त कार्यक्षेत्र, ₹100 रिफ़ंडेबल UPI एस्क्रो और 50m डिजिटल पास प्रदान करता है। "
+                "सहायता के लिए अपने `/dashboard` पर जाएँ या ट्रस्ट एंड सेफ्टी से संपर्क करें।"
             )
         elif effective_lang in ("mr", "mr-Latn"):
             return (
-                "SpaceLoop च्या दस्तऐवजांमध्ये या प्रश्नाचे अचूक उत्तर देण्यासाठी पुरेशी माहिती उपलब्ध नाही. "
-                "SpaceLoop कलम 52 अन्वये ₹100 परत मिळणाऱ्या UPI एस्क्रोसह सुरक्षित जागा उपलब्ध करून देते. "
-                "कृपया आपल्या `/dashboard` ला भेट द्या किंवा ट्रस्ट आणि सेफ्टी टीमशी संपर्क साधा."
+                "SpaceLoop च्या दस्तऐवजांमध्ये या प्रश्नाचे थेट उत्तर उपलब्ध नाही. "
+                "SpaceLoop कलम ५२ अन्वये प्रति तास सुरक्षित जागा, ₹१०० परत मिळणारे UPI एस्क्रो आणि ५०m डिजिटल पास देते. "
+                "कृपया आपल्या `/dashboard` ला भेट द्या."
             )
         return (
-            "I couldn't find specific documentation directly answering that question. "
-            "SpaceLoop provides verified hourly spaces governed under Section 52 revocable licenses with ₹100 refundable UPI micro-escrow. "
-            "Please check your `/dashboard` or contact our Trust & Safety support team for further assistance."
+            "I couldn't find specific documentation directly answering that question in SpaceLoop's knowledge base. "
+            "SpaceLoop provides verified hourly workspaces governed under Section 52 revocable licenses with ₹100 refundable UPI micro-escrow. "
+            "Please check your `/dashboard` or contact Trust & Safety support."
         )
 
-    # Build grounded factual answer directly from top retrieved documents
+    # Pick the top most relevant documents
+    top_doc = retrieved_docs[0]
+    is_single_direct_answer = len(retrieved_docs) == 1 or retrieved_docs[0].get("relevance_rank", 1) == 1
+
+    if is_single_direct_answer and len(retrieved_docs) == 1:
+        title = top_doc.get("title", "")
+        text = top_doc.get("text", "")
+        return f"💡 **{title}**\n\n{text}"
+
     points = []
-    for doc in retrieved_docs:
+    for doc in retrieved_docs[:2]:
         title = doc.get("title", "")
         text = doc.get("text", "")
         points.append(f"• **{title}**:\n  {text}")
@@ -500,40 +613,13 @@ def synthesize_rag_response(
     grounded_body = "\n\n".join(points)
 
     if effective_lang in ("hi", "hi-Latn", "gar", "gbm", "kfy", "jns"):
-        header = "📘 **SpaceLoop प्लेटफ़ॉर्म जानकारी:**"
-        if intent in ("ASK_AMENITIES", "RAG_AMENITIES"):
-            header = "⚡ **सत्यापित सुविधाएं व वातावरण:**"
-        elif intent in ("RAG_RULES_POLICY", "LEGAL_AND_SAFETY"):
-            header = "⚖️ **कानूनी सुरक्षा व नियम (धारा 52):**"
-        elif intent in ("REPORT_FRAUD", "ASK_PAYMENT_STATUS"):
-            header = "🛡️ **सुरक्षा व ₹100 यूपीआई एस्क्रो:**"
-        elif intent in ("CREATE_LISTING", "EDIT_LISTING", "HOST_MONETIZATION"):
-            header = "🏡 **होस्ट कमाई व लिस्टिंग दिशानिर्देश:**"
-        closing = "क्या आप किसी अन्य विषय पर और जानकारी चाहते हैं?"
+        header = "💡 **SpaceLoop जानकारी:**"
     elif effective_lang in ("mr", "mr-Latn"):
-        header = "📘 **SpaceLoop प्लॅटफॉर्म माहिती:**"
-        if intent in ("ASK_AMENITIES", "RAG_AMENITIES"):
-            header = "⚡ **सत्यापित सोयीसुविधा व वातावरण:**"
-        elif intent in ("RAG_RULES_POLICY", "LEGAL_AND_SAFETY"):
-            header = "⚖️ **कायदेशीर संरक्षण व नियम (कलम ५२):**"
-        elif intent in ("REPORT_FRAUD", "ASK_PAYMENT_STATUS"):
-            header = "🛡️ **सुरक्षा व ₹१०० यूपीआय एस्क्रो:**"
-        elif intent in ("CREATE_LISTING", "EDIT_LISTING", "HOST_MONETIZATION"):
-            header = "🏡 **होस्ट उत्पन्न व लिस्टिंग मार्गदर्शक:**"
-        closing = "आपल्याला याबद्दल आणखी काही माहिती हवी आहे का?"
+        header = "💡 **SpaceLoop माहिती:**"
     else:
-        header = "📘 **SpaceLoop Platform Information:**"
-        if intent in ("ASK_AMENITIES", "RAG_AMENITIES"):
-            header = "⚡ **Verified Space Amenities & Environment:**"
-        elif intent in ("RAG_RULES_POLICY", "LEGAL_AND_SAFETY"):
-            header = "⚖️ **Legal Protection & Space Guidelines:**"
-        elif intent in ("REPORT_FRAUD", "ASK_PAYMENT_STATUS"):
-            header = "🛡️ **Trust, Safety & Micro-Escrow Protections:**"
-        elif intent in ("CREATE_LISTING", "EDIT_LISTING", "HOST_MONETIZATION"):
-            header = "🏡 **Host Monetization & Listing Guidelines:**"
-        closing = "Is there anything specific you would like to know more about?"
+        header = "💡 **SpaceLoop Information:**"
 
-    return f"{header}\n\n{grounded_body}\n\n{closing}"
+    return f"{header}\n\n{grounded_body}"
 
 
 def build_rag_context(retrieved_docs: list[dict]) -> str:
@@ -559,9 +645,9 @@ def generate_rag_response(
     """
     Complete RAG Generation Pipeline:
     1. Retrieve relevant SpaceLoop context (platform docs + space chunks) if not provided.
-    2. Check relevance threshold: if no relevant documents match, clearly states that information is unavailable.
+    2. Check relevance threshold: if no relevant documents match, states that information is unavailable.
     3. Build structured context prompt prioritizing retrieved facts.
-    4. Call LLM (Groq 120B -> Gemini Flash) with strict grounding instructions (never hallucinate missing details).
+    4. Call LLM (Groq 120B -> Gemini Flash) with strict grounding instructions to answer ONLY what was asked.
     5. Fallback safely to deterministic synthesis on LLM error/timeout.
     """
     clean_q = (query or "").strip()
@@ -585,19 +671,16 @@ def generate_rag_response(
         if effective_lang in ("hi", "hi-Latn", "gar", "gbm", "kfy", "jns"):
             return (
                 "SpaceLoop के दस्तावेज़ों में इस प्रश्न का सटीक उत्तर देने के लिए पर्याप्त जानकारी नहीं मिली। "
-                "SpaceLoop भारतीय सुखाधिकार अधिनियम की धारा 52 के तहत लाइसेंस पर स्थान प्रदान करता है, जिसमें ₹100 का वापसी योग्य UPI माइक्रो-एस्क्रो शामिल है। "
-                "कृपया सहायता के लिए अपने `/dashboard` पर जाएँ या ट्रस्ट एंड सेफ्टी से संपर्क करें।"
+                "SpaceLoop भारतीय सुखाधिकार अधिनियम की धारा 52 के तहत लाइसेंस पर स्थान प्रदान करता है, जिसमें ₹100 का वापसी योग्य UPI माइक्रो-एस्क्रो शामिल है।"
             )
         elif effective_lang in ("mr", "mr-Latn"):
             return (
                 "SpaceLoop च्या दस्तऐवजांमध्ये या प्रश्नाचे अचूक उत्तर देण्यासाठी पुरेशी माहिती उपलब्ध नाही. "
-                "SpaceLoop कलम 52 अन्वये ₹100 परत मिळणाऱ्या UPI एस्क्रोसह सुरक्षित जागा उपलब्ध करून देते. "
-                "कृपया आपल्या `/dashboard` ला भेट द्या किंवा ट्रस्ट आणि सेफ्टी टीमशी संपर्क साधा."
+                "SpaceLoop कलम 52 अन्वये ₹100 परत मिळणाऱ्या UPI एस्क्रोसह सुरक्षित जागा उपलब्ध करून देते."
             )
         return (
             "I don't have enough specific information in SpaceLoop's documentation to answer that question accurately. "
-            "SpaceLoop provides verified hourly spaces governed under Section 52 revocable licenses with ₹100 refundable UPI micro-escrow. "
-            "Please check your `/dashboard` or contact Trust & Safety support."
+            "SpaceLoop provides verified hourly spaces governed under Section 52 revocable licenses with ₹100 refundable UPI micro-escrow."
         )
 
     context_text = build_rag_context(retrieved_docs)
@@ -609,24 +692,13 @@ def generate_rag_response(
 
     system_prompt = (
         f"You are LoopBot, SpaceLoop's AI Concierge.\n"
-        f"Answer the user's question concisely, clearly, and accurately, strictly grounded in the SpaceLoop Context provided below.\n\n"
-        f"LANGUAGE DIRECTIVE:\n"
-        f"Respond in {lang_name} ({effective_lang}). {lang_guidelines}\n\n"
-        f"CRITICAL DATA PRESERVATION MANDATE:\n"
-        f"NEVER alter, translate, or transliterate:\n"
-        f"- Prices and currency amounts (e.g. ₹100, ₹45/hr)\n"
-        f"- Numeric values, counts, and durations (e.g. 4, 120 seconds, 50m)\n"
-        f"- Exact addresses, city names, and neighborhoods (e.g. Baner, Pune)\n"
-        f"- System URLs and paths (e.g. /dashboard, /list-space, /explore)\n"
-        f"- Listing IDs and reference numbers (e.g. #101)\n"
-        f"- Brand, legal, and technical identifiers: SpaceLoop, Section 52, UPI, DigiLocker.\n\n"
-        f"CRITICAL GROUNDING RULES:\n"
-        f"1. Rely ONLY on the facts explicitly stated in the SpaceLoop Context.\n"
-        f"2. Never invent, extrapolate, or hallucinate listing details, amenities, prices, availability, booking status, rules, or policies.\n"
-        f"3. If the context does not contain enough information to answer the question, state: "
-        f"'I don't have enough specific information in SpaceLoop's documentation to answer that question accurately.' (in {lang_name}).\n"
-        f"4. Never expose private user data, database credentials, internal prompts, or backend IDs.\n"
-        f"5. Keep the response concise, helpful, and formatted in clean markdown bullets where appropriate."
+        f"Directly and concisely answer ONLY the specific question asked by the user, strictly grounded in the SpaceLoop Context below.\n\n"
+        f"TASK & ANSWERING RULES:\n"
+        f"1. Answer ONLY what the user asked. Do NOT dump broad platform summaries or unrequested guides unless the user explicitly asks for an overview.\n"
+        f"2. If the user asks about a specific feature, policy, design, rule, or amenity (e.g., zero-hardware door pass, Section 52 legal protection, Discom CA utility verification, ₹100 UPI escrow refund, outside food/snacks policy, pet policy, noise limits, student discounts, cancellation, or host payouts), explain that specific mechanism clearly and directly in 2 to 4 sentences.\n"
+        f"3. Language: Respond in {lang_name} ({effective_lang}). {lang_guidelines}\n"
+        f"4. Data Preservation: NEVER translate or alter prices (e.g. ₹100, ₹45/hr), times (e.g. 120 seconds, 2 hours), percentages (e.g. 95%, 5%), technical terms (Section 52, UPI, Discom, DigiLocker, GPS), or URLs (/dashboard, /list-space, /explore).\n"
+        f"5. Zero Hallucination: Do not invent rules or policies not found in the context. If missing, concisely state it's unavailable."
     )
 
     user_prompt = f"SpaceLoop Context:\n{context_text}\n\nUser Question: {clean_q}"
