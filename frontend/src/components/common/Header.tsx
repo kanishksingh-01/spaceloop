@@ -96,7 +96,7 @@ export const Header: React.FC<HeaderProps> = ({
   return (
     <>
       <header className="sticky top-0 z-50 backdrop-blur-md bg-slate-950/95 border-b border-slate-800/80">
-        <div className={`${isHostPortal ? 'w-full px-2.5 sm:px-3 lg:px-4' : 'max-w-7xl mx-auto px-4 sm:px-6 lg:px-8'} h-16 flex items-center justify-between gap-3`}>
+        <div className={`${isHostPortal ? 'w-full px-2.5 sm:px-3 lg:px-4' : 'w-full px-3 sm:px-4 lg:px-6'} h-16 flex items-center justify-between gap-3`}>
           {/* Brand Logo & Active Portal Indicator with Far-Left Hamburger */}
           <div className={`flex items-center ${isHostPortal ? 'gap-2 shrink-0' : 'gap-2.5 sm:gap-3 shrink-0'}`}>
             <HamburgerButton
@@ -198,27 +198,32 @@ export const Header: React.FC<HeaderProps> = ({
                   <i className="fa-solid fa-compass text-indigo-400" />
                   <span>{t('nav.explore') || 'Explore Spaces'}</span>
                 </button>
-                <button
-                  onClick={() => handleNav('/architecture')}
-                  className={`px-3 py-1.5 rounded-lg transition flex items-center gap-1.5 ${
-                    location.pathname === '/architecture'
-                      ? 'bg-indigo-600/30 text-indigo-200 border border-indigo-500/50 shadow-sm shadow-indigo-500/20'
-                      : 'text-slate-300 hover:text-white hover:bg-slate-800/80 border border-transparent hover:border-slate-700/60'
-                  }`}
-                  title="System Architecture & Engineering Team"
-                >
-                  <i className="fa-solid fa-cubes text-indigo-400" />
-                  <span>{t('nav.architecture') || 'Architecture'}</span>
-                  <span className="px-1.5 py-0.5 rounded text-[9px] font-mono font-bold bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
-                    Team
-                  </span>
-                </button>
               </nav>
             )}
           </div>
 
           {/* Right Controls & Portal Switcher */}
           <div className="flex items-center gap-1.5 sm:gap-2.5 md:gap-3 shrink-0 ml-auto">
+            {/* Architecture link - Right Group */}
+            {!isHostPortal && (
+              <button
+                type="button"
+                onClick={() => handleNav('/architecture')}
+                className={`hidden lg:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition text-xs font-semibold shrink-0 ${
+                  location.pathname === '/architecture'
+                    ? 'bg-indigo-600/30 text-indigo-200 border border-indigo-500/50 shadow-sm shadow-indigo-500/20'
+                    : 'text-slate-300 hover:text-white hover:bg-slate-800/80 border border-transparent hover:border-slate-700/60'
+                }`}
+                title="System Architecture & Engineering Team"
+              >
+                <i className="fa-solid fa-cubes text-indigo-400" />
+                <span>{t('nav.architecture') || 'Architecture'}</span>
+                <span className="px-1.5 py-0.5 rounded text-[9px] font-mono font-bold bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
+                  Team
+                </span>
+              </button>
+            )}
+
             {/* Theme Switcher Button */}
             <button
               type="button"
