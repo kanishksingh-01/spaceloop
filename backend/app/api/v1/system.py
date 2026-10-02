@@ -852,7 +852,7 @@ def health_check():
 
     return jsonify({
         "status": "healthy" if is_healthy else "degraded",
-        "version": "2.5.1-live",
+        "version": "2.5.2-live",
         "database": db_status,
         "ai_engine": ai_status,
         "server_timestamp": datetime.utcnow().isoformat()

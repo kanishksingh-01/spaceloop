@@ -386,14 +386,23 @@ def api_host_register():
     clean_email = email.lower().strip()
     existing_user = User.query.filter(db.func.lower(User.email) == clean_email).first()
     if existing_user:
-        if not existing_user.check_password(password):
+        if not getattr(existing_user, "is_email_verified", False):
+            existing_user.set_password(password)
+            user = existing_user
+            if user.role == "seeker":
+                user.role = "both"
+            elif user.role not in ("host", "owner", "both"):
+                user.role = "host"
+            raw_token, _ = AuthService.create_email_verification_token(user.id)
+        elif not existing_user.check_password(password):
             return jsonify({"success": False, "error": "An account with this email already exists. Please sign in or use a different email."}), 400
-        user = existing_user
-        if user.role == "seeker":
-            user.role = "both"
-        elif user.role not in ("host", "owner", "both"):
-            user.role = "host"
-        raw_token, _ = AuthService.create_email_verification_token(user.id)
+        else:
+            user = existing_user
+            if user.role == "seeker":
+                user.role = "both"
+            elif user.role not in ("host", "owner", "both"):
+                user.role = "host"
+            raw_token, _ = AuthService.create_email_verification_token(user.id)
     else:
         user, raw_token, error = AuthService.register_user(
             first_name=first_name,
