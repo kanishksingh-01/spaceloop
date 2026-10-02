@@ -468,6 +468,7 @@ export const CursorGrid: React.FC<CursorGridProps> = ({
     return () => {
       if (animFrameIdRef.current !== null) {
         cancelAnimationFrame(animFrameIdRef.current);
+        animFrameIdRef.current = null;
       }
       resizeObserver.disconnect();
       intersectionObserver.disconnect();
