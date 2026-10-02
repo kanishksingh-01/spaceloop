@@ -8,6 +8,10 @@ services:
     plan: free
     autoDeploy: true
     envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: spaceloop-db
+          property: connectionString
       - key: PYTHON_VERSION
         value: 3.11.9
       - key: FLASK_ENV
@@ -36,4 +40,10 @@ services:
         value: https://spaceloop.vercel.app
       - key: EMAIL_FROM
         sync: false
+
+databases:
+  - name: spaceloop-db
+    databaseName: spaceloop
+    user: spaceloop
+    plan: free
 
