@@ -303,28 +303,46 @@ export async function getHostSpaceDetail(spaceId: number): Promise<{
   bookings: any[];
   activity: any[];
 }> {
-  const data = await request<{
-    success: boolean;
-    space: any;
-    bookings: any[];
-    activity: any[];
-  }>(`/api/host/spaces/${spaceId}`);
-  return {
-    success: data.success,
-    space: {
-      ...normalizeSpace(data.space),
-      bookings_count: data.space?.bookings_count,
-      active_session: data.space?.active_session,
-      is_discom_verified: data.space?.is_discom_verified,
-      geofence_radius_meters: data.space?.geofence_radius_meters || 30,
-      physical_access_type: data.space?.physical_access_type || 'caretaker_handshake',
-      keybox_code: data.space?.keybox_code || '',
-      discom_ca_number: data.space?.discom_ca_number || '',
-      room_qr_token: data.space?.room_qr_token || '',
-    },
-    bookings: data.bookings || [],
-    activity: data.activity || [],
-  };
+  try {
+    const data = await request<{
+      success: boolean;
+      space: any;
+      bookings: any[];
+      activity: any[];
+    }>(`/api/host/spaces/${spaceId}`, { timeoutMs: 50000 });
+    return {
+      success: data.success,
+      space: {
+        ...normalizeSpace(data.space),
+        bookings_count: data.space?.bookings_count,
+        active_session: data.space?.active_session,
+        is_discom_verified: data.space?.is_discom_verified,
+        geofence_radius_meters: data.space?.geofence_radius_meters || 30,
+        physical_access_type: data.space?.physical_access_type || 'caretaker_handshake',
+        keybox_code: data.space?.keybox_code || '',
+        discom_ca_number: data.space?.discom_ca_number || '',
+        room_qr_token: data.space?.room_qr_token || '',
+      },
+      bookings: data.bookings || [],
+      activity: data.activity || [],
+    };
+  } catch (hostErr: any) {
+    console.warn(`Host space detail endpoint failed for space #${spaceId}, attempting resilient fallback:`, hostErr);
+    try {
+      const publicSpace = await getSpaceById(spaceId);
+      if (publicSpace && publicSpace.id) {
+        return {
+          success: true,
+          space: publicSpace,
+          bookings: [],
+          activity: [],
+        };
+      }
+    } catch (fallbackErr) {
+      console.warn('Public space fallback also failed:', fallbackErr);
+    }
+    throw hostErr;
+  }
 }
 
 export async function publishSpace(spaceId: number): Promise<{ success: boolean; message: string; space: Space }> {

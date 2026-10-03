@@ -73,7 +73,7 @@ export async function request<T>(endpoint: string, options: RequestOptions = {})
     headers['Content-Type'] = 'application/json';
   }
 
-  const timeoutMs = options.timeoutMs || 35000;
+  const timeoutMs = options.timeoutMs || 55000;
   let timeoutId: any = null;
   let signal = options.signal;
   if (!signal) {

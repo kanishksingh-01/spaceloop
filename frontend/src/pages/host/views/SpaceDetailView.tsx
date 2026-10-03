@@ -71,7 +71,7 @@ export const SpaceDetailView: React.FC = () => {
     }
   }, [spaceId]);
 
-  const loadSpace = async () => {
+  const loadSpace = async (isRetry = false) => {
     try {
       setLoading(true);
       setError(null);
@@ -104,7 +104,15 @@ export const SpaceDetailView: React.FC = () => {
       }
     } catch (err: any) {
       console.error('Failed to load space detail:', err);
-      setError(err.message || 'Failed to load space detail.');
+      const errMsg = err?.message || 'Failed to load space detail.';
+      const isWarmUp = errMsg.toLowerCase().includes('warm') || errMsg.toLowerCase().includes('boot') || errMsg.toLowerCase().includes('timeout');
+      
+      // Automatic 1-time transparent retry for cold boot wakeups
+      if (isWarmUp && !isRetry) {
+        setTimeout(() => loadSpace(true), 2500);
+        return;
+      }
+      setError(errMsg);
     } finally {
       setLoading(false);
     }
@@ -236,19 +244,37 @@ export const SpaceDetailView: React.FC = () => {
   }
 
   if (error && !space) {
+    const isWarmUp = error.toLowerCase().includes('warm') || error.toLowerCase().includes('boot') || error.toLowerCase().includes('timeout');
     return (
       <div className="p-8 max-w-xl mx-auto text-center py-20">
-        <div className="w-12 h-12 rounded-2xl bg-rose-500/10 border border-rose-500/20 text-rose-400 flex items-center justify-center text-xl mx-auto mb-4">
-          <i className="fa-solid fa-triangle-exclamation" />
+        <div className={`w-14 h-14 rounded-2xl ${isWarmUp ? 'bg-amber-500/10 border-amber-500/20 text-amber-400' : 'bg-rose-500/10 border-rose-500/20 text-rose-400'} border flex items-center justify-center text-2xl mx-auto mb-4`}>
+          <i className={isWarmUp ? 'fa-solid fa-cloud-arrow-up animate-pulse' : 'fa-solid fa-triangle-exclamation'} />
         </div>
-        <h2 className="text-lg font-bold text-white mb-2">Space Not Found</h2>
-        <p className="text-xs text-slate-400 mb-6">{error}</p>
-        <button
-          onClick={() => navigate('/host/spaces')}
-          className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold"
-        >
-          Return to Spaces
-        </button>
+        <h2 className="text-xl font-bold text-white mb-2">
+          {isWarmUp ? 'Backend Server Warming Up' : 'Space Not Available'}
+        </h2>
+        <p className="text-xs text-slate-400 mb-6 leading-relaxed max-w-md mx-auto">
+          {isWarmUp
+            ? 'The SpaceLoop cloud backend is waking up. Your space was safely registered in the database. Please wait a few seconds and try again.'
+            : error}
+        </p>
+        <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
+          <button
+            type="button"
+            onClick={() => loadSpace(true)}
+            className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold shadow-lg shadow-indigo-600/20 transition flex items-center justify-center gap-2"
+          >
+            <i className="fa-solid fa-rotate-right" />
+            <span>Try Again</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => navigate('/host/spaces')}
+            className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold border border-slate-700 transition"
+          >
+            Return to Spaces
+          </button>
+        </div>
       </div>
     );
   }

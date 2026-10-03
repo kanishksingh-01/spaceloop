@@ -40,7 +40,7 @@ export const BookingDetailView: React.FC = () => {
     }
   }, [bookingId]);
 
-  const loadBooking = async () => {
+  const loadBooking = async (isRetry = false) => {
     try {
       setLoading(true);
       setError(null);
@@ -55,7 +55,13 @@ export const BookingDetailView: React.FC = () => {
       }
     } catch (err: any) {
       console.error('Failed to load booking detail:', err);
-      setError(err.message || 'Failed to load booking.');
+      const errMsg = err?.message || 'Failed to load booking.';
+      const isWarmUp = errMsg.toLowerCase().includes('warm') || errMsg.toLowerCase().includes('boot') || errMsg.toLowerCase().includes('timeout');
+      if (isWarmUp && !isRetry) {
+        setTimeout(() => loadBooking(true), 2500);
+        return;
+      }
+      setError(errMsg);
     } finally {
       setLoading(false);
     }
@@ -199,19 +205,37 @@ export const BookingDetailView: React.FC = () => {
   }
 
   if (error && !booking) {
+    const isWarmUp = error.toLowerCase().includes('warm') || error.toLowerCase().includes('boot') || error.toLowerCase().includes('timeout');
     return (
       <div className="p-8 max-w-xl mx-auto text-center py-20">
-        <div className="w-12 h-12 rounded-2xl bg-rose-500/10 border border-rose-500/20 text-rose-400 flex items-center justify-center text-xl mx-auto mb-4">
-          <i className="fa-solid fa-triangle-exclamation" />
+        <div className={`w-14 h-14 rounded-2xl ${isWarmUp ? 'bg-amber-500/10 border-amber-500/20 text-amber-400' : 'bg-rose-500/10 border-rose-500/20 text-rose-400'} border flex items-center justify-center text-2xl mx-auto mb-4`}>
+          <i className={isWarmUp ? 'fa-solid fa-cloud-arrow-up animate-pulse' : 'fa-solid fa-triangle-exclamation'} />
         </div>
-        <h2 className="text-lg font-bold text-white mb-2">Booking Not Found</h2>
-        <p className="text-xs text-slate-400 mb-6">{error}</p>
-        <button
-          onClick={() => navigate('/host/bookings')}
-          className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold"
-        >
-          Return to Bookings
-        </button>
+        <h2 className="text-xl font-bold text-white mb-2">
+          {isWarmUp ? 'Backend Server Warming Up' : 'Booking Not Available'}
+        </h2>
+        <p className="text-xs text-slate-400 mb-6 leading-relaxed max-w-md mx-auto">
+          {isWarmUp
+            ? 'The SpaceLoop cloud backend is waking up from idle. Please wait a few seconds and try again.'
+            : error}
+        </p>
+        <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
+          <button
+            type="button"
+            onClick={() => loadBooking(true)}
+            className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold shadow-lg shadow-indigo-600/20 transition flex items-center justify-center gap-2"
+          >
+            <i className="fa-solid fa-rotate-right" />
+            <span>Try Again</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => navigate('/host/bookings')}
+            className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold border border-slate-700 transition"
+          >
+            Return to Bookings
+          </button>
+        </div>
       </div>
     );
   }
