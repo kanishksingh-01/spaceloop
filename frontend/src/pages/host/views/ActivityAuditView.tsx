@@ -108,10 +108,13 @@ export const ActivityAuditView: React.FC = () => {
                     <i className={ev.icon || 'fa-solid fa-circle'} />
                   </div>
 
-                  <div className="p-4 rounded-xl bg-slate-950/60 border border-slate-800/80 hover:border-slate-700 transition space-y-1.5">
+                  <div
+                    className="p-4 rounded-xl border border-[#b8ddec] hover:border-[#a0d0e6] transition space-y-1.5"
+                    style={{ backgroundColor: '#D9EEF7' }}
+                  >
                     <div className="flex items-center justify-between gap-3">
-                      <span className="font-bold text-white text-xs">{ev.title}</span>
-                      <span className="text-[10px] text-slate-500 font-mono">
+                      <span className="font-bold text-slate-900 text-xs">{ev.title}</span>
+                      <span className="text-[10px] text-slate-700 font-mono">
                         {new Date(ev.timestamp).toLocaleString([], {
                           month: 'short',
                           day: 'numeric',
@@ -121,7 +124,7 @@ export const ActivityAuditView: React.FC = () => {
                       </span>
                     </div>
 
-                    <p className="text-xs text-slate-400 leading-relaxed">
+                    <p className="text-xs text-slate-800 leading-relaxed">
                       {ev.description}
                     </p>
 
@@ -130,7 +133,7 @@ export const ActivityAuditView: React.FC = () => {
                         {isBooking && (
                           <button
                             onClick={() => navigate(`/host/bookings/${ev.resource_id}`)}
-                            className="text-[11px] text-amber-400 hover:text-amber-300 font-semibold"
+                            className="text-[11px] text-slate-900 hover:text-black font-semibold"
                           >
                             View Booking #{ev.resource_id} →
                           </button>
@@ -138,7 +141,7 @@ export const ActivityAuditView: React.FC = () => {
                         {isSpace && (
                           <button
                             onClick={() => navigate(`/host/spaces/${ev.resource_id}`)}
-                            className="text-[11px] text-amber-400 hover:text-amber-300 font-semibold"
+                            className="text-[11px] text-slate-900 hover:text-black font-semibold"
                           >
                             View Space #{ev.resource_id} →
                           </button>
