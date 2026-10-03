@@ -21,7 +21,36 @@ export class ErrorBoundary extends Component<Props, State> {
 
   public componentDidCatch(error: Error, errorInfo: ErrorInfo) {
     console.error('SpaceLoop Uncaught UI Error:', error, errorInfo);
+    // Automatic transparent recovery when chunks change after a deployment
+    const isChunkError =
+      error?.message &&
+      (error.message.includes('dynamically imported module') ||
+       error.message.includes('Loading chunk') ||
+       error.message.includes('Importing a module script failed'));
+
+    if (isChunkError) {
+      const lastReload = sessionStorage.getItem('spaceloop_chunk_reload');
+      const now = Date.now();
+      if (!lastReload || now - parseInt(lastReload, 10) > 10000) {
+        sessionStorage.setItem('spaceloop_chunk_reload', now.toString());
+        window.location.reload();
+      }
+    }
   }
+
+  public handleTryAgain = () => {
+    const isChunkError =
+      this.state.error?.message &&
+      (this.state.error.message.includes('dynamically imported module') ||
+       this.state.error.message.includes('Loading chunk') ||
+       this.state.error.message.includes('Importing a module script failed'));
+
+    if (isChunkError) {
+      window.location.reload();
+    } else {
+      this.setState({ hasError: false, error: null });
+    }
+  };
 
   public handleReset = () => {
     this.setState({ hasError: false, error: null });
@@ -30,6 +59,12 @@ export class ErrorBoundary extends Component<Props, State> {
 
   public render() {
     if (this.state.hasError) {
+      const isChunkError =
+        this.state.error?.message &&
+        (this.state.error.message.includes('dynamically imported module') ||
+         this.state.error.message.includes('Loading chunk') ||
+         this.state.error.message.includes('Importing a module script failed'));
+
       return (
         <div className="min-h-screen bg-slate-950 text-white flex items-center justify-center p-6">
           <div className="max-w-md w-full bg-slate-900 border border-slate-800 rounded-3xl p-8 text-center space-y-5 shadow-2xl">
@@ -37,9 +72,13 @@ export class ErrorBoundary extends Component<Props, State> {
               ⚡
             </div>
             <div className="space-y-2">
-              <h2 className="text-xl font-black text-white">Something went unexpected</h2>
+              <h2 className="text-xl font-black text-white">
+                {isChunkError ? 'New Version Available' : 'Something went unexpected'}
+              </h2>
               <p className="text-xs text-slate-400 leading-relaxed">
-                SpaceLoop encountered a momentary interface error. Your session and bookings remain secure.
+                {isChunkError
+                  ? 'A fresh update was just deployed. Click below to load the latest version.'
+                  : 'SpaceLoop encountered a momentary interface error. Your session and bookings remain secure.'}
               </p>
             </div>
             {this.state.error?.message && (
@@ -50,10 +89,10 @@ export class ErrorBoundary extends Component<Props, State> {
             <div className="flex flex-col sm:flex-row gap-3 pt-2">
               <button
                 type="button"
-                onClick={() => this.setState({ hasError: false, error: null })}
+                onClick={this.handleTryAgain}
                 className="flex-1 py-3 px-4 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-bold text-white transition"
               >
-                Try Again
+                {isChunkError ? 'Reload Latest' : 'Try Again'}
               </button>
               <button
                 type="button"
