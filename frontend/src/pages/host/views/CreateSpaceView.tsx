@@ -244,6 +244,10 @@ export const CreateSpaceView: React.FC<CreateSpaceViewProps> = (props) => {
       const res = await createSpace(payload);
       if (res && (res.space_id || res.id)) {
         const id = res.space_id || res.id;
+        const savedSpace = (res as any).space || { ...payload, id };
+        try {
+          localStorage.setItem(`spaceloop_space_${id}`, JSON.stringify(savedSpace));
+        } catch {}
         navigate(`/host/spaces/${id}?tab=overview`);
       } else {
         navigate('/host/spaces');

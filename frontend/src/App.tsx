@@ -230,7 +230,17 @@ export const App: React.FC = () => {
     };
     initAuth();
 
-    return () => clearTimeout(fallbackTimer);
+    // Continuous Keep-Alive Pinger: Pings backend every 2 minutes to prevent Render cold boots during judging
+    const pingBackend = () => {
+      fetch('/api/health', { method: 'GET', cache: 'no-store' }).catch(() => {});
+    };
+    pingBackend();
+    const keepAliveInterval = setInterval(pingBackend, 120000);
+
+    return () => {
+      clearTimeout(fallbackTimer);
+      clearInterval(keepAliveInterval);
+    };
   }, []);
 
   const pathname = typeof window !== 'undefined' ? window.location.pathname : '';

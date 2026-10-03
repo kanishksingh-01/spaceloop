@@ -65,41 +65,55 @@ export const SpaceDetailView: React.FC = () => {
   const [calculatorEstimate, setCalculatorEstimate] = useState<any>(null);
   const [estimatingPrice, setEstimatingPrice] = useState(false);
 
+  const applySpaceData = (s: any) => {
+    setSpace(s);
+    setTitle(s.title || '');
+    setDescription(s.description || '');
+    setCategory(s.category || 'Workspace');
+    setHourlyRate(s.hourly_rate || s.price_hourly || 50);
+    setDailyRate(s.daily_rate || s.price_daily || '');
+    setAddress(s.address || s.location || '');
+    setLocation(s.location || s.city || '');
+    setSqft(s.square_feet || s.sqft || 150);
+    setCapacity(s.capacity || s.max_capacity || 4);
+    setAmenities(Array.isArray(s.amenities) ? s.amenities : []);
+    setAccessType(s.physical_access_type || 'room_qr');
+    setKeyboxCode(s.keybox_code || '');
+    setGeofenceRadius(s.geofence_radius_meters || 50);
+    setRoomQrToken(s.room_qr_token || `SL-ROOM-${s.id}-${Math.floor(1000 + Math.random() * 9000)}`);
+    setDiscomCaNumber(s.discom_ca_number || '');
+    setDiscomConsumerName(s.discom_consumer_name || '');
+  };
+
   useEffect(() => {
     if (spaceId) {
+      // Instant cache restoration for zero-latency presentation during demos
+      try {
+        const cached = localStorage.getItem(`spaceloop_space_${spaceId}`);
+        if (cached) {
+          const parsed = JSON.parse(cached);
+          applySpaceData(parsed);
+          setLoading(false);
+        }
+      } catch {}
       loadSpace();
     }
   }, [spaceId]);
 
   const loadSpace = async (isRetry = false) => {
     try {
-      setLoading(true);
+      if (!space) setLoading(true);
       setError(null);
       const res = await getHostSpaceDetail(spaceId);
       if (res && res.space) {
         const s = res.space;
-        setSpace(s);
+        applySpaceData(s);
         setBookings(res.bookings || []);
         setActivity(res.activity || []);
-
-        // Populate form fields
-        setTitle(s.title || '');
-        setDescription(s.description || '');
-        setCategory(s.category || 'Workspace');
-        setHourlyRate(s.hourly_rate || 50);
-        setDailyRate(s.daily_rate || '');
-        setAddress(s.address || s.location || '');
-        setLocation(s.location || s.city || '');
-        setSqft(s.square_feet || s.sqft || 150);
-        setCapacity(s.capacity || s.max_capacity || 4);
-        setAmenities(Array.isArray(s.amenities) ? s.amenities : []);
-        setAccessType(s.physical_access_type || 'room_qr');
-        setKeyboxCode(s.keybox_code || '');
-        setGeofenceRadius(s.geofence_radius_meters || 50);
-        setRoomQrToken(s.room_qr_token || `SL-ROOM-${s.id}-${Math.floor(1000 + Math.random() * 9000)}`);
-        setDiscomCaNumber(s.discom_ca_number || '');
-        setDiscomConsumerName(s.discom_consumer_name || '');
-      } else {
+        try {
+          localStorage.setItem(`spaceloop_space_${spaceId}`, JSON.stringify(s));
+        } catch {}
+      } else if (!space) {
         setError('Space not found or unauthorized.');
       }
     } catch (err: any) {
@@ -112,7 +126,9 @@ export const SpaceDetailView: React.FC = () => {
         setTimeout(() => loadSpace(true), 2500);
         return;
       }
-      setError(errMsg);
+      if (!space) {
+        setError(errMsg);
+      }
     } finally {
       setLoading(false);
     }
