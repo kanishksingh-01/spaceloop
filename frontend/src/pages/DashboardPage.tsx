@@ -60,6 +60,8 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => 
   const [loading, setLoading] = useState(true);
   const [seedingSpace, setSeedingSpace] = useState(false);
   const [cancelingId, setCancelingId] = useState<number | null>(null);
+  const [cancellationNotice, setCancellationNotice] = useState<{ id: number; message: string; refund_amount?: number } | null>(null);
+  const [cancellationError, setCancellationError] = useState<string | null>(null);
   const [metrics, setMetrics] = useState<{
     gross_revenue: number;
     platform_fee: number;
@@ -143,13 +145,43 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => 
     loadDashboardData();
   }, [currentUser]);
 
-  const handleCancelBooking = async (bookingId: number) => {
-    setCancelingId(bookingId);
+  const handleCancelBooking = async (targetBooking: Booking) => {
+    const spacePortion = Math.max(0, (targetBooking.total_price || 0) - (targetBooking.deposit_held || 100));
+    const subtotal = Math.round((spacePortion / 1.05) * 100) / 100;
+    const platformFee = Math.round((spacePortion - subtotal) * 100) / 100;
+    const estimatedRefund = Math.max(0, (targetBooking.total_price || 0) - platformFee);
+
+    const confirmed = window.confirm(
+      `Cancel Booking for "${targetBooking.space_title}"?\n\n` +
+      `• Total Paid: ${formatCurrency(targetBooking.total_price)}\n` +
+      `• Retained Platform Fee (5%): ${formatCurrency(platformFee)}\n` +
+      `• Instant Refund to UPI/Source: ${formatCurrency(estimatedRefund)} (100% of Space Rent + ₹100 Escrow Deposit)\n\n` +
+      `Are you sure you want to proceed?`
+    );
+
+    if (!confirmed) return;
+
+    setCancelingId(targetBooking.id);
+    setCancellationError(null);
+    setCancellationNotice(null);
+
     try {
-      await cancelBooking(bookingId);
-      setBookings(bookings.map((b) => (b.id === bookingId ? { ...b, status: 'cancelled' } : b)));
-    } catch (err) {
+      const res = await cancelBooking(targetBooking.id);
+      if (res && res.success) {
+        setBookings((prev) =>
+          prev.map((b) => (b.id === targetBooking.id ? { ...b, status: 'cancelled' } : b))
+        );
+        setCancellationNotice({
+          id: targetBooking.id,
+          message: res.message || 'Booking cancelled successfully.',
+          refund_amount: res.refund_amount ?? estimatedRefund,
+        });
+      } else {
+        setCancellationError(res?.error || 'Cancellation could not be completed.');
+      }
+    } catch (err: any) {
       console.error('Cancellation failed:', err);
+      setCancellationError(err?.message || 'Failed to cancel booking. Please try again.');
     } finally {
       setCancelingId(null);
     }
@@ -522,7 +554,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => 
           </Pressable>
         </View>
 
-        {/* Tab 1: Seeker Bookings */}
+            {/* Tab 1: Seeker Bookings */}
         {activeTab === 'seeker' && (
           <View className="space-y-4">
             <View className="flex-row items-center justify-between mb-2">
@@ -534,6 +566,41 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => 
                 <Text className="text-xs font-medium text-indigo-400">+ {t('hero.findSpaceBtn')}</Text>
               </Pressable>
             </View>
+
+            {cancellationNotice && (
+              <View className="p-4 bg-emerald-500/10 border border-emerald-500/30 rounded-2xl flex-row items-center justify-between mb-2">
+                <View className="flex-1 pr-4">
+                  <Text className="text-sm font-bold text-emerald-400">✅ Booking Cancelled & Refund Initiated</Text>
+                  <Text className="text-xs text-emerald-200/90 mt-0.5">
+                    {cancellationNotice.message}
+                    {cancellationNotice.refund_amount !== undefined && (
+                      <Text className="font-bold text-emerald-300"> Full amount of {formatCurrency(cancellationNotice.refund_amount)} refunded to your source payment method (excluding ₹{((cancellationNotice.refund_amount ? (bookings.find(b => b.id === cancellationNotice.id)?.total_price || 0) - cancellationNotice.refund_amount : 0)).toFixed(2)} platform fee).</Text>
+                    )}
+                  </Text>
+                </View>
+                <Pressable
+                  onPress={() => setCancellationNotice(null)}
+                  className="px-2.5 py-1 rounded-lg bg-emerald-500/20 hover:bg-emerald-500/30"
+                >
+                  <Text className="text-xs font-semibold text-emerald-300">Dismiss</Text>
+                </Pressable>
+              </View>
+            )}
+
+            {cancellationError && (
+              <View className="p-4 bg-rose-500/10 border border-rose-500/30 rounded-2xl flex-row items-center justify-between mb-2">
+                <View className="flex-1 pr-4">
+                  <Text className="text-sm font-bold text-rose-400">⚠️ Cancellation Error</Text>
+                  <Text className="text-xs text-rose-200/90 mt-0.5">{cancellationError}</Text>
+                </View>
+                <Pressable
+                  onPress={() => setCancellationError(null)}
+                  className="px-2.5 py-1 rounded-lg bg-rose-500/20 hover:bg-rose-500/30"
+                >
+                  <Text className="text-xs font-semibold text-rose-300">Dismiss</Text>
+                </Pressable>
+              </View>
+            )}
 
             {loading ? (
               <DashboardBookingSkeleton count={2} />
@@ -569,9 +636,17 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => 
                     <View>
                       <View className="flex-row items-center gap-2 mb-1">
                         <Text className="text-base font-bold text-white">{b.space_title}</Text>
-                        <View className="px-2 py-0.5 rounded bg-emerald-500/20 border border-emerald-500/40">
-                          <Text className="text-[10px] font-bold text-emerald-300 uppercase">
-                            {b.status}
+                        <View className={`px-2 py-0.5 rounded border ${
+                          b.status === 'cancelled'
+                            ? 'bg-rose-500/20 border-rose-500/40'
+                            : b.status === 'confirmed' || b.status === 'active'
+                            ? 'bg-emerald-500/20 border-emerald-500/40'
+                            : 'bg-indigo-500/20 border-indigo-500/40'
+                        }`}>
+                          <Text className={`text-[10px] font-bold uppercase ${
+                            b.status === 'cancelled' ? 'text-rose-300' : b.status === 'confirmed' || b.status === 'active' ? 'text-emerald-300' : 'text-indigo-300'
+                          }`}>
+                            {b.status === 'cancelled' ? 'CANCELLED • REFUNDED' : b.status}
                           </Text>
                         </View>
                       </View>
@@ -583,23 +658,31 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => 
                   </View>
 
                   <View className="flex-row items-center gap-2 self-stretch md:self-auto justify-end">
-                    <Pressable
-                      onPress={() => navigate(`/session/${b.id}`)}
-                      className="px-4 py-2.5 bg-indigo-600 hover:bg-indigo-500 rounded-xl transition"
-                    >
-                      <Text className="text-xs font-bold text-white">📱 {t('dashboard.openDoorPass')} →</Text>
-                    </Pressable>
+                    {b.status === 'cancelled' ? (
+                      <View className="px-3.5 py-2 bg-slate-800/80 border border-slate-700/60 rounded-xl">
+                        <Text className="text-xs font-medium text-slate-400">↩️ Refund Processed</Text>
+                      </View>
+                    ) : (
+                      <>
+                        <Pressable
+                          onPress={() => navigate(`/session/${b.id}`)}
+                          className="px-4 py-2.5 bg-indigo-600 hover:bg-indigo-500 rounded-xl transition"
+                        >
+                          <Text className="text-xs font-bold text-white">📱 {t('dashboard.openDoorPass')} →</Text>
+                        </Pressable>
 
-                    {b.status !== 'cancelled' && b.status !== 'completed' && (
-                      <Pressable
-                        onPress={() => handleCancelBooking(b.id)}
-                        disabled={cancelingId === b.id}
-                        className="px-3 py-2.5 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-xl transition"
-                      >
-                        <Text className="text-xs font-medium text-rose-300">
-                          {cancelingId === b.id ? t('common.loading') : t('dashboard.cancelBooking')}
-                        </Text>
-                      </Pressable>
+                        {b.status !== 'completed' && (
+                          <Pressable
+                            onPress={() => handleCancelBooking(b)}
+                            disabled={cancelingId === b.id}
+                            className="px-3 py-2.5 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-xl transition"
+                          >
+                            <Text className="text-xs font-medium text-rose-300">
+                              {cancelingId === b.id ? t('common.loading') : t('dashboard.cancelBooking')}
+                            </Text>
+                          </Pressable>
+                        )}
+                      </>
                     )}
                   </View>
                 </View>

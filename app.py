@@ -107,6 +107,29 @@ def create_app():
         except Exception:
             return None
 
+    @login_manager.request_loader
+    def load_user_from_request(req):
+        # 1. Bearer Token Auth
+        auth_header = req.headers.get("Authorization", "")
+        if auth_header.startswith("Bearer "):
+            token = auth_header.split(" ", 1)[1].strip()
+            if token.isdigit():
+                return User.query.get(int(token))
+            try:
+                from backend.modules.auth.session import verify_session_token
+                uid = verify_session_token(token)
+                if uid:
+                    return User.query.get(int(uid))
+            except Exception:
+                pass
+
+        # 2. X-User-Id Header Fallback
+        user_id_header = req.headers.get("X-User-Id", "")
+        if user_id_header.isdigit():
+            return User.query.get(int(user_id_header))
+
+        return None
+
     @login_manager.unauthorized_handler
     def unauthorized():
         if request.path.startswith("/api") or request.is_json or "application/json" in request.headers.get("Accept", ""):

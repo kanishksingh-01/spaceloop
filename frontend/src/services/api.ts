@@ -62,10 +62,25 @@ export async function request<T>(endpoint: string, options: RequestOptions = {})
     }
   }
 
+  let authHeaders: Record<string, string> = {};
+  if (typeof window !== 'undefined') {
+    try {
+      const stored = localStorage.getItem('spaceloop_user');
+      if (stored) {
+        const u = JSON.parse(stored);
+        if (u?.id) {
+          authHeaders['X-User-Id'] = String(u.id);
+          authHeaders['Authorization'] = `Bearer ${u.id}`;
+        }
+      }
+    } catch {}
+  }
+
   const headers: Record<string, string> = {
     'Accept': 'application/json',
     'X-Requested-With': 'XMLHttpRequest',
     'X-SpaceLoop-Client': 'ReactSPA',
+    ...authHeaders,
     ...(options.headers as Record<string, string> || {}),
   };
 

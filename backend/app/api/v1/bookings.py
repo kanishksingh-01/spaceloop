@@ -436,34 +436,6 @@ def api_booking_reject(booking_id):
     }), 200
 
 
-@api_v1_bookings.route("/api/booking/<int:booking_id>/cancel", methods=["POST"])
-@login_required
-def api_booking_cancel(booking_id):
-    booking = Booking.query.get_or_404(booking_id)
-    if not (current_user.id == booking.renter_id or current_user.id == booking.space.owner_id or current_user.is_admin):
-        return jsonify({"error": "Unauthorized to cancel this reservation."}), 403
-
-    if booking.session_state in ["checked_in", "checked_out"] or booking.status == "completed":
-        return jsonify({"error": "Cannot cancel an active or completed session."}), 400
-
-    booking.status = "cancelled"
-    booking.session_state = "cancelled"
-    booking.escrow_status = "refunded"
-    db.session.commit()
-
-    try:
-        from backend.modules.email import EmailService
-        EmailService.notify_booking_cancelled(booking, cancelled_by_user=current_user)
-        EmailService.notify_escrow_refunded(booking, reason="Booking Cancellation")
-    except Exception as email_err:
-        current_app.logger.warning(f"[BOOKING_CANCEL_EMAIL_ERROR] {email_err}")
-
-    return jsonify({
-        "success": True,
-        "message": f"Booking #{booking.id} cancelled. ₹100 security escrow refunded.",
-        "booking": booking.to_dict()
-    }), 200
-
 
 @api_v1_bookings.route("/api/booking/<int:booking_id>/check-in", methods=["POST"])
 @login_required
@@ -793,13 +765,21 @@ def api_booking_checkout(booking_id):
 
 
 @api_v1_bookings.route("/api/booking/<int:booking_id>/cancel", methods=["POST"])
+@api_v1_bookings.route("/api/bookings/<int:booking_id>/cancel", methods=["POST"])
 @login_required
 def api_cancel_booking(booking_id):
     booking = Booking.query.get_or_404(booking_id)
-    try:
-        authorize(current_user, Permission.BOOKING_CANCEL, resource=booking)
-    except ForbiddenError as e:
-        return jsonify({"error": str(e)}), 403
+
+    # Permission check: allow renter, space host/owner, or admin
+    is_renter = (current_user.id == booking.renter_id)
+    is_owner = (booking.space and current_user.id == booking.space.owner_id)
+    is_admin = getattr(current_user, "is_admin", False)
+
+    if not (is_renter or is_owner or is_admin):
+        return jsonify({
+            "success": False,
+            "error": "Unauthorized: You do not have permission to cancel this reservation."
+        }), 403
 
     if booking.status == "cancelled":
         return jsonify({"success": False, "error": "This booking is already cancelled."}), 400
@@ -808,10 +788,42 @@ def api_cancel_booking(booking_id):
     if booking.session_state == "checked_in":
         return jsonify({"success": False, "error": "Active session in progress cannot be cancelled directly. Please complete checkout."}), 400
 
+    # Calculate exact refund: Full amount refunded except platform fee
+    # Total booking price = subtotal + platform_fee + escrow_deposit
+    total_price = float(booking.total_price or 0.0)
+    escrow_deposit = float(booking.escrow_deposit_amount or 100.0)
+
+    # Determine platform fee (default 5% of space subtotal)
+    if booking.platform_fee_amount and booking.platform_fee_amount > 0:
+        platform_fee = float(booking.platform_fee_amount)
+    else:
+        space_portion = max(0.0, total_price - escrow_deposit)
+        subtotal = round(space_portion / 1.05, 2)
+        platform_fee = round(space_portion - subtotal, 2)
+
+    # Full amount refunded except platform fee
+    refund_amount = round(max(0.0, total_price - platform_fee), 2)
+
     booking.status = "cancelled"
     booking.session_state = "cancelled"
-    if booking.escrow_status == "held":
-        booking.escrow_status = "refunded"
+    booking.escrow_status = "refunded"
+    booking.settled_at = datetime.utcnow()
+
+    # Create immutable refund audit record
+    try:
+        refund_tx = EscrowTransaction(
+            booking_id=booking.id,
+            user_id=booking.renter_id,
+            amount=refund_amount,
+            transaction_type="refund",
+            status="completed",
+            reference_id=f"ref_{uuid.uuid4().hex[:12]}",
+            details=f"Cancellation Refund: ₹{refund_amount:.2f} refunded to seeker (Full amount of ₹{total_price:.2f} minus ₹{platform_fee:.2f} platform fee). Escrow deposit released."
+        )
+        db.session.add(refund_tx)
+    except Exception as tx_err:
+        current_app.logger.warning(f"[REFUND_RECORD_ERROR] {tx_err}")
+
     db.session.commit()
 
     try:
@@ -823,7 +835,10 @@ def api_cancel_booking(booking_id):
 
     return jsonify({
         "success": True,
-        "message": f"Booking #{booking_id} cancelled successfully. ₹{int(booking.escrow_deposit_amount)} escrow deposit refunded.",
+        "message": f"Booking #{booking_id} cancelled successfully. ₹{refund_amount:.2f} refunded (Full amount minus ₹{platform_fee:.2f} platform fee).",
+        "refund_amount": refund_amount,
+        "platform_fee": platform_fee,
+        "total_price": total_price,
         "booking": booking.to_dict()
     }), 200
 

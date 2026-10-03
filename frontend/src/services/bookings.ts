@@ -60,7 +60,15 @@ export async function getBookingStatus(
   return request(`/api/booking/${bookingId}/status`);
 }
 
-export async function cancelBooking(bookingId: number): Promise<{ success: boolean; message: string }> {
+export async function cancelBooking(bookingId: number): Promise<{
+  success: boolean;
+  message: string;
+  error?: string;
+  refund_amount?: number;
+  platform_fee?: number;
+  total_price?: number;
+  booking?: Booking;
+}> {
   return request(`/api/booking/${bookingId}/cancel`, {
     method: 'POST',
   });
