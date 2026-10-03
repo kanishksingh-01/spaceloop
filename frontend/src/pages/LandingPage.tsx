@@ -275,7 +275,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ currentUser }) => {
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {/* Step 1: Discover */}
             <div className="bg-slate-900/60 border border-slate-800 rounded-3xl p-6 hover:border-indigo-500/40 floating-interactive relative group">
-              <div className="w-12 h-12 rounded-2xl bg-indigo-600/20 text-indigo-400 flex items-center justify-center text-xl font-black mb-4 group-hover:bg-indigo-600 group-hover:text-white transition">
+              <div className="step-number-badge w-12 h-12 rounded-2xl flex items-center justify-center text-xl font-black mb-4 transition-all duration-200 shadow-sm">
                 1
               </div>
               <h3 className="text-lg font-bold text-white mb-2">{t('landing.step1Title')}</h3>
@@ -286,7 +286,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ currentUser }) => {
 
             {/* Step 2: Match */}
             <div className="bg-slate-900/60 border border-slate-800 rounded-3xl p-6 hover:border-indigo-500/40 floating-interactive relative group">
-              <div className="w-12 h-12 rounded-2xl bg-indigo-600/20 text-indigo-400 flex items-center justify-center text-xl font-black mb-4 group-hover:bg-indigo-600 group-hover:text-white transition">
+              <div className="step-number-badge w-12 h-12 rounded-2xl flex items-center justify-center text-xl font-black mb-4 transition-all duration-200 shadow-sm">
                 2
               </div>
               <h3 className="text-lg font-bold text-white mb-2">{t('landing.step2Title')}</h3>
@@ -297,7 +297,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ currentUser }) => {
 
             {/* Step 3: Book */}
             <div className="bg-slate-900/60 border border-slate-800 rounded-3xl p-6 hover:border-indigo-500/40 floating-interactive relative group">
-              <div className="w-12 h-12 rounded-2xl bg-indigo-600/20 text-indigo-400 flex items-center justify-center text-xl font-black mb-4 group-hover:bg-indigo-600 group-hover:text-white transition">
+              <div className="step-number-badge w-12 h-12 rounded-2xl flex items-center justify-center text-xl font-black mb-4 transition-all duration-200 shadow-sm">
                 3
               </div>
               <h3 className="text-lg font-bold text-white mb-2">{t('landing.step3Title')}</h3>
@@ -308,7 +308,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ currentUser }) => {
 
             {/* Step 4: Sign */}
             <div className="bg-slate-900/60 border border-slate-800 rounded-3xl p-6 hover:border-indigo-500/40 floating-interactive relative group">
-              <div className="w-12 h-12 rounded-2xl bg-indigo-600/20 text-indigo-400 flex items-center justify-center text-xl font-black mb-4 group-hover:bg-indigo-600 group-hover:text-white transition">
+              <div className="step-number-badge w-12 h-12 rounded-2xl flex items-center justify-center text-xl font-black mb-4 transition-all duration-200 shadow-sm">
                 4
               </div>
               <h3 className="text-lg font-bold text-white mb-2">{t('landing.step4Title')}</h3>
@@ -319,7 +319,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ currentUser }) => {
 
             {/* Step 5: Access */}
             <div className="bg-slate-900/60 border border-slate-800 rounded-3xl p-6 hover:border-indigo-500/40 floating-interactive relative group">
-              <div className="w-12 h-12 rounded-2xl bg-indigo-600/20 text-indigo-400 flex items-center justify-center text-xl font-black mb-4 group-hover:bg-indigo-600 group-hover:text-white transition">
+              <div className="step-number-badge w-12 h-12 rounded-2xl flex items-center justify-center text-xl font-black mb-4 transition-all duration-200 shadow-sm">
                 5
               </div>
               <h3 className="text-lg font-bold text-white mb-2">{t('landing.step5Title')}</h3>
@@ -330,7 +330,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ currentUser }) => {
 
             {/* Step 6: Complete */}
             <div className="bg-slate-900/60 border border-slate-800 rounded-3xl p-6 hover:border-indigo-500/40 floating-interactive relative group">
-              <div className="w-12 h-12 rounded-2xl bg-indigo-600/20 text-indigo-400 flex items-center justify-center text-xl font-black mb-4 group-hover:bg-indigo-600 group-hover:text-white transition">
+              <div className="step-number-badge w-12 h-12 rounded-2xl flex items-center justify-center text-xl font-black mb-4 transition-all duration-200 shadow-sm">
                 6
               </div>
               <h3 className="text-lg font-bold text-white mb-2">{t('landing.step6Title')}</h3>

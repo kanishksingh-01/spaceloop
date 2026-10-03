@@ -624,14 +624,10 @@ html.light .bg-amber-500\/20 {
 html.light .btn-seeker-primary,
 html.light .bg-indigo-600,
 html.light .bg-indigo-700,
-html.light [class*="bg-indigo-600"],
-html.light [class*="bg-indigo-700"],
 html.light .bg-gradient-to-r.from-indigo-600,
-html.light [class*="from-indigo-600"],
 html.light .btn-host-primary,
-html.light [class*="bg-amber-600"],
-html.light [class*="bg-orange-600"],
-html.light [class*="from-amber-600"],
+html.light .bg-amber-600,
+html.light .bg-orange-600,
 html.light .bg-emerald-600,
 html.light .bg-rose-600,
 html.light .bg-red-600 {
@@ -641,18 +637,35 @@ html.light .bg-red-600 {
 html.light .btn-seeker-primary *,
 html.light .bg-indigo-600 *,
 html.light .bg-indigo-700 *,
-html.light [class*="bg-indigo-600"] *,
-html.light [class*="bg-indigo-700"] *,
 html.light .bg-gradient-to-r.from-indigo-600 *,
-html.light [class*="from-indigo-600"] *,
 html.light .btn-host-primary *,
-html.light [class*="bg-amber-600"] *,
-html.light [class*="bg-orange-600"] *,
-html.light [class*="from-amber-600"] *,
+html.light .bg-amber-600 *,
+html.light .bg-orange-600 *,
 html.light .bg-emerald-600 *,
 html.light .bg-rose-600 *,
 html.light .bg-red-600 * {
   color: #FFFFFF !important;
+}
+
+/* Step Number Badges: High Contrast in Both Light and Dark Themes */
+.step-number-badge {
+  background-color: rgba(99, 102, 241, 0.18);
+  color: #a5b4fc;
+  border: 1px solid rgba(99, 102, 241, 0.35);
+  font-weight: 900;
+}
+
+html.light .step-number-badge {
+  background-color: #E0E7FF !important; /* Soft indigo-100 */
+  color: #1E1B4B !important;            /* Deep indigo-950 - pitch dark, bold and prominent */
+  border-color: #A5B4FC !important;     /* Indigo-300 border */
+}
+
+.group:hover .step-number-badge,
+html.light .group:hover .step-number-badge {
+  background-color: #4F46E5 !important; /* Solid Indigo-600 on hover */
+  color: #FFFFFF !important;            /* Pure white on hover */
+  border-color: transparent !important;
 }
 
 /* Image Card Badges Overlays: Must retain high contrast over unpredictable photos */
