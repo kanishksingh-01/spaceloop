@@ -372,26 +372,35 @@ export const OverviewView: React.FC<OverviewViewProps> = () => {
             }
           >
             <div className="space-y-2.5">
-              <div className="flex items-center justify-between p-3 rounded-xl bg-slate-950/60 border border-slate-800/80">
-                <span className="text-xs text-slate-300 flex items-center gap-2">
+              <div
+                className="flex items-center justify-between p-3 rounded-xl border border-white/10"
+                style={{ backgroundColor: '#315A78' }}
+              >
+                <span className="text-xs text-white font-medium flex items-center gap-2">
                   <span className="w-2 h-2 rounded-full bg-emerald-400 shadow-sm shadow-emerald-400/50" />
                   Published & Active
                 </span>
                 <span className="text-xs font-bold text-white font-mono">{publishedSpaces.length}</span>
               </div>
-              <div className="flex items-center justify-between p-3 rounded-xl bg-slate-950/60 border border-slate-800/80">
-                <span className="text-xs text-slate-300 flex items-center gap-2">
+              <div
+                className="flex items-center justify-between p-3 rounded-xl border border-white/10"
+                style={{ backgroundColor: '#315A78' }}
+              >
+                <span className="text-xs text-white font-medium flex items-center gap-2">
                   <span className="w-2 h-2 rounded-full bg-amber-400 shadow-sm shadow-amber-400/50" />
                   Verification Pending
                 </span>
-                <span className="text-xs font-bold text-amber-400 font-mono">{unverifiedSpaces.length}</span>
+                <span className="text-xs font-bold text-amber-300 font-mono">{unverifiedSpaces.length}</span>
               </div>
-              <div className="flex items-center justify-between p-3 rounded-xl bg-slate-950/60 border border-slate-800/80">
-                <span className="text-xs text-slate-300 flex items-center gap-2">
-                  <span className="w-2 h-2 rounded-full bg-slate-500" />
+              <div
+                className="flex items-center justify-between p-3 rounded-xl border border-white/10"
+                style={{ backgroundColor: '#315A78' }}
+              >
+                <span className="text-xs text-white font-medium flex items-center gap-2">
+                  <span className="w-2 h-2 rounded-full bg-slate-300" />
                   Inactive / Draft
                 </span>
-                <span className="text-xs font-bold text-slate-400 font-mono">{draftSpaces.length}</span>
+                <span className="text-xs font-bold text-slate-200 font-mono">{draftSpaces.length}</span>
               </div>
             </div>
 
