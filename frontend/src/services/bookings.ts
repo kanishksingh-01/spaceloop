@@ -109,6 +109,10 @@ export async function checkOutBooking(
   fraud_assessment?: any;
   punctuality_score?: number;
   escrow_refund_status?: string;
+  escrow_status?: string;
+  refund_state?: string;
+  session_state?: string;
+  departure_time?: string;
   booking?: Booking;
 }> {
   return request(`/api/booking/${bookingId}/check-out`, {

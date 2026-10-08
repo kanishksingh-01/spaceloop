@@ -159,8 +159,14 @@ export const SessionPage: React.FC = () => {
         return;
       }
 
-      // Completed state takes priority
-      if (booking.status === 'completed' || booking.session_state === 'checked_out') {
+      // Completed state takes priority (handles early checkout, advance checkout, and standard checkout)
+      if (
+        booking.status === 'completed' ||
+        booking.status === 'Released' ||
+        booking.session_state === 'checked_out' ||
+        Boolean(booking.departure_time) ||
+        Boolean((booking as any).checked_out_at)
+      ) {
         setTimer({
           hours: 0,
           minutes: 0,
@@ -378,18 +384,18 @@ export const SessionPage: React.FC = () => {
         setFraudAssessment(res.fraud_assessment);
       }
       setPunctualityScore(res.punctuality_score || 100);
-      setEscrowStatus(res.escrow_refund_status || (res.status === 'Released' ? 'INSTANT_RELEASE_COMPLETE' : 'Review required'));
-      if (res.booking) {
-        setBooking(res.booking);
-        if (res.booking.entry_scan_photo) setEntryPhoto(res.booking.entry_scan_photo);
-        if (res.booking.exit_scan_photo) setExitPhoto(res.booking.exit_scan_photo);
-      } else {
-        setBooking({
-          ...booking,
-          status: (res.status as Booking['status']) || 'completed',
-          exit_scan_photo: photoToUse,
-        });
-      }
+      setEscrowStatus(res.escrow_refund_status || ((res as any).refund_state === 'Released' || res.status === 'completed' || res.escrow_status === 'released' ? 'INSTANT_RELEASE_COMPLETE' : 'Review required'));
+      const updatedBooking: Booking = {
+        ...booking,
+        ...(res.booking || {}),
+        status: 'completed',
+        session_state: 'checked_out',
+        departure_time: res.booking?.departure_time || (res as any).departure_time || new Date().toISOString(),
+        exit_scan_photo: res.booking?.exit_scan_photo || photoToUse,
+      };
+      setBooking(updatedBooking);
+      if (res.booking?.entry_scan_photo) setEntryPhoto(res.booking.entry_scan_photo);
+      if (res.booking?.exit_scan_photo) setExitPhoto(res.booking.exit_scan_photo);
     } catch (err: any) {
       setError(err.message || 'Failed to complete check-out.');
     } finally {
@@ -435,8 +441,13 @@ export const SessionPage: React.FC = () => {
     );
   }
 
-  const isCheckedIn = booking.status === 'active';
-  const isCompleted = booking.status === 'completed';
+  const isCompleted =
+    booking.status === 'completed' ||
+    booking.status === 'Released' ||
+    booking.session_state === 'checked_out' ||
+    Boolean(booking.departure_time) ||
+    Boolean((booking as any).checked_out_at);
+  const isCheckedIn = (booking.status === 'active' || booking.session_state === 'checked_in') && !isCompleted;
 
   // Format Access Window
   const timeWindow = formatTimeWindow(

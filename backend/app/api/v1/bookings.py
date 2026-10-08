@@ -875,7 +875,10 @@ def api_booking_checkout(booking_id):
         "inspection": inspection,
         "punctuality_score": punctuality,
         "escrow_refund_status": "INSTANT_RELEASE_COMPLETE" if refund_state == "Released" else refund_state,
-        "status": refund_state,
+        "status": "completed",
+        "session_state": "checked_out",
+        "escrow_status": booking.escrow_status,
+        "refund_state": refund_state,
         "fraud_assessment": {
             "risk_score": checkout_assessment.risk_score,
             "risk_level": checkout_assessment.risk_level,
