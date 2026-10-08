@@ -643,6 +643,50 @@ def ai_chat():
     }), 200
 
 
+@api_v1_system.route("/api/v1/loopbot/chat", methods=["POST"])
+@api_v1_system.route("/api/loopbot/chat", methods=["POST"])
+@rate_limit_ai
+def api_loopbot_chat():
+    """
+    Native SpaceLoop LoopBot Conversational Endpoint.
+    Returns structured typed responses (space_results, booking_preview,
+    confirmation_required, access_status, escrow_status, text).
+    """
+    data = request.get_json(silent=True) or {}
+    message = sanitize_string(data.get("message") or data.get("query") or "", max_length=1000)
+    conversation_id = data.get("conversation_id")
+    confirm = data.get("confirm")
+    context_in = data.get("context") or {}
+    if not isinstance(context_in, dict):
+        context_in = {}
+
+    if data.get("space_id"):
+        context_in["selected_space_id"] = data.get("space_id")
+
+    if not message and confirm is None:
+        return jsonify({
+            "success": True,
+            "conversation_id": conversation_id or "new",
+            "message": "Hello! I'm LoopBot, your SpaceLoop AI Concierge. How can I assist you with spaces, bookings, or smart access today?",
+            "response_type": "text",
+            "data": {},
+            "context": {}
+        }), 200
+
+    from backend.modules.loopbot import LoopBotOrchestrator
+
+    user_obj = current_user if current_user.is_authenticated else None
+    response_obj = LoopBotOrchestrator.handle_message(
+        message=message,
+        conversation_id=conversation_id,
+        user=user_obj,
+        confirm=confirm,
+        context_override=context_in
+    )
+
+    return jsonify(response_obj.to_dict()), 200
+
+
 @api_v1_system.route("/api/nlp/dispatch", methods=["POST"])
 @rate_limit_ai
 def api_nlp_dispatch():

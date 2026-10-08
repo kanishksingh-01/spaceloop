@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { useLocation } from 'react-router-dom';
-import { sendChatMessage, ChatMessage } from '../../services/ai';
+import { sendChatMessage, sendLoopBotMessage, ChatMessage } from '../../services/ai';
 import { useTranslation } from '../../i18n';
 
 export const LoopBot: React.FC = () => {
@@ -12,6 +12,7 @@ export const LoopBot: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [isMinimized, setIsMinimized] = useState(false);
   const [input, setInput] = useState('');
+  const [conversationId, setConversationId] = useState<string | undefined>(undefined);
   const [messages, setMessages] = useState<ChatMessage[]>(() => [
     {
       role: 'assistant',
@@ -225,36 +226,274 @@ export const LoopBot: React.FC = () => {
     window.addEventListener('touchend', onPointerUp);
   };
 
-  const handleSend = async (messageText?: string) => {
+  const handleSend = async (messageText?: string, confirmAction?: boolean) => {
     const textToSend = (messageText || input).trim();
-    if (!textToSend || loading) return;
+    if (!textToSend && confirmAction === undefined) return;
+    if (loading) return;
 
     setInput('');
-    const newHistory: ChatMessage[] = [...messages, { role: 'user', content: textToSend }];
+    const userDisplay = textToSend || (confirmAction ? 'Confirm' : 'Cancel');
+    const newHistory: ChatMessage[] = [...messages, { role: 'user', content: userDisplay }];
     setMessages(newHistory);
     setLoading(true);
 
     try {
-      const resp = await sendChatMessage(textToSend, newHistory, {
+      const resp = await sendLoopBotMessage(textToSend, conversationId, confirmAction, {
         space_id: currentSpaceId,
         current_path: location.pathname,
         language_preference: loopbotLanguage !== 'auto' ? loopbotLanguage : undefined,
       });
-      const replyContent = resp?.reply && typeof resp.reply === 'string' && resp.reply.trim()
-        ? resp.reply.trim()
+
+      if (resp?.conversation_id) {
+        setConversationId(resp.conversation_id);
+      }
+
+      const replyContent = resp?.message && typeof resp.message === 'string' && resp.message.trim()
+        ? resp.message.trim()
         : 'I am ready to help. What would you like to know about SpaceLoop?';
-      setMessages([...newHistory, { role: 'assistant', content: replyContent }]);
-    } catch {
+
       setMessages([
         ...newHistory,
         {
           role: 'assistant',
-          content: 'Sorry, I had trouble reaching the SpaceLoop AI brain. Please try again.',
+          content: replyContent,
+          response_type: resp?.response_type,
+          data: resp?.data,
         },
       ]);
+    } catch {
+      try {
+        const fallbackResp = await sendChatMessage(textToSend, newHistory, {
+          space_id: currentSpaceId,
+          current_path: location.pathname,
+          language_preference: loopbotLanguage !== 'auto' ? loopbotLanguage : undefined,
+        });
+        setMessages([
+          ...newHistory,
+          { role: 'assistant', content: fallbackResp?.reply || 'I am ready to help.' },
+        ]);
+      } catch {
+        setMessages([
+          ...newHistory,
+          {
+            role: 'assistant',
+            content: 'Sorry, I had trouble reaching the SpaceLoop AI brain. Please try again.',
+          },
+        ]);
+      }
     } finally {
       setLoading(false);
     }
+  };
+
+  const renderStructuredCards = (msg: ChatMessage) => {
+    if (!msg.data) return null;
+
+    // 1. Space Results Card
+    if (msg.response_type === 'space_results' && Array.isArray(msg.data.spaces) && msg.data.spaces.length > 0) {
+      return (
+        <div className="mt-2.5 space-y-2">
+          {msg.data.spaces.map((space: any) => (
+            <div
+              key={space.id}
+              className="bg-slate-900/90 border border-slate-700/80 rounded-xl p-2.5 hover:border-purple-500/50 transition-all flex flex-col gap-1.5 shadow-sm"
+            >
+              <div className="flex items-center justify-between gap-1">
+                <span className="font-bold text-white text-xs truncate">{space.title}</span>
+                <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-purple-900/40 text-purple-300 border border-purple-500/30 shrink-0">
+                  {space.match_score || 85}% Match
+                </span>
+              </div>
+              <div className="flex items-center gap-2 text-[11px] text-slate-400">
+                <span>
+                  <i className="fa-solid fa-location-dot text-rose-400 mr-1" />
+                  {space.neighborhood || space.location}
+                </span>
+                <span>•</span>
+                <span>
+                  <i className="fa-solid fa-users text-cyan-400 mr-1" />
+                  Max {space.max_capacity}
+                </span>
+                <span>•</span>
+                <span className="font-bold text-emerald-400">₹{space.price_hourly}/hr</span>
+              </div>
+              {space.match_reasons && space.match_reasons[0] && (
+                <p className="text-[10px] text-purple-200/90 italic bg-purple-950/30 px-2 py-0.5 rounded border border-purple-500/20">
+                  ✨ {space.match_reasons[0]}
+                </p>
+              )}
+              <div className="flex items-center gap-1.5 pt-1">
+                <a
+                  href={`/space/${space.id}`}
+                  className="flex-1 text-center py-1.5 px-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-[10px] font-medium border border-slate-700 transition"
+                >
+                  View Listing
+                </a>
+                <button
+                  type="button"
+                  onClick={() => handleSend(`Book space #${space.id} for 2 hours`)}
+                  className="flex-1 py-1.5 px-2 rounded-lg bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white text-[10px] font-bold shadow transition cursor-pointer"
+                >
+                  Reserve with LoopBot
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      );
+    }
+
+    // 2. Confirmation Required Card (Booking or Cancellation)
+    if (msg.response_type === 'confirmation_required') {
+      return (
+        <div className="mt-2.5 bg-gradient-to-br from-indigo-950/70 to-purple-950/70 border border-purple-500/60 rounded-xl p-3 space-y-2 shadow-md">
+          <div className="flex items-center gap-1.5 text-xs font-bold text-purple-200">
+            <i className="fa-solid fa-shield-halved text-purple-400" />
+            <span>Confirmation Required</span>
+          </div>
+          {msg.data.pricing && (
+            <div className="text-[11px] space-y-1 bg-slate-900/80 p-2 rounded-lg border border-slate-800">
+              <div className="flex justify-between text-slate-300">
+                <span>Rental Subtotal ({msg.data.pricing.hours}h)</span>
+                <span>₹{msg.data.pricing.subtotal}</span>
+              </div>
+              <div className="flex justify-between text-slate-400">
+                <span>5% Platform Fee</span>
+                <span>₹{msg.data.pricing.platform_fee}</span>
+              </div>
+              <div className="flex justify-between text-emerald-400">
+                <span>Refundable UPI Deposit</span>
+                <span>₹{msg.data.pricing.refundable_deposit}</span>
+              </div>
+              <div className="border-t border-slate-700 pt-1 flex justify-between font-bold text-white text-xs">
+                <span>Total Upfront</span>
+                <span className="text-purple-300 font-mono">₹{msg.data.pricing.total_upfront}</span>
+              </div>
+            </div>
+          )}
+          {msg.data.refund_details && (
+            <div className="text-[11px] space-y-1 bg-slate-900/80 p-2 rounded-lg border border-slate-800">
+              <div className="flex justify-between text-slate-300">
+                <span>Rental Refund</span>
+                <span>₹{msg.data.refund_details.rental_refund}</span>
+              </div>
+              <div className="flex justify-between text-emerald-400">
+                <span>Deposit Refund</span>
+                <span>₹{msg.data.refund_details.escrow_refund}</span>
+              </div>
+              <div className="border-t border-slate-700 pt-1 flex justify-between font-bold text-white text-xs">
+                <span>Total Refund to UPI</span>
+                <span className="text-emerald-300 font-mono">₹{msg.data.refund_details.total_refund_amount}</span>
+              </div>
+            </div>
+          )}
+          <div className="flex items-center gap-2 pt-1">
+            <button
+              type="button"
+              onClick={() => handleSend('Confirm', true)}
+              className="flex-1 py-1.5 px-3 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-[11px] shadow transition flex items-center justify-center gap-1 cursor-pointer"
+            >
+              <i className="fa-solid fa-check" /> Confirm
+            </button>
+            <button
+              type="button"
+              onClick={() => handleSend('Cancel', false)}
+              className="flex-1 py-1.5 px-3 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-[11px] font-medium border border-slate-700 transition flex items-center justify-center gap-1 cursor-pointer"
+            >
+              <i className="fa-solid fa-xmark" /> Decline
+            </button>
+          </div>
+        </div>
+      );
+    }
+
+    // 3. Booking Status Card
+    if (msg.response_type === 'booking_status' && msg.data.booking_id) {
+      return (
+        <div className="mt-2.5 bg-slate-900/90 border border-emerald-500/50 rounded-xl p-2.5 space-y-1.5">
+          <div className="flex items-center justify-between text-xs">
+            <span className="font-bold text-emerald-300">✓ Booking #{msg.data.booking_id}</span>
+            <span className="text-[10px] px-1.5 py-0.5 rounded bg-emerald-950/80 text-emerald-400 font-mono border border-emerald-600/40">
+              Confirmed
+            </span>
+          </div>
+          <div className="flex items-center justify-between text-[11px] bg-slate-950/80 p-2 rounded-lg border border-slate-800">
+            <span className="text-slate-400">Arrival 4-Digit PIN:</span>
+            <span className="font-mono font-bold text-purple-300 tracking-wider text-xs">
+              🔑 {msg.data.door_pin || msg.data.arrival_pin || '••••'}
+            </span>
+          </div>
+          <a
+            href="/dashboard"
+            className="block text-center py-1 px-2 rounded-lg bg-slate-800 hover:bg-purple-950/50 text-purple-200 text-[10px] font-medium border border-slate-700 transition"
+          >
+            Open Guest Dashboard →
+          </a>
+        </div>
+      );
+    }
+
+    // 4. Access Status Card
+    if (msg.response_type === 'access_status') {
+      return (
+        <div className="mt-2.5 bg-slate-900/90 border border-indigo-500/40 rounded-xl p-2.5 space-y-1.5">
+          <div className="flex items-center justify-between text-xs">
+            <span className="font-bold text-indigo-300">Zero-Hardware Access</span>
+            <span
+              className={`text-[10px] px-1.5 py-0.5 rounded font-mono ${
+                msg.data.status === 'unlocked'
+                  ? 'bg-emerald-950/60 text-emerald-400 border border-emerald-500/30'
+                  : 'bg-amber-950/60 text-amber-300 border border-amber-500/30'
+              }`}
+            >
+              {msg.data.status === 'unlocked' ? '🟢 Pass Active' : '🔒 Locked (>50m)'}
+            </span>
+          </div>
+          {msg.data.door_pin && (
+            <div className="flex items-center justify-between bg-slate-950 p-1.5 rounded border border-slate-800 text-[11px]">
+              <span className="text-slate-400">Pass PIN:</span>
+              <span className="font-mono font-bold text-purple-300 text-xs">🔑 {msg.data.door_pin}</span>
+            </div>
+          )}
+        </div>
+      );
+    }
+
+    // 5. Escrow Status Card
+    if (msg.response_type === 'escrow_status') {
+      return (
+        <div className="mt-2.5 bg-slate-900/90 border border-cyan-500/40 rounded-xl p-2.5 space-y-1">
+          <div className="flex items-center justify-between text-xs">
+            <span className="font-bold text-cyan-300">₹100 UPI Micro-Escrow</span>
+            <span className="text-[10px] px-1.5 py-0.5 rounded font-mono bg-cyan-950/60 text-cyan-300 border border-cyan-500/30 uppercase">
+              {msg.data.status || 'Held'}
+            </span>
+          </div>
+          <p className="text-[10px] text-slate-400">
+            Automated refund protocol executes within 120 seconds of checkout and room power shutoff.
+          </p>
+        </div>
+      );
+    }
+
+    // 6. Support Ticket Card
+    if (msg.response_type === 'support' && msg.data?.ticket_id) {
+      return (
+        <div className="mt-2.5 bg-slate-900/90 border border-purple-500/40 rounded-xl p-2.5 space-y-1">
+          <div className="flex items-center justify-between text-xs">
+            <span className="font-bold text-purple-300">Ticket #{msg.data.ticket_id}</span>
+            <span className="text-[10px] px-1.5 py-0.5 rounded font-mono bg-purple-950/60 text-purple-300 border border-purple-500/30">
+              SLA 4h
+            </span>
+          </div>
+          <p className="text-[10px] text-slate-400">
+            SpaceLoop Trust & Safety is reviewing the audit trail.
+          </p>
+        </div>
+      );
+    }
+
+    return null;
   };
 
   const renderCleanMessage = useCallback((rawText: string) => {
@@ -534,7 +773,14 @@ export const LoopBot: React.FC = () => {
                   }`}
                   style={{ wordBreak: 'break-word', overflowWrap: 'anywhere' }}
                 >
-                  {msg.role === 'user' ? msg.content : renderCleanMessage(msg.content)}
+                  {msg.role === 'user' ? (
+                    msg.content
+                  ) : (
+                    <>
+                      {renderCleanMessage(msg.content)}
+                      {renderStructuredCards(msg)}
+                    </>
+                  )}
                 </div>
               </div>
             ))}

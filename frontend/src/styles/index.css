@@ -5,61 +5,169 @@
 
 :root {
   /* =========================================================================
-     SL-SYS-COLOR-2026-V1 DESIGN SYSTEM TOKENS
+     SpaceLoop Design Tokens (Source of Truth: Sunset Warm Architectural Ambiance)
      ========================================================================= */
 
-  /* Canvas & Surface Layers */
-  --canvas: #020617;              /* Deep Midnight Root Canvas */
-  --surface: #0f172a;             /* Elevated Surface Card/Modal */
-  --surface-nested: #1e293b;      /* Nested Controls & Form Inputs */
-  --border-subtle: rgba(255, 255, 255, 0.08); /* 8% White Border */
-  --border-card: rgba(255, 255, 255, 0.10);
-  --border-hover: rgba(99, 102, 241, 0.35);
+  /* SOURCE Canonical Semantic Colors - Light Theme */
+  --color-bg: #fcfbfa;
+  --color-surface: #ffffff;
+  --color-surface-elevated: #f7f5f2;
+  --color-border: #e7e3dc;
+  --color-border-subtle: #f2eee9;
 
-  /* Unified One-Directional Shadow Tokens (Downward & Slightly Right) */
-  --shadow-subtle: 1.5px 3px 8px -1px rgba(0, 0, 0, 0.38);
-  --shadow-card: 2.5px 5px 16px -2px rgba(0, 0, 0, 0.44), 1px 2px 5px -1px rgba(0, 0, 0, 0.28);
-  --shadow-card-hover: 4px 14px 30px -4px rgba(0, 0, 0, 0.58), 2px 5px 12px -2px rgba(0, 0, 0, 0.34), 2px 4px 18px -4px rgba(99, 102, 241, 0.15);
-  --shadow-card-hover-host: 4px 14px 30px -4px rgba(0, 0, 0, 0.58), 2px 5px 12px -2px rgba(0, 0, 0, 0.34), 2px 4px 18px -4px rgba(245, 158, 11, 0.15);
-  --shadow-container: 3px 6px 20px -2px rgba(0, 0, 0, 0.46), 1.5px 3px 7px -1px rgba(0, 0, 0, 0.28);
-  --shadow-panel: 5px 12px 32px -4px rgba(0, 0, 0, 0.54), 2px 5px 12px -2px rgba(0, 0, 0, 0.35);
-  --shadow-panel-hover: 6px 18px 40px -4px rgba(0, 0, 0, 0.62), 3px 6px 15px -2px rgba(0, 0, 0, 0.38);
-  --shadow-modal: 8px 24px 54px -6px rgba(0, 0, 0, 0.76), 3px 9px 20px -3px rgba(0, 0, 0, 0.48), 1px 3px 8px -1px rgba(0, 0, 0, 0.32);
-  --shadow-dropdown: 4px 12px 28px -3px rgba(0, 0, 0, 0.68), 2px 4px 10px -2px rgba(0, 0, 0, 0.40);
+  --color-text-primary: #1c1917;
+  --color-text-secondary: #57534e;
+  --color-text-muted: #a8a29e;
+
+  --color-primary: #c25e1a;
+  --color-primary-hover: #a84e12;
+  --color-primary-light: #fef4ec;
+  --color-primary-dark: #8c3f0c;
+
+  --color-accent: #d97706;
+  --color-accent-hover: #b45309;
+
+  /* SOURCE Shadows & Elevations */
+  --shadow-sm: 0 1px 2px 0 rgba(28, 25, 23, 0.05);
+  --shadow-md: 0 4px 16px -2px rgba(194, 94, 26, 0.08), 0 2px 6px -1px rgba(0, 0, 0, 0.04);
+  --shadow-lg: 0 12px 28px -4px rgba(194, 94, 26, 0.12), 0 4px 10px -2px rgba(0, 0, 0, 0.05);
+  --shadow-hover: 0 14px 32px -4px rgba(194, 94, 26, 0.16), 0 6px 14px -2px rgba(0, 0, 0, 0.06);
+
+  /* Animation Timings & Easings */
+  --ease-natural: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-smooth: cubic-bezier(0.4, 0, 0.2, 1);
+  --ease-bounce-soft: cubic-bezier(0.34, 1.56, 0.64, 1);
+
+  --duration-instant: 100ms;
+  --duration-fast: 180ms;
+  --duration-normal: 260ms;
+  --duration-slow: 420ms;
+  --duration-ambient: 8000ms;
+
+  /* Canvas & Surface Layers (Backward-compatible aliases mapped to SOURCE) */
+  --canvas: var(--color-bg);
+  --surface: var(--color-surface);
+  --surface-nested: var(--color-surface-elevated);
+  --border-subtle: var(--color-border-subtle);
+  --border-card: var(--color-border);
+  --border-hover: var(--color-primary);
+
+  /* Unified Directional Shadow Tokens (Backward-compatible aliases) */
+  --shadow-subtle: var(--shadow-sm);
+  --shadow-card: var(--shadow-md);
+  --shadow-card-hover: var(--shadow-hover);
+  --shadow-card-hover-host: var(--shadow-hover);
+  --shadow-container: var(--shadow-md);
+  --shadow-panel: var(--shadow-lg);
+  --shadow-panel-hover: var(--shadow-hover);
+  --shadow-modal: var(--shadow-lg);
+  --shadow-dropdown: var(--shadow-md);
 
   /* Glassmorphism */
-  --glass-bg: rgba(15, 23, 42, 0.75);
+  --glass-bg: rgba(255, 255, 255, 0.85);
   --glass-blur: 16px;
 
-  /* Typography / Text Contrast Hierarchy */
-  --text-h1: #ffffff;             /* Primary Headings */
-  --text-h2: #ffffff;
-  --text-h3: #f8fafc;             /* Subheadings / Section Titles */
-  --text-body: #cbd5e1;           /* Body Text - Slate 300 (Never dark gray) */
-  --text-meta: #94a3b8;           /* Metadata, Badges, Labels, Placeholders */
-  --text-muted: #64748b;          /* Subtle / Tertiary */
+  /* Typography / Text Contrast Hierarchy (Backward-compatible aliases) */
+  --text-h1: var(--color-text-primary);
+  --text-h2: var(--color-text-primary);
+  --text-h3: var(--color-text-primary);
+  --text-body: var(--color-text-secondary);
+  --text-meta: var(--color-text-muted);
+  --text-muted: var(--color-text-muted);
 
-  /* Role-Based Primary CTAs */
-  --seeker-primary: #4f46e5;      /* Indigo-600 */
-  --seeker-text: #ffffff;         /* Crisp White */
-  --seeker-glow: #6366f1;         /* Indigo-500 */
-  --seeker-pill: #818cf8;         /* Indigo-400 */
-  --seeker-gradient-from: #4f46e5;
-  --seeker-gradient-to: #8b5cf6;
+  /* Role-Based Primary CTAs (Warm architectural palette) */
+  --seeker-primary: var(--color-primary);
+  --seeker-text: #ffffff;
+  --seeker-glow: var(--color-accent);
+  --seeker-pill: var(--color-primary-light);
+  --seeker-gradient-from: var(--color-primary);
+  --seeker-gradient-to: var(--color-accent);
 
-  --host-primary: #f59e0b;        /* Amber-500 */
-  --host-text: #0f172a;           /* Slate-900 (High-contrast dark on solar gold) */
-  --host-gold: #fbbf24;           /* Solar Gold */
-  --host-gradient-from: #d97706;  /* Amber-600 */
-  --host-gradient-to: #ea580c;    /* Orange-600 */
+  --host-primary: var(--color-accent);
+  --host-text: #ffffff;
+  --host-gold: #fbbf24;
+  --host-gradient-from: var(--color-accent);
+  --host-gradient-to: var(--color-primary);
 
   /* Status Colors */
-  --status-success: #10b981;      /* Emerald-500 (Verified / Ready) */
+  --status-success: #10b981;
   --status-active-from: #059669;
   --status-active-to: #0d9488;
-  --status-warning: #f59e0b;      /* Amber-500 (Caution / Review) */
-  --status-danger: #f43f5e;       /* Rose-500 (Alert / Revoked) */
-  --status-ai: #7c3aed;           /* Violet-600 (AI Concierge / Matchmaker) */
+  --status-warning: #f59e0b;
+  --status-danger: #f43f5e;
+  --status-ai: var(--color-primary);
+}
+
+.dark,
+html.dark {
+  /* =========================================================================
+     SpaceLoop Design Tokens (Source of Truth: Twilight Midnight Architectural Ambiance)
+     ========================================================================= */
+
+  /* SOURCE Canonical Semantic Colors - Dark Theme */
+  --color-bg: #080c14;
+  --color-surface: #0e1522;
+  --color-surface-elevated: #151f32;
+  --color-border: #1e2b40;
+  --color-border-subtle: #141e2e;
+
+  --color-text-primary: #f8fafc;
+  --color-text-secondary: #94a3b8;
+  --color-text-muted: #64748b;
+
+  --color-primary: #f59e0b;
+  --color-primary-hover: #fbbf24;
+  --color-primary-light: rgba(245, 158, 11, 0.12);
+  --color-primary-dark: #d97706;
+
+  --color-accent: #f59e0b;
+  --color-accent-hover: #fbbf24;
+
+  /* SOURCE Shadows & Elevations - Dark Theme */
+  --shadow-sm: 0 1px 3px 0 rgba(0, 0, 0, 0.5);
+  --shadow-md: 0 4px 20px -2px rgba(0, 0, 0, 0.5), 0 0 16px 1px rgba(245, 158, 11, 0.04);
+  --shadow-lg: 0 12px 32px -4px rgba(0, 0, 0, 0.7), 0 0 24px 2px rgba(245, 158, 11, 0.08);
+  --shadow-hover: 0 16px 40px -4px rgba(0, 0, 0, 0.8), 0 0 30px 4px rgba(245, 158, 11, 0.12);
+
+  /* Canvas & Surface Layers (Dark Theme Aliases) */
+  --canvas: var(--color-bg);
+  --surface: var(--color-surface);
+  --surface-nested: var(--color-surface-elevated);
+  --border-subtle: var(--color-border-subtle);
+  --border-card: var(--color-border);
+  --border-hover: var(--color-primary);
+
+  --shadow-subtle: var(--shadow-sm);
+  --shadow-card: var(--shadow-md);
+  --shadow-card-hover: var(--shadow-hover);
+  --shadow-card-hover-host: var(--shadow-hover);
+  --shadow-container: var(--shadow-md);
+  --shadow-panel: var(--shadow-lg);
+  --shadow-panel-hover: var(--shadow-hover);
+  --shadow-modal: var(--shadow-lg);
+  --shadow-dropdown: var(--shadow-md);
+
+  --glass-bg: rgba(14, 21, 34, 0.82);
+
+  --text-h1: var(--color-text-primary);
+  --text-h2: var(--color-text-primary);
+  --text-h3: var(--color-text-primary);
+  --text-body: var(--color-text-secondary);
+  --text-meta: var(--color-text-muted);
+  --text-muted: var(--color-text-muted);
+
+  --seeker-primary: var(--color-primary);
+  --seeker-text: #0f172a;
+  --seeker-glow: var(--color-primary-hover);
+  --seeker-pill: var(--color-primary-light);
+  --seeker-gradient-from: var(--color-primary);
+  --seeker-gradient-to: var(--color-primary-hover);
+
+  --host-primary: var(--color-primary);
+  --host-text: #0f172a;
+  --host-gold: #fbbf24;
+  --host-gradient-from: #d97706;
+  --host-gradient-to: #ea580c;
 }
 
 html {
@@ -367,86 +475,92 @@ a.btn:not(:disabled):active,
 }
 
 /* =========================================================================
-   LIGHT THEME ("Ocean Breeze") DESIGN TOKENS & SCOPED STYLES
-   Mandatory Hex Codes:
-     PRIMARY BLUE:     #0B3D91
-     SECONDARY BLUE:   #3BA7F2
-     TERTIARY AQUA:    #7FE7D6
-     LIGHT BACKGROUND: #E8F6FF
+   LIGHT THEME (SOURCE of Truth: Sunset Warm Architectural Ambiance)
+   Semantic Hex Codes:
+     PAGE BACKGROUND:    #fcfbfa
+     PRIMARY SURFACE:    #ffffff
+     ELEVATED SURFACE:   #f7f5f2
+     PRIMARY TERRACOTTA: #c25e1a
+     ACCENT AMBER:       #d97706
+     STRUCTURAL BORDER:  #e7e3dc
+     SUBTLE BORDER:      #f2eee9
+     PRIMARY TEXT:       #1c1917
+     SECONDARY TEXT:     #57534e
+     MUTED TEXT:         #a8a29e
    Activated when <html class="light"> is applied
    ========================================================================= */
 
 html.light {
   /* Canvas & Surface Layers */
-  --canvas: #E8F6FF;
-  --surface: #FFFFFF;
-  --surface-nested: #F0F8FF;
-  --border-subtle: #D0E6F7;
-  --border-card: #C5E0F4;
-  --border-hover: #3BA7F2;
+  --canvas: var(--color-bg);
+  --surface: var(--color-surface);
+  --surface-nested: var(--color-surface-elevated);
+  --border-subtle: var(--color-border-subtle);
+  --border-card: var(--color-border);
+  --border-hover: var(--color-primary);
 
   /* Glassmorphism */
-  --glass-bg: rgba(255, 255, 255, 0.92);
+  --glass-bg: rgba(255, 255, 255, 0.85);
   --glass-blur: 16px;
 
   /* Typography / High-Contrast Hierarchy */
-  --text-h1: #0B2545;
-  --text-h2: #0B2545;
-  --text-h3: #0B3D91;
-  --text-body: #1E293B;
-  --text-meta: #475569;
-  --text-muted: #64748B;
+  --text-h1: var(--color-text-primary);
+  --text-h2: var(--color-text-primary);
+  --text-h3: var(--color-text-primary);
+  --text-body: var(--color-text-secondary);
+  --text-meta: var(--color-text-muted);
+  --text-muted: var(--color-text-muted);
 
   /* Role-Based Primary CTAs */
-  --seeker-primary: #0B3D91;
-  --seeker-text: #FFFFFF;
-  --seeker-glow: #3BA7F2;
-  --seeker-pill: #7FE7D6;
-  --seeker-gradient-from: #0B3D91;
-  --seeker-gradient-to: #3BA7F2;
+  --seeker-primary: var(--color-primary);
+  --seeker-text: #ffffff;
+  --seeker-glow: var(--color-accent);
+  --seeker-pill: var(--color-primary-light);
+  --seeker-gradient-from: var(--color-primary);
+  --seeker-gradient-to: var(--color-accent);
 
-  --host-primary: #D97706;
-  --host-text: #FFFFFF;
-  --host-gold: #F59E0B;
-  --host-gradient-from: #D97706;
-  --host-gradient-to: #EA580C;
+  --host-primary: var(--color-accent);
+  --host-text: #ffffff;
+  --host-gold: #fbbf24;
+  --host-gradient-from: var(--color-accent);
+  --host-gradient-to: var(--color-primary);
 
   /* Status Colors */
-  --status-success: #059669;
+  --status-success: #10b981;
   --status-active-from: #059669;
-  --status-active-to: #0D9488;
-  --status-warning: #D97706;
-  --status-danger: #E11D48;
-  --status-ai: #0B3D91;
+  --status-active-to: #0d9488;
+  --status-warning: #f59e0b;
+  --status-danger: #f43f5e;
+  --status-ai: var(--color-primary);
 
   /* Standard Design Tokens */
-  --background: #E8F6FF;
-  --foreground: #0B2545;
-  --card: #FFFFFF;
-  --card-foreground: #0B2545;
-  --primary: #0B3D91;
-  --primary-foreground: #FFFFFF;
-  --secondary: #3BA7F2;
-  --muted: #F0F8FF;
-  --muted-foreground: #475569;
-  --accent: #7FE7D6;
-  --border: #D0E6F7;
-  --input: #FFFFFF;
-  --ring: #3BA7F2;
+  --background: var(--color-bg);
+  --foreground: var(--color-text-primary);
+  --card: var(--color-surface);
+  --card-foreground: var(--color-text-primary);
+  --primary: var(--color-primary);
+  --primary-foreground: #ffffff;
+  --secondary: var(--color-accent);
+  --muted: var(--color-surface-elevated);
+  --muted-foreground: var(--color-text-muted);
+  --accent: var(--color-accent);
+  --border: var(--color-border);
+  --input: var(--color-surface);
+  --ring: var(--color-primary);
 }
 
 /* Base Canvas & Viewport */
 html.light,
 html.light body,
 html.light #root {
-  background-color: #E8F6FF !important;
-  color: #0B2545 !important;
+  background-color: var(--color-bg) !important;
+  color: var(--color-text-primary) !important;
 }
 
 /* Background Replacements */
 html.light .bg-slate-950,
 html.light .bg-canvas {
-  background-color: #E8F6FF !important;
+  background-color: var(--color-bg) !important;
 }
 
 html.light .bg-slate-950\/95,
@@ -454,12 +568,12 @@ html.light .bg-slate-950\/90,
 html.light .bg-slate-950\/85,
 html.light .bg-slate-950\/80,
 html.light .bg-slate-950\/70 {
-  background-color: rgba(255, 255, 255, 0.94) !important;
+  background-color: rgba(252, 251, 250, 0.94) !important;
 }
 
 html.light .bg-slate-900,
 html.light .bg-surface {
-  background-color: #FFFFFF !important;
+  background-color: var(--color-surface) !important;
 }
 
 html.light .bg-slate-900\/90,
@@ -469,13 +583,13 @@ html.light .bg-slate-900\/60,
 html.light .bg-slate-900\/50,
 html.light .bg-slate-900\/40,
 html.light .bg-slate-900\/30 {
-  background-color: #FFFFFF !important;
+  background-color: var(--color-surface) !important;
 }
 
 html.light .bg-slate-850,
 html.light .bg-slate-800,
 html.light .bg-surface-nested {
-  background-color: #F0F8FF !important;
+  background-color: var(--color-surface-elevated) !important;
 }
 
 html.light .bg-slate-800\/90,
@@ -483,7 +597,7 @@ html.light .bg-slate-800\/80,
 html.light .bg-slate-800\/60,
 html.light .bg-slate-800\/50,
 html.light .bg-slate-800\/40 {
-  background-color: #F0F8FF !important;
+  background-color: var(--color-surface-elevated) !important;
 }
 
 /* Interactive Hover States */
@@ -491,34 +605,34 @@ html.light .hover\:bg-slate-850:hover,
 html.light .hover\:bg-slate-800:hover,
 html.light .hover\:bg-slate-800\/60:hover,
 html.light .hover\:bg-slate-700:hover {
-  background-color: #E1F3FE !important;
+  background-color: var(--color-surface-elevated) !important;
 }
 
 /* Gradients in Light Mode */
 html.light .bg-gradient-to-b.from-slate-900.via-slate-950.to-slate-950,
 html.light .bg-gradient-to-b.from-slate-900 {
-  background: linear-gradient(180deg, #FFFFFF 0%, #F0F8FF 40%, #E8F6FF 100%) !important;
+  background: linear-gradient(180deg, #ffffff 0%, #f7f5f2 40%, #fcfbfa 100%) !important;
 }
 
 html.light .bg-gradient-to-b.from-slate-950.to-slate-900 {
-  background: linear-gradient(180deg, #E8F6FF 0%, #D8EBF8 100%) !important;
+  background: linear-gradient(180deg, #fcfbfa 0%, #f7f5f2 100%) !important;
 }
 
 html.light .bg-gradient-to-tr.from-indigo-950\/80.via-slate-900\/90.to-violet-950\/80,
 html.light .bg-gradient-to-tr.from-indigo-950 {
-  background: linear-gradient(135deg, #0B3D91 0%, #1754B5 50%, #0B3D91 100%) !important;
-  color: #FFFFFF !important;
+  background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-accent) 100%) !important;
+  color: #ffffff !important;
 }
 
 html.light .bg-gradient-to-tr.from-indigo-950\/80.via-slate-900\/90.to-violet-950\/80 *,
 html.light .bg-gradient-to-tr.from-indigo-950 * {
-  color: #FFFFFF !important;
+  color: #ffffff !important;
 }
 
 /* Ambient Glow Blobs in Light Mode */
 html.light [class*="blur-"][class*="bg-indigo-600"],
 html.light [class*="blur-"][class*="bg-violet-600"] {
-  background-color: rgba(59, 167, 242, 0.10) !important;
+  background-color: rgba(194, 94, 26, 0.08) !important;
 }
 
 /* Light Mode Borders */
@@ -531,86 +645,86 @@ html.light .border-slate-700\/80,
 html.light .border-slate-700\/70,
 html.light .border-slate-700\/60,
 html.light .border-slate-600 {
-  border-color: #D0E6F7 !important;
+  border-color: var(--color-border) !important;
 }
 
 html.light .hover\:border-indigo-500\/40:hover,
 html.light .hover\:border-indigo-500\/50:hover,
 html.light .hover\:border-indigo-500:hover {
-  border-color: #3BA7F2 !important;
+  border-color: var(--color-primary) !important;
 }
 
 html.light .border-indigo-500\/20,
 html.light .border-indigo-500\/25,
 html.light .border-indigo-500\/30 {
-  border-color: #C5E0F4 !important;
+  border-color: var(--color-border) !important;
 }
 
 /* Typography in Light Mode */
 html.light .text-white,
 html.light .text-slate-100 {
-  color: #0B2545;
+  color: var(--color-text-primary);
 }
 
 html.light .text-slate-200 {
-  color: #0B2545;
+  color: var(--color-text-primary);
 }
 
 html.light .text-slate-300 {
-  color: #1E293B;
+  color: var(--color-text-secondary);
 }
 
 html.light .text-slate-400 {
-  color: #475569;
+  color: var(--color-text-muted);
 }
 
 html.light .text-slate-500 {
-  color: #64748B;
+  color: var(--color-text-muted);
 }
 
 /* Brand Text Highlights */
 html.light .text-indigo-400,
 html.light .text-indigo-300 {
-  color: #0B3D91;
+  color: var(--color-primary);
 }
 
 html.light .hover\:text-indigo-300:hover,
 html.light .hover\:text-indigo-400:hover {
-  color: #3BA7F2;
+  color: var(--color-primary-hover);
 }
 
 html.light .text-amber-400,
 html.light .text-amber-300 {
-  color: #D97706;
+  color: var(--color-accent);
 }
 
 /* Hero Headline Gradient in Light Mode */
 html.light .text-transparent.bg-clip-text.bg-gradient-to-r.from-indigo-400 {
-  background: linear-gradient(90deg, #0B3D91 0%, #3BA7F2 100%) !important;
+  background: linear-gradient(90deg, var(--color-primary) 0%, var(--color-accent) 100%) !important;
   -webkit-background-clip: text !important;
   color: transparent !important;
 }
 
 /* Pill Badges & Accents in Light Mode */
 html.light .bg-indigo-500\/10 {
-  background-color: #E8F6FF !important;
-  color: #0B3D91 !important;
-  border-color: #C5E0F4 !important;
+  background-color: var(--color-primary-light) !important;
+  color: var(--color-primary) !important;
+  border-color: var(--color-border) !important;
 }
 
 html.light .bg-indigo-500\/20,
 html.light .bg-indigo-600\/20,
 html.light .bg-indigo-600\/10 {
-  background-color: #E1F3FE !important;
-  color: #0B3D91 !important;
-  border-color: #C5E0F4 !important;
+  background-color: var(--color-primary-light) !important;
+  color: var(--color-primary) !important;
+  border-color: var(--color-border) !important;
 }
 
 html.light .bg-emerald-500\/10,
 html.light .bg-emerald-500\/20 {
-  background-color: rgba(127, 231, 214, 0.25) !important;
+  background-color: rgba(16, 185, 129, 0.12) !important;
   color: #047857 !important;
-  border-color: rgba(127, 231, 214, 0.50) !important;
+  border-color: rgba(16, 185, 129, 0.25) !important;
 }
 
 html.light .bg-amber-500\/10,
@@ -649,22 +763,22 @@ html.light .bg-red-600 * {
 
 /* Step Number Badges: High Contrast in Both Light and Dark Themes */
 .step-number-badge {
-  background-color: rgba(99, 102, 241, 0.18);
-  color: #a5b4fc;
-  border: 1px solid rgba(99, 102, 241, 0.35);
+  background-color: var(--color-primary-light);
+  color: var(--color-primary);
+  border: 1px solid var(--color-border);
   font-weight: 900;
 }
 
 html.light .step-number-badge {
-  background-color: #E0E7FF !important; /* Soft indigo-100 */
-  color: #1E1B4B !important;            /* Deep indigo-950 - pitch dark, bold and prominent */
-  border-color: #A5B4FC !important;     /* Indigo-300 border */
+  background-color: var(--color-primary-light) !important;
+  color: var(--color-primary-dark) !important;
+  border-color: var(--color-border) !important;
 }
 
 .group:hover .step-number-badge,
 html.light .group:hover .step-number-badge {
-  background-color: #4F46E5 !important; /* Solid Indigo-600 on hover */
-  color: #FFFFFF !important;            /* Pure white on hover */
+  background-color: var(--color-primary) !important;
+  color: #FFFFFF !important;
   border-color: transparent !important;
 }
 
@@ -677,9 +791,9 @@ html.light [class*="aspect-"] .bg-slate-950\/80,
 html.light [class*="aspect-"] .bg-slate-950\/85,
 html.light [class*="aspect-"] .bg-slate-900\/90,
 html.light [class*="aspect-"] .bg-black\/60 {
-  background-color: rgba(11, 37, 69, 0.85) !important;
+  background-color: rgba(28, 25, 23, 0.85) !important;
   color: #FFFFFF !important;
-  border-color: rgba(208, 230, 247, 0.40) !important;
+  border-color: rgba(231, 227, 220, 0.40) !important;
 }
 
 html.light .space-card .bg-slate-950\/80 *,
@@ -694,58 +808,58 @@ html.light [class*="aspect-"] .bg-black\/60 * {
 }
 
 html.light [class*="aspect-"] .bg-indigo-600\/90 {
-  background-color: #0B3D91 !important;
+  background-color: var(--color-primary) !important;
   color: #FFFFFF !important;
 }
 
-/* Ocean Breeze Primary Action Buttons */
+/* Sunset Architectural Primary Action Buttons */
 html.light .btn-seeker-primary,
 html.light .bg-gradient-to-r.from-indigo-600.via-violet-600.to-indigo-700 {
-  background: #0B3D91 !important;
+  background: var(--color-primary) !important;
   color: #FFFFFF !important;
-  box-shadow: 0 4px 14px 0 rgba(11, 61, 145, 0.25) !important;
+  box-shadow: var(--shadow-md) !important;
 }
 
 html.light .btn-seeker-primary:hover,
 html.light .bg-gradient-to-r.from-indigo-600.via-violet-600.to-indigo-700:hover {
-  background: #072C6B !important;
-  box-shadow: 0 6px 20px 0 rgba(11, 61, 145, 0.35) !important;
+  background: var(--color-primary-hover) !important;
+  box-shadow: var(--shadow-hover) !important;
 }
 
 /* Host Primary Action Buttons in Light Mode */
 html.light .btn-host-primary,
 html.light .bg-gradient-to-r.from-amber-600.to-orange-600 {
-  background: linear-gradient(135deg, #D97706 0%, #EA580C 100%) !important;
+  background: linear-gradient(135deg, var(--color-accent) 0%, var(--color-primary) 100%) !important;
   color: #FFFFFF !important;
-  box-shadow: 0 4px 14px 0 rgba(217, 119, 6, 0.25) !important;
+  box-shadow: var(--shadow-md) !important;
 }
 
 html.light .btn-host-primary:hover,
 html.light .bg-gradient-to-r.from-amber-600.to-orange-600:hover {
-  background: linear-gradient(135deg, #B45309 0%, #C2410C 100%) !important;
-  box-shadow: 0 6px 20px 0 rgba(217, 119, 6, 0.35) !important;
+  background: linear-gradient(135deg, var(--color-accent-hover) 0%, var(--color-primary-hover) 100%) !important;
+  box-shadow: var(--shadow-hover) !important;
 }
 
 /* Form Inputs in Light Mode */
 html.light input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
 html.light textarea,
 html.light select {
-  background-color: #FFFFFF !important;
-  color: #0B2545 !important;
-  border: 1px solid #D0E6F7 !important;
+  background-color: var(--color-surface) !important;
+  color: var(--color-text-primary) !important;
+  border: 1px solid var(--color-border) !important;
 }
 
 html.light input::placeholder,
 html.light textarea::placeholder {
-  color: #64748B !important;
+  color: var(--color-text-muted) !important;
 }
 
 html.light input:focus,
 html.light textarea:focus,
 html.light select:focus {
-  border-color: #3BA7F2 !important;
+  border-color: var(--color-primary) !important;
   outline: none !important;
-  box-shadow: 0 0 0 3px rgba(59, 167, 242, 0.20) !important;
+  box-shadow: 0 0 0 3px rgba(194, 94, 26, 0.20) !important;
 }
 
 /* Preserve transparent inputs nested in styled search pill containers */
@@ -758,60 +872,48 @@ html.light textarea.bg-transparent {
 
 /* Ensure dropdown options have full contrast in both themes */
 html.light select option {
-  background-color: #FFFFFF !important;
-  color: #0B2545 !important;
+  background-color: var(--color-surface) !important;
+  color: var(--color-text-primary) !important;
 }
 
 html.dark select option {
-  background-color: #0F172A !important;
-  color: #F8FAFC !important;
+  background-color: var(--color-surface) !important;
+  color: var(--color-text-primary) !important;
 }
 
 /* Discovery Banner & Quick Hub Chips */
 html.light .from-indigo-950\/60.via-slate-900.to-indigo-950\/60 {
-  background: linear-gradient(90deg, #F0F8FF 0%, #FFFFFF 50%, #F0F8FF 100%) !important;
-  border-color: #D0E6F7 !important;
+  background: linear-gradient(90deg, #f7f5f2 0%, #ffffff 50%, #f7f5f2 100%) !important;
+  border-color: var(--color-border) !important;
 }
 
 html.light .bg-slate-950\/70 {
-  background-color: #FFFFFF !important;
-  color: #0B2545 !important;
-  border-color: #D0E6F7 !important;
+  background-color: var(--color-surface) !important;
+  color: var(--color-text-primary) !important;
+  border-color: var(--color-border) !important;
 }
 
 html.light .bg-slate-950\/70:hover {
-  background-color: #E8F6FF !important;
-  color: #0B3D91 !important;
+  background-color: var(--color-surface-elevated) !important;
+  color: var(--color-primary) !important;
 }
 
 /* Glass Panels in Light Mode */
 html.light .glass-panel {
-  background: rgba(255, 255, 255, 0.92) !important;
+  background: rgba(255, 255, 255, 0.85) !important;
   backdrop-filter: blur(16px) !important;
   -webkit-backdrop-filter: blur(16px) !important;
-  border: 1px solid #D0E6F7 !important;
-  box-shadow: 4px 10px 24px -4px rgba(11, 61, 145, 0.08) !important;
+  border: 1px solid var(--color-border) !important;
+  box-shadow: var(--shadow-md) !important;
 }
 
-/* Ocean Breeze One-Directional Floating Shadows & Cards */
-html.light {
-  --shadow-subtle: 1.5px 3px 8px -1px rgba(11, 61, 145, 0.06);
-  --shadow-card: 2.5px 5px 16px -2px rgba(11, 61, 145, 0.08), 1px 2px 5px -1px rgba(11, 61, 145, 0.04);
-  --shadow-card-hover: 4px 14px 28px -4px rgba(11, 61, 145, 0.14), 2px 5px 10px -2px rgba(11, 61, 145, 0.06);
-  --shadow-card-hover-host: 4px 14px 28px -4px rgba(217, 119, 6, 0.14), 2px 5px 10px -2px rgba(217, 119, 6, 0.06);
-  --shadow-container: 3px 6px 20px -2px rgba(11, 61, 145, 0.09), 1.5px 3px 7px -1px rgba(11, 61, 145, 0.04);
-  --shadow-panel: 5px 12px 30px -4px rgba(11, 61, 145, 0.12), 2px 5px 10px -2px rgba(11, 61, 145, 0.05);
-  --shadow-panel-hover: 6px 18px 38px -4px rgba(11, 61, 145, 0.16), 3px 6px 14px -2px rgba(11, 61, 145, 0.07);
-  --shadow-modal: 8px 24px 50px -6px rgba(11, 61, 145, 0.18), 3px 9px 18px -3px rgba(11, 61, 145, 0.08);
-  --shadow-dropdown: 4px 12px 26px -3px rgba(11, 61, 145, 0.14), 2px 4px 9px -2px rgba(11, 61, 145, 0.06);
-}
-
+/* Sunset Architectural Floating Shadows & Cards */
 html.light .floating-container,
 html.light .floating-card,
 html.light .space-card,
 html.light .floating-interactive {
-  background-color: #FFFFFF;
-  border-color: #D0E6F7;
+  background-color: var(--color-surface);
+  border-color: var(--color-border);
   box-shadow: var(--shadow-card);
 }
 
@@ -822,13 +924,13 @@ html.light .floating-container {
 html.light .floating-card:hover,
 html.light .space-card:hover,
 html.light .floating-interactive:hover {
-  border-color: #3BA7F2;
+  border-color: var(--color-primary);
   box-shadow: var(--shadow-card-hover);
 }
 
 html.light .floating-panel {
-  background-color: #FFFFFF;
-  border-color: #D0E6F7;
+  background-color: var(--color-surface);
+  border-color: var(--color-border);
   box-shadow: var(--shadow-panel);
 }
 
@@ -838,53 +940,53 @@ html.light .floating-panel:hover {
 
 /* AI Matchmaker Box in SpaceCard */
 html.light .bg-indigo-950\/40 {
-  background-color: #F0F8FF !important;
-  border-color: #D0E6F7 !important;
+  background-color: var(--color-surface-elevated) !important;
+  border-color: var(--color-border) !important;
 }
 
 html.light .bg-indigo-950\/40 p {
-  color: #1E293B !important;
+  color: var(--color-text-secondary) !important;
 }
 
 /* Header Specific in Light Mode */
 html.light header {
-  background-color: rgba(255, 255, 255, 0.95) !important;
-  border-bottom: 1px solid #D0E6F7 !important;
-  box-shadow: 0 1px 4px 0 rgba(11, 61, 145, 0.05) !important;
+  background-color: rgba(252, 251, 250, 0.95) !important;
+  border-bottom: 1px solid var(--color-border) !important;
+  box-shadow: var(--shadow-sm) !important;
 }
 
 html.light header .text-white {
-  color: #0B2545 !important;
+  color: var(--color-text-primary) !important;
 }
 
 html.light header nav button.text-slate-300 {
-  color: #475569 !important;
+  color: var(--color-text-secondary) !important;
 }
 
 html.light header nav button.text-slate-300:hover {
-  color: #0B3D91 !important;
-  background-color: #F0F8FF !important;
+  color: var(--color-primary) !important;
+  background-color: var(--color-surface-elevated) !important;
 }
 
 /* Footer Specific in Light Mode */
 html.light footer {
-  background-color: #FFFFFF !important;
-  border-top: 1px solid #D0E6F7 !important;
+  background-color: var(--color-surface) !important;
+  border-top: 1px solid var(--color-border) !important;
 }
 
 html.light footer .text-white {
-  color: #0B2545 !important;
+  color: var(--color-text-primary) !important;
 }
 
 html.light footer .text-slate-400 {
-  color: #475569 !important;
+  color: var(--color-text-muted) !important;
 }
 
 /* Modal Dialog Backdrops & Surfaces in Light Mode */
 html.light .fixed.inset-0.bg-black\/80,
 html.light .fixed.inset-0.bg-black\/70,
 html.light .fixed.inset-0.bg-black\/60 {
-  background-color: rgba(11, 37, 69, 0.45) !important;
+  background-color: rgba(28, 25, 23, 0.45) !important;
   backdrop-filter: blur(8px) !important;
 }
 
