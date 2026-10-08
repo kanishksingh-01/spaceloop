@@ -557,37 +557,65 @@ export const BookingDetailView: React.FC = () => {
             <div className="space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <span className="text-xs font-semibold text-slate-300">Check-in Photo (Arrival Baseline)</span>
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-semibold text-slate-300">1. Check-in Photo (Arrival Baseline)</span>
+                    {booking.entry_scan_photo && (
+                      <span className="text-[10px] font-bold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">
+                        Seeker Uploaded ✓
+                      </span>
+                    )}
+                  </div>
                   <div className="aspect-video rounded-xl overflow-hidden border border-slate-800 bg-slate-950">
                     <img
-                      src="https://images.unsplash.com/photo-1527192491265-7e15c55b1ed2?auto=format&fit=crop&w=600&q=80"
+                      src={booking.entry_scan_photo || 'https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&w=600&q=80'}
                       alt="Check-in condition"
                       className="w-full h-full object-cover"
                     />
                   </div>
-                  <span className="text-[11px] text-slate-500">Captured: Baseline verified at entry</span>
+                  <span className="text-[11px] text-slate-500">
+                    Captured: {booking.arrival_time ? `Recorded at ${booking.arrival_time}` : 'Baseline verified at entry'}
+                  </span>
                 </div>
 
                 <div className="space-y-2">
-                  <span className="text-xs font-semibold text-slate-300">Check-out Photo (Departure Inspection)</span>
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-semibold text-slate-300">2. Check-out Photo (Departure Inspection)</span>
+                    {booking.exit_scan_photo && (
+                      <span className="text-[10px] font-bold text-indigo-400 bg-indigo-500/10 px-2 py-0.5 rounded border border-indigo-500/20">
+                        Seeker Uploaded ✓
+                      </span>
+                    )}
+                  </div>
                   <div className="aspect-video rounded-xl overflow-hidden border border-slate-800 bg-slate-950">
                     <img
-                      src="https://images.unsplash.com/photo-1527192491265-7e15c55b1ed2?auto=format&fit=crop&w=600&q=80"
+                      src={booking.exit_scan_photo || booking.entry_scan_photo || 'https://images.unsplash.com/photo-1513694203232-719a280e022f?auto=format&fit=crop&w=600&q=80'}
                       alt="Check-out condition"
                       className="w-full h-full object-cover"
                     />
                   </div>
-                  <span className="text-[11px] text-slate-500">Captured: Departure photo</span>
+                  <span className="text-[11px] text-slate-500">
+                    Captured: {booking.departure_time ? `Recorded at ${booking.departure_time}` : (booking.status === 'completed' ? 'Departure inspection completed' : 'Awaiting guest check-out')}
+                  </span>
                 </div>
               </div>
 
-              <div className="p-4 rounded-xl bg-slate-950/70 border border-slate-800 flex items-center justify-between text-xs">
+              <div className="p-4 rounded-xl bg-slate-950/70 border border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
                 <div className="space-y-1">
-                  <div className="font-bold text-white">Computer Vision Match Confidence: <span className="text-emerald-400 font-mono">98.6%</span></div>
-                  <div className="text-[11px] text-slate-400">Appliance Electrical Off Status: Verified (0 active loads detected)</div>
+                  <div className="font-bold text-white">
+                    Computer Vision Match Confidence: <span className="text-emerald-400 font-mono">{booking.condition_match_score || 96.0}%</span>
+                  </div>
+                  <div className="text-[11px] text-slate-400">
+                    Appliance Electrical Off Status: {booking.fans_lights_cleared !== false ? 'Verified (0 active loads detected)' : 'Discrepancy: Active power load detected'}
+                  </div>
                 </div>
-                <span className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
-                  PASSED NO DAMAGE
+                <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold self-start sm:self-auto border ${
+                  (booking.condition_match_score || 100) >= 80 && booking.fans_lights_cleared !== false
+                    ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
+                    : 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
+                }`}>
+                  {(booking.condition_match_score || 100) >= 80 && booking.fans_lights_cleared !== false
+                    ? 'PASSED NO DAMAGE'
+                    : 'FLAGGED FOR REVIEW'}
                 </span>
               </div>
             </div>

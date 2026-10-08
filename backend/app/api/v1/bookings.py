@@ -26,7 +26,7 @@ api_v1_bookings = Blueprint("api_v1_bookings", __name__)
 def _save_inspection_photo(photo_data: str, prefix: str, booking_id: int) -> str:
     """
     Saves an inspection photo (base64 data URI or existing URL/path).
-    Returns a URL string <= 500 characters to store in booking.entry_scan_photo or exit_scan_photo.
+    Returns a URL path if saved to static, or the photo URI directly.
     """
     if not photo_data:
         return ""
@@ -46,7 +46,7 @@ def _save_inspection_photo(photo_data: str, prefix: str, booking_id: int) -> str
             file_bytes = base64.b64decode(encoded)
             # Max 10MB limit
             if len(file_bytes) > 10 * 1024 * 1024:
-                return ""
+                return photo_data
 
             base_dir = current_app.static_folder or os.path.join(current_app.root_path, "static")
             upload_dir = os.path.join(base_dir, "uploads", "inspections")
@@ -60,14 +60,11 @@ def _save_inspection_photo(photo_data: str, prefix: str, booking_id: int) -> str
 
             return f"/static/uploads/inspections/{filename}"
         except Exception as e:
-            current_app.logger.warning(f"Failed to decode inspection photo base64: {e}")
-            return ""
+            # On read-only serverless filesystems (e.g. Vercel), return data URI directly
+            current_app.logger.info(f"Using inline data URI for inspection photo: {e}")
+            return photo_data
 
-    # If it is a web URL or relative path:
-    if photo_data.startswith("http://") or photo_data.startswith("https://") or photo_data.startswith("/static/"):
-        return sanitize_string(photo_data, max_length=500)
-
-    return sanitize_string(photo_data, max_length=500)
+    return photo_data
 
 
 def check_booking_overlap(space_id: int, start_time: datetime, end_time: datetime, exclude_booking_id: int = None):

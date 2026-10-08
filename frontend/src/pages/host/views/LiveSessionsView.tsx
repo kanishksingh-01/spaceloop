@@ -307,10 +307,17 @@ export const LiveSessionsView: React.FC = () => {
                   <div className="space-y-4">
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div className="space-y-1.5">
-                        <span className="text-xs font-semibold text-slate-300">Baseline Entry Condition</span>
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs font-semibold text-slate-300">Baseline Entry Condition</span>
+                          {selectedBooking.entry_scan_photo && (
+                            <span className="text-[10px] font-bold text-emerald-400 bg-emerald-500/10 px-1.5 py-0.5 rounded border border-emerald-500/20">
+                              Seeker Photo ✓
+                            </span>
+                          )}
+                        </div>
                         <div className="aspect-video rounded-xl overflow-hidden border border-slate-800 bg-slate-950">
                           <img
-                            src="https://images.unsplash.com/photo-1527192491265-7e15c55b1ed2?auto=format&fit=crop&w=600&q=80"
+                            src={selectedBooking.entry_scan_photo || 'https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&w=600&q=80'}
                             alt="Entry baseline"
                             className="w-full h-full object-cover"
                           />
@@ -318,16 +325,23 @@ export const LiveSessionsView: React.FC = () => {
                       </div>
 
                       <div className="space-y-1.5">
-                        <span className="text-xs font-semibold text-slate-300">Departure Inspection Photo</span>
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs font-semibold text-slate-300">Departure Inspection Photo</span>
+                          {selectedBooking.exit_scan_photo && (
+                            <span className="text-[10px] font-bold text-indigo-400 bg-indigo-500/10 px-1.5 py-0.5 rounded border border-indigo-500/20">
+                              Seeker Photo ✓
+                            </span>
+                          )}
+                        </div>
                         <div className="aspect-video rounded-xl overflow-hidden border border-slate-800 bg-slate-950 relative group">
                           <img
-                            src={exitPhotoUrl}
+                            src={selectedBooking.exit_scan_photo || selectedBooking.entry_scan_photo || exitPhotoUrl}
                             alt="Exit condition"
                             className="w-full h-full object-cover"
                           />
                           <div className="absolute inset-0 bg-slate-950/40 opacity-0 group-hover:opacity-100 transition flex items-center justify-center">
                             <span className="text-[10px] text-white bg-slate-900 px-2 py-1 rounded border border-slate-700">
-                              Auto-Captured via Mobile
+                              {selectedBooking.exit_scan_photo ? 'Captured by Guest at Departure' : 'Auto-Captured Baseline'}
                             </span>
                           </div>
                         </div>

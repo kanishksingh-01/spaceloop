@@ -124,28 +124,42 @@ export const ConditionEscrowView: React.FC = () => {
                 }
               >
                 <div className="space-y-4">
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <span className="text-[10px] text-slate-400 block mb-1">Check-in Photo</span>
-                      <div className="aspect-video rounded-xl overflow-hidden border border-slate-800 bg-slate-950">
-                        <img
-                          src="https://images.unsplash.com/photo-1527192491265-7e15c55b1ed2?auto=format&fit=crop&w=400&q=80"
-                          alt="Entry"
-                          className="w-full h-full object-cover"
-                        />
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <div className="flex items-center justify-between mb-1">
+                          <span className="text-[10px] text-slate-400 block">Check-in Photo</span>
+                          {b.entry_scan_photo && (
+                            <span className="text-[9px] font-bold text-emerald-400 bg-emerald-500/10 px-1 rounded border border-emerald-500/20">
+                              Seeker ✓
+                            </span>
+                          )}
+                        </div>
+                        <div className="aspect-video rounded-xl overflow-hidden border border-slate-800 bg-slate-950">
+                          <img
+                            src={b.entry_scan_photo || 'https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&w=400&q=80'}
+                            alt="Entry condition"
+                            className="w-full h-full object-cover"
+                          />
+                        </div>
+                      </div>
+                      <div>
+                        <div className="flex items-center justify-between mb-1">
+                          <span className="text-[10px] text-slate-400 block">Check-out Photo</span>
+                          {b.exit_scan_photo && (
+                            <span className="text-[9px] font-bold text-indigo-400 bg-indigo-500/10 px-1 rounded border border-indigo-500/20">
+                              Seeker ✓
+                            </span>
+                          )}
+                        </div>
+                        <div className="aspect-video rounded-xl overflow-hidden border border-slate-800 bg-slate-950">
+                          <img
+                            src={b.exit_scan_photo || b.entry_scan_photo || 'https://images.unsplash.com/photo-1513694203232-719a280e022f?auto=format&fit=crop&w=400&q=80'}
+                            alt="Exit condition"
+                            className="w-full h-full object-cover"
+                          />
+                        </div>
                       </div>
                     </div>
-                    <div>
-                      <span className="text-[10px] text-slate-400 block mb-1">Check-out Photo</span>
-                      <div className="aspect-video rounded-xl overflow-hidden border border-slate-800 bg-slate-950">
-                        <img
-                          src="https://images.unsplash.com/photo-1527192491265-7e15c55b1ed2?auto=format&fit=crop&w=400&q=80"
-                          alt="Exit"
-                          className="w-full h-full object-cover"
-                        />
-                      </div>
-                    </div>
-                  </div>
 
                   <div className="p-3 rounded-xl bg-slate-950/70 border border-slate-800/80 text-xs space-y-1">
                     <div className="flex items-center justify-between text-slate-300">
