@@ -4,6 +4,8 @@ Werkzeug==3.0.3
 requests==2.32.3
 gunicorn==22.0.0
 psycopg2-binary==2.9.9
+psycopg[binary]>=3.1.18
+SQLAlchemy>=2.0.30,<2.1.0
 Flask-Login>=0.6.3
 Flask-WTF>=1.2.1
 Flask-Limiter>=3.5.0

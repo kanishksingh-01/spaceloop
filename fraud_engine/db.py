@@ -9,10 +9,22 @@ from config import Config
 from models import db, User, Space, Booking, DeviceSession, FraudEventRecord, FraudAlertRecord
 
 # Configure SQLAlchemy engine using the project's canonical DB URI
-engine = create_engine(
-    Config.SQLALCHEMY_DATABASE_URI,
-    connect_args={"check_same_thread": False} if "sqlite" in Config.SQLALCHEMY_DATABASE_URI else {}
-)
+try:
+    engine = create_engine(
+        Config.SQLALCHEMY_DATABASE_URI,
+        connect_args={"check_same_thread": False} if "sqlite" in Config.SQLALCHEMY_DATABASE_URI else {}
+    )
+except Exception:
+    # If the configured URI failed (e.g. driver mismatch), try fallback drivers or local SQLite
+    _fallback_uri = Config.SQLALCHEMY_DATABASE_URI
+    if "postgresql" in _fallback_uri and "+psycopg2" not in _fallback_uri:
+        _fallback_uri = _fallback_uri.replace("postgresql://", "postgresql+psycopg2://", 1)
+    else:
+        _fallback_uri = "sqlite:///app.db"
+    engine = create_engine(
+        _fallback_uri,
+        connect_args={"check_same_thread": False} if "sqlite" in _fallback_uri else {}
+    )
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 

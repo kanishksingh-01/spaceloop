@@ -48,8 +48,17 @@ class Config:
     elif _raw_db_url.startswith("sqlite:///") and not _raw_db_url.startswith("sqlite:////"):
         rel_p = _raw_db_url[len("sqlite:///"):]
         _raw_db_url = "sqlite:///" + os.path.abspath(os.path.join(basedir, rel_p))
-    elif _raw_db_url.startswith("postgres://"):
-        _raw_db_url = _raw_db_url.replace("postgres://", "postgresql://", 1)
+    elif _raw_db_url.startswith("postgres://") or _raw_db_url.startswith("postgresql://"):
+        if _raw_db_url.startswith("postgres://"):
+            _raw_db_url = _raw_db_url.replace("postgres://", "postgresql://", 1)
+        # SQLAlchemy 2.1+ defaults 'postgresql://' to psycopg (v3).
+        # When only psycopg2 is installed (psycopg2-binary), normalize to 'postgresql+psycopg2://'
+        # so SQLAlchemy selects the installed driver without ModuleNotFoundError.
+        if _raw_db_url.startswith("postgresql://") and not _raw_db_url.startswith("postgresql+"):
+            try:
+                import psycopg  # noqa: F401
+            except ImportError:
+                _raw_db_url = _raw_db_url.replace("postgresql://", "postgresql+psycopg2://", 1)
     SQLALCHEMY_DATABASE_URI = _raw_db_url
     SQLALCHEMY_TRACK_MODIFICATIONS = False
 
