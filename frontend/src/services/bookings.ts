@@ -60,7 +60,7 @@ export async function getBookingStatus(
   return request(`/api/booking/${bookingId}/status`);
 }
 
-export async function cancelBooking(bookingId: number): Promise<{
+export async function cancelBooking(bookingId: number, reason?: string): Promise<{
   success: boolean;
   message: string;
   error?: string;
@@ -71,6 +71,7 @@ export async function cancelBooking(bookingId: number): Promise<{
 }> {
   return request(`/api/booking/${bookingId}/cancel`, {
     method: 'POST',
+    body: JSON.stringify({ reason: reason || 'Host requested cancellation' }),
   });
 }
 

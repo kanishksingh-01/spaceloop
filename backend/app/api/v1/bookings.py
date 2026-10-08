@@ -931,11 +931,23 @@ def api_booking_checkout(booking_id):
 @api_v1_bookings.route("/api/bookings/<int:booking_id>/cancel", methods=["POST"])
 @login_required
 def api_cancel_booking(booking_id):
-    booking = Booking.query.get_or_404(booking_id)
+    booking = Booking.query.get(booking_id)
+    if not booking:
+        return jsonify({
+            "success": False,
+            "error": f"Booking #{booking_id} not found."
+        }), 404
 
     # Permission check: allow renter, space host/owner, or admin
     is_renter = (current_user.id == booking.renter_id)
-    is_owner = (booking.space and current_user.id == booking.space.owner_id)
+    is_owner = False
+    if booking.space:
+        is_owner = (current_user.id == booking.space.owner_id)
+    elif booking.space_id:
+        from models import Space
+        space = Space.query.get(booking.space_id)
+        if space:
+            is_owner = (current_user.id == space.owner_id)
     is_admin = getattr(current_user, "is_admin", False)
 
     if not (is_renter or is_owner or is_admin):
@@ -946,10 +958,13 @@ def api_cancel_booking(booking_id):
 
     if booking.status == "cancelled":
         return jsonify({"success": False, "error": "This booking is already cancelled."}), 400
-    if booking.status == "completed" or booking.session_state == "checked_out":
-        return jsonify({"success": False, "error": "Cannot cancel an already completed reservation."}), 400
+    if booking.status in ("completed", "rejected") or booking.session_state == "checked_out":
+        return jsonify({"success": False, "error": "Cannot cancel an already completed or declined reservation."}), 400
     if booking.session_state == "checked_in":
         return jsonify({"success": False, "error": "Active session in progress cannot be cancelled directly. Please complete checkout."}), 400
+
+    data = request.get_json(silent=True) or {}
+    cancellation_reason = sanitize_string(data.get("reason", "Host requested cancellation"), max_length=255)
 
     # Calculate exact refund: Full amount refunded except platform fee
     # Total booking price = subtotal + platform_fee + escrow_deposit
@@ -981,24 +996,46 @@ def api_cancel_booking(booking_id):
             transaction_type="refund",
             status="completed",
             reference_id=f"ref_{uuid.uuid4().hex[:12]}",
-            details=f"Cancellation Refund: ₹{refund_amount:.2f} refunded to seeker (Full amount of ₹{total_price:.2f} minus ₹{platform_fee:.2f} platform fee). Escrow deposit released."
+            details=f"Cancellation Refund: ₹{refund_amount:.2f} refunded to seeker (Full amount of ₹{total_price:.2f} minus ₹{platform_fee:.2f} platform fee). Escrow deposit released. Reason: {cancellation_reason}"
         )
         db.session.add(refund_tx)
     except Exception as tx_err:
         current_app.logger.warning(f"[REFUND_RECORD_ERROR] {tx_err}")
 
-    db.session.commit()
+    # Audit log entry for cancellation
+    try:
+        actor_role = "Host" if is_owner else ("Admin" if is_admin else "Seeker")
+        audit = AuditLog(
+            user_id=current_user.id,
+            action="booking_cancelled",
+            ip_address=request.remote_addr or "",
+            user_agent=str(request.user_agent)[:250] if request.user_agent else "",
+            details=f"Booking #{booking.id} cancelled by {actor_role} {getattr(current_user, 'name', 'User')} (ID {current_user.id}). Refund ₹{refund_amount:.2f}. Reason: {cancellation_reason}"
+        )
+        db.session.add(audit)
+    except Exception as audit_err:
+        current_app.logger.warning(f"[CANCEL_AUDIT_LOG_ERROR] {audit_err}")
+
+    try:
+        db.session.commit()
+    except Exception as commit_err:
+        db.session.rollback()
+        current_app.logger.error(f"[BOOKING_CANCEL_COMMIT_ERROR] {commit_err}")
+        return jsonify({
+            "success": False,
+            "error": "Database error while committing booking cancellation. Transaction rolled back."
+        }), 500
 
     try:
         from backend.modules.email import EmailService
         EmailService.notify_booking_cancelled(booking, cancelled_by_user=current_user)
-        EmailService.notify_escrow_refunded(booking, reason="Booking Cancellation")
+        EmailService.notify_escrow_refunded(booking, reason=f"Booking Cancellation ({cancellation_reason})")
     except Exception as email_err:
         current_app.logger.warning(f"[BOOKING_CANCEL_EMAIL_ERROR] {email_err}")
 
     return jsonify({
         "success": True,
-        "message": f"Booking #{booking_id} cancelled successfully. ₹{refund_amount:.2f} refunded (Full amount minus ₹{platform_fee:.2f} platform fee).",
+        "message": f"Booking #{booking_id} cancelled successfully. ₹{refund_amount:.2f} refunded to seeker (Full amount minus ₹{platform_fee:.2f} platform fee).",
         "refund_amount": refund_amount,
         "platform_fee": platform_fee,
         "total_price": total_price,

@@ -118,57 +118,79 @@ export const ConditionEscrowView: React.FC = () => {
                 subtitle={`Booking #${b.id} • Renter: ${b.renter?.name || b.user_name || 'Guest'}`}
                 icon="fa-solid fa-camera-rotate"
                 action={
-                  <span className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
-                    CV MATCH: 98.4%
+                  <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold border ${
+                    (b.condition_match_score || 100) >= 80 && b.fans_lights_cleared !== false
+                      ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30'
+                      : 'bg-amber-500/20 text-amber-300 border-amber-500/30'
+                  }`}>
+                    CV MATCH: {b.condition_match_score ? `${b.condition_match_score}%` : '100%'}
                   </span>
                 }
               >
                 <div className="space-y-4">
-                    <div className="grid grid-cols-2 gap-3">
-                      <div>
-                        <div className="flex items-center justify-between mb-1">
-                          <span className="text-[10px] text-slate-400 block">Check-in Photo</span>
-                          {b.entry_scan_photo && (
-                            <span className="text-[9px] font-bold text-emerald-400 bg-emerald-500/10 px-1 rounded border border-emerald-500/20">
-                              Seeker ✓
-                            </span>
-                          )}
-                        </div>
-                        <div className="aspect-video rounded-xl overflow-hidden border border-slate-800 bg-slate-950">
-                          <img
-                            src={b.entry_scan_photo || 'https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&w=400&q=80'}
-                            alt="Entry condition"
-                            className="w-full h-full object-cover"
-                          />
-                        </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="text-[10px] text-slate-400 block">Check-in Photo</span>
+                        {b.entry_scan_photo && (
+                          <span className="text-[9px] font-bold text-emerald-400 bg-emerald-500/10 px-1 rounded border border-emerald-500/20">
+                            Seeker ✓
+                          </span>
+                        )}
                       </div>
-                      <div>
-                        <div className="flex items-center justify-between mb-1">
-                          <span className="text-[10px] text-slate-400 block">Check-out Photo</span>
-                          {b.exit_scan_photo && (
-                            <span className="text-[9px] font-bold text-indigo-400 bg-indigo-500/10 px-1 rounded border border-indigo-500/20">
-                              Seeker ✓
-                            </span>
-                          )}
-                        </div>
-                        <div className="aspect-video rounded-xl overflow-hidden border border-slate-800 bg-slate-950">
+                      <div className="aspect-video rounded-xl overflow-hidden border border-slate-800 bg-slate-950 flex items-center justify-center">
+                        {b.entry_scan_photo ? (
                           <img
-                            src={b.exit_scan_photo || b.entry_scan_photo || 'https://images.unsplash.com/photo-1513694203232-719a280e022f?auto=format&fit=crop&w=400&q=80'}
-                            alt="Exit condition"
+                            src={b.entry_scan_photo}
+                            alt="Entry"
                             className="w-full h-full object-cover"
                           />
-                        </div>
+                        ) : (
+                          <div className="text-center p-2">
+                            <i className="fa-solid fa-camera text-slate-600 text-base mb-1 block" />
+                            <span className="text-[10px] text-slate-500">Pending</span>
+                          </div>
+                        )}
                       </div>
                     </div>
+                    <div>
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="text-[10px] text-slate-400 block">Check-out Photo</span>
+                        {b.exit_scan_photo && (
+                          <span className="text-[9px] font-bold text-indigo-400 bg-indigo-500/10 px-1 rounded border border-indigo-500/20">
+                            Seeker ✓
+                          </span>
+                        )}
+                      </div>
+                      <div className="aspect-video rounded-xl overflow-hidden border border-slate-800 bg-slate-950 flex items-center justify-center">
+                        {b.exit_scan_photo ? (
+                          <img
+                            src={b.exit_scan_photo}
+                            alt="Exit"
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <div className="text-center p-2">
+                            <i className="fa-solid fa-camera text-slate-600 text-base mb-1 block" />
+                            <span className="text-[10px] text-slate-500">Pending</span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
 
                   <div className="p-3 rounded-xl bg-slate-950/70 border border-slate-800/80 text-xs space-y-1">
                     <div className="flex items-center justify-between text-slate-300">
                       <span>Electrical Appliance Check:</span>
-                      <span className="text-emerald-400 font-semibold">ALL OFF ✓</span>
+                      <span className={b.fans_lights_cleared !== false ? 'text-emerald-400 font-semibold' : 'text-amber-400 font-semibold'}>
+                        {b.fans_lights_cleared !== false ? 'ALL OFF ✓' : 'POWER DETECTED ⚠️'}
+                      </span>
                     </div>
                     <div className="flex items-center justify-between text-slate-300">
                       <span>Structural Integrity Delta:</span>
-                      <span className="text-emerald-400 font-semibold">0% Damage</span>
+                      <span className={(b.condition_match_score || 100) >= 80 ? 'text-emerald-400 font-semibold' : 'text-amber-400 font-semibold'}>
+                        {(b.condition_match_score || 100) >= 80 ? '0% Damage' : 'Discrepancy Flagged'}
+                      </span>
                     </div>
                   </div>
 

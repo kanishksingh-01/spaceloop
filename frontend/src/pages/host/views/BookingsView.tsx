@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Booking, Space } from '../../../types';
-import { getHostBookings, acceptBooking, rejectBooking, getHostSpaces } from '../../../services/host';
+import { getHostBookings, acceptBooking, rejectBooking, cancelBooking, getHostSpaces } from '../../../services/host';
 import {
   HostPageHeader,
   HostCardSkeleton,
@@ -101,6 +101,25 @@ export const BookingsView: React.FC = () => {
       );
     } catch (err) {
       console.error('Failed to reject booking:', err);
+    } finally {
+      setActionLoadingId(null);
+    }
+  };
+
+  const handleCancel = async (e: React.MouseEvent, id: number) => {
+    e.stopPropagation();
+    if (!window.confirm(`Are you sure you want to cancel Booking #${id}? An instant refund will be issued to the seeker and the space slot released.`)) {
+      return;
+    }
+    try {
+      setActionLoadingId(id);
+      await cancelBooking(id, 'Host requested cancellation from bookings list');
+      setBookings(prev =>
+        prev.map(b => (b.id === id ? { ...b, status: 'cancelled', session_state: 'cancelled', escrow_status: 'refunded' } : b))
+      );
+    } catch (err: any) {
+      console.error('Failed to cancel booking:', err);
+      alert(err?.message || 'Failed to cancel booking.');
     } finally {
       setActionLoadingId(null);
     }
@@ -317,6 +336,17 @@ export const BookingsView: React.FC = () => {
                             {actionLoadingId === b.id ? 'Accepting...' : 'Accept'}
                           </button>
                         </>
+                      )}
+
+                      {b.status === 'confirmed' && (
+                        <button
+                          type="button"
+                          onClick={(e) => handleCancel(e, b.id)}
+                          disabled={actionLoadingId === b.id}
+                          className="px-3 py-1.5 rounded-xl border border-rose-500/30 hover:border-rose-500/60 bg-rose-500/5 hover:bg-rose-500/10 text-rose-300 hover:text-rose-200 text-xs font-semibold transition disabled:opacity-50"
+                        >
+                          {actionLoadingId === b.id ? 'Cancelling...' : 'Cancel'}
+                        </button>
                       )}
 
                       {isLive && (

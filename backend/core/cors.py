@@ -52,7 +52,7 @@ def configure_cors(app):
                 response.headers["Access-Control-Allow-Credentials"] = "true"
                 response.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS, PATCH"
                 response.headers["Access-Control-Allow-Headers"] = (
-                    "Content-Type, Authorization, X-Requested-With, X-SpaceLoop-Client, X-CSRFToken, Accept, Origin"
+                    "Content-Type, Authorization, X-User-Id, X-Requested-With, X-SpaceLoop-Client, X-CSRFToken, Accept, Origin"
                 )
                 response.headers["Access-Control-Max-Age"] = "86400"
             return response

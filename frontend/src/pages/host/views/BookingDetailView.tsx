@@ -28,11 +28,25 @@ export const BookingDetailView: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
+  const [cancelNotice, setCancelNotice] = useState<{
+    message: string;
+    refund_amount?: number;
+    platform_fee?: number;
+    total_price?: number;
+  } | null>(null);
+
+  // Cancellation modal state
+  const [showCancelModal, setShowCancelModal] = useState(false);
+  const [cancelReasonInput, setCancelReasonInput] = useState('Host scheduling conflict');
 
   // Dispute modal state
   const [showDisputeModal, setShowDisputeModal] = useState(false);
   const [disputeReason, setDisputeReason] = useState('');
   const [disputing, setDisputing] = useState(false);
+
+  // Photo enlargement lightbox
+  const [previewPhoto, setPreviewPhoto] = useState<{ url: string; title: string } | null>(null);
 
   useEffect(() => {
     if (bookingId) {
@@ -44,6 +58,7 @@ export const BookingDetailView: React.FC = () => {
     try {
       setLoading(true);
       setError(null);
+      setActionError(null);
       const res = await getHostBookingDetail(bookingId);
       if (res && res.booking) {
         setBooking(res.booking);
@@ -75,10 +90,11 @@ export const BookingDetailView: React.FC = () => {
     if (!booking) return;
     try {
       setActionLoading(true);
+      setActionError(null);
       await acceptBooking(booking.id);
       setBooking({ ...booking, status: 'confirmed' });
     } catch (err: any) {
-      setError(err.message || 'Failed to accept booking.');
+      setActionError(err.message || 'Failed to accept booking.');
     } finally {
       setActionLoading(false);
     }
@@ -88,24 +104,49 @@ export const BookingDetailView: React.FC = () => {
     if (!booking) return;
     try {
       setActionLoading(true);
+      setActionError(null);
       await rejectBooking(booking.id);
       setBooking({ ...booking, status: 'rejected' });
     } catch (err: any) {
-      setError(err.message || 'Failed to decline booking.');
+      setActionError(err.message || 'Failed to decline booking.');
     } finally {
       setActionLoading(false);
     }
   };
 
-  const handleCancel = async () => {
+  const handleOpenCancelModal = () => {
+    setActionError(null);
+    setShowCancelModal(true);
+  };
+
+  const handleConfirmCancel = async () => {
     if (!booking) return;
-    if (!window.confirm('Are you sure you want to cancel this booking?')) return;
     try {
       setActionLoading(true);
-      await cancelBooking(booking.id);
-      setBooking({ ...booking, status: 'cancelled' });
+      setActionError(null);
+      const reason = cancelReasonInput.trim() || 'Host requested cancellation';
+      const res = await cancelBooking(booking.id, reason);
+      if (res && res.booking) {
+        setBooking(res.booking);
+      } else {
+        setBooking({
+          ...booking,
+          status: 'cancelled',
+          session_state: 'cancelled',
+          escrow_status: 'refunded',
+        });
+      }
+      setCancelNotice({
+        message: res?.message || `Booking #${booking.id} cancelled successfully.`,
+        refund_amount: res?.refund_amount,
+        platform_fee: res?.platform_fee,
+        total_price: res?.total_price || booking.total_price,
+      });
+      setShowCancelModal(false);
+      setCancelReasonInput('Host scheduling conflict');
     } catch (err: any) {
-      setError(err.message || 'Failed to cancel booking.');
+      console.error('Cancellation failed:', err);
+      setActionError(err.message || 'Failed to cancel booking.');
     } finally {
       setActionLoading(false);
     }
@@ -301,11 +342,13 @@ export const BookingDetailView: React.FC = () => {
 
             {booking.status === 'confirmed' && (
               <button
-                onClick={handleCancel}
+                type="button"
+                onClick={handleOpenCancelModal}
                 disabled={actionLoading}
-                className="px-3.5 py-1.5 rounded-xl border border-slate-700 hover:border-rose-500/40 text-slate-400 hover:text-rose-400 text-xs font-semibold transition"
+                className="px-3.5 py-1.5 rounded-xl border border-rose-500/30 hover:border-rose-500/60 bg-rose-500/5 hover:bg-rose-500/10 text-rose-300 hover:text-rose-200 text-xs font-semibold transition flex items-center gap-1.5 disabled:opacity-50"
               >
-                Cancel Booking
+                <i className="fa-solid fa-ban text-xs text-rose-400" />
+                <span>{actionLoading ? 'Processing...' : 'Cancel Booking'}</span>
               </button>
             )}
 
@@ -320,6 +363,64 @@ export const BookingDetailView: React.FC = () => {
           </div>
         }
       />
+
+      {/* Dynamic Feedback & Notification Banners */}
+      {actionError && (
+        <div className="px-4 sm:px-6 lg:px-8 pt-4">
+          <div className="p-4 rounded-2xl bg-rose-500/10 border border-rose-500/30 text-rose-300 flex items-start justify-between gap-3 text-xs">
+            <div className="flex items-center gap-2.5">
+              <i className="fa-solid fa-triangle-exclamation text-rose-400 text-sm shrink-0" />
+              <span>{actionError}</span>
+            </div>
+            <button
+              type="button"
+              onClick={() => setActionError(null)}
+              className="text-rose-400 hover:text-rose-200 text-sm"
+            >
+              <i className="fa-solid fa-xmark" />
+            </button>
+          </div>
+        </div>
+      )}
+
+      {cancelNotice && (
+        <div className="px-4 sm:px-6 lg:px-8 pt-4">
+          <div className="p-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 flex items-start justify-between gap-3 text-xs">
+            <div className="flex items-start gap-2.5">
+              <i className="fa-solid fa-circle-check text-emerald-400 text-base mt-0.5 shrink-0" />
+              <div className="space-y-1">
+                <div className="font-bold text-white">{cancelNotice.message}</div>
+                <div className="text-[11px] text-emerald-300/90 font-mono">
+                  {cancelNotice.refund_amount !== undefined
+                    ? `₹${cancelNotice.refund_amount.toFixed(2)} refunded to seeker. Escrow deposit released.`
+                    : 'Cancellation complete. Escrow deposit released and refunded to seeker.'}
+                </div>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={() => setCancelNotice(null)}
+              className="text-emerald-400 hover:text-emerald-200 text-sm"
+            >
+              <i className="fa-solid fa-xmark" />
+            </button>
+          </div>
+        </div>
+      )}
+
+      {booking.status === 'cancelled' && !cancelNotice && (
+        <div className="px-4 sm:px-6 lg:px-8 pt-4">
+          <div className="p-4 rounded-2xl bg-rose-500/10 border border-rose-500/30 text-rose-300 flex items-center gap-3 text-xs">
+            <i className="fa-solid fa-ban text-rose-400 text-base shrink-0" />
+            <div>
+              <span className="font-bold text-white">This reservation has been cancelled.</span>
+              <span className="text-slate-300 ml-1.5">
+                The space time-slot has been released and all escrow deposit funds have been refunded to the seeker.
+              </span>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Level-3 Lifecycle Workflow Bar */}
       <div className="px-4 sm:px-6 lg:px-8 pt-4">
@@ -565,15 +666,32 @@ export const BookingDetailView: React.FC = () => {
                       </span>
                     )}
                   </div>
-                  <div className="aspect-video rounded-xl overflow-hidden border border-slate-800 bg-slate-950">
-                    <img
-                      src={booking.entry_scan_photo || 'https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&w=600&q=80'}
-                      alt="Check-in condition"
-                      className="w-full h-full object-cover"
-                    />
+                  <div className="aspect-video rounded-xl overflow-hidden border border-slate-800 bg-slate-950 flex items-center justify-center relative group">
+                    {booking.entry_scan_photo ? (
+                      <>
+                        <img
+                          src={booking.entry_scan_photo}
+                          alt="Check-in condition baseline"
+                          className="w-full h-full object-cover cursor-pointer transition group-hover:scale-105"
+                          onClick={() => setPreviewPhoto({ url: booking.entry_scan_photo!, title: 'Check-in Baseline Photo' })}
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setPreviewPhoto({ url: booking.entry_scan_photo!, title: 'Check-in Baseline Photo' })}
+                          className="absolute bottom-2 right-2 px-2 py-1 bg-slate-900/80 hover:bg-slate-900 text-white rounded text-[10px] font-medium border border-slate-700 opacity-0 group-hover:opacity-100 transition"
+                        >
+                          <i className="fa-solid fa-magnifying-glass-plus mr-1" /> Enlarge
+                        </button>
+                      </>
+                    ) : (
+                      <div className="text-center p-4">
+                        <i className="fa-solid fa-camera text-slate-600 text-2xl mb-2" />
+                        <p className="text-xs text-slate-500">Baseline photo pending check-in</p>
+                      </div>
+                    )}
                   </div>
                   <span className="text-[11px] text-slate-500">
-                    Captured: {booking.arrival_time ? `Recorded at ${booking.arrival_time}` : 'Baseline verified at entry'}
+                    {booking.entry_scan_photo ? `Captured at entry: ${booking.arrival_time || 'Check-in recorded'}` : 'Pending guest check-in'}
                   </span>
                 </div>
 
@@ -586,15 +704,32 @@ export const BookingDetailView: React.FC = () => {
                       </span>
                     )}
                   </div>
-                  <div className="aspect-video rounded-xl overflow-hidden border border-slate-800 bg-slate-950">
-                    <img
-                      src={booking.exit_scan_photo || booking.entry_scan_photo || 'https://images.unsplash.com/photo-1513694203232-719a280e022f?auto=format&fit=crop&w=600&q=80'}
-                      alt="Check-out condition"
-                      className="w-full h-full object-cover"
-                    />
+                  <div className="aspect-video rounded-xl overflow-hidden border border-slate-800 bg-slate-950 flex items-center justify-center relative group">
+                    {booking.exit_scan_photo ? (
+                      <>
+                        <img
+                          src={booking.exit_scan_photo}
+                          alt="Check-out departure condition"
+                          className="w-full h-full object-cover cursor-pointer transition group-hover:scale-105"
+                          onClick={() => setPreviewPhoto({ url: booking.exit_scan_photo!, title: 'Check-out Departure Photo' })}
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setPreviewPhoto({ url: booking.exit_scan_photo!, title: 'Check-out Departure Photo' })}
+                          className="absolute bottom-2 right-2 px-2 py-1 bg-slate-900/80 hover:bg-slate-900 text-white rounded text-[10px] font-medium border border-slate-700 opacity-0 group-hover:opacity-100 transition"
+                        >
+                          <i className="fa-solid fa-magnifying-glass-plus mr-1" /> Enlarge
+                        </button>
+                      </>
+                    ) : (
+                      <div className="text-center p-4">
+                        <i className="fa-solid fa-camera text-slate-600 text-2xl mb-2" />
+                        <p className="text-xs text-slate-500">Departure inspection photo pending</p>
+                      </div>
+                    )}
                   </div>
                   <span className="text-[11px] text-slate-500">
-                    Captured: {booking.departure_time ? `Recorded at ${booking.departure_time}` : (booking.status === 'completed' ? 'Departure inspection completed' : 'Awaiting guest check-out')}
+                    {booking.exit_scan_photo ? `Captured at departure: ${booking.departure_time || 'Check-out recorded'}` : 'Pending session completion'}
                   </span>
                 </div>
               </div>
@@ -602,20 +737,28 @@ export const BookingDetailView: React.FC = () => {
               <div className="p-4 rounded-xl bg-slate-950/70 border border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
                 <div className="space-y-1">
                   <div className="font-bold text-white">
-                    Computer Vision Match Confidence: <span className="text-emerald-400 font-mono">{booking.condition_match_score || 96.0}%</span>
+                    Computer Vision Match Confidence:{' '}
+                    <span className={`font-mono ${(booking.condition_match_score || 100) >= 80 ? 'text-emerald-400' : 'text-amber-400'}`}>
+                      {booking.condition_match_score ? `${booking.condition_match_score}%` : '100%'}
+                    </span>
                   </div>
                   <div className="text-[11px] text-slate-400">
-                    Appliance Electrical Off Status: {booking.fans_lights_cleared !== false ? 'Verified (0 active loads detected)' : 'Discrepancy: Active power load detected'}
+                    Appliance Electrical Off Status:{' '}
+                    <span className={booking.fans_lights_cleared !== false ? 'text-emerald-400 font-semibold' : 'text-amber-400 font-semibold'}>
+                      {booking.fans_lights_cleared !== false ? 'Verified (0 active loads detected)' : 'Warning: Unverified or active electrical loads detected'}
+                    </span>
                   </div>
                 </div>
-                <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold self-start sm:self-auto border ${
+                <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold border ${
                   (booking.condition_match_score || 100) >= 80 && booking.fans_lights_cleared !== false
-                    ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
-                    : 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
+                    ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30'
+                    : (booking.session_state === 'checked_out' || booking.status === 'completed'
+                        ? 'bg-amber-500/20 text-amber-300 border-amber-500/30'
+                        : 'bg-slate-800 text-slate-400 border-slate-700')
                 }`}>
                   {(booking.condition_match_score || 100) >= 80 && booking.fans_lights_cleared !== false
                     ? 'PASSED NO DAMAGE'
-                    : 'FLAGGED FOR REVIEW'}
+                    : (booking.session_state === 'checked_out' || booking.status === 'completed' ? 'FLAGGED FOR REVIEW' : 'PENDING CHECKOUT')}
                 </span>
               </div>
             </div>
@@ -740,6 +883,119 @@ export const BookingDetailView: React.FC = () => {
               >
                 {disputing ? 'Submitting...' : 'Submit Dispute'}
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Host Cancel Booking Confirmation Modal */}
+      {showCancelModal && booking && (
+        <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-slate-900 border border-slate-800 rounded-3xl max-w-md w-full p-6 space-y-4 shadow-2xl">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-400 flex items-center justify-center">
+                  <i className="fa-solid fa-ban text-sm" />
+                </div>
+                <h3 className="text-base font-bold text-white">Cancel Reservation #{booking.id}</h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowCancelModal(false)}
+                className="text-slate-400 hover:text-white"
+              >
+                <i className="fa-solid fa-xmark text-sm" />
+              </button>
+            </div>
+
+            <div className="p-3.5 rounded-2xl bg-rose-500/10 border border-rose-500/20 text-rose-300 text-xs leading-relaxed space-y-1">
+              <div className="font-bold text-rose-200 flex items-center gap-1.5">
+                <i className="fa-solid fa-circle-exclamation text-xs" />
+                <span>Automatic Seeker Escrow Refund</span>
+              </div>
+              <p>
+                Cancelling this booking will immediately refund ₹{Math.max(0, Math.round(Number(booking.total_price || 0) * 0.95))} to the seeker and release the ₹100 UPI escrow deposit hold. This action is irreversible.
+              </p>
+            </div>
+
+            <div>
+              <label className="text-xs font-semibold text-slate-300 block mb-1.5">
+                Cancellation Reason
+              </label>
+              <select
+                value={cancelReasonInput}
+                onChange={e => setCancelReasonInput(e.target.value)}
+                className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-rose-500/50 mb-2"
+              >
+                <option value="Host scheduling conflict">Host scheduling conflict</option>
+                <option value="Premises maintenance or repair">Premises maintenance or repair</option>
+                <option value="Safety or weather hazard">Safety or weather hazard</option>
+                <option value="Space double-booked offline">Space double-booked offline</option>
+                <option value="Other">Other / Specific reason below</option>
+              </select>
+
+              {cancelReasonInput === 'Other' && (
+                <textarea
+                  rows={2}
+                  placeholder="Please specify reason for audit log..."
+                  onChange={e => setCancelReasonInput(e.target.value)}
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-xs text-white focus:outline-none focus:border-rose-500/50 mt-1"
+                />
+              )}
+            </div>
+
+            <div className="flex items-center justify-end gap-2.5 pt-2 border-t border-slate-800">
+              <button
+                type="button"
+                onClick={() => setShowCancelModal(false)}
+                disabled={actionLoading}
+                className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold transition"
+              >
+                Keep Booking
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmCancel}
+                disabled={actionLoading}
+                className="px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs transition flex items-center gap-1.5 shadow-lg shadow-rose-600/20 disabled:opacity-50"
+              >
+                {actionLoading && <i className="fa-solid fa-spinner animate-spin text-xs" />}
+                <span>{actionLoading ? 'Cancelling...' : 'Confirm Cancellation'}</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* High-Resolution Photo Zoom Modal */}
+      {previewPhoto && (
+        <div
+          className="fixed inset-0 z-50 bg-black/85 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-200"
+          onClick={() => setPreviewPhoto(null)}
+        >
+          <div
+            className="relative max-w-4xl w-full bg-slate-900 border border-slate-800 rounded-3xl overflow-hidden shadow-2xl p-4"
+            onClick={e => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between pb-3 border-b border-slate-800">
+              <div className="flex items-center gap-2">
+                <i className="fa-solid fa-camera text-slate-400" />
+                <span className="text-sm font-bold text-white">{previewPhoto.title}</span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setPreviewPhoto(null)}
+                className="w-8 h-8 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-300 flex items-center justify-center text-sm transition"
+              >
+                ✕
+              </button>
+            </div>
+            <div className="p-2 flex items-center justify-center bg-slate-950 rounded-2xl mt-3 overflow-hidden border border-slate-800">
+              <img
+                src={previewPhoto.url}
+                alt={previewPhoto.title}
+                className="max-h-[75vh] w-auto max-w-full rounded-xl object-contain"
+              />
             </div>
           </div>
         </div>

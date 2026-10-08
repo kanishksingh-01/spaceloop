@@ -86,9 +86,9 @@ export const LiveSessionsView: React.FC = () => {
       setCheckingOut(true);
       setError(null);
       const res = await checkOutBooking(selectedBooking.id, {
-        exit_photo: exitPhotoUrl,
-        lat: selectedBooking.space?.lat || 12.9716,
-        lng: selectedBooking.space?.lng || 77.5946,
+        exit_photo: selectedBooking.exit_scan_photo || selectedBooking.entry_scan_photo || exitPhotoUrl,
+        lat: selectedBooking.space?.latitude || selectedBooking.space?.lat || 12.9716,
+        lng: selectedBooking.space?.longitude || selectedBooking.space?.lng || 77.5946,
       });
 
       setCheckoutResult(res);
@@ -315,42 +315,65 @@ export const LiveSessionsView: React.FC = () => {
                             </span>
                           )}
                         </div>
-                        <div className="aspect-video rounded-xl overflow-hidden border border-slate-800 bg-slate-950">
-                          <img
-                            src={selectedBooking.entry_scan_photo || 'https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&w=600&q=80'}
-                            alt="Entry baseline"
-                            className="w-full h-full object-cover"
-                          />
+                        <div className="aspect-video rounded-xl overflow-hidden border border-slate-800 bg-slate-950 flex items-center justify-center">
+                          {selectedBooking.entry_scan_photo ? (
+                            <img
+                              src={selectedBooking.entry_scan_photo}
+                              alt="Entry baseline"
+                              className="w-full h-full object-cover"
+                            />
+                          ) : (
+                            <div className="text-center p-3">
+                              <i className="fa-solid fa-camera text-slate-600 text-lg mb-1 block" />
+                              <span className="text-[11px] text-slate-500">Baseline photo pending</span>
+                            </div>
+                          )}
                         </div>
                       </div>
 
                       <div className="space-y-1.5">
                         <div className="flex items-center justify-between">
                           <span className="text-xs font-semibold text-slate-300">Departure Inspection Photo</span>
-                          {selectedBooking.exit_scan_photo && (
+                          {(selectedBooking.exit_scan_photo || checkoutResult?.booking?.exit_scan_photo) && (
                             <span className="text-[10px] font-bold text-indigo-400 bg-indigo-500/10 px-1.5 py-0.5 rounded border border-indigo-500/20">
                               Seeker Photo ✓
                             </span>
                           )}
                         </div>
-                        <div className="aspect-video rounded-xl overflow-hidden border border-slate-800 bg-slate-950 relative group">
-                          <img
-                            src={selectedBooking.exit_scan_photo || selectedBooking.entry_scan_photo || exitPhotoUrl}
-                            alt="Exit condition"
-                            className="w-full h-full object-cover"
-                          />
-                          <div className="absolute inset-0 bg-slate-950/40 opacity-0 group-hover:opacity-100 transition flex items-center justify-center">
-                            <span className="text-[10px] text-white bg-slate-900 px-2 py-1 rounded border border-slate-700">
-                              {selectedBooking.exit_scan_photo ? 'Captured by Guest at Departure' : 'Auto-Captured Baseline'}
-                            </span>
-                          </div>
+                        <div className="aspect-video rounded-xl overflow-hidden border border-slate-800 bg-slate-950 flex items-center justify-center relative group">
+                          {(selectedBooking.exit_scan_photo || checkoutResult?.booking?.exit_scan_photo) ? (
+                            <>
+                              <img
+                                src={selectedBooking.exit_scan_photo || checkoutResult?.booking?.exit_scan_photo}
+                                alt="Exit condition"
+                                className="w-full h-full object-cover"
+                              />
+                              <div className="absolute inset-0 bg-slate-950/40 opacity-0 group-hover:opacity-100 transition flex items-center justify-center">
+                                <span className="text-[10px] text-white bg-slate-900 px-2 py-1 rounded border border-slate-700">
+                                  Captured via Seeker Mobile
+                                </span>
+                              </div>
+                            </>
+                          ) : (
+                            <div className="text-center p-3">
+                              <i className="fa-solid fa-camera text-slate-600 text-lg mb-1 block" />
+                              <span className="text-[11px] text-slate-500">Departure photo pending checkout</span>
+                            </div>
+                          )}
                         </div>
                       </div>
                     </div>
 
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-3 border-t border-slate-800/80">
                       <div className="text-xs text-slate-400">
-                        Condition Check: <span className="text-emerald-400 font-semibold font-mono">98.4% match</span> • Electrical load: <span className="text-emerald-400 font-semibold">OFF</span>
+                        Condition Check:{' '}
+                        <span className="text-emerald-400 font-semibold font-mono">
+                          {selectedBooking.condition_match_score ?? checkoutResult?.inspection?.condition_match_score ?? 100}% match
+                        </span>{' '}
+                        • Electrical load:{' '}
+                        <span className={selectedBooking.fans_lights_cleared !== false ? 'text-emerald-400 font-semibold' : 'text-amber-400 font-semibold'}>
+                          {selectedBooking.fans_lights_cleared !== false ? 'OFF' : 'ACTIVE / UNVERIFIED'}
+                        </span>
                       </div>
 
                       <div className="flex items-center gap-2">

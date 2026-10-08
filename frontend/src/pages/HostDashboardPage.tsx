@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { User, Booking, Space } from '../types';
 import { request } from '../services/api';
 import { toggleSpaceStatus, getInquiries, editSpace, replyInquiry } from '../services/spaces';
-import { acceptBooking, rejectBooking } from '../services/bookings';
+import { acceptBooking, rejectBooking, cancelBooking } from '../services/bookings';
 
 interface HostDashboardPageProps {
   currentUser: User | null;
@@ -234,6 +234,23 @@ export const HostDashboardPage: React.FC<HostDashboardPageProps> = ({
       );
     } catch (err: any) {
       alert(err.message || 'Failed to decline reservation');
+    } finally {
+      setActionLoadingId(null);
+    }
+  };
+
+  const handleCancelBooking = async (bookingId: number) => {
+    if (!window.confirm('Are you sure you want to cancel this confirmed reservation? A full refund minus platform fee will be processed to the seeker and the escrow deposit released.')) {
+      return;
+    }
+    setActionLoadingId(bookingId);
+    try {
+      await cancelBooking(bookingId, 'Host cancelled from dashboard overview');
+      setHostBookings((prev) =>
+        prev.map((b) => (b.id === bookingId ? { ...b, status: 'cancelled', session_state: 'cancelled', escrow_status: 'refunded' } : b))
+      );
+    } catch (err: any) {
+      alert(err.message || 'Failed to cancel reservation');
     } finally {
       setActionLoadingId(null);
     }
@@ -727,7 +744,17 @@ export const HostDashboardPage: React.FC<HostDashboardPageProps> = ({
                               </button>
                             </div>
                           ) : status === 'confirmed' ? (
-                            <span className="text-[11px] text-emerald-400/80 font-medium">Ready for check-in</span>
+                            <div className="flex items-center justify-end gap-2">
+                              <span className="text-[11px] text-emerald-400/80 font-medium">Ready for check-in</span>
+                              <button
+                                type="button"
+                                disabled={actionLoadingId === bk.id}
+                                onClick={() => handleCancelBooking(bk.id)}
+                                className="px-2 py-0.5 rounded-lg border border-rose-500/30 hover:border-rose-500/60 bg-rose-500/5 hover:bg-rose-500/10 text-rose-300 hover:text-rose-200 text-[10px] font-semibold transition disabled:opacity-50"
+                              >
+                                {actionLoadingId === bk.id ? '...' : 'Cancel'}
+                              </button>
+                            </div>
                           ) : status === 'active' ? (
                             <span className="text-[11px] text-sky-400 font-medium inline-flex items-center gap-1">
                               <span className="w-1.5 h-1.5 rounded-full bg-sky-400 animate-pulse" /> In session
