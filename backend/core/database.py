@@ -163,7 +163,7 @@ def ensure_database_schema(app, db):
 
             # Ensure public_id is populated for all existing users
             from models import User
-            users_without_pid = User.query.filter((User.public_id == None) | (User.public_id == "")).all()
+            users_without_pid = User.query.filter((User.public_id.is_(None)) | (User.public_id == "")).all()
             if users_without_pid:
                 for u in users_without_pid:
                     u.public_id = str(uuid.uuid4())
@@ -310,7 +310,7 @@ def ensure_database_schema(app, db):
 
             # Ensure active spaces have embeddings indexed
             try:
-                unembedded = Space.query.filter((Space.embedding_json == None) | (Space.embedding_json == "")).all()
+                unembedded = [sp for sp in Space.query.filter(Space.embedding_json.is_(None)).all() if not sp.embedding]
                 if unembedded:
                     from backend.modules.search.embedding import build_searchable_representation, generate_embedding
                     for sp in unembedded:
