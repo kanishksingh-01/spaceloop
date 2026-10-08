@@ -29,3 +29,6 @@ frontend/dist/
 *.pdf
 **/*.pdf
 generate_*_pdf.py
+
+# Local Scratch
+scratch/
