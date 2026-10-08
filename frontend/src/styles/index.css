@@ -236,14 +236,14 @@ p, span, div {
 input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
 textarea,
 select {
-  background-color: var(--surface-nested);
-  color: #f8fafc;
-  border: 1px solid var(--border-subtle);
+  background-color: var(--color-surface-elevated);
+  color: var(--color-text-primary);
+  border: 1px solid var(--color-border);
 }
 
 input::placeholder,
 textarea::placeholder {
-  color: var(--text-meta);
+  color: var(--color-text-muted);
 }
 
 /* Glassmorphism utility helpers */
@@ -281,16 +281,16 @@ a.btn:focus-visible,
 .btn-interactive:focus-visible,
 [role="button"]:focus-visible {
   outline: none;
-  box-shadow: 0 0 0 2px var(--canvas), 0 0 0 4px rgba(99, 102, 241, 0.75), 0 0 16px rgba(99, 102, 241, 0.35);
+  box-shadow: 0 0 0 2px var(--canvas), 0 0 0 4px var(--color-primary), 0 0 14px var(--color-primary-light);
 }
 
-/* 1. Primary Purple/Indigo Gradient CTA Glow */
+/* 1. Primary Action Button Glow */
 .btn-glow-primary,
 button.bg-gradient-to-r,
 .btn-seeker-primary {
   background-color: var(--seeker-primary);
   color: var(--seeker-text);
-  box-shadow: 1.5px 3px 12px 0 rgba(79, 70, 229, 0.28);
+  box-shadow: var(--shadow-md);
 }
 
 @media (hover: hover) and (pointer: fine) {
@@ -298,12 +298,11 @@ button.bg-gradient-to-r,
   button.bg-gradient-to-r:hover,
   .btn-seeker-primary:hover {
     transform: translateY(-1.5px);
-    box-shadow: 2.5px 6px 18px -2px rgba(99, 102, 241, 0.42),
-                1px 2px 20px -2px rgba(139, 92, 246, 0.28);
+    box-shadow: var(--shadow-hover);
   }
 }
 
-/* Dedicated Subtle Purple Button Glow */
+/* Dedicated Architectural Button Glow */
 .btn-purple-glow {
   transition: transform 220ms cubic-bezier(0.16, 1, 0.3, 1),
               box-shadow 220ms cubic-bezier(0.16, 1, 0.3, 1),
@@ -315,9 +314,8 @@ button.bg-gradient-to-r,
 @media (hover: hover) and (pointer: fine) {
   .btn-purple-glow:hover {
     transform: translateY(-1.5px);
-    box-shadow: 0 0 18px -1px rgba(168, 85, 247, 0.45),
-                0 0 8px 0 rgba(99, 102, 241, 0.30);
-    border-color: rgba(168, 85, 247, 0.55) !important;
+    box-shadow: var(--shadow-hover);
+    border-color: var(--color-primary) !important;
   }
 }
 
@@ -426,14 +424,14 @@ a.btn:not(:disabled):active,
   .space-card:hover {
     transform: translateY(-4px);
     box-shadow: var(--shadow-card-hover);
-    border-color: rgba(99, 102, 241, 0.45) !important;
+    border-color: var(--color-primary) !important;
   }
 
   /* Host card amber elevation */
   .floating-interactive-host:hover {
     transform: translateY(-4px);
     box-shadow: var(--shadow-card-hover-host);
-    border-color: rgba(245, 158, 11, 0.45) !important;
+    border-color: var(--color-accent) !important;
   }
 }
 
@@ -442,8 +440,8 @@ a.btn:not(:disabled):active,
 .floating-card:focus-visible,
 .floating-interactive:focus-visible {
   outline: none;
-  box-shadow: 0 0 0 2px var(--canvas), 0 0 0 4px rgba(99, 102, 241, 0.8), var(--shadow-card-hover);
-  border-color: rgba(99, 102, 241, 0.8);
+  box-shadow: 0 0 0 2px var(--canvas), 0 0 0 4px var(--color-primary), var(--shadow-card-hover);
+  border-color: var(--color-primary);
 }
 
 /* 3. Deep Floating Panel (for high-focus cards, booking checkout, modals) */
@@ -1020,6 +1018,385 @@ html.light .fixed.inset-0.bg-black\/80,
 html.light .fixed.inset-0.bg-black\/70,
 html.light .fixed.inset-0.bg-black\/60 {
   background-color: rgba(28, 25, 23, 0.45) !important;
+  backdrop-filter: blur(8px) !important;
+}
+
+/* =========================================================================
+   DARK THEME (SOURCE of Truth: Twilight Midnight Architectural Ambiance)
+   Semantic Hex Codes:
+     PAGE BACKGROUND:    #080c14
+     PRIMARY SURFACE:    #0e1522
+     ELEVATED SURFACE:   #151f32
+     PRIMARY AMBER:      #f59e0b
+     AMBER HOVER:        #fbbf24
+     STRUCTURAL BORDER:  #1e2b40
+     SUBTLE BORDER:      #141e2e
+     PRIMARY TEXT:       #f8fafc
+     SECONDARY TEXT:     #94a3b8
+     MUTED TEXT:         #64748b
+   Activated when <html class="dark"> is applied
+   ========================================================================= */
+
+html.dark {
+  /* Standard Design Tokens */
+  --background: var(--color-bg);
+  --foreground: var(--color-text-primary);
+  --card: var(--color-surface);
+  --card-foreground: var(--color-text-primary);
+  --primary: var(--color-primary);
+  --primary-foreground: #080c14;
+  --secondary: var(--color-accent);
+  --muted: var(--color-surface-elevated);
+  --muted-foreground: var(--color-text-muted);
+  --accent: var(--color-accent);
+  --border: var(--color-border);
+  --input: var(--color-surface-elevated);
+  --ring: var(--color-primary);
+}
+
+/* Base Canvas & Viewport in Dark Mode */
+html.dark,
+html.dark body,
+html.dark #root {
+  background-color: var(--color-bg) !important;
+  color: var(--color-text-primary) !important;
+}
+
+/* Background Replacements */
+html.dark .bg-slate-950,
+html.dark .bg-canvas {
+  background-color: var(--color-bg) !important;
+}
+
+html.dark .bg-slate-950\/95,
+html.dark .bg-slate-950\/90,
+html.dark .bg-slate-950\/85,
+html.dark .bg-slate-950\/80,
+html.dark .bg-slate-950\/70 {
+  background-color: rgba(8, 12, 20, 0.94) !important;
+}
+
+html.dark .bg-slate-900,
+html.dark .bg-surface {
+  background-color: var(--color-surface) !important;
+}
+
+html.dark .bg-slate-900\/95,
+html.dark .bg-slate-900\/90,
+html.dark .bg-slate-900\/80,
+html.dark .bg-slate-900\/70,
+html.dark .bg-slate-900\/60,
+html.dark .bg-slate-900\/50,
+html.dark .bg-slate-900\/40,
+html.dark .bg-slate-900\/30 {
+  background-color: var(--color-surface) !important;
+}
+
+html.dark .bg-slate-850,
+html.dark .bg-slate-800,
+html.dark .bg-surface-nested,
+html.dark .bg-surface-elevated {
+  background-color: var(--color-surface-elevated) !important;
+}
+
+html.dark .bg-slate-800\/90,
+html.dark .bg-slate-800\/80,
+html.dark .bg-slate-800\/60,
+html.dark .bg-slate-800\/50,
+html.dark .bg-slate-800\/40 {
+  background-color: var(--color-surface-elevated) !important;
+}
+
+/* Interactive Hover States */
+html.dark .hover\:bg-slate-850:hover,
+html.dark .hover\:bg-slate-800:hover,
+html.dark .hover\:bg-slate-800\/60:hover,
+html.dark .hover\:bg-slate-700:hover {
+  background-color: #1a263c !important;
+}
+
+/* Gradients in Dark Mode */
+html.dark .bg-gradient-to-b.from-slate-900.via-slate-950.to-slate-950,
+html.dark .bg-gradient-to-b.from-slate-900 {
+  background: linear-gradient(180deg, #0e1522 0%, #080c14 100%) !important;
+}
+
+html.dark .bg-gradient-to-b.from-slate-950.to-slate-900 {
+  background: linear-gradient(180deg, #080c14 0%, #0e1522 100%) !important;
+}
+
+html.dark .bg-gradient-to-tr.from-indigo-950\/80.via-slate-900\/90.to-violet-950\/80,
+html.dark .bg-gradient-to-tr.from-indigo-950 {
+  background: linear-gradient(135deg, #151f32 0%, #0e1522 100%) !important;
+  color: #f8fafc !important;
+}
+
+/* Ambient Glow Blobs in Dark Mode */
+html.dark [class*="blur-"][class*="bg-indigo-600"],
+html.dark [class*="blur-"][class*="bg-violet-600"] {
+  background-color: rgba(245, 158, 11, 0.08) !important;
+}
+
+/* Dark Mode Borders */
+html.dark .border-slate-800,
+html.dark .border-slate-800\/90,
+html.dark .border-slate-800\/80,
+html.dark .border-slate-800\/60,
+html.dark .border-slate-800\/50,
+html.dark .border-slate-700,
+html.dark .border-slate-700\/80,
+html.dark .border-slate-700\/70,
+html.dark .border-slate-700\/60,
+html.dark .border-slate-600 {
+  border-color: var(--color-border) !important;
+}
+
+html.dark .hover\:border-indigo-500\/40:hover,
+html.dark .hover\:border-indigo-500\/50:hover,
+html.dark .hover\:border-indigo-500:hover {
+  border-color: var(--color-primary) !important;
+}
+
+html.dark .border-indigo-500\/20,
+html.dark .border-indigo-500\/25,
+html.dark .border-indigo-500\/30 {
+  border-color: var(--color-border) !important;
+}
+
+/* Typography in Dark Mode */
+html.dark .text-white,
+html.dark .text-slate-100 {
+  color: var(--color-text-primary);
+}
+
+html.dark .text-slate-200 {
+  color: var(--color-text-primary);
+}
+
+html.dark .text-slate-300 {
+  color: var(--color-text-secondary);
+}
+
+html.dark .text-slate-400 {
+  color: var(--color-text-muted);
+}
+
+html.dark .text-slate-500 {
+  color: var(--color-text-muted);
+}
+
+/* Brand Text Highlights (Eliminate old purple/indigo, map to Architectural Amber) */
+html.dark .text-indigo-400,
+html.dark .text-indigo-300,
+html.dark .text-violet-400 {
+  color: var(--color-primary) !important;
+}
+
+html.dark .hover\:text-indigo-300:hover,
+html.dark .hover\:text-indigo-400:hover {
+  color: var(--color-primary-hover) !important;
+}
+
+html.dark .text-amber-400,
+html.dark .text-amber-300 {
+  color: var(--color-accent);
+}
+
+/* Hero Headline Gradient in Dark Mode */
+html.dark .text-transparent.bg-clip-text.bg-gradient-to-r.from-indigo-400 {
+  background: linear-gradient(90deg, #f59e0b 0%, #fbbf24 40%, #f8fafc 100%) !important;
+  -webkit-background-clip: text !important;
+  color: transparent !important;
+}
+
+/* Pill Badges & Accents in Dark Mode */
+html.dark .bg-indigo-500\/10,
+html.dark .bg-indigo-500\/15 {
+  background-color: var(--color-primary-light) !important;
+  color: var(--color-primary) !important;
+  border-color: rgba(245, 158, 11, 0.25) !important;
+}
+
+html.dark .bg-indigo-500\/20,
+html.dark .bg-indigo-500\/25,
+html.dark .bg-indigo-600\/20,
+html.dark .bg-indigo-600\/10 {
+  background-color: var(--color-primary-light) !important;
+  color: var(--color-primary) !important;
+  border-color: rgba(245, 158, 11, 0.3) !important;
+}
+
+/* Seeker Primary Buttons in Dark Mode */
+html.dark .btn-seeker-primary,
+html.dark .bg-gradient-to-r.from-indigo-600.via-violet-600.to-indigo-700 {
+  background: var(--color-primary) !important;
+  color: #080c14 !important;
+  box-shadow: var(--shadow-md) !important;
+  font-weight: 700 !important;
+}
+
+html.dark .btn-seeker-primary:hover,
+html.dark .bg-gradient-to-r.from-indigo-600.via-violet-600.to-indigo-700:hover {
+  background: var(--color-primary-hover) !important;
+  box-shadow: var(--shadow-hover) !important;
+}
+
+/* Host Primary Action Buttons in Dark Mode */
+html.dark .btn-host-primary,
+html.dark .bg-gradient-to-r.from-amber-600.to-orange-600 {
+  background: linear-gradient(135deg, #d97706 0%, #ea580c 100%) !important;
+  color: #ffffff !important;
+  box-shadow: var(--shadow-md) !important;
+}
+
+html.dark .btn-host-primary:hover,
+html.dark .bg-gradient-to-r.from-amber-600.to-orange-600:hover {
+  background: linear-gradient(135deg, #b45309 0%, #c2410c 100%) !important;
+  box-shadow: var(--shadow-hover) !important;
+}
+
+/* Form Inputs in Dark Mode */
+html.dark input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
+html.dark textarea,
+html.dark select {
+  background-color: var(--color-surface-elevated) !important;
+  color: var(--color-text-primary) !important;
+  border: 1px solid var(--color-border) !important;
+}
+
+html.dark input::placeholder,
+html.dark textarea::placeholder {
+  color: var(--color-text-muted) !important;
+}
+
+html.dark input:focus,
+html.dark textarea:focus,
+html.dark select:focus {
+  border-color: var(--color-primary) !important;
+  outline: none !important;
+  box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.25) !important;
+}
+
+/* Preserve transparent inputs nested in styled search pill containers */
+html.dark input.bg-transparent,
+html.dark textarea.bg-transparent {
+  background-color: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+
+/* Dropdown Options */
+html.dark select option {
+  background-color: var(--color-surface) !important;
+  color: var(--color-text-primary) !important;
+}
+
+/* Discovery Banner & Quick Hub Chips */
+html.dark .from-indigo-950\/60.via-slate-900.to-indigo-950\/60 {
+  background: linear-gradient(90deg, #151f32 0%, #0e1522 50%, #151f32 100%) !important;
+  border-color: var(--color-border) !important;
+}
+
+html.dark .bg-slate-950\/70 {
+  background-color: var(--color-surface) !important;
+  color: var(--color-text-primary) !important;
+  border-color: var(--color-border) !important;
+}
+
+html.dark .bg-slate-950\/70:hover {
+  background-color: var(--color-surface-elevated) !important;
+  color: var(--color-primary) !important;
+}
+
+/* Glass Panels in Dark Mode */
+html.dark .glass-panel {
+  background: rgba(14, 21, 34, 0.82) !important;
+  backdrop-filter: blur(16px) !important;
+  -webkit-backdrop-filter: blur(16px) !important;
+  border: 1px solid rgba(30, 43, 64, 0.7) !important;
+  box-shadow: var(--shadow-md) !important;
+}
+
+/* Floating Shadows & Cards in Dark Mode */
+html.dark .floating-container,
+html.dark .floating-card,
+html.dark .space-card,
+html.dark .floating-interactive {
+  background-color: var(--color-surface);
+  border-color: var(--color-border);
+  box-shadow: var(--shadow-card);
+}
+
+html.dark .floating-container {
+  box-shadow: var(--shadow-container);
+}
+
+html.dark .floating-card:hover,
+html.dark .space-card:hover,
+html.dark .floating-interactive:hover {
+  border-color: rgba(245, 158, 11, 0.35) !important;
+  box-shadow: var(--shadow-card-hover);
+}
+
+html.dark .floating-panel {
+  background-color: var(--color-surface);
+  border-color: var(--color-border);
+  box-shadow: var(--shadow-panel);
+}
+
+html.dark .floating-panel:hover {
+  box-shadow: var(--shadow-panel-hover);
+}
+
+/* AI Matchmaker Box in SpaceCard */
+html.dark .bg-indigo-950\/40 {
+  background-color: var(--color-surface-elevated) !important;
+  border-color: var(--color-border) !important;
+}
+
+html.dark .bg-indigo-950\/40 p {
+  color: var(--color-text-secondary) !important;
+}
+
+/* Header Specific in Dark Mode */
+html.dark header {
+  background-color: rgba(8, 12, 20, 0.92) !important;
+  border-bottom: 1px solid var(--color-border) !important;
+  box-shadow: var(--shadow-sm) !important;
+}
+
+html.dark header .text-white {
+  color: var(--color-text-primary) !important;
+}
+
+html.dark header nav button.text-slate-300 {
+  color: var(--color-text-secondary) !important;
+}
+
+html.dark header nav button.text-slate-300:hover {
+  color: var(--color-primary) !important;
+  background-color: var(--color-surface-elevated) !important;
+}
+
+/* Footer Specific in Dark Mode */
+html.dark footer {
+  background-color: var(--color-bg) !important;
+  border-top: 1px solid var(--color-border) !important;
+}
+
+html.dark footer .text-white {
+  color: var(--color-text-primary) !important;
+}
+
+html.dark footer .text-slate-400 {
+  color: var(--color-text-muted) !important;
+}
+
+/* Modal Dialog Backdrops & Surfaces in Dark Mode */
+html.dark .fixed.inset-0.bg-black\/80,
+html.dark .fixed.inset-0.bg-black\/70,
+html.dark .fixed.inset-0.bg-black\/60 {
+  background-color: rgba(4, 6, 10, 0.75) !important;
   backdrop-filter: blur(8px) !important;
 }
 

@@ -52,10 +52,10 @@ export const HamburgerButton: React.FC<HamburgerButtonProps> = ({
       onClick={onToggle}
       aria-label={isOpen ? 'Close navigation drawer' : 'Open navigation drawer'}
       aria-expanded={isOpen}
-      className={`group relative flex flex-col justify-center items-center w-9 h-9 sm:w-10 sm:h-10 rounded-xl transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-[#0B3D91]/40 dark:focus:ring-indigo-500/50 shrink-0 ${
+      className={`group relative flex flex-col justify-center items-center w-9 h-9 sm:w-10 sm:h-10 rounded-xl transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-primary/40 shrink-0 ${
         isOpen
-          ? 'bg-slate-200 dark:bg-slate-800 text-slate-900 dark:text-white'
-          : 'bg-white hover:bg-[#F0F8FF] dark:bg-slate-900/90 dark:hover:bg-slate-800 text-[#0B2545] dark:text-slate-200 hover:text-[#0B3D91] dark:hover:text-white border border-[#D0E6F7] dark:border-slate-800 shadow-sm'
+          ? 'bg-surface-elevated text-text-primary'
+          : 'bg-surface hover:bg-surface-elevated text-text-primary hover:text-primary border border-border shadow-sm'
       } ${className}`}
     >
       <span className="sr-only">{isOpen ? 'Close menu' : 'Open menu'}</span>
@@ -291,66 +291,66 @@ export const NavigationDrawer: React.FC<NavigationDrawerProps> = ({
       label: t('nav.explore') || 'Explore Spaces',
       subtitle: 'Verified micro-spaces near campus',
       icon: 'fa-solid fa-compass',
-      iconColor: 'text-[#0B3D91] dark:text-indigo-400',
-      iconBg: 'bg-[#0B3D91]/10 dark:bg-indigo-500/15',
+      iconColor: 'text-primary',
+      iconBg: 'bg-primary/10',
       badge: 'Browse',
-      badgeStyle: 'bg-indigo-500/10 text-indigo-700 dark:text-indigo-300 border-indigo-500/25',
+      badgeStyle: 'bg-primary/10 text-primary border-primary/25',
     },
     {
       path: '/host',
       label: 'Host Operating Portal',
       subtitle: '14-Screen Cockpit & Space Management',
       icon: 'fa-solid fa-house-chimney-user',
-      iconColor: 'text-amber-500 dark:text-amber-400',
-      iconBg: 'bg-amber-500/10 dark:bg-amber-500/15',
+      iconColor: 'text-amber-500',
+      iconBg: 'bg-amber-500/10',
       badge: 'Host OS',
-      badgeStyle: 'bg-amber-500/10 text-amber-700 dark:text-amber-300 border-amber-500/25',
+      badgeStyle: 'bg-amber-500/10 text-amber-500 border-amber-500/25',
     },
     {
       path: '/',
       label: t('nav.home') || 'Home',
       subtitle: 'SpaceLoop marketplace & discovery',
       icon: 'fa-solid fa-house',
-      iconColor: 'text-[#0B3D91] dark:text-indigo-400',
-      iconBg: 'bg-[#0B3D91]/10 dark:bg-indigo-500/15',
+      iconColor: 'text-primary',
+      iconBg: 'bg-primary/10',
     },
     {
       path: '/dashboard',
       label: t('nav.myBookings') || 'My Bookings',
       subtitle: 'Active sessions, passes & QR codes',
       icon: 'fa-solid fa-calendar-check',
-      iconColor: 'text-indigo-600 dark:text-indigo-400',
-      iconBg: 'bg-indigo-500/10 dark:bg-indigo-500/15',
+      iconColor: 'text-primary',
+      iconBg: 'bg-primary/10',
       badge: 'Sessions',
-      badgeStyle: 'bg-indigo-500/10 text-indigo-700 dark:text-indigo-300 border-indigo-500/25',
+      badgeStyle: 'bg-primary/10 text-primary border-primary/25',
     },
     {
       path: '/how-it-works',
       label: t('nav.howItWorks') || 'How It Works',
       subtitle: 'Section 52 lease & zero-hardware',
       icon: 'fa-solid fa-circle-question',
-      iconColor: 'text-violet-600 dark:text-violet-400',
-      iconBg: 'bg-violet-500/10 dark:bg-violet-500/15',
+      iconColor: 'text-amber-500',
+      iconBg: 'bg-amber-500/10',
     },
     {
       path: '/architecture',
       label: t('nav.architecture') || 'Architecture',
       subtitle: 'System engineering & team specs',
       icon: 'fa-solid fa-cubes',
-      iconColor: 'text-[#0B3D91] dark:text-indigo-400',
-      iconBg: 'bg-[#0B3D91]/10 dark:bg-indigo-500/15',
+      iconColor: 'text-primary',
+      iconBg: 'bg-primary/10',
       badge: 'Team',
-      badgeStyle: 'bg-indigo-500/10 text-indigo-700 dark:text-indigo-300 border-indigo-500/25',
+      badgeStyle: 'bg-primary/10 text-primary border-primary/25',
     },
     {
       path: '/admin/trust-safety',
       label: t('nav.trustSafety') || 'Trust & Safety',
       subtitle: 'Verification, fraud defense & safety console',
       icon: 'fa-solid fa-shield-halved',
-      iconColor: 'text-rose-600 dark:text-rose-400',
-      iconBg: 'bg-rose-500/10 dark:bg-rose-500/15',
+      iconColor: 'text-rose-500',
+      iconBg: 'bg-rose-500/10',
       badge: 'Defense',
-      badgeStyle: 'bg-rose-500/10 text-rose-700 dark:text-rose-300 border-rose-500/25',
+      badgeStyle: 'bg-rose-500/10 text-rose-500 border-rose-500/25',
     },
   ];
 
@@ -360,10 +360,10 @@ export const NavigationDrawer: React.FC<NavigationDrawerProps> = ({
       label: 'Seeker Marketplace',
       subtitle: 'Browse and book verified spaces',
       icon: 'fa-solid fa-compass',
-      iconColor: 'text-indigo-500 dark:text-indigo-400',
-      iconBg: 'bg-indigo-500/10 dark:bg-indigo-500/15',
+      iconColor: 'text-primary',
+      iconBg: 'bg-primary/10',
       badge: 'Seeker',
-      badgeStyle: 'bg-indigo-500/10 text-indigo-700 dark:text-indigo-300 border-indigo-500/25',
+      badgeStyle: 'bg-primary/10 text-primary border-primary/25',
     },
     {
       path: '/host',
@@ -512,7 +512,7 @@ export const NavigationDrawer: React.FC<NavigationDrawerProps> = ({
           transition: isDragging ? 'none' : 'transform 0.35s cubic-bezier(0.16, 1, 0.3, 1)',
           zIndex: 60,
         }}
-        className="fixed top-16 left-0 bottom-0 h-[calc(100dvh-4rem)] max-h-[calc(100dvh-4rem)] w-[85vw] min-w-[280px] max-w-[340px] sm:max-w-[360px] z-[60] flex flex-col bg-white dark:bg-slate-950 text-slate-800 dark:text-slate-100 border-r border-[#D0E6F7] dark:border-slate-800/90 shadow-[8px_0_35px_-5px_rgba(11,61,145,0.12)] dark:shadow-[8px_0_40px_-5px_rgba(0,0,0,0.85)] sm:rounded-br-2xl overflow-hidden will-change-transform select-none"
+        className="fixed top-16 left-0 bottom-0 h-[calc(100dvh-4rem)] max-h-[calc(100dvh-4rem)] w-[85vw] min-w-[280px] max-w-[340px] sm:max-w-[360px] z-[60] flex flex-col bg-surface text-text-primary border-r border-border shadow-2xl sm:rounded-br-2xl overflow-hidden will-change-transform select-none"
       >
         {/* DRAG HANDLE TAB (Grab handle on right edge) */}
         <div
@@ -525,20 +525,20 @@ export const NavigationDrawer: React.FC<NavigationDrawerProps> = ({
           title="Drag drawer to slide"
           aria-hidden="true"
         >
-          <div className="w-1.5 h-14 rounded-full bg-slate-400/40 dark:bg-slate-600/40 group-hover:bg-[#0B3D91] dark:group-hover:bg-indigo-400 group-hover:h-20 transition-all duration-200" />
+          <div className="w-1.5 h-14 rounded-full bg-border group-hover:bg-primary group-hover:h-20 transition-all duration-200" />
         </div>
 
         {/* =====================================================================
             DRAWER CONTEXT HEADER (Clean, Compact, Non-overlapping)
             ===================================================================== */}
-        <div className="h-12 px-4 border-b border-[#D0E6F7] dark:border-slate-800/80 flex items-center justify-between gap-3 bg-[#E8F6FF]/60 dark:bg-slate-900/60 shrink-0">
+        <div className="h-12 px-4 border-b border-border flex items-center justify-between gap-3 bg-surface-elevated shrink-0">
           <div className="flex items-center gap-2 min-w-0">
             <span
               className={`w-2 h-2 rounded-full shrink-0 ${
-                isHostPortal ? 'bg-amber-400' : 'bg-[#0B3D91] dark:bg-indigo-400'
+                isHostPortal ? 'bg-amber-400' : 'bg-primary'
               }`}
             />
-            <span className="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 truncate">
+            <span className="text-xs font-bold uppercase tracking-wider text-text-secondary truncate">
               {isHostPortal ? 'Host Navigation' : 'Seeker Navigation'}
             </span>
           </div>
@@ -547,7 +547,7 @@ export const NavigationDrawer: React.FC<NavigationDrawerProps> = ({
             type="button"
             onClick={onClose}
             aria-label="Close navigation drawer"
-            className="w-7 h-7 rounded-lg flex items-center justify-center text-slate-400 hover:text-slate-700 dark:hover:text-white hover:bg-slate-200/60 dark:hover:bg-slate-800/80 transition shrink-0"
+            className="w-7 h-7 rounded-lg flex items-center justify-center text-text-muted hover:text-text-primary hover:bg-surface transition shrink-0"
           >
             <i className="fa-solid fa-xmark text-sm" />
           </button>
@@ -556,18 +556,18 @@ export const NavigationDrawer: React.FC<NavigationDrawerProps> = ({
         {/* =====================================================================
             DRAWER USER PROFILE CARD (Responsive & Compact)
             ===================================================================== */}
-        <div className="p-3 sm:p-4 border-b border-[#D0E6F7] dark:border-slate-800/80 bg-white dark:bg-slate-950 shrink-0">
+        <div className="p-3 sm:p-4 border-b border-border bg-surface shrink-0">
           {currentUser ? (
-            <div className="p-3 rounded-2xl bg-[#F0F8FF] dark:bg-slate-900/80 border border-[#D0E6F7] dark:border-slate-800 flex items-center justify-between gap-2.5 shadow-2xs">
+            <div className="p-3 rounded-2xl bg-surface-elevated border border-border flex items-center justify-between gap-2.5 shadow-2xs">
               <div className="flex items-center gap-2.5 min-w-0">
-                <div className="w-9 h-9 rounded-xl bg-[#0B3D91] dark:bg-indigo-600 text-white font-bold text-xs sm:text-sm flex items-center justify-center shrink-0 shadow-sm">
+                <div className="w-9 h-9 rounded-xl bg-primary text-white font-bold text-xs sm:text-sm flex items-center justify-center shrink-0 shadow-sm">
                   {currentUser.name ? currentUser.name.charAt(0).toUpperCase() : 'U'}
                 </div>
                 <div className="min-w-0">
-                  <div className="text-xs font-bold text-slate-900 dark:text-white truncate">
+                  <div className="text-xs font-bold text-text-primary truncate">
                     {currentUser.name}
                   </div>
-                  <div className="text-[11px] text-slate-500 dark:text-slate-400 truncate font-mono">
+                  <div className="text-[11px] text-text-muted truncate font-mono">
                     {currentUser.email}
                   </div>
                   <div className="text-[10px] text-emerald-600 dark:text-emerald-400 font-semibold flex items-center gap-1 mt-0.5">
@@ -578,18 +578,18 @@ export const NavigationDrawer: React.FC<NavigationDrawerProps> = ({
               <button
                 type="button"
                 onClick={handleLogout}
-                className="p-2 rounded-xl text-slate-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/30 transition text-xs shrink-0"
+                className="p-2 rounded-xl text-text-muted hover:text-rose-500 hover:bg-rose-500/10 transition text-xs shrink-0"
                 title="Sign Out"
               >
                 <i className="fa-solid fa-arrow-right-from-bracket" />
               </button>
             </div>
           ) : (
-            <div className="p-3 rounded-2xl bg-gradient-to-br from-[#E8F6FF] to-[#F0F8FF] dark:from-slate-900 dark:to-slate-900/60 border border-[#D0E6F7] dark:border-slate-800 text-center">
-              <div className="text-xs font-bold text-slate-900 dark:text-white mb-0.5">
+            <div className="p-3 rounded-2xl bg-surface-elevated border border-border text-center">
+              <div className="text-xs font-bold text-text-primary mb-0.5">
                 Welcome to SpaceLoop
               </div>
-              <p className="text-[11px] text-slate-600 dark:text-slate-400 mb-2.5 leading-snug">
+              <p className="text-[11px] text-text-secondary mb-2.5 leading-snug">
                 Verified micro-desks & unused spaces starting at ₹35/hr.
               </p>
               <div className="flex items-center gap-2">
@@ -599,7 +599,7 @@ export const NavigationDrawer: React.FC<NavigationDrawerProps> = ({
                     onClose();
                     onOpenAuthModal();
                   }}
-                  className="flex-1 py-1.5 px-2.5 rounded-xl bg-[#0B3D91] hover:bg-[#072C6B] dark:bg-indigo-600 dark:hover:bg-indigo-500 text-white text-xs font-bold shadow-sm transition"
+                  className="flex-1 py-1.5 px-2.5 rounded-xl bg-primary hover:bg-primary-hover text-white text-xs font-bold shadow-sm transition"
                 >
                   Seeker Sign In
                 </button>
@@ -610,7 +610,7 @@ export const NavigationDrawer: React.FC<NavigationDrawerProps> = ({
                       onClose();
                       onOpenHostAuthModal();
                     }}
-                    className="flex-1 py-1.5 px-2.5 rounded-xl bg-white hover:bg-slate-50 dark:bg-slate-800 dark:hover:bg-slate-750 text-slate-800 dark:text-slate-200 border border-[#D0E6F7] dark:border-slate-700 text-xs font-bold shadow-2xs transition"
+                    className="flex-1 py-1.5 px-2.5 rounded-xl bg-surface hover:bg-surface-elevated text-text-primary border border-border text-xs font-bold shadow-2xs transition"
                   >
                     Host Sign In
                   </button>
@@ -640,8 +640,8 @@ export const NavigationDrawer: React.FC<NavigationDrawerProps> = ({
                 onClick={() => handleNavigate(item.path)}
                 className={`w-full group flex items-center gap-2.5 sm:gap-3 px-2.5 sm:px-3 py-2 rounded-xl text-left transition-all duration-150 ${
                   isActive
-                    ? 'bg-[#0B3D91]/10 text-[#0B3D91] border border-[#0B3D91]/25 dark:bg-indigo-600/20 dark:text-indigo-300 dark:border-indigo-500/30 font-bold shadow-2xs'
-                    : 'text-slate-700 dark:text-slate-300 hover:bg-[#F0F8FF] dark:hover:bg-slate-900 hover:text-slate-900 dark:hover:text-white border border-transparent'
+                    ? 'bg-primary/15 text-primary border border-primary/30 font-bold shadow-2xs'
+                    : 'text-text-secondary hover:bg-surface-elevated hover:text-text-primary border border-transparent'
                 }`}
               >
                 {/* Fixed Icon Container */}
@@ -657,8 +657,8 @@ export const NavigationDrawer: React.FC<NavigationDrawerProps> = ({
                     <span
                       className={`text-xs sm:text-sm font-semibold truncate ${
                         isActive
-                          ? 'text-[#0B3D91] dark:text-indigo-300 font-bold'
-                          : 'text-slate-900 dark:text-white'
+                          ? 'text-primary font-bold'
+                          : 'text-text-primary'
                       }`}
                     >
                       {item.label}
@@ -674,8 +674,8 @@ export const NavigationDrawer: React.FC<NavigationDrawerProps> = ({
                   <p
                     className={`text-[10px] sm:text-[11px] truncate mt-0.5 font-normal ${
                       isActive
-                        ? 'text-[#0B3D91]/80 dark:text-indigo-300/80 font-medium'
-                        : 'text-slate-600 dark:text-slate-400'
+                        ? 'text-primary/90 font-medium'
+                        : 'text-text-muted'
                     }`}
                   >
                     {item.subtitle}
@@ -683,7 +683,7 @@ export const NavigationDrawer: React.FC<NavigationDrawerProps> = ({
                 </div>
 
                 {/* Trailing Chevron */}
-                <i className="fa-solid fa-chevron-right text-[9px] text-slate-400 group-hover:translate-x-0.5 transition-transform shrink-0" />
+                <i className="fa-solid fa-chevron-right text-[9px] text-text-muted group-hover:translate-x-0.5 transition-transform shrink-0" />
               </button>
             );
           })}
@@ -692,24 +692,24 @@ export const NavigationDrawer: React.FC<NavigationDrawerProps> = ({
         {/* =====================================================================
             DRAWER FOOTER UTILITIES (Theme, Language, Portal Switcher)
             ===================================================================== */}
-        <div className="p-3 sm:p-4 border-t border-[#D0E6F7] dark:border-slate-800/80 bg-[#E8F6FF]/40 dark:bg-slate-900/60 space-y-2 shrink-0">
+        <div className="p-3 sm:p-4 border-t border-border bg-surface-elevated space-y-2 shrink-0">
           {/* Row 1: Theme & Language Bar */}
           <div className="flex items-center justify-between gap-2">
             <button
               type="button"
               onClick={toggleTheme}
-              className="flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition shadow-2xs border bg-white hover:bg-slate-50 dark:bg-slate-800 dark:hover:bg-slate-750 text-[#0B2545] dark:text-slate-200 border-[#D0E6F7] dark:border-slate-700"
-              title={theme === 'dark' ? 'Switch to Light Theme (Ocean Breeze)' : 'Switch to Dark Theme (Midnight Neon)'}
+              className="flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition shadow-2xs border bg-surface hover:bg-surface-elevated text-text-primary border-border"
+              title={theme === 'dark' ? 'Switch to Light Theme (Sunset Architectural)' : 'Switch to Dark Theme (Twilight Architectural)'}
             >
               {theme === 'dark' ? (
                 <>
                   <span className="text-amber-400">☀️</span>
-                  <span>Ocean Breeze</span>
+                  <span>Light</span>
                 </>
               ) : (
                 <>
-                  <span className="text-[#0B3D91]">🌙</span>
-                  <span>Midnight Neon</span>
+                  <span className="text-amber-500">🌙</span>
+                  <span>Dark</span>
                 </>
               )}
             </button>
@@ -724,9 +724,9 @@ export const NavigationDrawer: React.FC<NavigationDrawerProps> = ({
             <button
               type="button"
               onClick={() => handleNavigate('/explore')}
-              className="w-full py-2.5 px-3 rounded-xl bg-[#0B3D91]/10 hover:bg-[#0B3D91]/20 text-[#0B3D91] dark:bg-indigo-600/20 dark:hover:bg-indigo-600/30 dark:text-indigo-300 border border-[#0B3D91]/30 dark:border-indigo-500/30 text-xs font-bold transition flex items-center justify-center gap-2 shadow-2xs"
+              className="w-full py-2.5 px-3 rounded-xl bg-surface hover:bg-surface-elevated text-text-primary hover:text-primary border border-border text-xs font-bold transition flex items-center justify-center gap-2 shadow-2xs"
             >
-              <i className="fa-solid fa-compass text-indigo-400" />
+              <i className="fa-solid fa-compass text-primary" />
               <span>Switch to Seeker Portal</span>
             </button>
           ) : (

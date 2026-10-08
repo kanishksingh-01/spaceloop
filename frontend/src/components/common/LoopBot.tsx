@@ -620,17 +620,17 @@ export const LoopBot: React.FC = () => {
               setIsOpen(true);
               setIsMinimized(false);
             }}
-            className="group flex items-center gap-2.5 px-4 py-3 rounded-full bg-gradient-to-r from-indigo-600 via-purple-600 to-indigo-700 text-white font-bold text-xs shadow-lg shadow-indigo-950/60 hover:shadow-[0_0_24px_rgba(168,85,247,0.55)] border border-indigo-400/40 hover:border-purple-300 transition-all duration-200 hover:-translate-y-0.5 active:translate-y-0 cursor-pointer"
+            className="group flex items-center gap-2.5 px-4 py-3 rounded-full bg-primary text-white font-bold text-xs shadow-lg shadow-primary/25 hover:shadow-primary/40 border border-primary/40 hover:bg-primary-hover transition-all duration-200 hover:-translate-y-0.5 active:translate-y-0 cursor-pointer"
             title="Open SpaceLoop AI Concierge"
           >
             <div className="relative flex items-center justify-center">
               <div className="w-6 h-6 rounded-full bg-white/10 flex items-center justify-center">
                 <i className="fa-solid fa-robot text-xs text-white group-hover:rotate-12 transition-transform duration-300" />
               </div>
-              <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 bg-emerald-400 rounded-full border-2 border-slate-900 animate-pulse" />
+              <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 bg-emerald-400 rounded-full border-2 border-surface animate-pulse" />
             </div>
             <span className="tracking-wide">Ask LoopBot</span>
-            <span className="px-1.5 py-0.5 rounded text-[9px] font-mono font-bold bg-white/15 text-purple-100 border border-white/10 group-hover:bg-purple-500/25 transition-colors">
+            <span className="px-1.5 py-0.5 rounded text-[9px] font-mono font-bold bg-white/15 text-white border border-white/10 group-hover:bg-white/25 transition-colors">
               AI
             </span>
           </button>
@@ -650,27 +650,27 @@ export const LoopBot: React.FC = () => {
             height: `${size.height}px`,
             zIndex: 50,
           }}
-          className={`rounded-2xl sm:rounded-3xl bg-slate-900/95 backdrop-blur-2xl border ${
+          className={`rounded-2xl sm:rounded-3xl bg-surface/95 backdrop-blur-2xl border ${
             isDragging || isResizing
-              ? 'border-purple-400/80 ring-2 ring-purple-500/40 shadow-[0_20px_60px_-10px_rgba(0,0,0,0.85),0_0_35px_rgba(168,85,247,0.35)]'
-              : 'border-indigo-500/30 hover:border-purple-500/40 shadow-[0_20px_60px_-15px_rgba(0,0,0,0.8),0_0_30px_rgba(99,102,241,0.2)]'
+              ? 'border-primary ring-2 ring-primary/40 shadow-2xl'
+              : 'border-border hover:border-primary/40 shadow-xl'
           } flex flex-col overflow-hidden animate-in fade-in duration-150 pointer-events-auto select-auto`}
         >
           {/* Header - Acts as Draggable Handle */}
           <div
             onMouseDown={handleHeaderPointerDown}
             onTouchStart={handleHeaderPointerDown}
-            className={`px-3.5 sm:px-4 py-3 bg-slate-950/90 border-b border-slate-800/80 flex items-center justify-between gap-2.5 shrink-0 cursor-grab ${
-              isDragging ? 'cursor-grabbing bg-slate-900/90' : 'hover:bg-slate-950'
+            className={`px-3.5 sm:px-4 py-3 bg-surface-elevated border-b border-border flex items-center justify-between gap-2.5 shrink-0 cursor-grab ${
+              isDragging ? 'cursor-grabbing bg-surface' : 'hover:bg-surface-elevated'
             } transition-colors select-none`}
             title="Drag header to reposition anywhere"
           >
             <div className="flex items-center gap-2.5 min-w-0 pointer-events-none">
               <div className="relative">
-                <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-indigo-600 via-purple-600 to-indigo-700 flex items-center justify-center text-white text-xs shadow-md shadow-purple-600/30 border border-white/10">
+                <div className="w-8 h-8 rounded-xl bg-primary flex items-center justify-center text-white text-xs shadow-md shadow-primary/25 border border-white/10">
                   <i className="fa-solid fa-robot" />
                 </div>
-                <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-emerald-400 rounded-full border-2 border-slate-900 animate-pulse" />
+                <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-emerald-400 rounded-full border-2 border-surface animate-pulse" />
               </div>
               <div className="min-w-0">
                 <div className="flex items-center gap-1.5">
@@ -836,7 +836,7 @@ export const LoopBot: React.FC = () => {
               e.preventDefault();
               handleSend();
             }}
-            className="p-3 bg-slate-950 border-t border-slate-800/80 flex items-center gap-2 shrink-0 relative"
+            className="p-3 bg-surface border-t border-border flex items-center gap-2 shrink-0 relative"
           >
             <input
               ref={inputRef}
@@ -844,12 +844,12 @@ export const LoopBot: React.FC = () => {
               value={input}
               onChange={(e) => setInput(e.target.value)}
               placeholder={t('loopbot.placeholder')}
-              className="flex-1 bg-slate-900 border border-slate-700/80 rounded-xl px-3.5 py-2 pr-2 text-xs sm:text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500/40 transition"
+              className="flex-1 bg-surface-elevated border border-border rounded-xl px-3.5 py-2 pr-2 text-xs sm:text-sm text-text-primary placeholder:text-text-muted focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/40 transition"
             />
             <button
               type="submit"
               disabled={loading || !input.trim()}
-              className="w-9 h-9 rounded-xl bg-gradient-to-r from-indigo-600 via-purple-600 to-indigo-700 hover:from-indigo-500 hover:to-purple-500 text-white font-medium text-xs transition shrink-0 flex items-center justify-center disabled:opacity-40 shadow-sm shadow-indigo-600/30 hover:shadow-[0_0_16px_rgba(168,85,247,0.5)] cursor-pointer"
+              className="w-9 h-9 rounded-xl bg-primary hover:bg-primary-hover text-white font-medium text-xs transition shrink-0 flex items-center justify-center disabled:opacity-40 shadow-sm shadow-primary/30 cursor-pointer"
               title="Send message"
             >
               <i className="fa-solid fa-arrow-up" />

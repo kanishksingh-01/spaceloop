@@ -113,19 +113,19 @@ export const Header: React.FC<HeaderProps> = ({
                 className={`w-9 h-9 rounded-xl flex items-center justify-center shadow-lg transition duration-200 group-hover:scale-105 ${
                   isHostPortal
                     ? 'bg-gradient-to-tr from-amber-600 via-orange-600 to-amber-400 shadow-amber-500/25'
-                    : 'bg-gradient-to-tr from-indigo-600 via-violet-600 to-indigo-400 shadow-indigo-500/25'
+                    : 'bg-primary text-white shadow-primary/25'
                 }`}
               >
                 <i className="fa-solid fa-infinity text-white text-lg" />
               </div>
               <div className="text-left">
-                <span className="text-xl font-bold tracking-tight text-white flex items-center gap-1.5">
+                <span className="text-xl font-bold tracking-tight text-text-primary flex items-center gap-1.5">
                   Space
                   <span
                     className={`text-transparent bg-clip-text ${
                       isHostPortal
                         ? 'bg-gradient-to-r from-amber-400 to-orange-400'
-                        : 'bg-gradient-to-r from-indigo-400 to-violet-400'
+                        : 'bg-gradient-to-r from-primary to-accent'
                     }`}
                   >
                     Loop
@@ -140,14 +140,14 @@ export const Header: React.FC<HeaderProps> = ({
                 className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-semibold tracking-tight border select-none transition-all duration-200 ${
                   isHostPortal
                     ? 'bg-amber-500/[0.08] text-amber-300/90 border-amber-500/25 shadow-[0_0_10px_rgba(245,158,11,0.06)]'
-                    : 'bg-indigo-500/[0.08] text-indigo-300/90 border-indigo-500/25 shadow-[0_0_10px_rgba(99,102,241,0.06)]'
+                    : 'bg-primary/10 text-primary border-primary/25 shadow-sm'
                 }`}
               >
                 <span
                   className={`w-1.5 h-1.5 rounded-full shrink-0 ${
                     isHostPortal
                       ? 'bg-amber-400 shadow-[0_0_6px_rgba(245,158,11,0.9)]'
-                      : 'bg-indigo-400 shadow-[0_0_6px_rgba(99,102,241,0.9)]'
+                      : 'bg-primary shadow-[0_0_6px_rgba(245,158,11,0.6)]'
                   }`}
                 />
                 <span className="leading-none">
@@ -191,11 +191,11 @@ export const Header: React.FC<HeaderProps> = ({
                   onClick={() => handleNav('/explore')}
                   className={`px-3 py-1.5 rounded-lg transition flex items-center gap-1.5 ${
                     location.pathname === '/explore'
-                      ? 'bg-indigo-600/20 text-indigo-300 border border-indigo-500/30'
-                      : 'text-slate-300 hover:text-white hover:bg-slate-800/60'
+                      ? 'bg-primary/15 text-primary border border-primary/30 font-semibold'
+                      : 'text-text-secondary hover:text-text-primary hover:bg-surface-elevated'
                   }`}
                 >
-                  <i className="fa-solid fa-compass text-indigo-400" />
+                  <i className="fa-solid fa-compass text-primary" />
                   <span>{t('nav.explore') || 'Explore Spaces'}</span>
                 </button>
               </nav>
@@ -211,14 +211,14 @@ export const Header: React.FC<HeaderProps> = ({
                 onClick={() => handleNav('/architecture')}
                 className={`hidden lg:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition text-xs font-semibold shrink-0 ${
                   location.pathname === '/architecture'
-                    ? 'bg-indigo-600/30 text-indigo-200 border border-indigo-500/50 shadow-sm shadow-indigo-500/20'
-                    : 'text-slate-300 hover:text-white hover:bg-slate-800/80 border border-transparent hover:border-slate-700/60'
+                    ? 'bg-primary/15 text-primary border border-primary/30 shadow-sm'
+                    : 'text-text-secondary hover:text-text-primary hover:bg-surface-elevated border border-transparent hover:border-border'
                 }`}
                 title="System Architecture & Engineering Team"
               >
-                <i className="fa-solid fa-cubes text-indigo-400" />
+                <i className="fa-solid fa-cubes text-primary" />
                 <span>{t('nav.architecture') || 'Architecture'}</span>
-                <span className="px-1.5 py-0.5 rounded text-[9px] font-mono font-bold bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
+                <span className="px-1.5 py-0.5 rounded text-[9px] font-mono font-bold bg-primary/10 text-primary border border-primary/20">
                   Team
                 </span>
               </button>
@@ -228,7 +228,7 @@ export const Header: React.FC<HeaderProps> = ({
             <button
               type="button"
               onClick={toggleTheme}
-              className="inline-flex items-center justify-center gap-1.5 w-9 h-9 sm:w-auto sm:px-3 sm:py-1.5 rounded-xl bg-slate-800/80 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700/60 text-xs font-bold transition shadow-sm shrink-0"
+              className="inline-flex items-center justify-center gap-1.5 w-9 h-9 sm:w-auto sm:px-3 sm:py-1.5 rounded-xl bg-surface-elevated hover:bg-surface text-text-secondary hover:text-text-primary border border-border text-xs font-bold transition shadow-sm shrink-0"
               title={theme === 'dark' ? 'Switch to Light Theme (Sunset Architectural)' : 'Switch to Dark Theme (Twilight Architectural)'}
               aria-label="Toggle Theme"
             >
@@ -250,10 +250,10 @@ export const Header: React.FC<HeaderProps> = ({
               <button
                 type="button"
                 onClick={() => handleNav('/explore')}
-                className="inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl bg-indigo-600/10 hover:bg-indigo-600/20 text-indigo-300 border border-indigo-500/30 text-xs font-bold transition shrink-0"
+                className="inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl bg-surface-elevated hover:bg-surface text-text-primary hover:text-primary border border-border text-xs font-bold transition shrink-0"
                 title="Switch to Seeker Marketplace"
               >
-                <i className="fa-solid fa-compass text-indigo-400" />
+                <i className="fa-solid fa-compass text-primary" />
                 <span className="hidden sm:inline">{t('nav.switchToSeeker') || 'Seeker'}</span>
                 <span className="sm:hidden">{t('nav.switchToSeeker') || 'Seeker'}</span>
               </button>
@@ -321,14 +321,14 @@ export const Header: React.FC<HeaderProps> = ({
                   <button
                     type="button"
                     onClick={onOpenAuthModal}
-                    className="hidden sm:inline-block text-xs font-bold text-slate-300 hover:text-white px-2.5 sm:px-3 py-1.5 rounded-lg hover:bg-slate-900 transition"
+                    className="hidden sm:inline-block text-xs font-bold text-text-secondary hover:text-text-primary px-2.5 sm:px-3 py-1.5 rounded-lg hover:bg-surface-elevated transition"
                   >
                     {t('nav.signIn') || 'Sign In'}
                   </button>
                   <button
                     type="button"
                     onClick={onOpenAuthModal}
-                    className="bg-gradient-to-r from-indigo-600 via-violet-600 to-indigo-700 hover:from-indigo-500 hover:to-violet-500 text-white font-bold text-xs px-2.5 sm:px-3.5 py-1.5 sm:py-2 rounded-xl shadow-md shadow-indigo-600/30 transition shrink-0"
+                    className="bg-primary hover:bg-primary-hover text-white font-bold text-xs px-2.5 sm:px-3.5 py-1.5 sm:py-2 rounded-xl shadow-md shadow-primary/25 transition shrink-0"
                   >
                     {t('nav.signUp') || 'Sign Up'}
                   </button>

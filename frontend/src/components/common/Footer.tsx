@@ -33,21 +33,21 @@ export const Footer: React.FC = () => {
 
   return (
     <>
-      <footer className="bg-slate-950 border-t border-slate-800/80 mt-20 py-12">
+      <footer className="bg-surface border-t border-border mt-20 py-12">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 md:grid-cols-12 gap-8 mb-10">
             {/* Brand (5 cols) */}
             <div className="md:col-span-5 space-y-3">
               <div className="flex items-center gap-2.5">
-                <div className="w-8 h-8 rounded-xl bg-indigo-600 flex items-center justify-center text-white text-sm shadow-md shadow-indigo-600/30">
+                <div className="w-8 h-8 rounded-xl bg-primary flex items-center justify-center text-white text-sm shadow-md shadow-primary/25">
                   <i className="fa-solid fa-infinity" />
                 </div>
-                <span className="text-xl font-extrabold text-white tracking-tight">{t('common.brand')}</span>
+                <span className="text-xl font-extrabold text-text-primary tracking-tight">{t('common.brand')}</span>
               </div>
-              <p className="text-sm text-slate-200 font-semibold italic">
+              <p className="text-sm text-text-secondary font-semibold italic">
                 &ldquo;Work &bull; Create &bull; Meet &bull; Build &bull; Learn &bull; Host &bull; Grow&rdquo;
               </p>
-              <p className="text-xs text-slate-400 max-w-sm leading-relaxed">
+              <p className="text-xs text-text-muted max-w-sm leading-relaxed">
                 {t('footer.description')}
               </p>
               <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-semibold">
