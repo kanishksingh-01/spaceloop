@@ -19,7 +19,7 @@ Outputs:
 import os
 import sys
 import argparse
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import List, Tuple, Dict, Any
 import numpy as np
 import joblib
@@ -247,7 +247,7 @@ def train_room_condition_model(
             "class_distribution": counts,
         },
         "top_features": top_features,
-        "trained_at": datetime.utcnow().isoformat(),
+        "trained_at": datetime.now(timezone.utc).isoformat(),
         "version": "1.0.0",
     }
 
@@ -273,7 +273,7 @@ def _generate_synthetic_sample_data(target_dir: str, pairs_per_class: int = 5) -
     Utility generator creating synthetic reference image pairs for pipeline verification.
     Generates deterministic PIL images illustrating clean vs changed vs damaged states.
     """
-    from PIL import ImageDraw
+    from PIL import Image, ImageDraw
 
     os.makedirs(target_dir, exist_ok=True)
     for lbl in SUPPORTED_LABELS:
