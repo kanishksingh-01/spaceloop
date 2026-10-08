@@ -28,6 +28,7 @@ export const SessionPage: React.FC = () => {
   const [actionLoading, setActionLoading] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [isCheckOutSuccess, setIsCheckOutSuccess] = useState<boolean>(false);
 
   // Access & photo inspection state
   const [accessMode, setAccessMode] = useState<'qr' | 'keybox'>('qr');
@@ -260,35 +261,75 @@ export const SessionPage: React.FC = () => {
     return () => clearInterval(interval);
   }, [booking]);
 
-  const handleEntryPhotoSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      if (file.size > 10 * 1024 * 1024) {
-        setError('Selected photo exceeds the 10MB limit. Please select a smaller photo.');
-        return;
-      }
+  const compressImageFile = (file: File, maxWidth = 1200, quality = 0.75): Promise<string> => {
+    return new Promise((resolve) => {
       const reader = new FileReader();
-      reader.onloadend = () => {
-        setEntryPhoto(reader.result as string);
-        setError(null);
+      reader.onerror = () => resolve('');
+      reader.onload = (e) => {
+        const dataUrl = e.target?.result as string;
+        if (!dataUrl) return resolve('');
+        const img = new Image();
+        img.onerror = () => resolve(dataUrl);
+        img.onload = () => {
+          try {
+            const canvas = document.createElement('canvas');
+            let width = img.width;
+            let height = img.height;
+            if (width > maxWidth) {
+              height = Math.round((height * maxWidth) / width);
+              width = maxWidth;
+            }
+            canvas.width = width;
+            canvas.height = height;
+            const ctx = canvas.getContext('2d');
+            if (!ctx) return resolve(dataUrl);
+            ctx.drawImage(img, 0, 0, width, height);
+            resolve(canvas.toDataURL('image/jpeg', quality));
+          } catch {
+            resolve(dataUrl);
+          }
+        };
+        img.src = dataUrl;
       };
       reader.readAsDataURL(file);
+    });
+  };
+
+  const handleEntryPhotoSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (file.size > 15 * 1024 * 1024) {
+        setError('Selected photo exceeds the 15MB limit. Please select a smaller photo.');
+        return;
+      }
+      try {
+        const compressed = await compressImageFile(file);
+        if (compressed) {
+          setEntryPhoto(compressed);
+          setError(null);
+        }
+      } catch {
+        setError('Failed to process entry photo.');
+      }
     }
   };
 
-  const handleExitPhotoSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleExitPhotoSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      if (file.size > 10 * 1024 * 1024) {
-        setError('Selected photo exceeds the 10MB limit. Please select a smaller photo.');
+      if (file.size > 15 * 1024 * 1024) {
+        setError('Selected photo exceeds the 15MB limit. Please select a smaller photo.');
         return;
       }
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setExitPhoto(reader.result as string);
-        setError(null);
-      };
-      reader.readAsDataURL(file);
+      try {
+        const compressed = await compressImageFile(file);
+        if (compressed) {
+          setExitPhoto(compressed);
+          setError(null);
+        }
+      } catch {
+        setError('Failed to process departure photo.');
+      }
     }
   };
 
@@ -385,6 +426,7 @@ export const SessionPage: React.FC = () => {
       }
       setPunctualityScore(res.punctuality_score || 100);
       setEscrowStatus(res.escrow_refund_status || ((res as any).refund_state === 'Released' || res.status === 'completed' || res.escrow_status === 'released' ? 'INSTANT_RELEASE_COMPLETE' : 'Review required'));
+      setIsCheckOutSuccess(true);
       const updatedBooking: Booking = {
         ...booking,
         ...(res.booking || {}),
@@ -396,8 +438,29 @@ export const SessionPage: React.FC = () => {
       setBooking(updatedBooking);
       if (res.booking?.entry_scan_photo) setEntryPhoto(res.booking.entry_scan_photo);
       if (res.booking?.exit_scan_photo) setExitPhoto(res.booking.exit_scan_photo);
+      setTimeout(() => {
+        const el = document.getElementById('inspection-result');
+        if (el) {
+          el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        } else {
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+      }, 100);
     } catch (err: any) {
-      setError(err.message || 'Failed to complete check-out.');
+      // If error indicates already checked out, transition smoothly to completed
+      if (err.message && (err.message.includes('already completed') || err.message.includes('checked_out'))) {
+        setIsCheckOutSuccess(true);
+        const updatedBooking: Booking = {
+          ...booking,
+          status: 'completed',
+          session_state: 'checked_out',
+          departure_time: booking.departure_time || new Date().toISOString(),
+        };
+        setBooking(updatedBooking);
+        setMessage('Check-out verified. Viewing completed session inspection report.');
+      } else {
+        setError(err.message || 'Failed to complete check-out. Please try again.');
+      }
     } finally {
       setActionLoading(false);
     }
@@ -442,6 +505,7 @@ export const SessionPage: React.FC = () => {
   }
 
   const isCompleted =
+    isCheckOutSuccess ||
     booking.status === 'completed' ||
     booking.status === 'Released' ||
     booking.session_state === 'checked_out' ||
@@ -1118,7 +1182,7 @@ export const SessionPage: React.FC = () => {
           )
         ) : (
           /* 6. COMPLETED DELTA INSPECTION REPORT CARD */
-          <div className="bg-slate-900/90 border border-emerald-500/40 rounded-3xl p-6 sm:p-8 shadow-2xl mb-12 space-y-6">
+          <div id="inspection-result" className="bg-slate-900/90 border border-emerald-500/40 rounded-3xl p-6 sm:p-8 shadow-2xl mb-12 space-y-6">
             {/* Header Status Banner */}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-5 border-b border-slate-800">
               <div className="flex items-center gap-3">

@@ -83,7 +83,7 @@ def get_system_connectivity_status(simulate_override=None) -> dict:
         }
 
 
-def _call_groq(messages, json_mode=False, temperature=0.3):
+def _call_groq(messages, json_mode=False, temperature=0.3, timeout=3):
     """
     Calls Groq API using requests with low latency and automatic model failover.
     Primary: openai/gpt-oss-120b (high reasoning & JSON adherence)
@@ -101,9 +101,7 @@ def _call_groq(messages, json_mode=False, temperature=0.3):
     models_to_try = [
         getattr(Config, "GROQ_MODEL", None) or os.environ.get("GROQ_MODEL", "openai/gpt-oss-120b"),
         getattr(Config, "GROQ_FALLBACK_MODEL", None) or os.environ.get("GROQ_FALLBACK_MODEL", "openai/gpt-oss-20b"),
-        "qwen/qwen3.8-27b",
-        "groq/compound-mini",
-        "groq/compound"
+        "qwen/qwen3.8-27b"
     ]
 
     for model_name in models_to_try:
@@ -111,13 +109,13 @@ def _call_groq(messages, json_mode=False, temperature=0.3):
             "model": model_name,
             "messages": messages,
             "temperature": temperature,
-            "max_tokens": 1200,
+            "max_tokens": 800,
         }
         if json_mode:
             payload["response_format"] = {"type": "json_object"}
 
         try:
-            resp = requests.post(url, headers=headers, json=payload, timeout=10)
+            resp = requests.post(url, headers=headers, json=payload, timeout=timeout)
             if resp.status_code == 200:
                 data = resp.json()
                 choices = data.get("choices", [])
