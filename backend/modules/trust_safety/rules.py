@@ -221,12 +221,15 @@ def evaluate_checkout_rules(booking: Booking) -> list[dict]:
                 "weight": 0.70
             })
 
-    # Discrepancy in room condition
-    if getattr(booking, "condition_match_score", 100.0) < 50.0:
+    # Discrepancy in room condition or damage detected
+    cond_score = getattr(booking, "condition_match_score", 100.0)
+    fans_cleared = getattr(booking, "fans_lights_cleared", True)
+    if (cond_score is not None and cond_score < 70.0) or not fans_cleared:
         triggered.append({
             "code": "REFUND_DISPUTE_CLUSTER",
-            "evidence": f"Computer vision inspection detected significant premise condition delta (score: {booking.condition_match_score}%).",
-            "weight": 0.60
+            "evidence": f"Computer vision inspection detected premise condition delta (score: {cond_score}%, appliances cleared: {fans_cleared}).",
+            "weight": 0.65
         })
 
     return triggered
+

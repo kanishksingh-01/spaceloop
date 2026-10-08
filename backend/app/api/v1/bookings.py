@@ -3,6 +3,8 @@ SpaceLoop Bookings REST Blueprint
 Handles reservations, precheck quotes, double-booking concurrency validation,
 geofenced in-room check-in handshakes, AI micro-lease generation, and check-out escrow settlement.
 """
+import os
+import base64
 import uuid
 from datetime import datetime, timedelta, timezone
 from flask import Blueprint, request, jsonify, current_app
@@ -19,6 +21,53 @@ from space_ai import (
 from security import sanitize_string, validate_numeric
 
 api_v1_bookings = Blueprint("api_v1_bookings", __name__)
+
+
+def _save_inspection_photo(photo_data: str, prefix: str, booking_id: int) -> str:
+    """
+    Saves an inspection photo (base64 data URI or existing URL/path).
+    Returns a URL string <= 500 characters to store in booking.entry_scan_photo or exit_scan_photo.
+    """
+    if not photo_data:
+        return ""
+
+    photo_data = str(photo_data).strip()
+
+    # If it is a base64 data URI:
+    if photo_data.startswith("data:image/"):
+        try:
+            header, encoded = photo_data.split(",", 1)
+            ext = "jpg"
+            if "png" in header:
+                ext = "png"
+            elif "webp" in header:
+                ext = "webp"
+
+            file_bytes = base64.b64decode(encoded)
+            # Max 10MB limit
+            if len(file_bytes) > 10 * 1024 * 1024:
+                return ""
+
+            base_dir = current_app.static_folder or os.path.join(current_app.root_path, "static")
+            upload_dir = os.path.join(base_dir, "uploads", "inspections")
+            os.makedirs(upload_dir, exist_ok=True)
+
+            filename = f"{prefix}_{booking_id}_{uuid.uuid4().hex[:8]}.{ext}"
+            file_path = os.path.join(upload_dir, filename)
+
+            with open(file_path, "wb") as f:
+                f.write(file_bytes)
+
+            return f"/static/uploads/inspections/{filename}"
+        except Exception as e:
+            current_app.logger.warning(f"Failed to decode inspection photo base64: {e}")
+            return ""
+
+    # If it is a web URL or relative path:
+    if photo_data.startswith("http://") or photo_data.startswith("https://") or photo_data.startswith("/static/"):
+        return sanitize_string(photo_data, max_length=500)
+
+    return sanitize_string(photo_data, max_length=500)
 
 
 def check_booking_overlap(space_id: int, start_time: datetime, end_time: datetime, exclude_booking_id: int = None):
@@ -553,7 +602,11 @@ def api_booking_checkin(booking_id):
 
     raw_entry_photo = data.get("entry_photo")
     if raw_entry_photo:
-        booking.entry_scan_photo = sanitize_string(raw_entry_photo, max_length=500)
+        saved_photo_url = _save_inspection_photo(raw_entry_photo, "entry", booking.id)
+        if saved_photo_url:
+            booking.entry_scan_photo = saved_photo_url
+    if not booking.entry_scan_photo:
+        booking.entry_scan_photo = "https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&w=800&q=80"
 
     booking.session_state = "checked_in"
     booking.arrival_time = now
@@ -598,6 +651,61 @@ def api_booking_checkin(booking_id):
     }), 200
 
 
+@api_v1_bookings.route("/api/booking/<int:booking_id>/upload-inspection-photo", methods=["POST"])
+@login_required
+def upload_booking_inspection_photo(booking_id):
+    """
+    Accepts multipart file upload for booking inspection (entry or exit photo).
+    Returns { success: True, url: '/static/uploads/inspections/...' }.
+    """
+    booking = Booking.query.get_or_404(booking_id)
+    try:
+        authorize(current_user, Permission.BOOKING_VIEW, resource=booking)
+    except ForbiddenError as e:
+        return jsonify({"error": str(e)}), 403
+
+    file = None
+    if "photo" in request.files:
+        file = request.files["photo"]
+    elif "file" in request.files:
+        file = request.files["file"]
+
+    if not file or file.filename == "":
+        return jsonify({"success": False, "error": "No file selected."}), 400
+
+    photo_type = request.form.get("type", "entry")  # 'entry' or 'exit'
+    ext = file.filename.rsplit(".", 1)[1].lower() if "." in file.filename else "jpg"
+    if ext not in ["jpg", "jpeg", "png", "webp"]:
+        return jsonify({"success": False, "error": "Unsupported file format. Please upload JPG, PNG, or WEBP."}), 400
+
+    file_bytes = file.read()
+    if len(file_bytes) > 10 * 1024 * 1024:
+        return jsonify({"success": False, "error": "Image file exceeds 10MB limit."}), 400
+
+    file.seek(0)
+    base_dir = current_app.static_folder or os.path.join(current_app.root_path, "static")
+    upload_dir = os.path.join(base_dir, "uploads", "inspections")
+    os.makedirs(upload_dir, exist_ok=True)
+    filename = f"{photo_type}_{booking_id}_{uuid.uuid4().hex[:8]}.{ext}"
+    dest_path = os.path.join(upload_dir, filename)
+    file.save(dest_path)
+
+    photo_url = f"/static/uploads/inspections/{filename}"
+    if photo_type == "entry":
+        booking.entry_scan_photo = photo_url
+    elif photo_type == "exit":
+        booking.exit_scan_photo = photo_url
+    db.session.commit()
+
+    return jsonify({
+        "success": True,
+        "url": photo_url,
+        "photo_url": photo_url,
+        "filename": filename
+    })
+
+
+
 @api_v1_bookings.route("/api/booking/<int:booking_id>/check-out", methods=["POST"])
 @login_required
 def api_booking_checkout(booking_id):
@@ -618,9 +726,17 @@ def api_booking_checkout(booking_id):
         }), 400
 
     raw_exit_photo = data.get("exit_photo")
-    exit_photo = sanitize_string(raw_exit_photo, max_length=500) if raw_exit_photo else ""
+    exit_photo = ""
+    if raw_exit_photo:
+        exit_photo = _save_inspection_photo(raw_exit_photo, "exit", booking.id)
+
     if not exit_photo and not booking.entry_scan_photo:
         exit_photo = "https://images.unsplash.com/photo-1513694203232-719a280e022f?auto=format&fit=crop&w=800&q=80"
+    elif not exit_photo:
+        exit_photo = booking.entry_scan_photo or "https://images.unsplash.com/photo-1513694203232-719a280e022f?auto=format&fit=crop&w=800&q=80"
+
+    if not booking.entry_scan_photo:
+        booking.entry_scan_photo = "https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&w=800&q=80"
 
     lat = float(validate_numeric(data.get("lat"), min_val=-90, max_val=90, default=space.latitude))
     lng = float(validate_numeric(data.get("lng"), min_val=-180, max_val=180, default=space.longitude))
@@ -760,6 +876,14 @@ def api_booking_checkout(booking_id):
         "punctuality_score": punctuality,
         "escrow_refund_status": "INSTANT_RELEASE_COMPLETE" if refund_state == "Released" else refund_state,
         "status": refund_state,
+        "fraud_assessment": {
+            "risk_score": checkout_assessment.risk_score,
+            "risk_level": checkout_assessment.risk_level,
+            "confidence": checkout_assessment.confidence,
+            "recommended_action": checkout_assessment.recommended_action,
+            "evidence_text": checkout_assessment.evidence_text,
+            "signals": [s.to_dict() if hasattr(s, "to_dict") else s for s in (checkout_assessment.signals_json or [])]
+        },
         "booking": booking.to_dict()
     })
 

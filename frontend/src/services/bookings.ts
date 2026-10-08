@@ -76,8 +76,15 @@ export async function cancelBooking(bookingId: number): Promise<{
 
 export async function checkInBooking(
   bookingId: number,
-  coords: { lat?: number; lng?: number; qr_token?: string; pin?: string }
-): Promise<{ success: boolean; message: string; checked_in_at?: string; status?: string }> {
+  coords: { lat?: number; lng?: number; qr_token?: string; pin?: string; entry_photo?: string }
+): Promise<{
+  success: boolean;
+  message: string;
+  checked_in_at?: string;
+  arrival_time?: string;
+  status?: string;
+  booking?: Booking;
+}> {
   return request(`/api/booking/${bookingId}/check-in`, {
     method: 'POST',
     body: JSON.stringify(coords),
@@ -86,13 +93,20 @@ export async function checkInBooking(
 
 export async function checkOutBooking(
   bookingId: number,
-  coords: { lat?: number; lng?: number; exit_photo?: string }
+  coords: {
+    lat?: number;
+    lng?: number;
+    exit_photo?: string;
+    simulate_damaged?: boolean;
+    simulate_cv_failure?: boolean;
+  }
 ): Promise<{
   success: boolean;
   message: string;
   deposit_released?: boolean;
   status?: string;
   inspection?: any;
+  fraud_assessment?: any;
   punctuality_score?: number;
   escrow_refund_status?: string;
   booking?: Booking;
@@ -102,6 +116,30 @@ export async function checkOutBooking(
     body: JSON.stringify(coords),
   });
 }
+
+export async function uploadInspectionPhoto(
+  bookingId: number,
+  file: File,
+  type: 'entry' | 'exit' = 'entry'
+): Promise<{ success: boolean; url: string; photo_url: string; filename: string }> {
+  const formData = new FormData();
+  formData.append('photo', file);
+  formData.append('type', type);
+
+  const res = await fetch(`/api/booking/${bookingId}/upload-inspection-photo`, {
+    method: 'POST',
+    body: formData,
+    credentials: 'include',
+  });
+
+  if (!res.ok) {
+    const errorData = await res.json().catch(() => ({}));
+    throw new Error(errorData.error || 'Failed to upload inspection photo');
+  }
+
+  return res.json();
+}
+
 
 export async function acceptBooking(bookingId: number): Promise<{ success: boolean; message: string; booking: Booking }> {
   return request(`/api/booking/${bookingId}/accept`, {

@@ -89,49 +89,49 @@ export const VerifyEmailPage: React.FC<VerifyEmailPageProps> = ({ onUserVerified
   };
 
   return (
-    <div className="min-h-[80vh] flex items-center justify-center px-4 py-16 bg-slate-950">
+    <div className="min-h-[80vh] flex items-center justify-center px-4 py-16 bg-background">
       <div className="w-full max-w-md">
-        <div className="bg-slate-900/90 border border-slate-800/80 rounded-3xl p-8 shadow-2xl backdrop-blur-xl text-center">
+        <div className="bg-surface border border-border rounded-3xl p-8 shadow-2xl backdrop-blur-xl text-center">
           {loading ? (
             <div className="py-8 space-y-4">
-              <div className="w-12 h-12 border-3 border-indigo-500 border-t-transparent rounded-full animate-spin mx-auto" />
-              <h2 className="text-xl font-bold text-white">{t('verifyEmail.checkingStatus')}</h2>
-              <p className="text-xs text-slate-400">
+              <div className="w-12 h-12 border-3 border-primary border-t-transparent rounded-full animate-spin mx-auto" />
+              <h2 className="text-xl font-heading font-bold text-text-primary">{t('verifyEmail.checkingStatus')}</h2>
+              <p className="text-xs text-text-secondary">
                 {t('verifyEmail.subtitle')}
               </p>
             </div>
           ) : success ? (
             <div className="space-y-6">
-              <div className="w-16 h-16 rounded-3xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 flex items-center justify-center mx-auto text-3xl shadow-lg shadow-emerald-500/20">
+              <div className="w-16 h-16 rounded-3xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-500 flex items-center justify-center mx-auto text-3xl shadow-lg shadow-emerald-500/20">
                 <i className="fa-solid fa-check-double" />
               </div>
 
               <div>
-                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-bold mb-3">
+                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-500 text-xs font-bold mb-3">
                   {t('verify.verifiedSuccessBadge')}
                 </span>
-                <h1 className="text-2xl font-black text-white">{t('verifyEmail.verifiedSuccessTitle')}</h1>
-                <p className="text-xs text-slate-300 mt-2 leading-relaxed">
+                <h1 className="text-2xl font-heading font-black text-text-primary">{t('verifyEmail.verifiedSuccessTitle')}</h1>
+                <p className="text-xs text-text-secondary mt-2 leading-relaxed">
                   {message || t('verifyEmail.verifiedSuccessDesc')}
                 </p>
               </div>
 
-              <div className="p-4 rounded-2xl bg-slate-950/80 border border-slate-800 text-left text-xs text-slate-400 space-y-1.5">
-                <div className="flex items-center justify-between text-white font-medium">
+              <div className="p-4 rounded-2xl bg-surface-elevated border border-border text-left text-xs text-text-secondary space-y-1.5">
+                <div className="flex items-center justify-between text-text-primary font-medium">
                   <span>{t('dashboard.statusLabel')}:</span>
-                  <span className="text-emerald-400 font-bold flex items-center gap-1">
+                  <span className="text-emerald-500 font-bold flex items-center gap-1">
                     <i className="fa-solid fa-circle-check text-xs" /> {t('common.verified')}
                   </span>
                 </div>
                 {verifiedUser?.email && (
                   <div className="flex items-center justify-between">
                     <span>{t('auth.emailLabel')}:</span>
-                    <span className="text-slate-200">{verifiedUser.email}</span>
+                    <span className="text-text-primary font-mono">{verifiedUser.email}</span>
                   </div>
                 )}
                 <div className="flex items-center justify-between">
                   <span>{t('nav.menu')}:</span>
-                  <span className="text-indigo-400">{t('common.confirmed')}</span>
+                  <span className="text-primary font-semibold">{t('common.confirmed')}</span>
                 </div>
               </div>
 
@@ -145,7 +145,7 @@ export const VerifyEmailPage: React.FC<VerifyEmailPageProps> = ({ onUserVerified
                       navigate('/dashboard');
                     }
                   }}
-                  className="w-full py-3.5 rounded-xl bg-gradient-to-r from-indigo-600 via-violet-600 to-indigo-700 hover:from-indigo-500 hover:to-violet-500 text-white font-bold text-sm shadow-xl shadow-indigo-600/30 flex items-center justify-center gap-2 transition"
+                  className="w-full py-3.5 rounded-xl bg-primary hover:bg-primary-hover text-white font-bold text-sm shadow-xl shadow-primary/25 flex items-center justify-center gap-2 transition cursor-pointer"
                 >
                   <span>{t('verifyEmail.continueToLoginBtn')}</span>
                   <i className="fa-solid fa-arrow-right text-xs" />
@@ -154,7 +154,7 @@ export const VerifyEmailPage: React.FC<VerifyEmailPageProps> = ({ onUserVerified
                 <button
                   type="button"
                   onClick={() => navigate('/explore')}
-                  className="w-full py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold text-xs transition"
+                  className="w-full py-2.5 rounded-xl bg-surface-elevated hover:bg-border/60 text-text-primary border border-border font-semibold text-xs transition cursor-pointer"
                 >
                   {t('nav.explore')}
                 </button>
@@ -162,22 +162,22 @@ export const VerifyEmailPage: React.FC<VerifyEmailPageProps> = ({ onUserVerified
             </div>
           ) : (
             <div className="space-y-6">
-              <div className="w-16 h-16 rounded-3xl bg-rose-500/15 border border-rose-500/30 text-rose-400 flex items-center justify-center mx-auto text-3xl shadow-lg shadow-rose-500/20">
+              <div className="w-16 h-16 rounded-3xl bg-rose-500/15 border border-rose-500/30 text-rose-500 flex items-center justify-center mx-auto text-3xl shadow-lg shadow-rose-500/20">
                 <i className="fa-solid fa-link-slash" />
               </div>
 
               <div>
-                <h1 className="text-2xl font-black text-white">
+                <h1 className="text-2xl font-heading font-black text-text-primary">
                   {token ? t('verifyEmail.invalidLinkTitle') : t('verifyEmail.title')}
                 </h1>
-                <p className="text-xs text-rose-300 mt-2 leading-relaxed">
+                <p className="text-xs text-rose-500 mt-2 leading-relaxed">
                   {message || t('verifyEmail.invalidLinkDesc')}
                 </p>
               </div>
 
               {/* Resend Verification Form */}
-              <form onSubmit={handleResend} className="p-4 rounded-2xl bg-slate-950/80 border border-slate-800 text-left space-y-3">
-                <label className="block text-xs font-semibold text-slate-300">
+              <form onSubmit={handleResend} className="p-4 rounded-2xl bg-surface-elevated border border-border text-left space-y-3">
+                <label className="block text-xs font-semibold text-text-secondary">
                   {t('verifyEmail.resendEmailBtn')}
                 </label>
                 <div className="flex flex-col sm:flex-row gap-2">
@@ -186,25 +186,25 @@ export const VerifyEmailPage: React.FC<VerifyEmailPageProps> = ({ onUserVerified
                     value={resendEmail}
                     onChange={(e) => setResendEmail(e.target.value)}
                     placeholder={t('auth.emailPlaceholder')}
-                    className="flex-1 px-3 py-2.5 rounded-xl bg-slate-900 border border-slate-700 text-white text-xs focus:outline-none focus:border-indigo-500"
+                    className="flex-1 px-3 py-2.5 rounded-xl bg-surface border border-border text-text-primary text-xs focus:outline-none focus:border-primary"
                     required
                   />
                   <button
                     type="submit"
                     disabled={resending}
-                    className="px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs transition disabled:opacity-50 shrink-0"
+                    className="px-4 py-2.5 rounded-xl bg-primary hover:bg-primary-hover text-white font-bold text-xs transition disabled:opacity-50 shrink-0 cursor-pointer"
                   >
                     {resending ? t('common.loading') : t('common.submit')}
                   </button>
                 </div>
 
                 {resendStatus && (
-                  <div className="text-[11px] text-emerald-400 font-medium">
+                  <div className="text-[11px] text-emerald-500 font-medium">
                     ✓ {resendStatus}
                   </div>
                 )}
                 {resendError && (
-                  <div className="text-[11px] text-rose-400 font-medium">
+                  <div className="text-[11px] text-rose-500 font-medium">
                     ⚠️ {resendError}
                   </div>
                 )}
@@ -214,7 +214,7 @@ export const VerifyEmailPage: React.FC<VerifyEmailPageProps> = ({ onUserVerified
                 <button
                   type="button"
                   onClick={() => navigate('/')}
-                  className="w-full py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold text-xs border border-slate-700 transition flex items-center justify-center gap-2"
+                  className="w-full py-2.5 rounded-xl bg-surface-elevated hover:bg-border/60 text-text-primary font-semibold text-xs border border-border transition flex items-center justify-center gap-2 cursor-pointer"
                 >
                   <i className="fa-solid fa-house text-xs" />
                   <span>{t('common.back')}</span>

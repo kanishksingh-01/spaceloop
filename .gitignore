@@ -23,6 +23,8 @@ instance/
 .restore_points/
 static/uploads/spaces/*
 !static/uploads/spaces/.gitkeep
+static/uploads/inspections/*
+!static/uploads/inspections/.gitkeep
 frontend/dist/
 
 # PDF Documents (Do not deploy or commit PDFs)
